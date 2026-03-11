@@ -1,1215 +1,1903 @@
- <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
-<!--Esta sección CDATA contiene la información de diseño del paquete. Esta sección incluye información como, por ejemplo, las coordenadas (x,y), el ancho y el alto.-->
-<!--Si edita manualmente esta sección y comete un error, puede eliminarlo. -->
-<!--El paquete podrá cargarse normalmente, pero se perderá la información de diseño anterior y el diseñador reorganizará los elementos automáticamente en la superficie de diseño.-->
-<Objects
-  Version="8">
-  <!--Cada uno de los nodos siguientes contiene propiedades que no afectan al comportamiento en tiempo de ejecución.-->
-  <Package
-    design-time-name="Package">
-    <LayoutInfo>
-      <GraphLayout
-        Capacity="128" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mssgm="clr-namespace:Microsoft.SqlServer.Graph.Model;assembly=Microsoft.SqlServer.Graph">
-        <NodeLayout
-          Size="134.666666666667,44"
-          Id="Package\Correos no validos\Error insert no enviados"
-          TopLeft="224.688678910007,97.1842122520436" />
-        <NodeLayout
-          Size="189.333333333334,42.6666666666667"
-          Id="Package\Correos no validos\Insert no validos con estatus no enviados"
-          TopLeft="214.285705430167,12.1102774480674" />
-        <NodeLayout
-          Size="166,44"
-          Id="Package\Correos no validos\Limpiar tabla reporte no validos"
-          TopLeft="13.2452830188681,12.3584905660377" />
-        <NodeLayout
-          Size="134.666666666667,44"
-          Id="Package\Correos no validos\Query correos no validos"
-          TopLeft="22.981132075472,80.2830188679245" />
-        <EdgeLayout
-          Id="Package\Correos no validos.PrecedenceConstraints[Constraint 1]"
-          TopLeft="96.0754716981132,56.2830188679245">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-5.35849056603774,24"
-              Start="0,0"
-              End="-5.35849056603774,16.5">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,12" />
-                  <mssgle:LineSegment
-                    End="-5.35849056603774,12" />
-                  <mssgle:LineSegment
-                    End="-5.35849056603774,16.5" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Correos no validos.PrecedenceConstraints[Restricción]"
-          TopLeft="111.870020964361,80.2830188679245">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="166.637906688029,-25.5060747531904"
-              Start="0,0"
-              End="166.637906688029,-18.0060747531904">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,-8.8049960397487" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,-8.8049960397487"
-                    Point2="0,-12.8049960397487"
-                    Point3="4,-12.8049960397487" />
-                  <mssgle:LineSegment
-                    End="162.637906688029,-12.8049960397487" />
-                  <mssgle:CubicBezierSegment
-                    Point1="162.637906688029,-12.8049960397487"
-                    Point2="166.637906688029,-12.8049960397487"
-                    Point3="166.637906688029,-16.8049960397487" />
-                  <mssgle:LineSegment
-                    End="166.637906688029,-18.0060747531904" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Correos no validos.PrecedenceConstraints[Restricción 1]"
-          TopLeft="338.730149874612,54.7769441147341">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-46.3748042979382,42.4072681373095"
-              Start="0,0"
-              End="-46.3748042979382,34.9072681373095">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,13.1768752511317" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,13.1768752511317"
-                    Point2="0,17.1768752511317"
-                    Point3="-4,17.1768752511317" />
-                  <mssgle:LineSegment
-                    End="-42.3748042979382,17.1768752511317" />
-                  <mssgle:CubicBezierSegment
-                    Point1="-42.3748042979382,17.1768752511317"
-                    Point2="-46.3748042979382,17.1768752511317"
-                    Point3="-46.3748042979382,21.1768752511317" />
-                  <mssgle:LineSegment
-                    End="-46.3748042979382,34.9072681373095" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <mssgm:EdgeLabel
-              BoundingBox="-34.7160935552191,22.1768752511317,23.0573828125,9.421875"
-              RelativePosition="Any" />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43.283018867924525"
-          IsExpanded="True"
-          PanelSize="437.333333333334,160"
-          Size="437.333333333334,202.666666666667"
-          Id="Package\Correos no validos"
-          TopLeft="428.749993611128,58.8421063707139" />
-        <NodeLayout
-          Size="134.666666666667,44"
-          Id="Package\Enviar correo notificacion\Direccion correo reporte"
-          TopLeft="33.0801915663444,9.98113207547169" />
-        <NodeLayout
-          Size="134.666666666667,44"
-          Id="Package\Enviar correo notificacion\Enviar correo"
-          TopLeft="233.825471642234,21.6474665668476" />
-        <NodeLayout
-          Size="134.666666666667,44"
-          Id="Package\Enviar correo notificacion\Error en enviar correo reporte"
-          TopLeft="130.320753301371,97.6415099233478" />
-        <EdgeLayout
-          Id="Package\Enviar correo notificacion.PrecedenceConstraints[Constraint 1]"
-          TopLeft="168.413524899678,34.8142993211596">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="65.4119467425559,0"
-              Start="0,0"
-              End="57.9119467425559,0">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="57.9119467425559,0" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Enviar correo notificacion.PrecedenceConstraints[Constraint 2]"
-          TopLeft="301.4921383089,65.6474665668476">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-103.504718340863,31.9940433565002"
-              Start="0,0"
-              End="-103.504718340863,24.4940433565002">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,11.9970216782501" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,11.9970216782501"
-                    Point2="0,15.9970216782501"
-                    Point3="-4,15.9970216782501" />
-                  <mssgle:LineSegment
-                    End="-99.5047183408631,15.9970216782501" />
-                  <mssgle:CubicBezierSegment
-                    Point1="-99.5047183408631,15.9970216782501"
-                    Point2="-103.504718340863,15.9970216782501"
-                    Point3="-103.504718340863,19.9970216782501" />
-                  <mssgle:LineSegment
-                    End="-103.504718340863,24.4940433565002" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <mssgm:EdgeLabel
-              BoundingBox="-63.2810505766816,20.9970216782501,23.0573828125,9.421875"
-              RelativePosition="Any" />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="390.666666666667,197.333333333334"
-          Size="390.666666666667,238.666666666667"
-          Id="Package\Enviar correo notificacion"
-          TopLeft="1722.06247515387,79.2251476691333" />
-        <NodeLayout
-          Size="137.333333333334,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias\Finalizacion Json"
-          TopLeft="57.4999944244817,289.789475976595" />
-        <NodeLayout
-          Size="156,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias\Generacion EC por Lote\Genera EC Lote"
-          TopLeft="22.4999925121667,8.01754974515404" />
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="217.333333333334,70"
-          Size="217.333333333334,113.333333333334"
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias\Generacion EC por Lote"
-          TopLeft="12.7499928660693,143.491231611781" />
-        <NodeLayout
-          Size="137.333333333334,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias\Inicializar Valores"
-          TopLeft="132.916654950629,81.3333372484175" />
-        <NodeLayout
-          Size="173.333333333334,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias\Obtener cantidad de registros por lote"
-          TopLeft="44.3749942723669,12.7543870080762" />
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias.PrecedenceConstraints[Restricción]"
-          TopLeft="131.041660939034,55.4210536747429">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="70.5416606782621,25.9122835736746"
-              Start="0,0"
-              End="70.5416606782621,18.4122835736746">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,8.95614178683729" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,8.95614178683729"
-                    Point2="0,12.9561417868373"
-                    Point3="4,12.9561417868373" />
-                  <mssgle:LineSegment
-                    End="66.5416606782621,12.9561417868373" />
-                  <mssgle:CubicBezierSegment
-                    Point1="66.5416606782621,12.9561417868373"
-                    Point2="70.5416606782621,12.9561417868373"
-                    Point3="70.5416606782621,16.9561417868373" />
-                  <mssgle:LineSegment
-                    End="70.5416606782621,18.4122835736746" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias.PrecedenceConstraints[Restricción 1]"
-          TopLeft="132.916654950629,102.666670581751">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-11.8333287512263,40.8245610300299"
-              Start="0,0"
-              End="-11.8333287512263,33.3245610300299">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="-7.83332875122635,0" />
-                  <mssgle:CubicBezierSegment
-                    Point1="-7.83332875122635,0"
-                    Point2="-11.8333287512263,0"
-                    Point3="-11.8333287512263,4" />
-                  <mssgle:LineSegment
-                    End="-11.8333287512263,33.3245610300299" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias.PrecedenceConstraints[Restricción 2]"
-          TopLeft="123.624993645276,256.157898278447">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,33.6315776981476"
-              Start="0,0"
-              End="0,26.1315776981476">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,26.1315776981476" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="296,388"
-          Size="296,430.666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Contenedor de secuencias"
-          TopLeft="306.666661004225,102.087719362638" />
-        <NodeLayout
-          Size="193.333333333334,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Copiar JSON a historico"
-          TopLeft="52.2068350823546,703.42545262907" />
-        <NodeLayout
-          Size="157.333333333334,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Elimina archivos"
-          TopLeft="356.760402717784,703.092116708984" />
-        <NodeLayout
-          Size="158,42"
-          Id="Package\Generación de estados de cuenta JSON\Elimina Contador"
-          TopLeft="357.170620962329,628.902247368002" />
-        <NodeLayout
-          Size="141.333333333334,42"
-          Id="Package\Generación de estados de cuenta JSON\Encripta Data"
-          TopLeft="75.156736275772,626.687125807568" />
-        <NodeLayout
-          Size="154,62"
-          Id="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Cantidad de registros"
-          TopLeft="96.8472115171867,146.812856277526" />
-        <NodeLayout
-          Size="126.666666666667,42"
-          Id="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Genera EC"
-          TopLeft="10.4583238162511,92.033409077459" />
-        <NodeLayout
-          Size="170.666666666667,42"
-          Id="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Obtener No TC, cuenta y correo"
-          TopLeft="81.7777672972948,16.5847895357272" />
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta.PrecedenceConstraints[Constraint]"
-          TopLeft="167.444433963961,58.5847895357272">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-93.3194434810437,33.4486195417318"
-              Start="0,0"
-              End="-93.3194434810437,25.9486195417318">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,12.7243097708659" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,12.7243097708659"
-                    Point2="0,16.7243097708659"
-                    Point3="-4,16.7243097708659" />
-                  <mssgle:LineSegment
-                    End="-89.3194434810437,16.7243097708659" />
-                  <mssgle:CubicBezierSegment
-                    Point1="-89.3194434810437,16.7243097708659"
-                    Point2="-93.3194434810437,16.7243097708659"
-                    Point3="-93.3194434810437,20.7243097708659" />
-                  <mssgle:LineSegment
-                    End="-93.3194434810437,25.9486195417318" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta.PrecedenceConstraints[Restricción]"
-          TopLeft="137.791657149584,113.033409077459">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="36.0555543676023,33.7794472000666"
-              Start="0,0"
-              End="36.0555543676023,26.2794472000666">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="32.0555543676023,0" />
-                  <mssgle:CubicBezierSegment
-                    Point1="32.0555543676023,0"
-                    Point2="36.0555543676023,0"
-                    Point3="36.0555543676023,4" />
-                  <mssgle:LineSegment
-                    End="36.0555543676023,26.2794472000666" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="266.666666666667,304"
-          Size="266.666666666667,346.666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta"
-          TopLeft="23.936498943775,100.200494334716" />
-        <NodeLayout
-          Size="173.333333333334,42.6666666666667"
-          Id="Package\Generación de estados de cuenta JSON\Revision por Tipo Generacion"
-          TopLeft="199.416663556049,7.9824590637854" />
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Constraint 4]"
-          TopLeft="157.269832277108,446.867161001383">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="253.90078868522,182.035086366619"
-              Start="0,0"
-              End="253.90078868522,174.535086366619">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,104.126103932052" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,104.126103932052"
-                    Point2="0,108.126103932052"
-                    Point3="4,108.126103932052" />
-                  <mssgle:LineSegment
-                    End="249.90078868522,108.126103932052" />
-                  <mssgle:CubicBezierSegment
-                    Point1="249.90078868522,108.126103932052"
-                    Point2="253.90078868522,108.126103932052"
-                    Point3="253.90078868522,112.126103932052" />
-                  <mssgle:LineSegment
-                    End="253.90078868522,174.535086366619" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Constraint 5]"
-          TopLeft="357.170620962329,648.794686587785">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-140.680551353224,0"
-              Start="0,0"
-              End="-133.180551353224,0">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="-133.180551353224,0" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción]"
-          TopLeft="147.34845234573,668.687125807568">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,34.7383268215024"
-              Start="0,0"
-              End="0,27.2383268215024">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,27.2383268215024" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 1]"
-          TopLeft="245.540168415688,724.59211800236">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="111.220234302096,0"
-              Start="0,0"
-              End="103.720234302096,0">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="103.720234302096,0" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 2]"
-          TopLeft="457.918640983277,532.754386029305">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,96.1478613386973"
-              Start="0,0"
-              End="0,88.6478613386973">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,88.6478613386973" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 3]"
-          TopLeft="258.305552444938,50.6491257304521">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-101.03572016783,49.5513686042642"
-              Start="0,0"
-              End="-101.03572016783,42.0513686042642">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,16.0935159604132" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,16.0935159604132"
-                    Point2="0,20.0935159604132"
-                    Point3="-4,20.0935159604132" />
-                  <mssgle:LineSegment
-                    End="-97.0357201678296,20.0935159604132" />
-                  <mssgle:CubicBezierSegment
-                    Point1="-97.0357201678296,20.0935159604132"
-                    Point2="-101.03572016783,20.0935159604132"
-                    Point3="-101.03572016783,24.0935159604132" />
-                  <mssgle:LineSegment
-                    End="-101.03572016783,42.0513686042642" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <mssgm:EdgeLabel
-              BoundingBox="-58.5178600839148,25.0935159604132,16,16"
-              RelativePosition="Any" />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 4]"
-          TopLeft="313.194441333827,50.6491257304521">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="141.472219670398,51.4385936321859"
-              Start="0,0"
-              End="141.472219670398,43.9385936321859">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,16.8588023145054" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,16.8588023145054"
-                    Point2="0,20.8588023145054"
-                    Point3="4,20.8588023145054" />
-                  <mssgle:LineSegment
-                    End="137.472219670398,20.8588023145054" />
-                  <mssgle:CubicBezierSegment
-                    Point1="137.472219670398,20.8588023145054"
-                    Point2="141.472219670398,20.8588023145054"
-                    Point3="141.472219670398,24.8588023145054" />
-                  <mssgle:LineSegment
-                    End="141.472219670398,43.9385936321859" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <mssgm:EdgeLabel
-              BoundingBox="62.736109835199,25.8588023145054,16,16"
-              RelativePosition="Any" />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="626.666666666667,805.333333333334"
-          Size="626.666666666667,848"
-          Id="Package\Generación de estados de cuenta JSON"
-          TopLeft="991.537683604524,53.2846979622784" />
-        <NodeLayout
-          Size="178.666666666667,42"
-          Id="Package\Limpiar bandejas\Actualizar fecha corte"
-          TopLeft="52.1944269045366,268.166660222411" />
-        <NodeLayout
-          Size="153.333333333334,42"
-          Id="Package\Limpiar bandejas\Limpiar bandeja"
-          TopLeft="63.3055378500785,192.333328245084" />
-        <NodeLayout
-          Size="177.333333333334,42"
-          Id="Package\Limpiar bandejas\Limpiar tabla reporte"
-          TopLeft="45.9444269976689,108.555551965369" />
-        <NodeLayout
-          Size="222.666666666667,42"
-          Id="Package\Limpiar bandejas\Mover data reporte al historico"
-          TopLeft="29.2777605793544,31.9999977787337" />
-        <EdgeLayout
-          Id="Package\Limpiar bandejas.PrecedenceConstraints[Constraint]"
-          TopLeft="137.444427121845,73.9999977787337">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,34.5555541866356"
-              Start="0,0"
-              End="0,27.0555541866356">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,27.0555541866356" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Limpiar bandejas.PrecedenceConstraints[Constraint 1]"
-          TopLeft="137.124982423874,150.555551965369">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,41.7777762797142"
-              Start="0,0"
-              End="0,34.2777762797142">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,34.2777762797142" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Limpiar bandejas.PrecedenceConstraints[Constraint 2]"
-          TopLeft="140.916649043974,234.333328245084">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,33.8333319773277"
-              Start="0,0"
-              End="0,26.3333319773277">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,26.3333319773277" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="280,358"
-          Size="280,401.333333333334"
-          Id="Package\Limpiar bandejas"
-          TopLeft="1784.449378181,400.096493038939" />
-        <NodeLayout
-          Size="178,42"
-          Id="Package\Parametros\Cantidad de registros"
-          TopLeft="222.861107872177,118.352131606675" />
-        <NodeLayout
-          Size="178,42"
-          Id="Package\Parametros\Cantidad de registros Json"
-          TopLeft="209.041663633659,195.00667282249" />
-        <NodeLayout
-          Size="146.666666666667,42.6666666666667"
-          Id="Package\Parametros\CreaContador"
-          TopLeft="22.6626915549121,190.848779927283" />
-        <NodeLayout
-          Size="174.666666666667,42"
-          Id="Package\Parametros\Obtener correo error"
-          TopLeft="17.9999998137355,33.2819572706983" />
-        <NodeLayout
-          Size="174.666666666667,42"
-          Id="Package\Parametros\Obtener el ambiente"
-          TopLeft="9.66666660457793,115.463242769443" />
-        <NodeLayout
-          Size="160,42"
-          Id="Package\Parametros\Obtener Queries"
-          TopLeft="234.249996591359,39.401840453334" />
-        <EdgeLayout
-          Id="Package\Parametros.PrecedenceConstraints[Constraint]"
-          TopLeft="192.999999813735,57.3418988620162">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="41.2499967776236,0"
-              Start="0,0"
-              End="33.7499967776236,0">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="33.7499967776236,0" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Parametros.PrecedenceConstraints[Constraint 1]"
-          TopLeft="313.055552231768,81.401840453334">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,36.950291153341"
-              Start="0,0"
-              End="0,29.450291153341">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,29.450291153341" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Parametros.PrecedenceConstraints[Constraint 2]"
-          TopLeft="222.861107872177,137.907687188059">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-38.5277746009326,0"
-              Start="0,0"
-              End="-31.0277746009326,0">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="-31.0277746009326,0" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Parametros.PrecedenceConstraints[Restricción]"
-          TopLeft="96.4980124130783,157.463242769443">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,33.38553715784"
-              Start="0,0"
-              End="0,25.88553715784">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,25.88553715784" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Parametros.PrecedenceConstraints[Restricción 1]"
-          TopLeft="169.329358221579,214.094393041553">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="39.7123054120802,0"
-              Start="0,0"
-              End="32.2123054120802,0">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="32.2123054120802,0" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="406,390"
-          Size="406,433.333333333334"
-          Id="Package\Parametros"
-          TopLeft="371.532732558969,383.863412161337" />
-        <NodeLayout
-          Size="184,62.6666666666667"
-          Id="Package\Prepara data del corte\Limpia e inserta bandejas temporales"
-          TopLeft="39.826387904274,23.894736785225" />
-        <NodeLayout
-          Size="184,62.6666666666667"
-          Id="Package\Prepara data del corte\Llenar bandeja"
-          TopLeft="51.3194432326903,227.891816238966" />
-        <NodeLayout
-          Size="184,42.6666666666667"
-          Id="Package\Prepara data del corte\Trunca BandejaECTC"
-          TopLeft="45.8680544250334,119.347954579714" />
-        <EdgeLayout
-          Id="Package\Prepara data del corte.PrecedenceConstraints[Restricción]"
-          TopLeft="134.847221164654,86.5614034518917">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,32.7865511278221"
-              Start="0,0"
-              End="0,25.2865511278221">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,25.2865511278221" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Prepara data del corte.PrecedenceConstraints[Restricción 1]"
-          TopLeft="140.593748828862,162.01462124638">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,65.8771949925855"
-              Start="0,0"
-              End="0,58.3771949925855">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,58.3771949925855" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <ContainerLayout
-          HeaderHeight="43"
-          IsExpanded="True"
-          PanelSize="285.333333333334,346"
-          Size="285.333333333334,389.333333333334"
-          Id="Package\Prepara data del corte"
-          TopLeft="33.9791661404691,32.0536334478149" />
-        <EdgeLayout
-          Id="Package.PrecedenceConstraints[Restricción]"
-          TopLeft="647.416660277795,262.175439704047">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="-72.8839277188257,121.68797245729"
-              Start="0,0"
-              End="-72.8839277188257,114.18797245729">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,56.8439862286449" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,56.8439862286449"
-                    Point2="0,60.8439862286449"
-                    Point3="-4,60.8439862286449" />
-                  <mssgle:LineSegment
-                    End="-68.8839277188257,60.8439862286449" />
-                  <mssgle:CubicBezierSegment
-                    Point1="-68.8839277188257,60.8439862286449"
-                    Point2="-72.8839277188257,60.8439862286449"
-                    Point3="-72.8839277188257,64.8439862286449" />
-                  <mssgle:LineSegment
-                    End="-72.8839277188257,114.18797245729" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package.PrecedenceConstraints[Restricción 1]"
-          TopLeft="777.532732558969,600.19674549467">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="214.004951045555,-122.912047532392"
-              Start="0,0"
-              End="206.504951045555,-122.912047532392">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="103.002475522777,0" />
-                  <mssgle:CubicBezierSegment
-                    Point1="103.002475522777,0"
-                    Point2="107.002475522777,0"
-                    Point3="107.002475522777,-4" />
-                  <mssgle:LineSegment
-                    End="107.002475522777,-118.912047532392" />
-                  <mssgle:CubicBezierSegment
-                    Point1="107.002475522777,-118.912047532392"
-                    Point2="107.002475522777,-122.912047532392"
-                    Point3="111.002475522777,-122.912047532392" />
-                  <mssgle:LineSegment
-                    End="206.504951045555,-122.912047532392" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <mssgm:EdgeLabel
-              BoundingBox="99.002475522777,1,16,16"
-              RelativePosition="Any" />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package.PrecedenceConstraints[Restricción 2]"
-          TopLeft="1618.87101693786,477.284697962278">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="103.191458216013,-278.392883626478"
-              Start="0,0"
-              End="95.6914582160127,-278.392883626478">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="47.5957291080064,0" />
-                  <mssgle:CubicBezierSegment
-                    Point1="47.5957291080064,0"
-                    Point2="51.5957291080064,0"
-                    Point3="51.5957291080064,-4" />
-                  <mssgle:LineSegment
-                    End="51.5957291080064,-274.392883626478" />
-                  <mssgle:CubicBezierSegment
-                    Point1="51.5957291080064,-274.392883626478"
-                    Point2="51.5957291080064,-278.392883626478"
-                    Point3="55.5957291080064,-278.392883626478" />
-                  <mssgle:LineSegment
-                    End="95.6914582160127,-278.392883626478" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package.PrecedenceConstraints[Restricción 3]"
-          TopLeft="1920.9225933341,318.558481002467">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,81.5380120364724"
-              Start="0,0"
-              End="0,74.0380120364724">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,74.0380120364724" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package.PrecedenceConstraints[Restricción 4]"
-          TopLeft="319.312499473802,226.720300114482">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="109.437494137326,-66.5448604104344"
-              Start="0,0"
-              End="101.937494137326,-66.5448604104344">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="50.7187470686628,0" />
-                  <mssgle:CubicBezierSegment
-                    Point1="50.7187470686628,0"
-                    Point2="54.7187470686628,0"
-                    Point3="54.7187470686628,-4" />
-                  <mssgle:LineSegment
-                    End="54.7187470686628,-62.5448604104344" />
-                  <mssgle:CubicBezierSegment
-                    Point1="54.7187470686628,-62.5448604104344"
-                    Point2="54.7187470686628,-66.5448604104344"
-                    Point3="58.7187470686628,-66.5448604104344" />
-                  <mssgle:LineSegment
-                    End="101.937494137326,-66.5448604104344" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-      </GraphLayout>
-    </LayoutInfo>
-  </Package>
-  <TaskHost
-    design-time-name="Package\Correos no validos\Insert no validos con estatus no enviados">
-    <LayoutInfo>
-      <GraphLayout
-        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
-        <NodeLayout
-          Size="154.666666666667,42.6666666666667"
-          Id="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source"
-          TopLeft="242.499996386468,29.4210531853573" />
-        <NodeLayout
-          Size="174.666666666667,42.6666666666667"
-          Id="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination"
-          TopLeft="246.874996321276,201.842109062335" />
-        <NodeLayout
-          Size="156,42.6666666666667"
-          Id="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column"
-          TopLeft="250.624996265397,119.736844359012" />
-        <EdgeLayout
-          Id="Package\Correos no validos\Insert no validos con estatus no enviados.Paths[OLE DB Source Output]"
-          TopLeft="319.833329719802,72.087719852024">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="8.79166654559481,47.6491245069882"
-              Start="0,0"
-              End="8.79166654559481,40.1491245069882">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,19.8245622534941" />
-                  <mssgle:CubicBezierSegment
-                    Point1="0,19.8245622534941"
-                    Point2="0,23.8245622534941"
-                    Point3="4,23.8245622534941" />
-                  <mssgle:LineSegment
-                    End="4.79166654559481,23.8245622534941" />
-                  <mssgle:CubicBezierSegment
-                    Point1="4.79166654559481,23.8245622534941"
-                    Point2="8.79166654559481,23.8245622534941"
-                    Point3="8.79166654559481,27.8245622534941" />
-                  <mssgle:LineSegment
-                    End="8.79166654559481,40.1491245069882" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-        <EdgeLayout
-          Id="Package\Correos no validos\Insert no validos con estatus no enviados.Paths[Derived Column Output]"
-          TopLeft="331.416662960003,162.403511025679">
-          <EdgeLayout.Curve>
-            <mssgle:Curve
-              StartConnector="{assembly:Null}"
-              EndConnector="0,39.438598036656"
-              Start="0,0"
-              End="0,31.938598036656">
-              <mssgle:Curve.Segments>
-                <mssgle:SegmentCollection
-                  Capacity="5">
-                  <mssgle:LineSegment
-                    End="0,31.938598036656" />
-                </mssgle:SegmentCollection>
-              </mssgle:Curve.Segments>
-            </mssgle:Curve>
-          </EdgeLayout.Curve>
-          <EdgeLayout.Labels>
-            <EdgeLabelCollection />
-          </EdgeLayout.Labels>
-        </EdgeLayout>
-      </GraphLayout>
-    </LayoutInfo>
-  </TaskHost>
-  <PipelineComponentMetadata
-    design-time-name="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source">
-    <Properties>
-      <Property>
-        <Name>DataSourceViewID</Name>
-      </Property>
-    </Properties>
-  </PipelineComponentMetadata>
-  <PipelineComponentMetadata
-    design-time-name="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination">
-    <Properties>
-      <Property>
-        <Name>DataSourceViewID</Name>
-      </Property>
-      <Property>
-        <Name>TableInfoObjectType</Name>
-        <Value
-          type="q2:string">Table</Value>
-      </Property>
-    </Properties>
-  </PipelineComponentMetadata>
-  <DtsEventHandler
-    design-time-name="Package\Correos no validos\Limpiar tabla reporte no validos.EventHandlers[OnError]">
-    <LayoutInfo>
-      <GraphLayout
-        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
-        <NodeLayout
-          Size="NaN,NaN"
-          Id="Package\Correos no validos\Limpiar tabla reporte no validos.EventHandlers[OnError]\Error en Limpia tabla reporte no validos"
-          TopLeft="NaN,NaN" />
-      </GraphLayout>
-    </LayoutInfo>
-  </DtsEventHandler>
-  <DtsEventHandler
-    design-time-name="Package\Correos no validos\Query correos no validos.EventHandlers[OnError]">
-    <LayoutInfo>
-      <GraphLayout
-        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
-        <NodeLayout
-          Size="NaN,NaN"
-          Id="Package\Correos no validos\Query correos no validos.EventHandlers[OnError]\Error en Limpia tabla reporte no validos"
-          TopLeft="NaN,NaN" />
-      </GraphLayout>
-    </LayoutInfo>
-  </DtsEventHandler>
-  <DtsEventHandler
-    design-time-name="Package\Enviar correo notificacion\Direccion correo reporte.EventHandlers[OnError]">
-    <LayoutInfo>
-      <GraphLayout
-        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
-        <NodeLayout
-          Size="NaN,NaN"
-          Id="Package\Enviar correo notificacion\Direccion correo reporte.EventHandlers[OnError]\Error en direccion correo reporte"
-          TopLeft="NaN,NaN" />
-      </GraphLayout>
-    </LayoutInfo>
-  </DtsEventHandler>
-</Objects>]]></DTS:DesignTimeProperties>
-</DTS:Executable>
+Mira, yo tenia este pequeño resumen de lo que hace, y me tomé el tiempo de agregar la estructura de algunas tablas 
+
+
+
+PREPARA DATA DEL CORTE
+
+Paso 01. Limpia e inserta bandejas temporales
+Buscar este procedimiento: usp_LlenaBandejasEstadoCuenta
+
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenaBandejasEstadoCuenta]    Script Date: 11/3/2026 00:33:16 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE  [dbo].[usp_LlenaBandejasEstadoCuenta]
+-- =============================================
+-- Author:		henrry M .Padilla
+-- Create date: 27/06/2022
+-- Description:	Limpia y llena las bandejas de información de estados de cuenta por fecha de carga (cada corte)
+-- =============================================
+AS
+BEGIN
+
+DECLARE @FechaCorte as date = (Select FechaCorte from Param_IS_ECTC Where Estado='1'),
+		@Reproceso INT= (SELECT COUNT(1) FROM BandejaECTC WHERE Estado=2);
+
+	--IF(@Reproceso<1)
+	--BEGIN
+	--Limpiar badejas
+		Truncate Table [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]
+		Truncate Table [BPTarjetas].[dbo].[DEstadoCuenta_BandejaEnvioTC] 
+		Truncate Table [BPTarjetas].[dbo].[Financiamientos_BandejaEnvioTC]
+
+	--llenar bandejas
+
+		Insert into  [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]
+		Select * from [BPTarjetas].[dbo].HEstadoCuenta Where Fecha_Corte=@FechaCorte --And No_Tarjeta='1000000003294902'
+	
+		Insert into [BPTarjetas].[dbo].[DEstadoCuenta_BandejaEnvioTC]
+		Select * from [BPTarjetas].[dbo].[DEstadoCuenta] Where Fecha_Corte=@FechaCorte --And EC_DetalleNo_Tarjeta='1000000003294902'
+	
+		Insert into [BPTarjetas].[dbo].[Financiamientos_BandejaEnvioTC]
+		SELECT * FROM [BPTarjetas].[dbo].[Financiamientos] WHERE FechaCierre=@FechaCorte --And NumeroCuenta='5000001656764'
+	--END
+END
+
+
+Paso 02. Trunca bandeja ECTC 
+TRUNCATE TABLE BandejaECTC;
+CREATE TABLE [dbo].[BandejaECTC](
+	[Fecha_Corte] [varchar](15) NULL,
+	[No_Tarjeta] [varchar](50) NULL,
+	[No_Cuenta] [varchar](50) NULL,
+	[Correo] [varchar](max) NULL,
+	[Estado] [varchar](15) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+Paso 03. Llena bandeja
+Buscar este procedimiento: usp_LlenarBandejaECTC
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTC]    Script Date: 11/3/2026 00:35:33 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
+-- =====================================================================================
+-- Autor:				Carlos Elvir PBS
+-- Fecha creacion:		08-06-2022
+-- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
+-- de TC 
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--Carlos Elvir		Creacion del SP.										08-06-202
+-- =======================================================================================
+AS
+BEGIN
+Declare @@Cantidad int;
+
+select  @@Cantidad= count(*) from BandejaECTC;
+
+
+	IF(@Tipo='Llenar')
+		BEGIN
+		IF(@@Cantidad<1)
+			begin
+			--Se inserta en la bandeja los registros a procesar en el bucle, para ser usados para generar EC
+			insert into BandejaECTC(Fecha_Corte, No_Tarjeta, No_Cuenta,Correo,Estado)
+			select  convert(varchar(10) ,a.Fecha_Corte ,120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, Estado=2  
+			FROM   HEstadoCuenta_BandejaEnvioTC  AS a   INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = (select Fechacorte from Param_IS_ECTC where Estado=1)  
+			where  (a.Correo <> '') and (a.Correo not in (select Correo from dbo.CorreosNoValidos where Estado=1))  
+			and  (EXISTS (SELECT 1 FROM  dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte)     
+			Or a.Pago_Contado_MN != 0     Or a.Pago_Contado_ME != 0) order by Correo
+			end
+		END
+
+	IF(@Tipo='Limpiar')
+		BEGIN
+			--Se limpia la tabla para que pueda almacenar el siguiente corte
+			truncate table BandejaECTC;
+
+		END
+
+END
+
+
+------------------------------------
+
+CORREOS NO VÁLIDOS
+
+Paso 04. Limpiar tabla reporte no validos
+Buscar este procedimiento: usp_LimpiarTablaHistoricoReporteEC
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricoReporteEC]    Script Date: 11/3/2026 00:36:12 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[usp_LimpiarTablaHistoricoReporteEC](@Tipo varchar(20))
+ -- =====================================================================================
+-- Autor:				PBS Carlos Elvir
+-- Fecha creacion:		18-05-2022
+-- Description:	Limpia la tabla que genera el reporte de Estado de Cuenta enviados y 
+-- no enviados.
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--PBS Carlos Elvir	Se creo usp												18-05-2022
+-- =======================================================================================
+AS
+BEGIN
+	if(@Tipo='COMPLETA')
+	BEGIN
+		--Limpia todo el historico de reporte
+		TRUNCATE TABLE BPTarjetas.dbo.HistoricoCorreosECTC;
+	END
+		if(@Tipo='NOVALIDOS')
+	BEGIN
+		--Limpia solo los no validos
+		delete from BPTarjetas.dbo.HistoricoCorreosECTC where CorreoCliente in (select Correo From CorreosNoValidos where Estado=1) and Estado=0;
+
+	END
+END
+
+
+Paso 05. Query correos no válidos
+select QueryCNV from EstadoCuentaHTML where IdRows=1;
+
+CREATE TABLE [dbo].[EstadoCuentaHTML](
+	[IdRows] [int] NOT NULL,
+	[E_EstadoCuenta] [text] NULL,
+	[D_EstadoCuentaH] [text] NULL,
+	[D_EstadoCuentaM] [text] NULL,
+	[D_EstadoCuentaF] [text] NULL,
+	[F_EstadoCuentaH] [text] NULL,
+	[F_EstadoCuentaM] [text] NULL,
+	[F_EstadoCuentaF] [text] NULL,
+	[M_EstadoCuenta] [text] NULL,
+	[Query] [varchar](max) NULL,
+	[Ambiente] [varchar](5) NULL,
+	[QueryCNV] [text] NULL,
+	[CantQuery] [text] NULL,
+	[DireccionRPT] [varchar](max) NULL,
+	[RutaArchivoJson] [varchar](50) NULL,
+	[RutaArchivoHistoricoJson] [varchar](50) NULL,
+	[Llave] [varchar](100) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+Paso 06. Realiza el insert de los correos no validos con estatus no enviados
+Origen:
+
+SELECT CONVERT(VARCHAR(10), a.Fecha_Corte, 120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, LTRIM(RTRIM(a.Nombre_TH_Tit)) AS Nombre, a.NoCuentaClaro AS NoCuentaVASA FROM HEstadoCuenta_BandejaEnvioTC AS a INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = ( SELECT Fechacorte FROM Param_IS_ECTC WHERE Estado = 1 ) WHERE (a.Correo <> '') AND ( a.Correo IN ( SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1 ) ) AND ( EXISTS ( SELECT 1 FROM dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte ) OR a.Pago_Contado_MN != 0 OR a.Pago_Contado_ME != 0 ) ORDER BY a.Correo
+
+
+Primera tabla: 
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[HEstadoCuenta_BandejaEnvioTC]    Script Date: 11/3/2026 00:40:38 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[HEstadoCuenta_BandejaEnvioTC](
+	[idRow] [int] NOT NULL,
+	[Origen] [varchar](4) NULL,
+	[Emisor] [char](8) NULL,
+	[No_Cuenta] [char](13) NULL,
+	[Nombre_TH_Tit] [char](40) NULL,
+	[Emisor_Madre] [char](8) NULL,
+	[Cuenta_Madre] [char](10) NULL,
+	[Nombre_Empresa] [char](30) NULL,
+	[Tipo_Tarjeta] [char](10) NULL,
+	[No_Tarjeta] [char](16) NULL,
+	[Fecha_Pago] [datetime] NULL,
+	[Fecha_Corte] [datetime] NULL,
+	[Pago_Contado_MN] [money] NULL,
+	[Pago_Minimo_MN] [money] NULL,
+	[Saldo_Vencido_MN] [money] NULL,
+	[Saldo_Anterior_MN] [money] NULL,
+	[Saldo_Final_MN] [money] NULL,
+	[Compras_Deb_MN] [money] NULL,
+	[Pagos_Cred_MN] [money] NULL,
+	[Sobregiro_MN] [money] NULL,
+	[Cuota_Mes_MN] [money] NULL,
+	[Pago_Contado_ME] [money] NULL,
+	[Pago_Minimo_ME] [money] NULL,
+	[Saldo_Vencido_ME] [money] NULL,
+	[Saldo_Anterior_ME] [money] NULL,
+	[Saldo_Final_ME] [money] NULL,
+	[Compras_Deb_ME] [money] NULL,
+	[Pagos_Cred_ME] [money] NULL,
+	[Sobregiro_ME] [money] NULL,
+	[Cuota_Mes_ME] [money] NULL,
+	[Moneda_Lim_Cre] [varchar](1) NULL,
+	[Limite_Credito] [money] NULL,
+	[Disponible_Cta_MN] [money] NULL,
+	[Disponible_Cta_ME] [money] NULL,
+	[Disponible_Ret_MN] [money] NULL,
+	[Disponible_Ret_ME] [money] NULL,
+	[PTS_Saldo_Ant] [money] NULL,
+	[PTS_Ganados] [money] NULL,
+	[PTS_Usuados] [money] NULL,
+	[PTS_Saldo_Actual] [money] NULL,
+	[Moneda_Lim_EF] [varchar](1) NULL,
+	[EF_Limite] [money] NULL,
+	[EF_Saldo_MN] [money] NULL,
+	[EF_Debitos_MN] [money] NULL,
+	[EF_Creditos_MN] [money] NULL,
+	[EF_Saldo_ME] [money] NULL,
+	[EF_Debitos_ME] [money] NULL,
+	[EF_Creditos_ME] [money] NULL,
+	[EF_Disponible_MN] [money] NULL,
+	[EF_Disponible_ME] [money] NULL,
+	[Tasa_Int_Anual_MN] [money] NULL,
+	[Tasa_Int_Anual_ME] [money] NULL,
+	[Direccion_1] [char](40) NULL,
+	[Direccion_2] [char](40) NULL,
+	[Direccion_3] [char](40) NULL,
+	[Apdo_Postal] [char](15) NULL,
+	[Cidudad] [char](25) NULL,
+	[Mensaje_1] [char](50) NULL,
+	[Mensaje_2] [char](50) NULL,
+	[Mensaje_3] [char](50) NULL,
+	[Mensaje_4] [char](50) NULL,
+	[Mensaje_5] [char](50) NULL,
+	[Tarjeta_Imprimir] [varchar](4) NULL,
+	[Costo_Anual_Tot_MN] [money] NULL,
+	[Costo_Anual_Tot_ME] [money] NULL,
+	[Plazo_Canc_Deuda_MN] [int] NULL,
+	[Plazo_Canc_Deuda_ME] [int] NULL,
+	[Interes_Pago_Min_MN] [money] NULL,
+	[Interes_Pago_Min_ME] [money] NULL,
+	[Correo] [varchar](100) NULL,
+	[FechaCarga] [date] NULL,
+	[Limite_CreditoMN] [money] NULL,
+	[Interes_Corriente_MN] [money] NULL,
+	[Interes_Corriente_ME] [money] NULL,
+	[NoCuentaClaro] [varchar](10) NULL
+) ON [PRIMARY]
+GO
+
+
+
+Segunda tabla:
+
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[FechaCarga]    Script Date: 11/3/2026 00:41:32 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[FechaCarga](
+	[FechaCarga] [datetime] NULL,
+	[FechaCargaEC] [datetime] NULL,
+	[FechaCargaMTC] [datetime] NULL,
+	[FechaCargaEXF] [datetime] NULL,
+	[RecargaMTC] [bit] NULL,
+	[FinMes] [smallint] NULL,
+	[Origen] [varchar](4) NULL,
+	[Reproceso] [smallint] NULL
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[FechaCarga] ADD  CONSTRAINT [DF_FechaCarga_RecargaMTC]  DEFAULT ((0)) FOR [RecargaMTC]
+GO
+
+
+
+
+Tercera tabla:
+
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[Param_IS_ECTC]    Script Date: 11/3/2026 00:42:18 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Param_IS_ECTC](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NULL,
+	[Destinatario] [varchar](30) NULL,
+	[Remitente] [varchar](30) NULL,
+	[Estado] [char](1) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+Cuarta tabla:
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[CorreosNoValidos]    Script Date: 11/3/2026 00:43:06 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[CorreosNoValidos](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[Correo] [varchar](255) NULL,
+	[Estado] [char](2) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[Correo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[Correo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+Vista:
+
+
+USE [BPTarjetas]
+GO
+
+/****** Object:  View [dbo].[EC_Detalle_Envio_Estado_Correo]    Script Date: 11/3/2026 00:45:57 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+Create VIEW [dbo].[EC_Detalle_Envio_Estado_Correo]
+AS 
+SELECT 
+	dc.idRow
+	,dc.Origen
+	,dc.FechaCarga
+	,dc.Codigo_Emisor
+	,dc.EC_DetalleNo_Cuenta
+	,dc.Fecha_Corte
+	,dc.EC_DetalleNo_Tarjeta
+	,dc.Nombre_TH_P
+	,dc.EC_DetalleEmisor_Madre
+	,dc.EC_DetalleCuenta_Madre
+	,dc.No_Autorizacion
+	,dc.Fecha_Consumo
+	,dc.Codigo_Mov
+	,dc.Descripcion_Mov
+	,dc.Moneda_Mov
+	,dc.Monto_Mov
+	,dc.Tarjeta_Imprimir
+	,dc.Tasa_Efectiva_Anual_EF_MN
+	,dc.Tasa_Efectiva_Anual_EF_ME
+	,dc.Fecha_Corte EC_DetalleFecha_Corte
+FROM
+	DEstadoCuenta_BandejaEnvioTC dc
+
+GO
+
+
+
+
+
+
+Destino: HistoricoCorreosECTC
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[HistoricoCorreosECTC]    Script Date: 11/3/2026 00:47:03 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[HistoricoCorreosECTC](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NOT NULL,
+	[NoCuenta] [varchar](25) NOT NULL,
+	[NoCuentaVASA] [varchar](25) NOT NULL,
+	[Nombre] [varchar](255) NOT NULL,
+	[CorreoCliente] [varchar](255) NOT NULL,
+	[Estado] [char](2) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+
+
+* EN CASO DE ERROR ... ENVIA UN CORREO INFORMANDO QUE HUBO UN FALLO
+
+
+
+-------------------------------------------------------
+
+PARÁMETROS
+
+
+Paso 07. Obtener correo error: select Correo from Param_CorreosEC where Tipo='T' and Estado=1;
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[Param_CorreosEC]    Script Date: 11/3/2026 00:47:52 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Param_CorreosEC](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[Correo] [varchar](255) NULL,
+	[Tipo] [char](2) NULL,
+	[Estado] [char](2) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+
+Paso 08. Obtener queries
+Buscar este procedimiento: usp_ObtenerQuery
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ObtenerQuery]    Script Date: 11/3/2026 00:48:35 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+ALTER PROCEDURE [dbo].[usp_ObtenerQuery]
+-- =====================================================================================
+-- Autor:				Carlos Elvir PBS
+-- Fecha creacion:		08-06-2022
+-- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
+-- de TC 
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--Carlos Elvir		Creacion del SP.										08-06-2022 
+--Angel Hernandez	Se agregaron campos para controlar lotes de EC			28-08-2024
+-- =======================================================================================
+AS
+BEGIN
+DECLARE @FechaCorte DATE;
+SELECT @FechaCorte=FechaCorte FROM Param_IS_ECTC WHERE Estado=1;
+
+--		SELECT Query, CantQuery,RutaArchivoJson, RutaArchivoHistoricoJson, @FechaCorte AS FechaCorte
+		SELECT 
+		Query, 
+		--CantQuery,
+		'SELECT (select COUNT(*) from BandejaECTC B where B.Estado=2) as "Registros"' CantQuery, 
+		RutaArchivoJson, 
+		RutaArchivoHistoricoJson, 
+		@FechaCorte AS FechaCorte, 
+		Llave, 
+		'LOTE' TipoGeneracion, 
+		100000 CantidadEjecucion, 
+		20 CantidadLotes, 
+		'SELECT CEILING (((select COUNT(*) from BandejaECTCJson B where B.Estado=2)*1.0)/20) as "RegistrosPorLote"' QueryRegistrosPorLote
+		FROM EstadoCuentaHTML WHERE IdRows=1;
+
+END
+
+
+Paso 09. Cantidad de registros, esta la toma del paso anterior, con ese procedimiento se llenan todas las tablas
+
+
+Paso 10. Obtener el ambiente: select Ambiente from EstadoCuentaHTML where IdRows=1;
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[EstadoCuentaHTML]    Script Date: 11/3/2026 07:04:15 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[EstadoCuentaHTML](
+	[IdRows] [int] NOT NULL,
+	[E_EstadoCuenta] [text] NULL,
+	[D_EstadoCuentaH] [text] NULL,
+	[D_EstadoCuentaM] [text] NULL,
+	[D_EstadoCuentaF] [text] NULL,
+	[F_EstadoCuentaH] [text] NULL,
+	[F_EstadoCuentaM] [text] NULL,
+	[F_EstadoCuentaF] [text] NULL,
+	[M_EstadoCuenta] [text] NULL,
+	[Query] [varchar](max) NULL,
+	[Ambiente] [varchar](5) NULL,
+	[QueryCNV] [text] NULL,
+	[CantQuery] [text] NULL,
+	[DireccionRPT] [varchar](max) NULL,
+	[RutaArchivoJson] [varchar](50) NULL,
+	[RutaArchivoHistoricoJson] [varchar](50) NULL,
+	[Llave] [varchar](100) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+	1	<STYLE type=text/css> table th { font-family: Tahoma, Geneva, sans-serif; font-weight: normal; border: 0px; } #num { text-align: right; } table { width: 100%; Border: 0; } table td { font-family: Tahoma, Geneva, sans-serif; Border: 0; font-size: 10px } .style1 { height: 16px; } #TituloTbl { background-color: #0f59a0; color: white; text-align: center; } </STYLE> <TABLE style='FONT-SIZE: 16px; FONT-FAMILY: Tahoma, Verdana, Arial' width='100%' border=0> <TBODY> <TR> <TD colSpan=3> <DIV style='FONT-SIZE: 14px'><STRONG>ESTADO DE CUENTA DE TARJETA DE CREDITO</STRONG></DIV> </TD> <TD><EM><IMG border=0 alt='' src='https://www.banpais.hn/images/logo.png' align=left></EM></TD> </TR> <TR> <TD colSpan=2> <DIV style='FONT-SIZE: 14px'> Nombre_TH_Tit </DIV> </TD> <TD width=171> <DIV style='FONT-SIZE: 14px'>No. de tarjeta:</DIV> </TD> <TD width=180> <DIV style='FONT-SIZE: 14px'> Tarjeta_Imprimir </DIV> </TD> </TR> <TR> <TD width='33%'> <TABLE style='FONT-SIZE: 10px' width='100%'> <TBODY> <TR style='BACKGROUND: #0f59a0; COLOR: #fff'> <TD width=141 colSpan=2 align=center>LIMITE DE CREDITO</TD> <TD width=129 colSpan=2 align=center>CREDITO DISPONIBLE</TD> </TR> <TR> <!--LIMITE DE CREDITO--> <TD>L. Limite_CreditoMN </TD> <TD>US$. Limite_Credito </TD> <!--CREDITO DISPONIBLE--> <TD>L. Disponible_Cta_MN </TD> <TD>US$. Disponible_Cta_ME </TD> </TR> </TBODY> </TABLE> </TD> <TD width='33%'> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=2 align=center>PAGO DE CONTADO</TD> <TD colSpan=2 align=center>PAGO MINIMO</TD> </TR> <TR> <!--PAGO DE CONTADO--> <td id='num'>L. Pago_Contado_MN </td> <td id='num'>US$. Pago_Contado_ME </td> <!--PAGO MINIMO--> <td id='num'>L. Pago_Minimo_MN </td> <td id='num'>US$. Pago_Minimo_ME </td> </TR> </TBODY> </TABLE> </TD> <TD vAlign=top width='33%' colSpan=2> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center>FECHA DE CORTE</TD> <TD align=center>FECHA DE PAGO</TD> </TR> <TR> <TD> <P align=center> Fecha_Corte </P> </TD> <TD> <P align=center> Fecha_Pago </P> </TD> </TR> </TBODY> </TABLE> </TD> </TR> <TR> <TD vAlign=top width='33%'> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <thead> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center colspan='4'>RESUMEN DEL PERIODO</TD> </TR> <tr> <th colspan='2'>Descripci&oacute;n</th> <th colspan='1'>Lempiras</th> <th colspan='1'>US$</th> </tr> </thead> <tbody> <tr> <!--RESUMEN DEL PERIODO PRIMERA FILA--> <td colspan='2'>Saldo Anterior</td> <td colspan='1' id='num'> Saldo_Anterior_MN </td> <td colspan='1' id='num'> Saldo_Anterior_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO SEGUNDA FILA--> <td colspan='2'>Compras/D&eacute;bitos</td> <td colspan='1' id='num'> Compras_Deb_MN </td> <td colspan='1' id='num'> Compras_Deb_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO TERCERA FILA--> <td colspan='2'>Pagos/Cr&eacute;ditos</td> <td colspan='1' id='num'> Pagos_Cred_MN </td> <td colspan='1' id='num'> Pagos_Cred_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO CUARTA FILA--> <td colspan='2'>Pago de contado</td> <td colspan='1' id='num'> Pago_Contado_MN </td> <td colspan='1' id='num'> Pago_Contado_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO QUINTA FILA--> <td colspan='2'></td> <td colspan='1'></td> <td colspan='1'></td> </tr> </tbody> </TABLE> </TD> <TD vAlign=top width='33%' align=right> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <thead> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center colspan='4'>PAGO MINIMO</TD> </TR> <tr> <th colspan='2'>Descripci&oacute;n</th> <th colspan='1'>Lempiras</th> <th colspan='1'>US$</th> </tr> </thead> <!--PAGO MINIMO--> <tbody> <!--PRIMERA FILA--> <tr> <td colspan='2'>Saldo vencido</td> <td colspan='1' id='num'> Saldo_Vencido_MN </td> <td colspan='1' id='num'> Saldo_Vencido_ME </td> </tr> <!--SEGUNDA FILA--> <tr> <td colspan='2'>Sobregiro</td> <td colspan='1' id='num'> Sobregiro_MN </td> <td colspan='1' id='num'> Sobregiro_ME </td> </tr> <!--TERCERA FILA--> <tr> <td colspan='2'>Cuota del mes</td> <td colspan='1' id='num'> Cuota_Mes_MN </td> <td colspan='1' id='num'> Cuota_Mes_ME </td> </tr> <!--CUARTA FILA--> <tr> <td colspan='2'>Pago minimo</td> <td colspan='1' id='num'> Pago_Minimo_MN </td> <td colspan='1' id='num'> Pago_Minimo_ME </td> </tr> <!--QUINTA FILA--> <tr> <td colspan='2'>Tasa de inter&eacute;s anual</td> <td colspan='1' id='num'> Tasa_Int_Anual_MN %</td> <td colspan='1' id='num'> Tasa_Int_Anual_ME %</td> </tr> </tbody> </TABLE> </TD> <TD vAlign=top width='33%' colSpan=2> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=2 align=center>BP PUNTOS</TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width='50%'>Saldo Anterior:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width='50%'> PTS_Saldo_Ant </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> +Ganados:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> PTS_Ganados </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> -Debitados:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> PTS_Usuados </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Saldo Actual:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> PTS_Saldo_Actual </TD> </TR> </TBODY> </TABLE> </TD> </TR> <TR> <TD vAlign=top width='33%'> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=3 align=center>INFORMACION EXTRAFINANCIAMIENTO</TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width=102> <P>Descripción</P> </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width=73 align=center>Lempiras</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width=83 align=center>Dólares</TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Saldo:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Saldo_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Saldo_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Cuota del mes:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Debitos_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Debitos_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Pago del mes:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Creditos_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Creditos_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Disponible:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Disponible_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Disponible_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> CAT:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> Costo_Anual_Tot_MN%</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> Costo_Anual_Tot_ME%</TD> </TR> </TBODY> </TABLE> </TD> <TD vAlign=top width='33%'> <DIV> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <thead> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center colspan='4'>RESUMEN DE SALDO TOTAL</TD> </TR> <tr> <th colspan='2'>Descripci&oacute;n</th> <th colspan='1'>Lempiras</th> <th colspan='1'>US$</th> </tr> </thead> <tbody> <!--PRIMERA FILA--> <tr> <td colspan='2'>Saldo por consumo</td> <td colspan='1' id='num'> Saldo_Consumo_MN </td> <td colspan='1' id='num'> Saldo_Consumo_ME </td> </tr> <!--SEGUNDA FILA--> <tr> <td colspan='2'>Intereses corrientes adeudados</td> <td colspan='1' id='num'> Interes_Corriente_MN </td> <td colspan='1' id='num'> Interes_Corriente_ME </td> </tr> <!--TERCERA FILA--> <tr> <td colspan='2'>Saldo total</td> <td colspan='1' id='num'> Saldo_Final_MN </td> <td colspan='1' id='num'> Saldo_Final_ME </td> </tr> <!--CUARTA FILA--> <tr> <td colspan='2'></td> <td colspan='1'></td> <td colspan='1'></td> </tr> <!--QUINTA FILA--> <tr> <td colspan='2'></td> <td colspan='1'></td> <td colspan='1'></td> </tr> </tbody> </TABLE> </DIV> </TD> <TD vAlign=top width='33%' colSpan=2> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=2 align=center>INFORMACI&Oacute;N IMPORTANTE</TD> </TR> <TR> <TD colSpan=2 align=center>Plazo Cancelaci&oacute;n</TD> </TR> <TR> <TD width='50%'> <P align=center> Plazo_Canc_Deuda_MN </P> </TD> <TD width='50%'> <P align=center> Plazo_Canc_Deuda_ME </P> </TD> </TR> <TR> <TD colSpan=2 align=center>Intereses a facturar</TD> </TR> <TR> <TD> <P align=center>L. Interes_Pago_Min_MN </P> </TD> <TD> <P align=center>US$. Interes_Pago_Min_ME </P> </TD> </TR> </TBODY> </TABLE> </TD> </TR>	<!--AQUI FINALIZA ENCABEZADO--> <!-- <TR> <TD style='BACKGROUND: #0f59a0' colSpan=4> <DIV style='COLOR: #ffffff; TEXT-ALIGN: center'>DETALLE DE MOVIMIENTOS</DIV> </TD> </TR> --> <TR> <TD colSpan=4> <table id='fl' style='FONT-SIZE: 9px' width='100%'> <thead id='fl'> <th id='TituloTbl'>Fecha <br> dd/mm/aaaa</th> <!-- <th>&nbsp;</th> --> <th colspan='5' id='TituloTbl'>Descripci&oacute;n</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Compras/D&eacute;bitos <br> Lempiras </th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Pagos/Cr&eacute;ditos <br> Lempiras </th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Compras/D&eacute;bitos <br> US$ </th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Pagos/Cr&eacute;ditos <br> US$ </th> </thead> <tbody>	<tr> <td> Fecha_Consumo </td> <!-- <td>&nbsp;</td> --> <td colspan='5'> Descripcion_Mov </td> <!-- <td>&nbsp;</td> --> <td id='num'>  DebitosMN </td> <!-- <td>&nbsp;</td> --> <td id='num'>  CreditosMN  </td> <!-- <td>&nbsp;</td> --> <td id='num'>  DebitosME  </td> <!-- <td>&nbsp;</td> --> <td id='num'> CreditosME </td> </tr>	</tbody> </table></TD> </tr>	<!--AQUI FINALIZA DETALLE--> <TR> <TD colSpan=4></TD> </TR> <TR> <TD style='BACKGROUND: #0f59a0' colSpan=4> <DIV style='COLOR: #ffffff; TEXT-ALIGN: center'>DETALLE DE FINANCIAMIENTOS</DIV> </TD> </TR> <TR> <TD colSpan=4> <table id='fl' style='FONT-SIZE: 9px' width='100%'> <thead id='fl'> <tr> <th colspan='2' id='TituloTbl'>Tipo</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Fecha</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Monto otorgado</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Moneda</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Monto cuota</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Plazo (meses)</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Cuota</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Tasa de inter&eacute;s</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Saldo</th> </tr> </thead> <tbody> 	<tr> <td colspan='2'> Tipo </td> <!-- <td>&nbsp;</td> --> <td> Fecha </td> <!-- <td>&nbsp;</td> --> <td id='num'> Monto </td> <!-- <td>&nbsp;</td> --> <td id='num'> Moneda </td> <!-- <td>&nbsp;</td> --> <td id='num'> Cuota </td> <!-- <td>&nbsp;</td> --> <td id='num'> Plazo </td> <!-- <td>&nbsp;</td> --> <td id='num'> Aplicada </td> <!-- <td>&nbsp;</td> --> <td id='num'> Tasa </td> <!-- <td>&nbsp;</td> --> <td id='num'> Saldo </td> </tr> 	</tbody> </table> </TD> </TR>	 <!--AQUI FINALIZA FINANCIAMIENTO--> <TR> <TD colSpan=4> <DIV><STRONG>Notas:</STRONG></DIV> </TD> </TR> <TR> <TD class=style1 colSpan=4> <DIV><STRONG>Interés a facturar:</STRONG> Valor máximo a facturar en caso de no se realice ningún pago </DIV> </TD> </TR> <TR> <TD colSpan=4> <DIV><STRONG>Plazo de cancelación: </STRONG>Tiempo en meses para cancelar el saldo total si únicamente realiza el pago mínimo<STRONG><SPAN style='FONT-SIZE: 11pt; FONT-FAMILY: Calibri,sans-serif; COLOR: #1f497d'><EM><BR></EM></SPAN></STRONG> </DIV> </TD> </TR> </TBODY> <TBODY> <TR> <TD colSpan=4> <DIV> Mensaje_1 </DIV> </TD> </TR> </TBODY> <TBODY> <TR> <TD colSpan=4> <DIV> <P>Banco del País S.A. tiene a su disposición el <STRONG>Programa de Cobertura Mundial contra Hurto, Robo y Extravío (HRE)</STRONG>, para mayor información visite nuestra página <A href='http://www.banpais.hn'>www.banpais.hn</A> o llame al 2545-1212.</P> <H4><EM><SPAN style='COLOR: #000000'>Queremos brindarte un mejor servicio, actualiza tus datos <A style='COLOR: #000000' href='https://www.banpais.hn/actualizadatos/'>aquí</A></SPAN></EM></H4> </DIV> </TD> </TR> </TBODY> </TABLE> <P></P> 	select top 1 B.Fecha_Corte, B.No_Tarjeta, B.No_Cuenta, B.Correo from BandejaECTC B where B.Estado=2	true	SELECT CONVERT(VARCHAR(10), a.Fecha_Corte, 120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, LTRIM(RTRIM(a.Nombre_TH_Tit)) AS Nombre, a.NoCuentaClaro AS NoCuentaVASA FROM HEstadoCuenta_BandejaEnvioTC AS a INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = ( SELECT Fechacorte FROM Param_IS_ECTC WHERE Estado = 1 ) WHERE (a.Correo <> '') AND ( a.Correo IN ( SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1 ) ) AND ( EXISTS ( SELECT 1 FROM dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte ) OR a.Pago_Contado_MN != 0 OR a.Pago_Contado_ME != 0 ) ORDER BY a.Correo	select COUNT(*)  from BandejaECTC B where B.Estado=2	https://pcireporting.banpais.hn/Reports/Pages/Folder.aspx	C:\Procesos\EstadosCuenta\Generados\	C:\Procesos\EstadosCuenta\Historico\	qeH8b6jBD5h9i4KjMZBqYA==
+	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+
+Paso 11. Crea Contador. Tiene esta programación:
+
+		public void Main()
+		{
+			// TODO: Add your code here
+			string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString();
+			RutaJson = RutaJson + Convert.ToDateTime( Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
+
+			if (Directory.Exists(@"" + RutaJson + "\\"))
+			{
+				Directory.Delete(@"" + RutaJson + "\\",true);
+			}
+
+			Directory.CreateDirectory(@"" + RutaJson + "\\");
+
+			string path = @"" + RutaJson + "\\" + "Contador.txt";
+			File.WriteAllText(path, "");
+
+			Dts.TaskResult = (int)ScriptResults.Success;
+		}
+
+
+Paso 12. Cantidad de registros JSON, buscar el siguiente procedimiento:
+usp_LlenarBandejaECTCJson
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTCJson]    Script Date: 11/3/2026 07:06:55 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson]
+-- =====================================================================================
+-- Autor:				Angel Hernandez
+-- Fecha creacion:		28-08-2024
+-- Description:	        Llena la bandeja ECTC Json con los json generados segun la fecha
+--                      de corte establecida en la paremetrización y las demás bandejas 
+--                      previamente cargadas
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			    Descripcion												Fecha
+--Angel Hernandez		Creacion del SP.										28-08-2024
+-- =======================================================================================
+AS
+BEGIN 
+
+	begin
+		CREATE TABLE #DatosEC (
+			[Fecha_Corte] [varchar](15),
+			[No_Tarjeta] [varchar](50),
+			[No_Cuenta] [varchar](50),
+			[Correo] [varchar](150),
+			[Estado] [varchar](15),
+			[Json] [varchar](max)
+		);
+
+		--select * from [dbo].[BandejaECTCJson];
+		Truncate Table  [dbo].[BandejaECTCJson];
+		with tcEstados as (
+			select et.NumeroTarjeta No_Tarjeta, CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) estado from ETarjetas et 
+			where CONVERT(varchar(10), et.FechaCarga, 103) + et.NumeroTarjeta  in (
+				select CONVERT(varchar(10), max(etfc.FechaCarga), 103) + etfc.NumeroTarjeta  tar from ETarjetas etfc
+				where etfc.NumeroTarjeta in (select No_Tarjeta from [dbo].[BandejaECTC])
+				group by etfc.NumeroTarjeta
+			)
+		)
+		insert into #DatosEC
+		SELECT 
+			hc.Fecha_Corte,
+			hc.No_Tarjeta,
+			hc.no_cuenta,
+			hc.correo,
+			'2',
+			'"'+hc.No_Tarjeta+'":{' +
+			'"Encabezado": {'
+				+ '"Origen": "' + LTRIM(RTRIM(ISNULL(hc.Origen, '')))
+				+ '","Emisor": "' + LTRIM(RTRIM(ISNULL(hc.Emisor, '')))
+				+ '","No_Cuenta": "' + LTRIM(RTRIM(ISNULL(hc.No_Cuenta, '')))
+				+ '","Nombre_TH_Tit": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Emisor_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Emisor_Madre, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Cuenta_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Cuenta_Madre, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Nombre_Empresa": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Nombre_Empresa, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Tipo_Tarjeta": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Tipo_Tarjeta, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","No_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.No_Tarjeta, '')))
+				+ '","Fecha_Pago": "' + CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Pago, ''),103)
+				+ '","Fecha_Corte": "' + CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Corte, ''),103)
+				+ '","Pago_Contado_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Contado_MN, 0))
+				+ ',"Pago_Minimo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Minimo_MN, 0))
+				+ ',"Saldo_Vencido_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Vencido_MN, 0))
+				+ ',"Saldo_Anterior_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Anterior_MN, 0))
+				+ ',"Saldo_Final_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Final_MN, 0))
+				+ ',"Compras_Deb_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Compras_Deb_MN, 0))
+				+ ',"Pagos_Cred_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pagos_Cred_MN, 0))
+				+ ',"Sobregiro_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Sobregiro_MN, 0))
+				+ ',"Cuota_Mes_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Cuota_Mes_MN, 0))
+				+ ',"Pago_Contado_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Contado_ME, 0))
+				+ ',"Pago_Minimo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Minimo_ME, 0))
+				+ ',"Saldo_Vencido_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Vencido_ME, 0))
+				+ ',"Saldo_Anterior_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Anterior_ME, 0))
+				+ ',"Saldo_Final_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Final_ME, 0))
+				+ ',"Saldo_Consumo_MN": ' + CONVERT(VARCHAR, ISNULL((hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN), 0))
+				+ ',"Saldo_Consumo_ME": ' + CONVERT(VARCHAR, ISNULL((hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME), 0))
+				+ ',"Compras_Deb_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Compras_Deb_ME, 0))
+				+ ',"Pagos_Cred_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pagos_Cred_ME, 0))
+				+ ',"Sobregiro_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Sobregiro_ME, 0))
+				+ ',"Cuota_Mes_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Cuota_Mes_ME, 0))
+				+ ',"Moneda_Lim_Cre": "' + LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_Cre, '')))
+				+ '","Limite_Credito": ' + CONVERT(VARCHAR, ISNULL(hc.Limite_Credito, 0))
+				+ ',"Disponible_Cta_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Cta_MN, 0))
+				+ ',"Disponible_Cta_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Cta_ME, 0))
+				+ ',"Disponible_Ret_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Ret_MN, 0))
+				+ ',"Disponible_Ret_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Ret_ME, 0))
+				+ ',"PTS_Saldo_Ant": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Saldo_Ant, 0) AS BIGINT))
+				+ ',"PTS_Ganados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Ganados, 0) AS BIGINT))
+				+ ',"PTS_Usuados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Usuados, 0) AS BIGINT))
+				+ ',"PTS_Saldo_Actual": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Saldo_Actual, 0) AS BIGINT))
+				+ ',"Moneda_Lim_EF": "' + LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_EF, '')))
+				+ '","EF_Limite": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Limite, 0))
+				+ ',"EF_Saldo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Saldo_MN, 0))
+				+ ',"EF_Debitos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Debitos_MN, 0))
+				+ ',"EF_Creditos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Creditos_MN, 0))
+				+ ',"EF_Saldo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Saldo_ME, 0))
+				+ ',"EF_Debitos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Debitos_ME, 0))
+				+ ',"EF_Creditos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Creditos_ME, 0))
+				+ ',"EF_Disponible_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Disponible_MN, 0))
+				+ ',"EF_Disponible_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Disponible_ME, 0))
+				+ ',"Tasa_Int_Anual_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Tasa_Int_Anual_MN, 0))
+				+ ',"Tasa_Int_Anual_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Tasa_Int_Anual_ME, 0))
+				+ ',"Direccion_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion_1, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Direccion_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Direccion_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Apdo_Postal": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Ciudad": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX),map.Mensaje), ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_3, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_4": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_4, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_5": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_5, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Tarjeta_Imprimir": "' + LTRIM(RTRIM(ISNULL(hc.Tarjeta_Imprimir, '')))
+				+ '","Costo_Anual_Tot_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Costo_Anual_Tot_MN, 0))
+				+ ',"Costo_Anual_Tot_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Costo_Anual_Tot_ME, 0))
+				+ ',"Plazo_Canc_Deuda_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Plazo_Canc_Deuda_MN, 0))
+				+ ',"Plazo_Canc_Deuda_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Plazo_Canc_Deuda_ME, 0))
+				+ ',"Interes_Pago_Min_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Pago_Min_MN, 0))
+				+ ',"Interes_Pago_Min_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Pago_Min_ME, 0))
+				+ ',"Correo": "' + LTRIM(RTRIM(ISNULL(hc.Correo, '')))
+				+ '","Limite_CreditoMN": ' + CONVERT(VARCHAR, ISNULL(hc.Limite_CreditoMN, 0))
+				+ ',"Interes_Corriente_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Corriente_MN, 0))
+				+ ',"Interes_Corriente_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Corriente_ME, 0))
+				+ ',"Estado": ' + ( select tce.estado from tcEstados tce where tce.No_Tarjeta = hc.No_Tarjeta ) +
+			'},"Detalle":['
+			+ ISNULL((
+			SELECT STUFF(
+			(SELECT ',' + detalle AS [text()]
+			FROM (
+			(
+			SELECT TOP 100000
+				'{"Fecha_Consumo":"' + CONVERT(VARCHAR(10),D.Fecha_Consumo, 103)
+				+ '","Tipo_Reg":' + LTRIM(RTRIM(CONVERT(CHAR,D.Tipo_Reg))) 
+				+ ',"Descripcion_Mov":"' + REPLACE(REPLACE(REPLACE(RTRIM(LTRIM(D.Descripcion_Mov)),'''',' '),'"',' '),'\',' ')
+				+ '","DebitosMN":' + CONVERT(VARCHAR,D.DebitosMN) 
+				+ ',"CreditosMN":' + CONVERT(VARCHAR,D.CreditosMN) 
+				+ ',"DebitosME":' + CONVERT(VARCHAR,D.DebitosME) 
+				+ ',"CreditosME":' + CONVERT(VARCHAR,D.CreditosME)
+				+'}' as detalle		
+			FROM (
+			--Movimientos
+			SELECT
+				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
+				,a.EC_DetalleNo_Tarjeta No_Tarjeta
+				,LTrim(RTrim(a.No_Autorizacion)) No_Autorizacion
+				,a.Fecha_Corte
+				,a.Fecha_Consumo
+				,1 Tipo_Reg
+				,LTrim(RTrim(a.Descripcion_Mov)) Descripcion_Mov
+				,CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END As DebitosMN
+				,CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END As CreditosMN
+				,CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END As DebitosME
+				,CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END As CreditosME	
+			From
+				dbo.EC_Detalle_Envio_Estado_Correo a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.Codigo_Mov
+			WHERE a.Fecha_Corte = hc.Fecha_Corte
+				AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+			--Subtotales
+			UNION ALL
+			Select
+				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
+				,a.EC_DetalleNo_Tarjeta No_Tarjeta
+				,'' No_Autorizacion
+				,a.Fecha_Corte
+				,a.Fecha_Corte Fecha_Consumo
+				,2 Tipo_Reg
+				,'Subtotal ' + LTrim(RTrim(a.Nombre_TH_P)) + ' ' + '******' +
+				a.Tarjeta_Imprimir Descripcion_Mov
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosME
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosME	  
+			From
+				dbo.EC_Detalle_Envio_Estado_Correo a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.Codigo_Mov
+			WHERE a.Fecha_Corte = hc.Fecha_Corte
+				AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+			Group By
+				a.Codigo_Emisor
+				,a.EC_DetalleNo_Cuenta
+				,a.EC_DetalleNo_Tarjeta
+				,a.Fecha_Corte
+				,a.Nombre_TH_P
+				,Tarjeta_Imprimir 
+			UNION ALL
+			--Totales
+			Select
+				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
+				,'90000000000000000' No_Tarjeta
+				,'' No_Autorizacion
+				,a.Fecha_Corte
+				,a.Fecha_Corte Fecha_Consumo
+				,3 Tipo_Reg
+				,'Total Titular + Adicional' Descripcion_Mov
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosME
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosME			
+			From
+				dbo.EC_Detalle_Envio_Estado_Correo a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.Codigo_Mov
+			WHERE a.Fecha_Corte = hc.Fecha_Corte
+				AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+			Group By
+				a.EC_DetalleNo_Cuenta
+				,a.Fecha_Corte	 
+			) As D
+			ORDER BY D.No_Cuenta, D.No_Tarjeta, D.Fecha_Consumo, D.Tipo_Reg
+			)
+			) XT
+			FOR XML PATH('')), 1, 1, '')
+			),'')
+			+'],"Financiamientos":['
+			+ ISNULL((
+			SELECT STUFF(
+			(SELECT ',' + financiamiento AS [text()]
+			FROM (
+			(
+			SELECT 
+				'{"Tipo": "' +  Tipo 
+				+ '","Fecha": "' + REPLACE(REPLACE(REPLACE(ISNULL(CONVERT(varchar(10), Fecha, 103), ''),'''',' '),'"',' '),'\',' ')
+				+ '","Monto": ' + ISNULL(CONVERT(varchar(20), Monto), '0') 
+				+ ',"Moneda": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Moneda, '')),'''',' '),'"',' '),'\',' ')
+				+ '","Cuota": ' + ISNULL(CONVERT(varchar(20), Cuota), '0') 
+				+ ',"Plazo": ' + ISNULL(CONVERT(varchar(20), Plazo), '0') 
+				+ ',"CuotaAplicada": ' + ISNULL(CONVERT(varchar(20), CuotaAplicada), '0') 
+				+ ',"Tasa": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Tasa, '0%')),'''',' '),'"',' '),'\',' ')
+				+ '","Saldo": ' + ISNULL(CONVERT(varchar(20), Saldo), '0') +
+				'}' as financiamiento
+				FROM
+				(
+				SELECT
+					'Intrafinanciamientos' Tipo,
+					f.FechaOtorgamiento Fecha,
+					f.ImporteTotalPlan Monto,
+					f.MonedaMovimiento Moneda,
+					f.Importe Cuota,
+					f.CantidadCuotasPlan Plazo,
+					f.NoCuotaLiquidada CuotaAplicada,
+					CASE
+					WHEN f.PlanExtraTasa = 0 THEN '0%'
+					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
+					END Tasa,
+					f.PlanCuotaCapitalPend Saldo
+				FROM 
+					Financiamientos_BandejaEnvioTC f
+				WHERE
+					f.NumeroCuenta = hc.No_Cuenta AND
+					f.FechaCierre = hc.Fecha_Corte AND
+					f.PlanCuotaCapitalPend > 0 AND
+					f.EsIntra = 1
+				UNION ALL
+				SELECT
+					'Extrafinanciamientos' Tipo,
+					f.FechaOtorgamiento Fecha,
+					f.ImporteTotalPlan Monto,
+					f.MonedaMovimiento Moneda,
+					f.Importe Cuota,
+					f.CantidadCuotasPlan Plazo,
+					f.NoCuotaLiquidada CuotaAplicada,
+					CASE
+					WHEN f.PlanExtraTasa = 0 THEN '0%'
+					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
+					END Tasa,
+					f.PlanCuotaCapitalPend Saldo
+				FROM 
+					Financiamientos_BandejaEnvioTC f
+				WHERE
+					f.NumeroCuenta = hc.No_Cuenta AND
+					f.FechaCierre = hc.Fecha_Corte AND
+					f.PlanCuotaCapitalPend > 0 AND
+					f.EsExtra = 1
+				) AS F
+			)
+			) XT
+			FOR XML PATH('')), 1, 1, '')
+			),'')
+			+']}' as JsonString
+		FROM 
+		(
+		select * from HEstadoCuenta_BandejaEnvioTC hci 
+		)hc
+		LEFT JOIN EC_CuentasArregloPagos ecap ON hc.NoCuentaClaro = ecap.NumeroCuenta AND ecap.FechaCorte = hc.Fecha_Corte
+		LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map ON map.idMensaje = ecap.idMensaje
+		WHERE hc.Fecha_Corte = (select FechaCorte from Param_IS_ECTC where estado='1')
+		AND hc.No_Tarjeta in (select No_Tarjeta from tcEstados);
+
+		insert into [dbo].[BandejaECTCJson]
+		select * from #DatosEC;
+	end
+
+	
+	select   count(*) as cantidad from BandejaECTCJson;
+
+END
+
+
+
+
+
+
+-------------------------------------------------------------
+
+GENERACIÓN DE ESTADOS DE CUENTA JSON
+
+Paso 13. Revisión por tipo generación. 
+
+	public void Main()
+	{
+		// TODO: Add your code here
+
+		Dts.TaskResult = (int)ScriptResults.Success;
+	}
+
+Paso 14:
+
+CONDICION: 
+@[User::TipoGeneracion] == "INDIVIDUAL"
+
+Si la generación de estados de cuenta es uno por uno
+
+--Genera Estado de cuenta--
+
+Step 14.1.0. Obtener No TC, cuenta y correo: 
+Lo obtiene del paso 08
+User::QueryObtenerEquivalente
+
+
+Step 14.1.1. Genera Estado de Cuenta. 
+User::Cant,User::CantidadEjecucion,User::CantidadLote,User::Correo,User::Cuenta,User::Equivalente,User::FechaCorte,User::NombreJson,User::pruebas_flag,User::RutaJson,User::TipoGeneracion
+
+
+
+Se va al codigo a buscar estos procedimientos:
+
+usp_SBEstadoCuentaJSON
+
+usp_SBEstadoCuenta
+
+
+Step 14.1.2. Cantidad de registros, se llena del paso 08
+
+--.---.---.--
+
+CONDICION 
+
+@[User::TipoGeneracion] == "LOTE"
+
+Si la generación de estado de cuenta es por lote
+
+--Contenedor de secuencias--
+
+Step 14.2.0. Obtener cantidad de registros por lote. Se obtienen en el paso 08
+
+
+Step 14.2.1. Inicializar Valores: User::FechaCorte,User::NombreJson,User::RutaArchivoJson,User::RutaContador,User::RutaJson
+
+		public void Main()
+		{
+            // TODO: Add your code here
+            string FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
+            string RutaCarpeta = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(FechaCorte).ToString("yyyy-MM-dd");
+            string NombreJson = "Estado_de_cuenta_corte_" + Convert.ToDateTime(FechaCorte).Day + ".json";
+            string RutaArchivoJson = @"" + RutaCarpeta + "\\" + NombreJson;
+            string RutaContador = @"" + RutaCarpeta + "\\" + "Contador.txt";
+
+            Dts.Variables["User::NombreJson"].Value = NombreJson;
+            Dts.Variables["User::RutaArchivoJson"].Value = RutaArchivoJson;
+            Dts.Variables["User::RutaContador"].Value = RutaContador;
+
+            StringBuilder strJson = new StringBuilder();
+            strJson.AppendLine("{");
+            File.AppendAllText(RutaArchivoJson, strJson.ToString());
+
+            File.AppendAllText(RutaContador, "0");
+
+            Dts.TaskResult = (int)ScriptResults.Success;
+		}
+
+
+
+
+Step 14.2.2. Genera Estado de cuenta por Lote
+User::Cant,User::CantidadEjecucion,User::CantidadLotes,User::ContadorLote,User::Correo,User::Cuenta,User::Equivalente,User::FechaCorte,User::NombreJson,User::pruebas_flag,User::RegistrosPorLote,User::RutaArchivoJson,User::RutaContador,User::RutaJson,User::TipoGeneracion
+
+
+#region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.IO;
+using System.Collections.Generic;
+using System.Web.Script.Serialization;
+using System.Linq;
+using System.Text;
+#endregion
+
+namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
+{
+	/// <summary>
+	/// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+	/// or parent of this class.
+	/// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+
+
+	
+
+
+		/// <summary>
+		/// This method is called when this script task executes in the control flow.
+		/// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+		/// To open Help, press F1.
+		/// </summary>
+		/// 
+		public void Main2()
+		{
+			int CantidadLotes = Convert.ToInt32(Dts.Variables["User::CantidadLotes"].Value.ToString());
+			int ContadorLote = Convert.ToInt32(Dts.Variables["User::ContadorLote"].Value.ToString());
+			int RegistrosPorLote = Convert.ToInt32(Dts.Variables["User::RegistrosPorLote"].Value.ToString());
+
+			int CantidadEjecucion = Convert.ToInt32(Dts.Variables["User::CantidadEjecucion"].Value.ToString());
+
+		}
+		public void Main()
+		{
+
+			try
+			{
+				string FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
+				string Equivalente = Dts.Variables["User::Equivalente"].Value.ToString();
+				object Conexion = Dts.Connections["BPTarjetas"].AcquireConnection(Dts.Transaction);
+				string Cuenta = Dts.Variables["User::Cuenta"].Value.ToString();
+				int cantidad = Convert.ToInt32(Dts.Variables["User::Cant"].Value.ToString());
+				string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(FechaCorte).ToString("yyyy-MM-dd");
+				JavaScriptSerializer serializer = new JavaScriptSerializer();
+
+				int CantidadLotes = Convert.ToInt32(Dts.Variables["User::CantidadLotes"].Value.ToString());
+				int ContadorLote = Convert.ToInt32(Dts.Variables["User::ContadorLote"].Value.ToString());
+				int RegistrosPorLote = Convert.ToInt32(Dts.Variables["User::RegistrosPorLote"].Value.ToString());
+				int CantidadEjecucion = Convert.ToInt32(Dts.Variables["User::CantidadEjecucion"].Value.ToString());
+				string TipoGeneracion = Dts.Variables["User::TipoGeneracion"].Value.ToString();
+
+				string RutaArchivoJson = Dts.Variables["User::RutaArchivoJson"].Value.ToString();
+				string RutaContador = Dts.Variables["User::RutaContador"].Value.ToString();
+
+				SQL Sql = new SQL();
+				
+				string EstadoCuentaJSON = string.Empty;
+				string TarjetaIndicador = string.Empty;
+				string CuentaIndicador = string.Empty;
+				List<EstadoCuentaJson> listaEstadosCuenta = new List<EstadoCuentaJson>();
+				bool ConsultaJSON = Sql.Getusp_WSEstadoCuentaListJSON(Equivalente, FechaCorte, Conexion, ref listaEstadosCuenta, RegistrosPorLote);
+
+				string Tarjeta = "\"" + TarjetaIndicador + "\":";
+
+				int posicion = 0;
+
+				StringBuilder strJson = new StringBuilder("");
+				StringBuilder strTC = new StringBuilder("");
+
+				if (ContadorLote != 1)
+				{
+					strJson.AppendLine(",");
+				}
+
+				listaEstadosCuenta.ForEach(x => strJson.AppendLine(x.ecJson + ","));
+				strJson.Remove(strJson.Length-3, 3);
+				listaEstadosCuenta.ForEach(x => strTC.Append("'" + x.no_tarjeta + "',"));
+				strTC.Remove(strTC.Length - 1, 1);
+				posicion = ((ContadorLote - 1) * RegistrosPorLote) + (listaEstadosCuenta.Count);
+
+				File.AppendAllText(RutaArchivoJson, strJson.ToString());
+				File.WriteAllText(RutaContador, Convert.ToString(posicion));
+				object Conexion2 = Dts.Connections["BPTarjetas"].AcquireConnection(Dts.Transaction);
+				Sql.ActBandejaECTC2(Conexion2, strTC.ToString(), "1");
+
+			}
+			catch (Exception ex)
+			{
+				Dts.Variables["Error"].Value = "Error en main, " + ex.Message + " Favor revisar el historico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para mas informacion.";
+			}
+		}
+
+		#region ScriptResults declaration
+		/// <summary>
+		/// This enum provides a convenient shorthand within the scope of this class for setting the
+		/// result of the script.
+		/// 
+		/// This code was generated automatically.
+		/// </summary>
+		enum ScriptResults
+		{
+			Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+			Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+		};
+		#endregion
+
+	}
+}
+
+
+
+
+Step 14.2.3. Finalización Json: User::FechaCorte,User::NombreJson,User::RutaArchivoJson,User::RutaJson
+
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
+#endregion
+
+namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
+{
+    /// <summary>
+    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+    /// or parent of this class.
+    /// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+
+
+
+
+		/// <summary>
+        /// This method is called when this script task executes in the control flow.
+        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+        /// To open Help, press F1.
+        /// </summary>
+		public void Main()
+		{
+            // TODO: Add your code here
+
+
+            try
+            {
+                string FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
+                string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(FechaCorte).ToString("yyyy-MM-dd");
+                string RutaArchivoJson = Dts.Variables["User::RutaArchivoJson"].Value.ToString(); 
+                string NombreJson = Dts.Variables["User::NombreJson"].Value.ToString();
+
+                StringBuilder strJson = new StringBuilder("");
+                strJson.AppendLine("");
+                strJson.Append("}");
+                File.AppendAllText(RutaArchivoJson, strJson.ToString());
+
+                //ZipJson(@"" + RutaJson, @"" + RutaJson + ".zip", NombreJson.Replace("json", "zip"));
+
+                //ZipJson(@"" + RutaJson, @"" + RutaJson + ".zip", "\\Zip_" + NombreJson);
+
+                Dts.TaskResult = (int)ScriptResults.Success;
+            }
+            catch (Exception ex)
+            {
+                Dts.Variables["Error"].Value = "Error en main, " + ex.Message + " Favor revisar el historico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para mas informacion.";
+            }
+        }
+        static void ZipJson(string sourceDirectoryName, string destinationDirectoryName, string renameValue)
+        {
+            System.IO.Compression.ZipFile.CreateFromDirectory(sourceDirectoryName, destinationDirectoryName);
+            File.Move(destinationDirectoryName, sourceDirectoryName + "\\" + renameValue);
+        }
+
+        #region ScriptResults declaration
+        /// <summary>
+        /// This enum provides a convenient shorthand within the scope of this class for setting the
+        /// result of the script.
+        /// 
+        /// This code was generated automatically.
+        /// </summary>
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+	}
+}
+
+
+
+
+
+
+Paso 15. Elimina contador:User::FechaCorte,User::RutaJson
+
+#region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.IO;
+#endregion
+
+namespace ST_3a6c2b47a3ba458aa574102805da6e4e
+{
+    /// <summary>
+    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+    /// or parent of this class.
+    /// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+       
+
+
+		/// <summary>
+        /// This method is called when this script task executes in the control flow.
+        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+        /// To open Help, press F1.
+        /// </summary>
+		public void Main()
+		{
+            // TODO: Add your code here
+            string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString();
+             RutaJson = RutaJson+ Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
+            string path = @"" + RutaJson  + "\\" + "Contador.txt";
+            string path2 = @"" + RutaJson  + "\\" + "Detalle_procesados.txt";
+
+
+			string cantidadproc = File.ReadAllText(path).ToString();
+            File.Delete(path);
+            File.AppendAllText(path2, "Cantidad de registros generados: " + cantidadproc);
+
+            Dts.TaskResult = (int)ScriptResults.Success;
+		}
+
+        #region ScriptResults declaration
+        /// <summary>
+        /// This enum provides a convenient shorthand within the scope of this class for setting the
+        /// result of the script.
+        /// 
+        /// This code was generated automatically.
+        /// </summary>
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+	}
+}
+
+
+
+
+
+
+Pasp 16. Encriptar data
+
+Readonly variable: User::FechaCorte,User::Llave,User::NombreJson,User::RutaJson,System::StartTime
+
+ReadWriteVariable: User::RutaLlavePublica
+
+#region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Security.Cryptography;
+using System.IO;
+using System.IO.Compression;
+using ST_3ba5fe2c14ce475cbf9d979b3056e0ab.src;
+#endregion
+
+namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
+{
+    /// <summary>
+    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+    /// or parent of this class.
+    /// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+        
+		/// <summary>
+        /// This method is called when this script task executes in the control flow.
+        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+        /// To open Help, press F1.
+        /// </summary>
+		public void Main()
+		{
+            string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
+            string NombreJson = Dts.Variables["User::NombreJson"].Value.ToString();
+
+            //string path = @"" + RutaJson + "\\" + NombreJson.Replace("json", "zip");
+            string path = @"" + RutaJson + "\\" + NombreJson;
+            
+            //Generate the key and IV
+            byte[] iv = new byte[16];
+            string keyString = Dts.Variables["User::Llave"].Value.ToString();
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(iv);
+            }
+
+            string llaveiv = Convert.ToBase64String(iv);
+			string RutaLlavePublica = @"" + RutaJson + "\\" + "LlavePublica.txt";
+
+			File.AppendAllText(RutaLlavePublica, llaveiv);
+			Dts.Variables["User::RutaLlavePublica"].Value = RutaLlavePublica;
+
+            EncriptacionAES.EncriptarArchivo(path, path+"e", keyString, llaveiv);
+            File.Delete(path);
+            File.Move(path + "e", path);
+
+            ZipJson(@"" + RutaJson, @"" + RutaJson + ".zip", NombreJson.Replace("json", "zip"));
+
+            Dts.TaskResult = (int)ScriptResults.Success;
+		}
+        static byte[] Encrypt(string simpletext, byte[] key, byte[] iv)
+        {
+            byte[] cipheredtext;
+            using (Aes aes = Aes.Create())
+            {
+                ICryptoTransform encryptor = aes.CreateEncryptor(key, iv);
+                using (MemoryStream memoryStream = new MemoryStream())
+                {
+                    using (CryptoStream cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter streamWriter = new StreamWriter(cryptoStream))
+                        {
+                            streamWriter.Write(simpletext);
+                        }
+                        cipheredtext = memoryStream.ToArray();
+                    }
+                }
+            }
+
+            return cipheredtext;
+        }
+        static void ZipJson(string sourceDirectoryName, string destinationDirectoryName, string renameValue)
+        {
+            System.IO.Compression.ZipFile.CreateFromDirectory(sourceDirectoryName, destinationDirectoryName);
+            File.Move(destinationDirectoryName, sourceDirectoryName + "\\" + renameValue);
+            File.Delete(destinationDirectoryName);
+        }
+
+        #region ScriptResults declaration
+        /// <summary>
+        /// This enum provides a convenient shorthand within the scope of this class for setting the
+        /// result of the script.
+        /// 
+        /// This code was generated automatically.
+        /// </summary>
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+	}
+}
+
+
+
+
+Paso 17. Copiar Json a historico. Basicamente es guardar el archivo en una ruta especificada: 
+DestinationVariable    User::RutaHistoricoJson
+SourceVariable 	       User::RutaJson
+
+
+
+Paso 18. Elimina archivos.
+ReadOnlyVaribles User::FechaCorte,User::RutaJson
+
+#region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Security.Cryptography;
+using System.IO;
+#endregion
+
+namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
+{
+    /// <summary>
+    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+    /// or parent of this class.
+    /// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+       
+
+
+		/// <summary>
+        /// This method is called when this script task executes in the control flow.
+        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+        /// To open Help, press F1.
+        /// </summary>
+		public void Main()
+		{
+			string sourceDirectory = @"" + Dts.Variables["RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["FechaCorte"].Value).ToString("yyyy-MM-dd");
+			string destinationDirectory = Dts.Variables["RutaJson"].Value.ToString();
+
+			// Verifica que la carpeta de destino existe
+			if (Directory.Exists(destinationDirectory))
+			{
+				// Obtiene todos los archivos de la carpeta de destino
+				string[] files = Directory.GetFiles(destinationDirectory);
+				foreach (string file in files)
+				{
+					// Obtiene el nombre del archivo
+					string fileName = Path.GetFileName(file);
+					// Define el destino del archivo
+					string destFile = Path.Combine(destinationDirectory, fileName);
+					// Mueve el archivo
+					File.Delete(destFile);
+				}
+			}
+
+			// Verifica que la carpeta de origen existe
+			if (Directory.Exists(sourceDirectory))
+				{
+					// Obtiene todos los archivos de la carpeta de origen
+					string[] files = Directory.GetFiles(sourceDirectory);
+					foreach (string file in files)
+					{
+						// Obtiene el nombre del archivo
+						string fileName = Path.GetFileName(file);
+						// Define el destino del archivo
+						string destFile = Path.Combine(destinationDirectory, fileName);
+						// Mueve el archivo
+						File.Move(file, destFile);
+					}
+					// Elimina la carpeta de origen si está vacía
+					Directory.Delete(sourceDirectory);
+
+                    // Elimina los archivos ya comprimidos
+                    string[] filesZip = Directory.GetFiles(destinationDirectory);
+                    foreach (string file in filesZip)
+                    {
+                        // Obtiene el nombre del archivo
+                        string fileName = Path.GetFileName(file);
+                    // Mueve el archivo
+                    if (!fileName.ToUpper().Contains(".ZIP")) 
+                    {
+                        string destFile = Path.Combine(destinationDirectory, fileName);
+                        File.Delete(destFile);
+                    }
+                }
+            }
+
+			Dts.TaskResult = (int)ScriptResults.Success;
+		}
+
+        #region ScriptResults declaration
+        /// <summary>
+        /// This enum provides a convenient shorthand within the scope of this class for setting the
+        /// result of the script.
+        /// 
+        /// This code was generated automatically.
+        /// </summary>
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+	}
+}
+
+
+-----------------------------
+ENVIAR CORREO NOTIFICACION
+
+Paso 19. Dirección correo reporte: 
+select Correo from Param_CorreosEC where Tipo='R' and Estado='1';
+
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[Param_CorreosEC]    Script Date: 11/3/2026 07:10:12 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Param_CorreosEC](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[Correo] [varchar](255) NULL,
+	[Tipo] [char](2) NULL,
+	[Estado] [char](2) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+
+Paso 20. Enviar correo.
+
+ReadOnlyVariables	User::ArchivoFinal,User::CorreoReporte,User::FechaCorte	
+ReadWriteVariables  User::Error,User::RptEnviado,User::TipoLimpiarReporte,User::TipoLlenarBandeja
+
+
+/*
+   Microsoft SQL Server Integration Services Script Task
+   Write scripts using Microsoft Visual C# 2008.
+   The ScriptMain is the entry point class of the script.
+*/
+
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Net.Mail;
+using System.Data.SqlClient;
+
+namespace ST_3bf4076c13c640ef982304a7067bf285.csproj
+{
+    [Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+    public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+    {
+
+        #region VSTA generated code
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+        /*
+		The execution engine calls this method when the task executes.
+		To access the object model, use the Dts property. Connections, variables, events,
+		and logging features are available as members of the Dts property as shown in the following examples.
+
+		To reference a variable, call Dts.Variables["MyCaseSensitiveVariableName"].Value;
+		To post a log entry, call Dts.Log("This is my log text", 999, null);
+		To fire an event, call Dts.Events.FireInformation(99, "test", "hit the help message", "", 0, true);
+
+		To use the connections collection use something like the following:
+		ConnectionManager cm = Dts.Connections.Add("OLEDB");
+		cm.ConnectionString = "Data Source=localhost;Initial Catalog=AdventureWorks;Provider=SQLNCLI10;Integrated Security=SSPI;Auto Translate=False;";
+
+		Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+		
+		To open Help, press F1.
+	*/
+        public string FechaCorte;
+        public void Main()
+        {
+             try
+            {
+                FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
+  
+                MailMessage htmlMessage=new MailMessage();
+                SmtpClient mySmtpClient;
+                string DireccionCorreo= Dts.Variables["User::CorreoReporte"].Value.ToString();
+                foreach (string Destinatarios in DireccionCorreo.Split(';'))
+                {
+                    htmlMessage.To.Add(new MailAddress(Destinatarios));
+                }
+                
+                htmlMessage.From=new MailAddress("ReporteEstadoCuenta@banpais.hn");
+                htmlMessage.Subject = "Reporte Estado Cuenta";
+                htmlMessage.Body = ObtenerBody();
+                htmlMessage.IsBodyHtml = true;
+                object Server = Dts.Connections["SMTP"].AcquireConnection(Dts.Transaction);
+                string Cadena = (string)Server; //"PU-MAILSERVBP";
+                string[] Array = Cadena.Split('=', ';');
+                string smtpServer = Array[1];
+                mySmtpClient = new SmtpClient(smtpServer);
+                mySmtpClient.Send(htmlMessage);
+
+                Dts.Variables["TipoLlenarBandeja"].Value = "Limpiar";
+                Dts.Variables["TipoLimpiarReporte"].Value = "COMPLETA";
+
+                // TODO: Add your code here
+                Dts.TaskResult = (int)ScriptResults.Success;
+            }
+             catch (Exception ex)
+             {
+                 Dts.Variables["Error"].Value = "Error en public void Main, tarea Envio Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
+                 Dts.Events.FireError(0, "Error envio correo reporte Main", ex.Message, String.Empty, 0);
+                 Dts.TaskResult = (int)ScriptResults.Failure;
+                 
+             }
+        }
+
+        public string ObtenerBody()
+        {
+            try
+            {
+                string Body = "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'> <html xmlns='http://www.w3.org/1999/xhtml'> <body> <style> .TituloTbl { background-color: #00446a; color: white; text-align: center; } .Imagen { width: 35%; /* position: relative; left: 300px; border: 1px black solid; */ } tbody tr td { /* border: 1px #0f59a0 solid; */ padding: 5px 5px; } tbody { border: 1px #00446a solid; } .Tabla { /*margin-top: 100px; margin-left: 380PX; */ width: 550px; background-color: white; } </style> <div class='Tabla'> <table style='font-family:Calibri; border-collapse: collapse; width: 100%;'> <thead> <tr style='background-color: #ffef11;'> <td colspan='2'><img src='https://www.banpais.hn/images/logo.png' alt='' class='Imagen' align=left> </td> </tr> <tr> <td colspan='2' style='background-color: #ffef11;'>&nbsp;</td> </tr> <tr> <td colspan='2' class='TituloTbl'>Estados de Cuenta de Tarjeta de Cr&eacute;dito</td> </tr> </thead> <tbody> <tr> <td colspan='2'> Estimado(a): </td> </tr> <tr> <td colspan='2'> <p>Le informamos que el proceso de generación de JSON de estados de cuenta de tarjeta de cr&eacute;dito del corte [FechaCorte] ha finalizado con exito.</p> </td> </tr> </tbody> </table> </div> </body> </html>";
+                Body = Body.Replace("[FechaCorte]", FechaCorte);
+
+                return Body;
+            }
+            catch (Exception ex)
+            {
+                Dts.Variables["Error"].Value = "Error en public string ObtenerBody en tarea Enviar Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
+                Dts.Events.FireError(0, "Error string ObtenerBody", ex.Message, String.Empty, 0);
+                Dts.TaskResult = (int)ScriptResults.Failure;
+                return null;
+            }
+        }
+        
+
+    }
+}
+
+
+
+
+* EN CASO DE ERROR ... ENVIA UN CORREO INFORMANDO QUE HUBO UN FALLO
+
+
+-------------------------
+
+LIMPIAR BANDEJAS
+
+
+Paso 21. Mover data reporte al historico
+Revisar Procedimiento usp_MoverHistoricoReporte
+
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_MoverHistoricoReporte]    Script Date: 11/3/2026 07:11:46 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[usp_MoverHistoricoReporte]
+ -- =====================================================================================
+-- Autor:				PBS Carlos Elvir
+-- Fecha creacion:		19-05-2022
+-- Description:	Mueve la data transaccional del reporte de Estado de Cuenta de TC a la 
+-- tabla histórica.
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--PBS Carlos Elvir	Se creo usp												19-05-2022
+-- =======================================================================================
+AS
+BEGIN
+
+insert into HReporteCorreosECTC(
+IdRow, FechaCorte, NoCuenta, NoCuentaVASA, 
+Nombre, CorreoCliente, Estado)
+select IdRow, FechaCorte, NoCuenta, NoCuentaVASA, Nombre, 
+CorreoCliente, Estado from HistoricoCorreosECTC;
+
+END
+
+
+
+Paso 22. Limpiar tabla reporte
+Revisar Procedimiento usp_LimpiarTablaHistoricoReporteEC
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricoReporteEC]    Script Date: 11/3/2026 07:12:30 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[usp_LimpiarTablaHistoricoReporteEC](@Tipo varchar(20))
+ -- =====================================================================================
+-- Autor:				PBS Carlos Elvir
+-- Fecha creacion:		18-05-2022
+-- Description:	Limpia la tabla que genera el reporte de Estado de Cuenta enviados y 
+-- no enviados.
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--PBS Carlos Elvir	Se creo usp												18-05-2022
+-- =======================================================================================
+AS
+BEGIN
+	if(@Tipo='COMPLETA')
+	BEGIN
+		--Limpia todo el historico de reporte
+		TRUNCATE TABLE BPTarjetas.dbo.HistoricoCorreosECTC;
+	END
+		if(@Tipo='NOVALIDOS')
+	BEGIN
+		--Limpia solo los no validos
+		delete from BPTarjetas.dbo.HistoricoCorreosECTC where CorreoCliente in (select Correo From CorreosNoValidos where Estado=1) and Estado=0;
+
+	END
+END
+
+
+Paso 23. Limpiar bandeja
+Revisar procedimiento usp_LlenarBandejaECTC
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTC]    Script Date: 11/3/2026 07:12:58 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
+-- =====================================================================================
+-- Autor:				Carlos Elvir PBS
+-- Fecha creacion:		08-06-2022
+-- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
+-- de TC 
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--Carlos Elvir		Creacion del SP.										08-06-202
+-- =======================================================================================
+AS
+BEGIN
+Declare @@Cantidad int;
+
+select  @@Cantidad= count(*) from BandejaECTC;
+
+
+	IF(@Tipo='Llenar')
+		BEGIN
+		IF(@@Cantidad<1)
+			begin
+			--Se inserta en la bandeja los registros a procesar en el bucle, para ser usados para generar EC
+			insert into BandejaECTC(Fecha_Corte, No_Tarjeta, No_Cuenta,Correo,Estado)
+			select  convert(varchar(10) ,a.Fecha_Corte ,120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, Estado=2  
+			FROM   HEstadoCuenta_BandejaEnvioTC  AS a   INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = (select Fechacorte from Param_IS_ECTC where Estado=1)  
+			where  (a.Correo <> '') and (a.Correo not in (select Correo from dbo.CorreosNoValidos where Estado=1))  
+			and  (EXISTS (SELECT 1 FROM  dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte)     
+			Or a.Pago_Contado_MN != 0     Or a.Pago_Contado_ME != 0) order by Correo
+			end
+		END
+
+	IF(@Tipo='Limpiar')
+		BEGIN
+			--Se limpia la tabla para que pueda almacenar el siguiente corte
+			truncate table BandejaECTC;
+
+		END
+
+END
+
+
+Paso 24. Actualizar fecha corte
+Revisar procedimiento usp_ActFechaCorte
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ActFechaCorte]    Script Date: 11/3/2026 07:13:30 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_ActFechaCorte]
+-- =====================================================================================
+-- Autor original:		PBS - CARLOS ELVIR
+-- Fecha creacion:		31-05-2022
+-- Description:	actualiza la fecha de corte para que se 
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--PBS Carlos Elvir  Se creó el procedimiento almacenado					    31-05-2022
+--PBS Carlos Elvir  Se agregó la validacion de reproceso					12-09-2022
+--Edman V. Montoya  Se agregó nueva fecha de corte del dia 10				17-05-2024
+-- =======================================================================================
+AS
+BEGIN
+	declare @FechaCorteActual date,
+			@FechaCorteNueva varchar(15),
+			@FlagAmiente varchar(15),
+			@Dia int,
+			@Mes int,
+			@Año varchar(5),
+			@UltimoRegistro int,
+			@Reproceso int;
+
+	select @FechaCorteActual= FechaCorte from Param_IS_ECTC where Estado=1;
+	select @FlagAmiente= E.Ambiente from EstadoCuentaHTML E;
+	--Id del ultimo registro
+	select @UltimoRegistro= Id from Param_IS_ECTC where Estado=1;
+	--Contar si hay datos en la bandeja
+	select @Reproceso=COUNT(1) FROM BandejaECTC WHERE Estado=2;
+
+	--SI SE ESTA EJECUTANDO UN PROCESO NORMAL
+	IF(@Reproceso<1)
+	BEGIN
+		--Si el flag es false se esta trabajando en ambiente de PRD
+		if(@FlagAmiente='false')
+			BEGIN
+				select @Dia= DATEPART(DAY, @FechaCorteActual);
+				select @Mes= DATEPART(MONTH, @FechaCorteActual);
+				select @Año= DATEPART(YEAR, @FechaCorteActual);
+
+				if (@Dia<27)
+				BEGIN --Si el dia es 27
+					--Si la fecha activa es corte 06
+					if(@Dia=6)
+						BEGIN
+							--El nuevo corte activo debe de ser 10
+							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-10';
+							--Actualizamos a la nueva fecha de corte que sería año-mes-10
+						END
+					if(@Dia=10)
+						BEGIN
+							--El nuevo corte activo debe de ser 18
+							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-18';
+							--Actualizamos a la nueva fecha de corte que sería año-mes-18
+						END
+					--Si la fecha de corte activa es 18
+					if(@Dia=18)
+						BEGIN
+							--El nuevo corte activo debe de ser 24
+							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-24';
+							--Actualizamos a la nueva fecha de corte que sería año-mes-24
+						END
+					--Si la fecha de corte activa es 24
+					if(@Dia=24)
+						BEGIN
+							--El nuevo corte activo debe de ser 27
+							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-27';
+							--Actualizamos a la nueva fecha de corte que sería año-mes-27
+						END
+				END--Si el dia es menor a 27
+
+			--Si la fecha de corte activa es 27
+			if(@Dia=27)
+				BEGIN
+					if(@Mes<12)--Si el mes es menor a 12, no es diciembre
+						BEGIN
+							--select @Mes=@Mes+1;
+							--El nuevo corte activo debe de ser 06
+							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes+1)+'-06';
+							--Actualizamos a la nueva fecha de corte que sería año-mes+1 - 06
+						END--Mes menor a 12
+					if(@Mes=12)--Si el mes es igual a 12, es diciembre
+						BEGIN
+							select @Año=@Año+1;
+							--El nuevo corte activo debe de ser 06
+							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-01-06';
+							--Actualizamos a la nueva fecha de corte que sería año-01 - 06
+						END--Mes igual a 12
+				END--Dia igual a 27
+						--Se hace el update para desctivar la fecha anterior y activar la nueva
+			update Param_IS_ECTC set Estado=0 where Id=@UltimoRegistro;
+			--Insertar la nueva fecha activa
+			insert into Param_IS_ECTC (FechaCorte, Destinatario, Remitente, Estado) values (CONVERT(date, @FechaCorteNueva),'carlosen@banpais.hn', 'EstadoCuentaBP@banpais.hn', 1);
+
+			END--Si el ambiente es false
+	END--IF REPROCESO
+
+END
