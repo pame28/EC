@@ -17,7 +17,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Limpiar tablas bandejas
+        -- PASO 01: Limpiar bandejas principales
         IF OBJECT_ID('dbo.BandejaEncabezado', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaEncabezado;
         IF OBJECT_ID('dbo.BandejaDetalle', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaDetalle;
         IF OBJECT_ID('dbo.BandejaFinanciamientos', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaFinanciamientos;
@@ -40,6 +40,15 @@ BEGIN
         FROM dbo.EstadoCuentaFinanciamientos
         WHERE FechaCierre = @FechaCorte;
 
+        -- PASO 02: Limpiar BandejaEstadoCuenta
+        IF OBJECT_ID('dbo.BandejaEstadoCuenta', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaEstadoCuenta;
+
+        -- Aquí puedes agregar inserts a BandejaEstadoCuenta según la lógica que tengas
+        -- Ejemplo simple:
+        INSERT INTO dbo.BandejaEstadoCuenta (FechaCorte, NoTarjeta, NoCuenta, Correo, Estado)
+        SELECT FechaCorte, NoTarjeta, NoCuenta, Correo, 'Pendiente'
+        FROM dbo.BandejaEncabezado;
+
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
@@ -48,7 +57,6 @@ BEGIN
         DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorNum INT = ERROR_NUMBER();
 
-        -- Reporta error
         RAISERROR('Error %d: %s', 16, 1, @ErrorNum, @ErrorMsg);
     END CATCH
 END
