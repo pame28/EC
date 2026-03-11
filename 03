@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE [dbo].[usp_LlenaBandejasEstadoCuenta]
+CREATE PROCEDURE [dbo].[usp_LlenaBandejasEstadoCuenta]
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -48,7 +48,7 @@ BEGIN
         DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorNum INT = ERROR_NUMBER();
 
-        -- Opcional: registrar error en tabla de log
+        -- Reporta error
         RAISERROR('Error %d: %s', 16, 1, @ErrorNum, @ErrorMsg);
     END CATCH
 END
