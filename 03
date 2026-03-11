@@ -1,0 +1,70 @@
+USE [EstadoCuentaProcesadorJSONProcesador]
+GO
+
+CREATE TABLE [dbo].[BandejaEncabezado](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [FechaCorte] DATE NOT NULL,
+    [NumeroTarjeta] CHAR(16) NOT NULL,
+    [NumeroCuenta] CHAR(13) NOT NULL,
+    [NombreTitular] CHAR(40) NULL,
+    [MonedaLimiteCredito] VARCHAR(1) NULL,
+    [LimiteCreditoMN] MONEY NULL,
+    [DisponibleCuentaMN] MONEY NULL,
+    [SaldoFinalMN] MONEY NULL,
+    [PagosContadoMN] MONEY NULL,
+    [PagosMinimoMN] MONEY NULL,
+    [DisponibleCuentaME] MONEY NULL,
+    [SaldoFinalME] MONEY NULL,
+    [PagosContadoME] MONEY NULL,
+    [PagosMinimoME] MONEY NULL,
+    [TarjetaImprimir] VARCHAR(4) NULL,
+    [Correo] VARCHAR(100) NULL,
+    [FechaCarga] DATE NULL,
+    [NoCuentaClaro] VARCHAR(10) NULL
+);
+GO
+
+
+
+
+
+
+
+
+USE [EstadoCuentaProcesadorJSONProcesador]
+GO
+
+CREATE TABLE [dbo].[BandejaDetalle](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [IdEncabezado] INT NOT NULL,
+    [DetalleNoCuenta] CHAR(13) NULL,
+    [FechaMovimiento] DATETIME NULL,
+    [CodigoMovimiento] VARCHAR(10) NULL,
+    [DescripcionMovimiento] VARCHAR(100) NULL,
+    [MontoMovimiento] MONEY NULL,
+    [MonedaMovimiento] VARCHAR(1) NULL,
+    [TarjetaImprimir] VARCHAR(4) NULL,
+    FOREIGN KEY (IdEncabezado) REFERENCES BandejaEncabezado(Id)
+);
+GO
+
+
+
+
+
+
+
+USE [EstadoCuentaProcesadorJSONProcesador]
+GO
+
+CREATE TABLE [dbo].[BandejaFinanciamientos](
+    [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    [IdEncabezado] INT NOT NULL,
+    [NumeroCuenta] CHAR(13) NOT NULL,
+    [TipoFinanciamiento] VARCHAR(50) NULL,
+    [MontoFinanciamiento] MONEY NULL,
+    [FechaCierre] DATE NULL,
+    [Estado] VARCHAR(20) NULL,
+    FOREIGN KEY (IdEncabezado) REFERENCES BandejaEncabezado(Id)
+);
+GO
