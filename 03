@@ -1,10 +1,4 @@
-CREATE PROCEDURE dbo.usp_LimpiarBandejaEstadoCuenta
-AS
-BEGIN
-
-SET NOCOUNT ON;
-
-TRUNCATE TABLE dbo.BandejaEstadoCuenta;
-
-END
-GO
+SELECT 
+    OBJECT_NAME(object_id) AS Procedimiento
+FROM sys.sql_modules
+WHERE definition LIKE '%DEstadoCuenta_BandejaEnvioTC%'
