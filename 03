@@ -1,63 +1,56 @@
-USE [EstadosCuentaJSONProcesador]
-GO
+Yo creo que aqui en el paso 03 fue donde debi agregar el truncate del la tabla BandejaEstadoCuenta(BandejaECTC)
 
+
+Mira este es el paso 03: [usp_LlenarBandejaECTC]  
+
+
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTC]    Script Date: 11/3/2026 12:31:21 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
-CREATE PROCEDURE [dbo].[usp_LlenaBandejasEstadoCuenta]
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
+-- =====================================================================================
+-- Autor:				Carlos Elvir PBS
+-- Fecha creacion:		08-06-2022
+-- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
+-- de TC 
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+--Carlos Elvir		Creacion del SP.										08-06-202
+-- =======================================================================================
 AS
 BEGIN
-    SET NOCOUNT ON;
+Declare @@Cantidad int;
 
-    DECLARE @FechaCorte DATE = (SELECT TOP(1) FechaCorte FROM ParametrosCorte WHERE Estado='1');
-    DECLARE @Reproceso INT = (SELECT COUNT(1) FROM BandejaEstadoCuenta WHERE Estado='2');
+select  @@Cantidad= count(*) from BandejaECTC;
 
-    BEGIN TRY
-        BEGIN TRANSACTION;
 
-        -- PASO 01: Limpiar bandejas principales
-        IF OBJECT_ID('dbo.BandejaEncabezado', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaEncabezado;
-        IF OBJECT_ID('dbo.BandejaDetalle', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaDetalle;
-        IF OBJECT_ID('dbo.BandejaFinanciamientos', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaFinanciamientos;
+	IF(@Tipo='Llenar')
+		BEGIN
+		IF(@@Cantidad<1)
+			begin
+			--Se inserta en la bandeja los registros a procesar en el bucle, para ser usados para generar EC
+			insert into BandejaECTC(Fecha_Corte, No_Tarjeta, No_Cuenta,Correo,Estado)
+			select  convert(varchar(10) ,a.Fecha_Corte ,120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, Estado=2  
+			FROM   HEstadoCuenta_BandejaEnvioTC  AS a   INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = (select Fechacorte from Param_IS_ECTC where Estado=1)  
+			where  (a.Correo <> '') and (a.Correo not in (select Correo from dbo.CorreosNoValidos where Estado=1))  
+			and  (EXISTS (SELECT 1 FROM  dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte)     
+			Or a.Pago_Contado_MN != 0     Or a.Pago_Contado_ME != 0) order by Correo
+			end
+		END
 
-        -- Llenar bandeja encabezado
-        INSERT INTO dbo.BandejaEncabezado
-        SELECT *
-        FROM dbo.EstadoCuentaEncabezado
-        WHERE FechaCorte = @FechaCorte;
+	IF(@Tipo='Limpiar')
+		BEGIN
+			--Se limpia la tabla para que pueda almacenar el siguiente corte
+			truncate table BandejaECTC;
 
-        -- Llenar bandeja detalle
-        INSERT INTO dbo.BandejaDetalle
-        SELECT *
-        FROM dbo.EstadoCuentaDetalle
-        WHERE FechaCorte = @FechaCorte;
+		END
 
-        -- Llenar bandeja financiamientos
-        INSERT INTO dbo.BandejaFinanciamientos
-        SELECT *
-        FROM dbo.EstadoCuentaFinanciamientos
-        WHERE FechaCierre = @FechaCorte;
-
-        -- PASO 02: Limpiar BandejaEstadoCuenta
-        IF OBJECT_ID('dbo.BandejaEstadoCuenta', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaEstadoCuenta;
-
-        -- Aquí puedes agregar inserts a BandejaEstadoCuenta según la lógica que tengas
-        -- Ejemplo simple:
-        INSERT INTO dbo.BandejaEstadoCuenta (FechaCorte, NoTarjeta, NoCuenta, Correo, Estado)
-        SELECT FechaCorte, NoTarjeta, NoCuenta, Correo, 'Pendiente'
-        FROM dbo.BandejaEncabezado;
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRANSACTION;
-
-        DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
-        DECLARE @ErrorNum INT = ERROR_NUMBER();
-
-        RAISERROR('Error %d: %s', 16, 1, @ErrorNum, @ErrorMsg);
-    END CATCH
 END
-GO
+
+
+
+Tambien ayuda a separa el listado de tablas que necesito para este SP, por cierto, esto es un poco engorroso de entender, hay una mejor forma de hacerlo?
