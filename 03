@@ -1,7 +1,20 @@
-SELECT 
-    o.name AS NombreObjeto,
-    o.type_desc AS TipoObjeto
-FROM sys.sql_modules m
-JOIN sys.objects o 
-    ON m.object_id = o.object_id
-WHERE m.definition LIKE '%UPDATE%BandejaECTC%'
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[BandejaEstadoCuenta]    Script Date: 11/3/2026 14:01:21 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[BandejaEstadoCuenta](
+	[FechaCorte] [varchar](15) NULL,
+	[NoTarjeta] [varchar](50) NULL,
+	[NoCuenta] [varchar](50) NULL,
+	[Correo] [varchar](max) NULL,
+	[Estado] [varchar](15) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
