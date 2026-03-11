@@ -1,92 +1,36 @@
-CREATE PROCEDURE dbo.usp_LimpiarBandejaEstadoCuenta
-AS
-BEGIN
+Pensé que esta era una tabla pero en realidad es una vista:
 
-SET NOCOUNT ON;
 
-TRUNCATE TABLE dbo.BandejaEstadoCuenta;
+Create VIEW [dbo].[EC_Detalle_Envio_Estado_Correo]
+AS 
+SELECT 
+	dc.idRow
+	,dc.Origen
+	,dc.FechaCarga
+	,dc.CodigoEmisor
+	,dc.ECDetalleNoCuenta
+	,dc.FechaCorte
+	,dc.ECDetalleNoTarjeta
+	,dc.NombreTHP
+	,dc.ECDetalleEmisorMadre
+	,dc.ECDetalleCuentaMadre
+	,dc.NoAutorizacion
+	,dc.FechaConsumo
+	,dc.CodigoMov
+	,dc.DescripcionMov
+	,dc.MonedaMov
+	,dc.MontoMov
+	,dc.TarjetaImprimir
+	,dc.TasaEfectivaAnualEFMN
+	,dc.TasaEfectivaAnualEFME
+	,dc.FechaCorte ECDetalleFechaCorte
+FROM
+	DEstadoCuenta_BandejaEnvioTC dc
 
-END
 GO
 
 
 
 
 
-
-
-
-CREATE PROCEDURE dbo.usp_LlenarBandejaEstadoCuenta
-AS
-BEGIN
-
-SET NOCOUNT ON;
-
-DECLARE @Cantidad INT
-DECLARE @FechaCorte DATE
-
--- Verificar si ya hay registros en bandeja
-SELECT @Cantidad = COUNT(*)
-FROM dbo.BandejaEstadoCuenta
-
--- Obtener fecha de corte activa
-SELECT @FechaCorte = FechaCorte
-FROM dbo.Param_IS_ECTC
-WHERE Estado = 1
-
-
--- Solo llena la bandeja si está vacía
-IF (@Cantidad < 1)
-BEGIN
-
-    INSERT INTO dbo.BandejaEstadoCuenta
-    (
-        Fecha_Corte,
-        No_Tarjeta,
-        No_Cuenta,
-        Correo,
-        Estado
-    )
-
-    SELECT
-        a.Fecha_Corte,
-        TRIM(a.No_Tarjeta),
-        TRIM(a.No_Cuenta),
-        TRIM(a.Correo),
-        2
-    FROM dbo.HEstadoCuenta_BandejaEnvioTC a
-
-    INNER JOIN dbo.FechaCarga fc
-        ON a.Origen = fc.Origen
-
-    WHERE
-        a.Fecha_Corte = @FechaCorte
-
-        AND a.Correo <> ''
-
-        AND a.Correo NOT IN
-        (
-            SELECT Correo
-            FROM dbo.CorreosNoValidos
-            WHERE Estado = 1
-        )
-
-        AND
-        (
-            EXISTS
-            (
-                SELECT 1
-                FROM dbo.EC_Detalle_Envio_Estado_Correo det
-                WHERE det.EC_DetalleNo_Cuenta = a.No_Cuenta
-                AND det.Fecha_Corte = a.Fecha_Corte
-            )
-            OR a.Pago_Contado_MN <> 0
-            OR a.Pago_Contado_ME <> 0
-        )
-
-    ORDER BY a.Correo
-
-END
-
-END
-GO
+Como puedo saber como se llena?
