@@ -1,56 +1,92 @@
-Yo creo que aqui en el paso 03 fue donde debi agregar el truncate del la tabla BandejaEstadoCuenta(BandejaECTC)
-
-
-Mira este es el paso 03: [usp_LlenarBandejaECTC]  
-
-
-/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTC]    Script Date: 11/3/2026 12:31:21 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
--- =====================================================================================
--- Autor:				Carlos Elvir PBS
--- Fecha creacion:		08-06-2022
--- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
--- de TC 
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---Carlos Elvir		Creacion del SP.										08-06-202
--- =======================================================================================
+CREATE PROCEDURE dbo.usp_LimpiarBandejaEstadoCuenta
 AS
 BEGIN
-Declare @@Cantidad int;
 
-select  @@Cantidad= count(*) from BandejaECTC;
+SET NOCOUNT ON;
+
+TRUNCATE TABLE dbo.BandejaEstadoCuenta;
+
+END
+GO
 
 
-	IF(@Tipo='Llenar')
-		BEGIN
-		IF(@@Cantidad<1)
-			begin
-			--Se inserta en la bandeja los registros a procesar en el bucle, para ser usados para generar EC
-			insert into BandejaECTC(Fecha_Corte, No_Tarjeta, No_Cuenta,Correo,Estado)
-			select  convert(varchar(10) ,a.Fecha_Corte ,120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, Estado=2  
-			FROM   HEstadoCuenta_BandejaEnvioTC  AS a   INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = (select Fechacorte from Param_IS_ECTC where Estado=1)  
-			where  (a.Correo <> '') and (a.Correo not in (select Correo from dbo.CorreosNoValidos where Estado=1))  
-			and  (EXISTS (SELECT 1 FROM  dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte)     
-			Or a.Pago_Contado_MN != 0     Or a.Pago_Contado_ME != 0) order by Correo
-			end
-		END
 
-	IF(@Tipo='Limpiar')
-		BEGIN
-			--Se limpia la tabla para que pueda almacenar el siguiente corte
-			truncate table BandejaECTC;
 
-		END
+
+
+
+
+CREATE PROCEDURE dbo.usp_LlenarBandejaEstadoCuenta
+AS
+BEGIN
+
+SET NOCOUNT ON;
+
+DECLARE @Cantidad INT
+DECLARE @FechaCorte DATE
+
+-- Verificar si ya hay registros en bandeja
+SELECT @Cantidad = COUNT(*)
+FROM dbo.BandejaEstadoCuenta
+
+-- Obtener fecha de corte activa
+SELECT @FechaCorte = FechaCorte
+FROM dbo.Param_IS_ECTC
+WHERE Estado = 1
+
+
+-- Solo llena la bandeja si está vacía
+IF (@Cantidad < 1)
+BEGIN
+
+    INSERT INTO dbo.BandejaEstadoCuenta
+    (
+        Fecha_Corte,
+        No_Tarjeta,
+        No_Cuenta,
+        Correo,
+        Estado
+    )
+
+    SELECT
+        a.Fecha_Corte,
+        TRIM(a.No_Tarjeta),
+        TRIM(a.No_Cuenta),
+        TRIM(a.Correo),
+        2
+    FROM dbo.HEstadoCuenta_BandejaEnvioTC a
+
+    INNER JOIN dbo.FechaCarga fc
+        ON a.Origen = fc.Origen
+
+    WHERE
+        a.Fecha_Corte = @FechaCorte
+
+        AND a.Correo <> ''
+
+        AND a.Correo NOT IN
+        (
+            SELECT Correo
+            FROM dbo.CorreosNoValidos
+            WHERE Estado = 1
+        )
+
+        AND
+        (
+            EXISTS
+            (
+                SELECT 1
+                FROM dbo.EC_Detalle_Envio_Estado_Correo det
+                WHERE det.EC_DetalleNo_Cuenta = a.No_Cuenta
+                AND det.Fecha_Corte = a.Fecha_Corte
+            )
+            OR a.Pago_Contado_MN <> 0
+            OR a.Pago_Contado_ME <> 0
+        )
+
+    ORDER BY a.Correo
 
 END
 
-
-
-Tambien ayuda a separa el listado de tablas que necesito para este SP, por cierto, esto es un poco engorroso de entender, hay una mejor forma de hacerlo?
+END
+GO
