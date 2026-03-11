@@ -1,990 +1,62 @@
-<?xml version="1.0"?>
-<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
-  DTS:refId="Package"
-  DTS:CreationDate="5/22/2024 4:44:52 PM"
-  DTS:CreationName="Microsoft.Package"
-  DTS:CreatorComputerName="66966-BP2"
-  DTS:CreatorName="HN\66966"
-  DTS:DTSID="{C6B82AB3-AB05-4416-89D9-8AD2960E8DE4}"
-  DTS:ExecutableType="Microsoft.Package"
-  DTS:LastModifiedProductVersion="16.0.5685.2"
-  DTS:LocaleID="18442"
-  DTS:ObjectName="PCI-THBE-N - PROCESO - ENVIO ESTADOS TC JSON"
-  DTS:PackageType="5"
-  DTS:VersionBuild="367"
-  DTS:VersionGUID="{1BFDD766-F08D-4C34-8C1B-CDB3ECAE180D}">
-  <DTS:Property
-    DTS:Name="PackageFormatVersion">8</DTS:Property>
-  <DTS:ConnectionManagers>
-    <DTS:ConnectionManager
-      DTS:refId="Package.ConnectionManagers[BPTarjetas]"
-      DTS:CreationName="ADO.NET:System.Data.SqlClient.SqlConnection, System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
-      DTS:DTSID="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
-      DTS:ObjectName="BPTarjetas">
-      <DTS:ObjectData>
-        <DTS:ConnectionManager
-          DTS:ConnectionString="Data Source=PCI-THBED;Initial Catalog=BPTarjetas;Integrated Security=True;Max Pool Size=100000;Application Name=SSIS-Package-{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}PCI-THBED.BPTarjetas;" />
-      </DTS:ObjectData>
-    </DTS:ConnectionManager>
-    <DTS:ConnectionManager
-      DTS:refId="Package.ConnectionManagers[OleBPTarjetas]"
-      DTS:CreationName="OLEDB"
-      DTS:DTSID="{6226628B-4A26-4362-870E-A22AD6803F41}"
-      DTS:ObjectName="OleBPTarjetas">
-      <DTS:ObjectData>
-        <DTS:ConnectionManager
-          DTS:ConnectRetryCount="1"
-          DTS:ConnectRetryInterval="5"
-          DTS:ConnectionString="Data Source=PCI-THBED;Initial Catalog=BPTarjetas;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;Application Name=SSIS-PCI-THBE-N - PROCESO - ENVIO ESTADOS TC JSON-{6226628B-4A26-4362-870E-A22AD6803F41}OleBPTarjetas;" />
-      </DTS:ObjectData>
-    </DTS:ConnectionManager>
-    <DTS:ConnectionManager
-      DTS:refId="Package.ConnectionManagers[SMTP]"
-      DTS:CreationName="SMTP"
-      DTS:DTSID="{49CF48B7-367B-48FE-89D7-6429D11F622D}"
-      DTS:ObjectName="SMTP">
-      <DTS:ObjectData>
-        <SmtpConnectionManager
-          ConnectionString="SmtpServer=PRD-CAS1;UseWindowsAuthentication=False;EnableSsl=False;"
-          ConnectByProxy="False" />
-      </DTS:ObjectData>
-    </DTS:ConnectionManager>
-  </DTS:ConnectionManagers>
-  <DTS:Variables>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{54E4C425-6FC9-417C-B0E0-0A5658FC064C}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="ArchivoFinal">
-      <DTS:VariableValue
-        DTS:DataType="8">S:\Procesos\ResumenEnvioETC\Plantilla\ReporteEC_[FECHACORTE].xlsx</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{63D1BDD9-8914-4237-B43B-B1C7216073CC}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="Cant">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{A221AD60-7A1C-4350-AFDF-873391723888}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="CantidadEjecucion">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{C4C88CDE-833A-43B7-8962-8F544F708624}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="CantidadLotes">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{FFC35F8A-E787-46E6-B6B6-DC8D78BAA313}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="ContadorLote">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{CC093075-5212-4604-B5F7-A558279FB322}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="Correo">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{040D30C2-BA43-4826-BAA1-E30BCB27A7AB}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="CorreoError">
-      <DTS:VariableValue
-        DTS:DataType="8">edmanm@banpais.hn</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{AD52A2B6-186F-4E28-8EB1-AD1D3D96FF8E}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="CorreoReporte">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{033DDED8-E88B-43BA-8BB9-C78265127E01}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="CorreosY_TC">
-      <DTS:VariableValue
-        DTS:DataSubType="ManagedSerializable"
-        DTS:DataType="13">
-        <SOAP-ENV:Envelope xmlns:clr="http://schemas.microsoft.com/soap/encoding/clr/1.0" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-          <SOAP-ENV:Body>
-            <xsd:anyType
-              id="ref-1"></xsd:anyType>
-          </SOAP-ENV:Body>
-        </SOAP-ENV:Envelope>
-      </DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{2C3964E1-9744-4103-A565-095B00D06CF0}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="Cuenta">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{26ECF399-6014-4AE6-B8DC-4FDFB24A30E1}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="CuentaVASA">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{24AAB28F-83F8-4B34-A3ED-4D25B1AD6D4D}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="DireccionRPT">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{96AE6ACE-CF30-48F6-A565-4B86F9E12F9E}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="Equivalente">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{FE83239C-15CA-4B5B-94CA-7B8B12FE5E2C}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="Error">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{6187C076-9280-4873-8A4F-A247876703FB}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="FechaCorte">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{71B81D85-E9DB-4C9C-A019-66CD9D9EBB86}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="Llave">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{393540D0-E512-40A5-AD23-82E45F329E87}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="NombreArchivo">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{A68B291A-840B-49D2-BA13-00835F019EAA}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="NombreJson">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{BC78B4D5-7F3E-4876-B532-E6A2AE6C26D2}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="pruebas_flag">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{DE262120-DC48-43DB-8005-4871F12EB953}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="QueryCant">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{C1A4F2E9-6BB9-40DC-BEFB-08AA98D30FF4}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="QueryCNV">
-      <DTS:VariableValue
-        DTS:DataType="8">SELECT CONVERT(VARCHAR(10), a.Fecha_Corte, 120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, LTRIM(RTRIM(a.Nombre_TH_Tit)) AS Nombre, a.NoCuentaClaro AS NoCuentaVASA FROM HEstadoCuenta_BandejaEnvioTC AS a INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = ( SELECT Fechacorte FROM Param_IS_ECTC WHERE Estado = 1 ) WHERE (a.Correo &lt;&gt; '') AND ( a.Correo IN ( SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1 ) ) AND ( EXISTS ( SELECT 1 FROM dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte ) OR a.Pago_Contado_MN != 0 OR a.Pago_Contado_ME != 0 ) ORDER BY a.Correo</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{18061930-267A-4A94-8EC4-48601FF6FBE9}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="QueryEC">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{8C523609-7A31-4AD8-AC48-84CE3A9D057E}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="QueryObtenerEquivalente">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{6DB93ECC-D934-4EE8-9044-9A5F23429A2D}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="QueryRegistrosPorLote">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{0A6DF3A1-16DE-4D17-9F11-5E80AF1349EC}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="RegistrosPorLote">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{82C41D0B-9F79-45DA-940C-B438CA6E41B8}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="Reproceso">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{93E070E0-CDC1-4926-A0FA-8C2D4DFEFC01}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="RptEnviado">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{71E19098-A964-4265-8D5A-554A8BA47269}"
-      DTS:IncludeInDebugDump="6789"
-      DTS:Namespace="User"
-      DTS:ObjectName="RptGenerado">
-      <DTS:VariableValue
-        DTS:DataType="3">0</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{6A1B088A-CA82-4882-9A42-2B83AEC3CBA3}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="RutaArchivoJson">
-      <DTS:VariableValue
-        DTS:DataType="8">C:\Procesos\EstadosCuenta\</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{A47098E7-0B05-4A5B-919C-B8640E93FD10}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="RutaContador">
-      <DTS:VariableValue
-        DTS:DataType="8">C:\Procesos\EstadosCuenta</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{77D8EC16-1DAE-4E6B-8BF7-2650464BFFAF}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="RutaHistoricoJson">
-      <DTS:VariableValue
-        DTS:DataType="8">C:\Procesos\EstadosCuenta\Historico</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{68132337-EF3B-4F09-AA3D-CB652C86DF0E}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="RutaJson">
-      <DTS:VariableValue
-        DTS:DataType="8">C:\Procesos\EstadosCuenta\</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{BEAC32C6-F731-4D8D-B555-4D39B9A98C74}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="RutaLlavePublica">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{5F5BCD4F-EAB0-4BFE-AFE7-6C8B77D28869}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="TipoGeneracion">
-      <DTS:VariableValue
-        DTS:DataType="8"
-        xml:space="preserve"></DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{0EA4E76C-4D0C-459E-81AA-170FFD2DF121}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="TipoLimpiarBandeja">
-      <DTS:VariableValue
-        DTS:DataType="8">Limpiar</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{853F2050-7062-41C9-A7BF-94FB6886348B}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="TipoLimpiarReporte">
-      <DTS:VariableValue
-        DTS:DataType="8">NOVALIDOS</DTS:VariableValue>
-    </DTS:Variable>
-    <DTS:Variable
-      DTS:CreationName=""
-      DTS:DTSID="{CAD31FBF-1642-4224-833E-CBDDB83B5A28}"
-      DTS:IncludeInDebugDump="2345"
-      DTS:Namespace="User"
-      DTS:ObjectName="TipoLlenarBandeja">
-      <DTS:VariableValue
-        DTS:DataType="8">Llenar</DTS:VariableValue>
-    </DTS:Variable>
-  </DTS:Variables>
-  <DTS:Executables>
-    <DTS:Executable
-      DTS:refId="Package\Correos no validos"
-      DTS:CreationName="STOCK:SEQUENCE"
-      DTS:Description="Sequence Container"
-      DTS:DTSID="{770D27D4-6873-4C2E-84E4-0DCF571F3206}"
-      DTS:ExecutableType="STOCK:SEQUENCE"
-      DTS:LocaleID="-1"
-      DTS:ObjectName="Correos no validos">
-      <DTS:Variables />
-      <DTS:Executables>
-        <DTS:Executable
-          DTS:refId="Package\Correos no validos\Error insert no enviados"
-          DTS:CreationName="Microsoft.SendMailTask"
-          DTS:Description="Send Mail Task"
-          DTS:DTSID="{E6DF1940-F5E6-4A9C-B4A3-BD5D6E2344E5}"
-          DTS:ExecutableType="Microsoft.SendMailTask"
-          DTS:LocaleID="-1"
-          DTS:ObjectName="Error insert no enviados"
-          DTS:TaskContact="Send Mail Task; Microsoft Corporation; Microsoft SQL Server 2008 R2; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
-          DTS:ThreadHint="0">
-          <DTS:Variables />
-          <DTS:PropertyExpression
-            DTS:Name="ToLine">@[User::CorreoError]</DTS:PropertyExpression>
+Serán como 12 segmentos, este es el 02. Tu ve analizando, pero no me des nada todavia, ok?
+
+
+             <DTS:Executables>
+                <DTS:Executable
+                  DTS:refId="Package\Correos no validos\Limpiar tabla reporte no validos.EventHandlers[OnError]\Error en Limpia tabla reporte no validos"
+                  DTS:CreationName="Microsoft.SendMailTask"
+                  DTS:Description="Send Mail Task"
+                  DTS:DTSID="{7F2DE408-4315-41D1-B462-183154BAEADE}"
+                  DTS:ExecutableType="Microsoft.SendMailTask"
+                  DTS:LocaleID="-1"
+                  DTS:ObjectName="Error en Limpia tabla reporte no validos"
+                  DTS:TaskContact="Send Mail Task; Microsoft Corporation; Microsoft SQL Server 2008 R2; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+                  <DTS:Variables />
+                  <DTS:PropertyExpression
+                    DTS:Name="ToLine">@[User::CorreoError]</DTS:PropertyExpression>
+                  <DTS:ObjectData>
+                    <SendMailTask:SendMailTaskData
+                      SendMailTask:SMTPServer="{9709BF75-0145-4438-A96A-06795C51EF48}"
+                      SendMailTask:From="EstadoCuentaTC@banpais.hn"
+                      SendMailTask:To="edmanm@banpais.hn"
+                      SendMailTask:Subject="Error en Limpia tabla reporte no validos =&gt; EXEC usp_LimpiarTablaHistoricoReporteEC 'NOVALIDOS'"
+                      SendMailTask:MessageSourceType="Variable"
+                      SendMailTask:MessageSource="System::ErrorDescription" xmlns:SendMailTask="www.microsoft.com/sqlserver/dts/tasks/sendmailtask" />
+                  </DTS:ObjectData>
+                </DTS:Executable>
+              </DTS:Executables>
+            </DTS:EventHandler>
+          </DTS:EventHandlers>
           <DTS:ObjectData>
-            <SendMailTask:SendMailTaskData
-              SendMailTask:SMTPServer="{49CF48B7-367B-48FE-89D7-6429D11F622D}"
-              SendMailTask:From="EstadoCuentaTC@banpais.hn"
-              SendMailTask:To="edmanm@banpais.hn"
-              SendMailTask:Subject="Error en tarea insert no enviados"
-              SendMailTask:MessageSourceType="Variable"
-              SendMailTask:MessageSource="User::Error" xmlns:SendMailTask="www.microsoft.com/sqlserver/dts/tasks/sendmailtask" />
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:IsStoredProc="True"
+              SQLTask:SqlStatementSource="usp_LimpiarTablaHistoricoReporteEC" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="Tipo"
+                SQLTask:DtsVariableName="User::TipoLimpiarReporte"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="16"
+                SQLTask:ParameterSize="20" />
+            </SQLTask:SqlTaskData>
           </DTS:ObjectData>
         </DTS:Executable>
         <DTS:Executable
-          DTS:refId="Package\Correos no validos\Insert no validos con estatus no enviados"
-          DTS:CreationName="Microsoft.Pipeline"
-          DTS:Description="Data Flow Task"
-          DTS:DTSID="{603267CF-6722-4A2C-B126-63AFBC73C94C}"
-          DTS:ExecutableType="Microsoft.Pipeline"
-          DTS:LocaleID="-1"
-          DTS:ObjectName="Insert no validos con estatus no enviados"
-          DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
-          <DTS:Variables />
-          <DTS:ObjectData>
-            <pipeline
-              version="1">
-              <components>
-                <component
-                  refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column"
-                  componentClassID="Microsoft.DerivedColumn"
-                  contactInfo="Derived Column;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
-                  description="Creates new column values by applying expressions to transformation input columns. Create new columns or overwrite existing ones. For example, concatenate the values from the 'first name' and 'last name' column to make a 'full name' column."
-                  name="Derived Column"
-                  usesDispositions="true">
-                  <inputs>
-                    <input
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Inputs[Derived Column Input]"
-                      description="Input to the Derived Column Transformation"
-                      name="Derived Column Input">
-                      <externalMetadataColumns />
-                    </input>
-                  </inputs>
-                  <outputs>
-                    <output
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Output]"
-                      description="Default Output of the Derived Column Transformation"
-                      exclusionGroup="1"
-                      name="Derived Column Output"
-                      synchronousInputId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Inputs[Derived Column Input]">
-                      <outputColumns>
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Output].Columns[Estado]"
-                          dataType="i4"
-                          errorOrTruncationOperation="Computation"
-                          errorRowDisposition="FailComponent"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Output].Columns[Estado]"
-                          name="Estado"
-                          truncationRowDisposition="FailComponent">
-                          <properties>
-                            <property
-                              containsID="true"
-                              dataType="System.String"
-                              description="Derived Column Expression"
-                              name="Expression">1</property>
-                            <property
-                              containsID="true"
-                              dataType="System.String"
-                              description="Derived Column Friendly Expression"
-                              expressionType="Notify"
-                              name="FriendlyExpression">1</property>
-                          </properties>
-                        </outputColumn>
-                      </outputColumns>
-                      <externalMetadataColumns />
-                    </output>
-                    <output
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Error Output]"
-                      description="Error Output of the Derived Column Transformation"
-                      exclusionGroup="1"
-                      isErrorOut="true"
-                      name="Derived Column Error Output"
-                      synchronousInputId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Inputs[Derived Column Input]">
-                      <outputColumns>
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
-                          dataType="i4"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
-                          name="ErrorCode"
-                          specialFlags="1" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
-                          dataType="i4"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
-                          name="ErrorColumn"
-                          specialFlags="2" />
-                      </outputColumns>
-                      <externalMetadataColumns />
-                    </output>
-                  </outputs>
-                </component>
-                <component
-                  refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination"
-                  componentClassID="Microsoft.OLEDBDestination"
-                  contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
-                  description="OLE DB Destination"
-                  name="OLE DB Destination"
-                  usesDispositions="true"
-                  version="4">
-                  <properties>
-                    <property
-                      dataType="System.Int32"
-                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
-                      name="CommandTimeout">0</property>
-                    <property
-                      dataType="System.String"
-                      description="Specifies the name of the database object used to open a rowset."
-                      name="OpenRowset">[dbo].[HistoricoCorreosECTC]</property>
-                    <property
-                      dataType="System.String"
-                      description="Specifies the variable that contains the name of the database object used to open a rowset."
-                      name="OpenRowsetVariable"></property>
-                    <property
-                      dataType="System.String"
-                      description="The SQL command to be executed."
-                      name="SqlCommand"
-                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
-                    <property
-                      dataType="System.Int32"
-                      description="Specifies the column code page to use when code page information is unavailable from the data source."
-                      name="DefaultCodePage">1252</property>
-                    <property
-                      dataType="System.Boolean"
-                      description="Forces the use of the DefaultCodePage property value when describing character data."
-                      name="AlwaysUseDefaultCodePage">false</property>
-                    <property
-                      dataType="System.Int32"
-                      description="Specifies the mode used to access the database."
-                      name="AccessMode"
-                      typeConverter="AccessMode">3</property>
-                    <property
-                      dataType="System.Boolean"
-                      description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
-                      name="FastLoadKeepIdentity">false</property>
-                    <property
-                      dataType="System.Boolean"
-                      description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destination. Applies only if fast load is turned on."
-                      name="FastLoadKeepNulls">false</property>
-                    <property
-                      dataType="System.String"
-                      description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
-                      name="FastLoadOptions">TABLOCK,CHECK_CONSTRAINTS,ROWS_PER_BATCH = 1000</property>
-                    <property
-                      dataType="System.Int32"
-                      description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
-                      name="FastLoadMaxInsertCommitSize">2147483647</property>
-                  </properties>
-                  <connections>
-                    <connection
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Connections[OleDbConnection]"
-                      connectionManagerID="Package.ConnectionManagers[OleBPTarjetas]"
-                      connectionManagerRefId="Package.ConnectionManagers[OleBPTarjetas]"
-                      description="The OLE DB runtime connection used to access the database."
-                      name="OleDbConnection" />
-                  </connections>
-                  <inputs>
-                    <input
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input]"
-                      errorOrTruncationOperation="Insert"
-                      errorRowDisposition="FailComponent"
-                      hasSideEffects="true"
-                      name="OLE DB Destination Input">
-                      <inputColumns>
-                        <inputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Nombre]"
-                          cachedCodepage="1252"
-                          cachedDataType="str"
-                          cachedLength="40"
-                          cachedName="Nombre"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[Nombre]"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Nombre]" />
-                        <inputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[NoCuentaVASA]"
-                          cachedCodepage="1252"
-                          cachedDataType="str"
-                          cachedLength="10"
-                          cachedName="NoCuentaVASA"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[NoCuentaVASA]"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[NoCuentaVASA]" />
-                        <inputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Fecha_Corte]"
-                          cachedCodepage="1252"
-                          cachedDataType="str"
-                          cachedLength="10"
-                          cachedName="Fecha_Corte"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[FechaCorte]"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Fecha_Corte]" />
-                        <inputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[No_Cuenta]"
-                          cachedCodepage="1252"
-                          cachedDataType="str"
-                          cachedLength="13"
-                          cachedName="No_Cuenta"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[NoCuenta]"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[No_Cuenta]" />
-                        <inputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Correo]"
-                          cachedCodepage="1252"
-                          cachedDataType="str"
-                          cachedLength="100"
-                          cachedName="Correo"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[CorreoCliente]"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Correo]" />
-                        <inputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Estado]"
-                          cachedDataType="i4"
-                          cachedName="Estado"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[Estado]"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Output].Columns[Estado]" />
-                      </inputColumns>
-                      <externalMetadataColumns
-                        isUsed="True">
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[IdRow]"
-                          dataType="i4"
-                          name="IdRow" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[FechaCorte]"
-                          dataType="dbDate"
-                          name="FechaCorte" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[NoCuenta]"
-                          codePage="1252"
-                          dataType="str"
-                          length="25"
-                          name="NoCuenta" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[NoCuentaVASA]"
-                          codePage="1252"
-                          dataType="str"
-                          length="25"
-                          name="NoCuentaVASA" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[Nombre]"
-                          codePage="1252"
-                          dataType="str"
-                          length="255"
-                          name="Nombre" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[CorreoCliente]"
-                          codePage="1252"
-                          dataType="str"
-                          length="255"
-                          name="CorreoCliente" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[Estado]"
-                          codePage="1252"
-                          dataType="str"
-                          length="2"
-                          name="Estado" />
-                      </externalMetadataColumns>
-                    </input>
-                  </inputs>
-                  <outputs>
-                    <output
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Outputs[OLE DB Destination Error Output]"
-                      exclusionGroup="1"
-                      isErrorOut="true"
-                      name="OLE DB Destination Error Output"
-                      synchronousInputId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input]">
-                      <outputColumns>
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
-                          dataType="i4"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
-                          name="ErrorCode"
-                          specialFlags="1" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
-                          dataType="i4"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
-                          name="ErrorColumn"
-                          specialFlags="2" />
-                      </outputColumns>
-                      <externalMetadataColumns />
-                    </output>
-                  </outputs>
-                </component>
-                <component
-                  refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source"
-                  componentClassID="Microsoft.OLEDBSource"
-                  contactInfo="OLE DB Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
-                  description="OLE DB Source"
-                  name="OLE DB Source"
-                  usesDispositions="true"
-                  version="7">
-                  <properties>
-                    <property
-                      dataType="System.Int32"
-                      description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
-                      name="CommandTimeout">0</property>
-                    <property
-                      dataType="System.String"
-                      description="Specifies the name of the database object used to open a rowset."
-                      name="OpenRowset"></property>
-                    <property
-                      dataType="System.String"
-                      description="Specifies the variable that contains the name of the database object used to open a rowset."
-                      name="OpenRowsetVariable"></property>
-                    <property
-                      dataType="System.String"
-                      description="The SQL command to be executed."
-                      name="SqlCommand"
-                      UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
-                    <property
-                      dataType="System.String"
-                      description="The variable that contains the SQL command to be executed."
-                      name="SqlCommandVariable">User::QueryCNV</property>
-                    <property
-                      dataType="System.Int32"
-                      description="Specifies the column code page to use when code page information is unavailable from the data source."
-                      name="DefaultCodePage">1252</property>
-                    <property
-                      dataType="System.Boolean"
-                      description="Forces the use of the DefaultCodePage property value when describing character data."
-                      name="AlwaysUseDefaultCodePage">false</property>
-                    <property
-                      dataType="System.Int32"
-                      description="Specifies the mode used to access the database."
-                      name="AccessMode"
-                      typeConverter="AccessMode">3</property>
-                    <property
-                      dataType="System.String"
-                      description="The mappings between the parameters in the SQL command and variables."
-                      name="ParameterMapping"></property>
-                  </properties>
-                  <connections>
-                    <connection
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Connections[OleDbConnection]"
-                      connectionManagerID="Package.ConnectionManagers[OleBPTarjetas]"
-                      connectionManagerRefId="Package.ConnectionManagers[OleBPTarjetas]"
-                      description="The OLE DB runtime connection used to access the database."
-                      name="OleDbConnection" />
-                  </connections>
-                  <outputs>
-                    <output
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output]"
-                      name="OLE DB Source Output">
-                      <outputColumns>
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Fecha_Corte]"
-                          codePage="1252"
-                          dataType="str"
-                          errorOrTruncationOperation="Conversion"
-                          errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[Fecha_Corte]"
-                          length="10"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Fecha_Corte]"
-                          name="Fecha_Corte"
-                          truncationRowDisposition="FailComponent" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[No_Tarjeta]"
-                          codePage="1252"
-                          dataType="str"
-                          errorOrTruncationOperation="Conversion"
-                          errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[No_Tarjeta]"
-                          length="16"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[No_Tarjeta]"
-                          name="No_Tarjeta"
-                          truncationRowDisposition="FailComponent" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[No_Cuenta]"
-                          codePage="1252"
-                          dataType="str"
-                          errorOrTruncationOperation="Conversion"
-                          errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[No_Cuenta]"
-                          length="13"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[No_Cuenta]"
-                          name="No_Cuenta"
-                          truncationRowDisposition="FailComponent" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Correo]"
-                          codePage="1252"
-                          dataType="str"
-                          errorOrTruncationOperation="Conversion"
-                          errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[Correo]"
-                          length="100"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Correo]"
-                          name="Correo"
-                          truncationRowDisposition="FailComponent" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Nombre]"
-                          codePage="1252"
-                          dataType="str"
-                          errorOrTruncationOperation="Conversion"
-                          errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[Nombre]"
-                          length="40"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[Nombre]"
-                          name="Nombre"
-                          truncationRowDisposition="FailComponent" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[NoCuentaVASA]"
-                          codePage="1252"
-                          dataType="str"
-                          errorOrTruncationOperation="Conversion"
-                          errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[NoCuentaVASA]"
-                          length="10"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].Columns[NoCuentaVASA]"
-                          name="NoCuentaVASA"
-                          truncationRowDisposition="FailComponent" />
-                      </outputColumns>
-                      <externalMetadataColumns
-                        isUsed="True">
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[Fecha_Corte]"
-                          codePage="1252"
-                          dataType="str"
-                          length="10"
-                          name="Fecha_Corte" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[No_Tarjeta]"
-                          codePage="1252"
-                          dataType="str"
-                          length="16"
-                          name="No_Tarjeta" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[No_Cuenta]"
-                          codePage="1252"
-                          dataType="str"
-                          length="13"
-                          name="No_Cuenta" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[Correo]"
-                          codePage="1252"
-                          dataType="str"
-                          length="100"
-                          name="Correo" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[Nombre]"
-                          codePage="1252"
-                          dataType="str"
-                          length="40"
-                          name="Nombre" />
-                        <externalMetadataColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[NoCuentaVASA]"
-                          codePage="1252"
-                          dataType="str"
-                          length="10"
-                          name="NoCuentaVASA" />
-                      </externalMetadataColumns>
-                    </output>
-                    <output
-                      refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output]"
-                      isErrorOut="true"
-                      name="OLE DB Source Error Output">
-                      <outputColumns>
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[Fecha_Corte]"
-                          codePage="1252"
-                          dataType="str"
-                          length="10"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[Fecha_Corte]"
-                          name="Fecha_Corte" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[No_Tarjeta]"
-                          codePage="1252"
-                          dataType="str"
-                          length="16"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[No_Tarjeta]"
-                          name="No_Tarjeta" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[No_Cuenta]"
-                          codePage="1252"
-                          dataType="str"
-                          length="13"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[No_Cuenta]"
-                          name="No_Cuenta" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[Correo]"
-                          codePage="1252"
-                          dataType="str"
-                          length="100"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[Correo]"
-                          name="Correo" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[Nombre]"
-                          codePage="1252"
-                          dataType="str"
-                          length="40"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[Nombre]"
-                          name="Nombre" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[NoCuentaVASA]"
-                          codePage="1252"
-                          dataType="str"
-                          length="10"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[NoCuentaVASA]"
-                          name="NoCuentaVASA" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
-                          dataType="i4"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
-                          name="ErrorCode"
-                          specialFlags="1" />
-                        <outputColumn
-                          refId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
-                          dataType="i4"
-                          lineageId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
-                          name="ErrorColumn"
-                          specialFlags="2" />
-                      </outputColumns>
-                      <externalMetadataColumns />
-                    </output>
-                  </outputs>
-                </component>
-              </components>
-              <paths>
-                <path
-                  refId="Package\Correos no validos\Insert no validos con estatus no enviados.Paths[Derived Column Output]"
-                  endId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Destination.Inputs[OLE DB Destination Input]"
-                  name="Derived Column Output"
-                  startId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Outputs[Derived Column Output]" />
-                <path
-                  refId="Package\Correos no validos\Insert no validos con estatus no enviados.Paths[OLE DB Source Output]"
-                  endId="Package\Correos no validos\Insert no validos con estatus no enviados\Derived Column.Inputs[Derived Column Input]"
-                  name="OLE DB Source Output"
-                  startId="Package\Correos no validos\Insert no validos con estatus no enviados\OLE DB Source.Outputs[OLE DB Source Output]" />
-              </paths>
-            </pipeline>
-          </DTS:ObjectData>
-        </DTS:Executable>
-        <DTS:Executable
-          DTS:refId="Package\Correos no validos\Limpiar tabla reporte no validos"
+          DTS:refId="Package\Correos no validos\Query correos no validos"
           DTS:CreationName="Microsoft.ExecuteSQLTask"
           DTS:Description="Execute SQL Task"
-          DTS:DTSID="{3B445856-A511-4440-9549-D76A6C20F9C9}"
+          DTS:DTSID="{430CFC67-456B-47A5-AABA-ECD11AF6569A}"
           DTS:ExecutableType="Microsoft.ExecuteSQLTask"
           DTS:LocaleID="-1"
-          DTS:ObjectName="Limpiar tabla reporte no validos"
+          DTS:ObjectName="Query correos no validos"
           DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server 2008 R2; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
           DTS:ThreadHint="0">
           <DTS:Variables />
           <DTS:EventHandlers>
             <DTS:EventHandler
-              DTS:refId="Package\Correos no validos\Limpiar tabla reporte no validos.EventHandlers[OnError]"
+              DTS:refId="Package\Correos no validos\Query correos no validos.EventHandlers[OnError]"
               DTS:CreationName="OnError"
-              DTS:DTSID="{11D10B5B-C07D-4BC1-89E1-AC23C453AA4A}"
+              DTS:DTSID="{4A688C28-E589-4224-BB8E-35E3A5254933}"
               DTS:EventID="0"
               DTS:EventName="OnError"
               DTS:LocaleID="-1">
@@ -992,7 +64,7 @@
                 <DTS:Variable
                   DTS:CreationName=""
                   DTS:Description="The propagate property of the event"
-                  DTS:DTSID="{ECE51A8F-688C-4899-B444-3E10AD44D912}"
+                  DTS:DTSID="{E5575B9E-1191-467E-A4E9-B3D1614DFBB7}"
                   DTS:IncludeInDebugDump="6789"
                   DTS:Namespace="System"
                   DTS:ObjectName="Propagate">
@@ -1000,3 +72,977 @@
                     DTS:DataType="11">-1</DTS:VariableValue>
                 </DTS:Variable>
               </DTS:Variables>
+              <DTS:Executables>
+                <DTS:Executable
+                  DTS:refId="Package\Correos no validos\Query correos no validos.EventHandlers[OnError]\Error en Limpia tabla reporte no validos"
+                  DTS:CreationName="Microsoft.SendMailTask"
+                  DTS:Description="Send Mail Task"
+                  DTS:DTSID="{DE45C4AD-B4CA-42A1-80E0-7E05A0319847}"
+                  DTS:ExecutableType="Microsoft.SendMailTask"
+                  DTS:LocaleID="-1"
+                  DTS:ObjectName="Error en Limpia tabla reporte no validos"
+                  DTS:TaskContact="Send Mail Task; Microsoft Corporation; Microsoft SQL Server 2008 R2; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+                  <DTS:Variables />
+                  <DTS:PropertyExpression
+                    DTS:Name="ToLine">@[User::CorreoError]</DTS:PropertyExpression>
+                  <DTS:ObjectData>
+                    <SendMailTask:SendMailTaskData
+                      SendMailTask:SMTPServer="{9709BF75-0145-4438-A96A-06795C51EF48}"
+                      SendMailTask:From="EstadoCuentaTC@banpais.hn"
+                      SendMailTask:To="edmanm@banpais.hn"
+                      SendMailTask:Subject="Error en Limpia tabla reporte no validos =&gt; EXEC usp_LimpiarTablaHistoricoReporteEC 'NOVALIDOS'"
+                      SendMailTask:MessageSourceType="Variable"
+                      SendMailTask:MessageSource="System::ErrorDescription" xmlns:SendMailTask="www.microsoft.com/sqlserver/dts/tasks/sendmailtask" />
+                  </DTS:ObjectData>
+                </DTS:Executable>
+              </DTS:Executables>
+            </DTS:EventHandler>
+          </DTS:EventHandlers>
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:SqlStatementSource="select QueryCNV from EstadoCuentaHTML where IdRows=1;"
+              SQLTask:ResultType="ResultSetType_SingleRow" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+              <SQLTask:ResultBinding
+                SQLTask:ResultName="0"
+                SQLTask:DtsVariableName="User::QueryCNV" />
+            </SQLTask:SqlTaskData>
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Correos no validos.PrecedenceConstraints[Constraint 1]"
+          DTS:CreationName=""
+          DTS:DTSID="{DBC606FC-1630-4C90-91CB-2DF19E013669}"
+          DTS:From="Package\Correos no validos\Limpiar tabla reporte no validos"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 1"
+          DTS:To="Package\Correos no validos\Query correos no validos" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Correos no validos.PrecedenceConstraints[Restricción]"
+          DTS:CreationName=""
+          DTS:DTSID="{852EA6A3-CE97-41E2-B0F5-913EE5A29C51}"
+          DTS:From="Package\Correos no validos\Query correos no validos"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Restricción"
+          DTS:To="Package\Correos no validos\Insert no validos con estatus no enviados" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Correos no validos.PrecedenceConstraints[Restricción 1]"
+          DTS:CreationName=""
+          DTS:DTSID="{5F609F60-5C35-4B75-9FF2-C408949C826D}"
+          DTS:From="Package\Correos no validos\Insert no validos con estatus no enviados"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Restricción 1"
+          DTS:To="Package\Correos no validos\Error insert no enviados"
+          DTS:Value="1" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Enviar correo notificacion"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{B4C31AAC-5126-4877-BFF0-844B12F79436}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Enviar correo notificacion">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Enviar correo notificacion\Direccion correo reporte"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:Description="Execute SQL Task"
+          DTS:DTSID="{614E1A69-A3CF-45B4-A812-CA135177AE85}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Direccion correo reporte"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server 2008 R2; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:EventHandlers>
+            <DTS:EventHandler
+              DTS:refId="Package\Enviar correo notificacion\Direccion correo reporte.EventHandlers[OnError]"
+              DTS:CreationName="OnError"
+              DTS:DTSID="{B69A498B-8BCA-434D-9EEE-2A49D24C4AF4}"
+              DTS:EventID="0"
+              DTS:EventName="OnError"
+              DTS:LocaleID="-1">
+              <DTS:Variables>
+                <DTS:Variable
+                  DTS:CreationName=""
+                  DTS:Description="The propagate property of the event"
+                  DTS:DTSID="{F9AEFBC2-F8A3-4B16-AE5A-A342627CEFA7}"
+                  DTS:IncludeInDebugDump="6789"
+                  DTS:Namespace="System"
+                  DTS:ObjectName="Propagate">
+                  <DTS:VariableValue
+                    DTS:DataType="11">-1</DTS:VariableValue>
+                </DTS:Variable>
+              </DTS:Variables>
+              <DTS:Executables>
+                <DTS:Executable
+                  DTS:refId="Package\Enviar correo notificacion\Direccion correo reporte.EventHandlers[OnError]\Error en direccion correo reporte"
+                  DTS:CreationName="Microsoft.SendMailTask"
+                  DTS:Description="Send Mail Task"
+                  DTS:DTSID="{8351B98D-96F6-4608-AA8A-F62B0182C542}"
+                  DTS:ExecutableType="Microsoft.SendMailTask"
+                  DTS:LocaleID="-1"
+                  DTS:ObjectName="Error en direccion correo reporte"
+                  DTS:TaskContact="Send Mail Task; Microsoft Corporation; Microsoft SQL Server 2008 R2; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+                  <DTS:Variables />
+                  <DTS:PropertyExpression
+                    DTS:Name="ToLine">@[User::CorreoError]</DTS:PropertyExpression>
+                  <DTS:ObjectData>
+                    <SendMailTask:SendMailTaskData
+                      SendMailTask:SMTPServer="{9709BF75-0145-4438-A96A-06795C51EF48}"
+                      SendMailTask:From="EstadoCuentaTC@banpais.hn"
+                      SendMailTask:To="edmanm@banpais.hn"
+                      SendMailTask:Subject="Error en direccion correo reporte =&gt; Query: &quot;select Correo from Param_CorreosEC where Tipo='R' and Estado='1';&quot;"
+                      SendMailTask:MessageSourceType="Variable"
+                      SendMailTask:MessageSource="System::ErrorDescription" xmlns:SendMailTask="www.microsoft.com/sqlserver/dts/tasks/sendmailtask" />
+                  </DTS:ObjectData>
+                </DTS:Executable>
+              </DTS:Executables>
+            </DTS:EventHandler>
+          </DTS:EventHandlers>
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:SqlStatementSource="select Correo from Param_CorreosEC where Tipo='R' and Estado='1';"
+              SQLTask:ResultType="ResultSetType_SingleRow" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+              <SQLTask:ResultBinding
+                SQLTask:ResultName="0"
+                SQLTask:DtsVariableName="User::CorreoReporte" />
+            </SQLTask:SqlTaskData>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Enviar correo notificacion\Enviar correo"
+          DTS:CreationName="Microsoft.ScriptTask"
+          DTS:Description="Script Task"
+          DTS:DTSID="{24458F8E-1552-45B1-9714-083EFCF2E066}"
+          DTS:ExecutableType="Microsoft.ScriptTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Enviar correo"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <ScriptProject
+              Name="ST_3392f53f7e164fba9c2421bbf90bbf1c"
+              VSTAMajorVersion="15"
+              VSTAMinorVersion="0"
+              Language="CSharp"
+              ReadOnlyVariables="User::ArchivoFinal,User::CorreoReporte,User::FechaCorte"
+              ReadWriteVariables="User::Error,User::RptEnviado,User::TipoLimpiarReporte,User::TipoLlenarBandeja">
+              <ProjectItem
+                Name="Properties\Settings.settings"
+                Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
+              <ProjectItem
+                Name="Properties\Resources.resx"
+                Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+</root>]]></ProjectItem>
+              <ProjectItem
+                Name="PlantillaCorreo.txt"
+                Encoding="UTF8"><![CDATA[<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Direcci&oacute;n de Cajero</title>
+</head>
+
+<body>
+    <style>
+        .TituloTbl {
+            background-color: #00446a;
+            color: white;
+            text-align: center;
+        }
+
+        .Imagen {
+            width: 35%;
+            /* position: relative;
+            left: 300px;
+            border: 1px black solid; */
+        }
+
+        tbody tr td {
+            /* border: 1px #0f59a0 solid; */
+
+            padding: 5px 5px;
+        }
+
+        tbody {
+            border: 1px #00446a solid;
+        }
+
+        .Tabla {
+            /*margin-top: 100px;
+            margin-left: 380PX; */
+            width: 550px;
+            background-color: white;
+
+        }
+    </style>
+    <div class="Tabla">
+        <table style="font-family:Calibri; border-collapse: collapse; width: 100%;">
+            <thead>
+                <tr style="background-color: #ffef11;">
+                    <td colspan="2"><img src="https://www.banpais.hn/images/logo.png" alt="" class="Imagen" align=left>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="background-color: #ffef11;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="TituloTbl"> Reporte Estados de Cuenta de Tarjeta de Cr&eacute;dito</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="2">
+                        Estimado(a):
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p>En adjunto encontrar&aacute; el reporte de estados de cuenta de tarjeta de cr&eacute;dito
+                            enviados/no enviados correspondientes al corte [FechaCorte].</p>
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>]]></ProjectItem>
+              <ProjectItem
+                Name="ScriptMain.cs"
+                Encoding="UTF8"><![CDATA[/*
+   Microsoft SQL Server Integration Services Script Task
+   Write scripts using Microsoft Visual C# 2008.
+   The ScriptMain is the entry point class of the script.
+*/
+
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Net.Mail;
+using System.Data.SqlClient;
+
+namespace ST_3bf4076c13c640ef982304a7067bf285.csproj
+{
+    [Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+    public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+    {
+
+        #region VSTA generated code
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+        /*
+		The execution engine calls this method when the task executes.
+		To access the object model, use the Dts property. Connections, variables, events,
+		and logging features are available as members of the Dts property as shown in the following examples.
+
+		To reference a variable, call Dts.Variables["MyCaseSensitiveVariableName"].Value;
+		To post a log entry, call Dts.Log("This is my log text", 999, null);
+		To fire an event, call Dts.Events.FireInformation(99, "test", "hit the help message", "", 0, true);
+
+		To use the connections collection use something like the following:
+		ConnectionManager cm = Dts.Connections.Add("OLEDB");
+		cm.ConnectionString = "Data Source=localhost;Initial Catalog=AdventureWorks;Provider=SQLNCLI10;Integrated Security=SSPI;Auto Translate=False;";
+
+		Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+		
+		To open Help, press F1.
+	*/
+        public string FechaCorte;
+        public void Main()
+        {
+             try
+            {
+                FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
+  
+                MailMessage htmlMessage=new MailMessage();
+                SmtpClient mySmtpClient;
+                string DireccionCorreo= Dts.Variables["User::CorreoReporte"].Value.ToString();
+                foreach (string Destinatarios in DireccionCorreo.Split(';'))
+                {
+                    htmlMessage.To.Add(new MailAddress(Destinatarios));
+                }
+                
+                htmlMessage.From=new MailAddress("ReporteEstadoCuenta@banpais.hn");
+                htmlMessage.Subject = "Reporte Estado Cuenta";
+                htmlMessage.Body = ObtenerBody();
+                htmlMessage.IsBodyHtml = true;
+                object Server = Dts.Connections["SMTP"].AcquireConnection(Dts.Transaction);
+                string Cadena = (string)Server; //"PU-MAILSERVBP";
+                string[] Array = Cadena.Split('=', ';');
+                string smtpServer = Array[1];
+                mySmtpClient = new SmtpClient(smtpServer);
+                mySmtpClient.Send(htmlMessage);
+
+                Dts.Variables["TipoLlenarBandeja"].Value = "Limpiar";
+                Dts.Variables["TipoLimpiarReporte"].Value = "COMPLETA";
+
+                // TODO: Add your code here
+                Dts.TaskResult = (int)ScriptResults.Success;
+            }
+             catch (Exception ex)
+             {
+                 Dts.Variables["Error"].Value = "Error en public void Main, tarea Envio Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
+                 Dts.Events.FireError(0, "Error envio correo reporte Main", ex.Message, String.Empty, 0);
+                 Dts.TaskResult = (int)ScriptResults.Failure;
+                 
+             }
+        }
+
+        public string ObtenerBody()
+        {
+            try
+            {
+                string Body = "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'> <html xmlns='http://www.w3.org/1999/xhtml'> <body> <style> .TituloTbl { background-color: #00446a; color: white; text-align: center; } .Imagen { width: 35%; /* position: relative; left: 300px; border: 1px black solid; */ } tbody tr td { /* border: 1px #0f59a0 solid; */ padding: 5px 5px; } tbody { border: 1px #00446a solid; } .Tabla { /*margin-top: 100px; margin-left: 380PX; */ width: 550px; background-color: white; } </style> <div class='Tabla'> <table style='font-family:Calibri; border-collapse: collapse; width: 100%;'> <thead> <tr style='background-color: #ffef11;'> <td colspan='2'><img src='https://www.banpais.hn/images/logo.png' alt='' class='Imagen' align=left> </td> </tr> <tr> <td colspan='2' style='background-color: #ffef11;'>&nbsp;</td> </tr> <tr> <td colspan='2' class='TituloTbl'>Estados de Cuenta de Tarjeta de Cr&eacute;dito</td> </tr> </thead> <tbody> <tr> <td colspan='2'> Estimado(a): </td> </tr> <tr> <td colspan='2'> <p>Le informamos que el proceso de generación de JSON de estados de cuenta de tarjeta de cr&eacute;dito del corte [FechaCorte] ha finalizado con exito.</p> </td> </tr> </tbody> </table> </div> </body> </html>";
+                Body = Body.Replace("[FechaCorte]", FechaCorte);
+
+                return Body;
+            }
+            catch (Exception ex)
+            {
+                Dts.Variables["Error"].Value = "Error en public string ObtenerBody en tarea Enviar Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
+                Dts.Events.FireError(0, "Error string ObtenerBody", ex.Message, String.Empty, 0);
+                Dts.TaskResult = (int)ScriptResults.Failure;
+                return null;
+            }
+        }
+        
+
+    }
+}]]></ProjectItem>
+              <ProjectItem
+                Name="ST_3392f53f7e164fba9c2421bbf90bbf1c.csproj"
+                Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="utf-16"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- This section defines project-level properties.
+
+       Configuration - Specifies whether the default configuration is Release or Debug.
+       Platform - Specifies what CPU the output of this project can run on.
+       OutputType - Must be "Library" for VSTA.
+       NoStandardLibraries - Set to "false" for VSTA.
+       RootNamespace - In C#, this specifies the namespace given to new files.
+                       In Visual Basic, all objects are wrapped in this namespace at runtime.
+       AssemblyName - Name of the output assembly.
+  -->
+  <PropertyGroup>
+    <ProjectTypeGuids>{30D016F9-3734-4E33-A861-5E7D899E18F3};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <RootNamespace>ST_3bf4076c13c640ef982304a7067bf285.csproj</RootNamespace>
+    <AssemblyName>ST_3392f53f7e164fba9c2421bbf90bbf1c</AssemblyName>
+    <ProjectGuid>{E0003FE7-62F5-4A7C-B1CE-CA16FE7A4BD0}</ProjectGuid>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <TargetFrameworkProfile></TargetFrameworkProfile>
+    <ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>true</ResolveAssemblyReferenceIgnoreTargetFrameworkAttributeVersionMismatch>
+  </PropertyGroup>
+  <!-- This section defines properties that are set when the "Debug" configuration is
+       selected.
+
+       DebugSymbols - If true, create symbols (.pdb). If false, do not create symbols.
+       Optimize - If true, optimize the build output. If false, do not optimize.
+       OutputPath - Output path of the project relative to the project file.
+       EnableUnmanagedDebugging - If true, starting the debugger will attach both managed and unmanaged debuggers.
+       DefineConstants - Constants defined for the preprocessor.
+       Warning Level - Warning level for the compiler.
+  -->
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <OutputPath>.\bin\Debug\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <!-- This section defines properties that are set when the "Release" configuration is
+       selected.
+
+       DebugSymbols - If true, create symbols (.pdb). If false, do not create symbols.
+       Optimize - If true, optimize the build output. If false, do not optimize.
+       OutputPath - Output path of the project relative to the project file.
+       EnableUnmanagedDebugging - If true, starting the debugger will attach both managed and unmanaged debuggers.
+       DefineConstants - Constants defined for the preprocessor.
+       Warning Level - Warning level for the compiler.
+  -->
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <OutputPath>.\bin\Release\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <!-- This section enables pre- and post-build steps. However,
+       it is recommended that MSBuild tasks be used instead of these properties.
+  -->
+  <PropertyGroup>
+    <PreBuildEvent></PreBuildEvent>
+    <PostBuildEvent></PostBuildEvent>
+  </PropertyGroup>
+  <!-- This sections specifies references for the project. -->
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.SqlServer.ManagedDTS, Version=15.0.0.0, Culture=Neutral, PublicKeyToken=89845dcd8080cc91" />
+    <Reference Include="Microsoft.SqlServer.ScriptTask, Version=15.0.0.0, Culture=Neutral, PublicKeyToken=89845dcd8080cc91" />
+  </ItemGroup>
+  <!-- This section defines the user source files that are part of the
+       project.
+
+       Compile - Specifies a source file to compile.
+       EmbeddedResource - Specifies a .resx file for embedded resources.
+       None - Specifies a file that is not to be passed to the compiler (for instance,
+              a text file or XML file).
+       AppDesigner - Specifies the directory where the application properties files can
+                     be found.
+  -->
+  <ItemGroup>
+    <AppDesigner Include="Properties\" />
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="ScriptMain.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <!-- Include the default configuration information and metadata files for the add-in.
+         These files are copied to the build output directory when the project is
+         built, and the path to the configuration file is passed to add-in on the command
+         line when debugging.
+    -->
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="PlantillaCorreo.txt" />
+  </ItemGroup>
+  <!-- Include the build rules for a C# project.-->
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- This section defines VSTA properties that describe the host-changable project properties. -->
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{30D016F9-3734-4E33-A861-5E7D899E18F3}">
+        <ProjectProperties HostName="VSTAHostName" HostPackage="{B3A685AA-7EAF-4BC6-9940-57959FA5AC07}" ApplicationType="usd" Language="cs" TemplatesPath="" DebugInfoExeName="" />
+        <Host Name="SSIS_ScriptTask" />
+        <ProjectClient>
+          <HostIdentifier>SSIS_ST150</HostIdentifier>
+        </ProjectClient>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>]]></ProjectItem>
+              <ProjectItem
+                Name="Project"
+                Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
+<c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="4.0" schemaVersion="1.0">
+  <msb:PropertyGroup>
+    <msb:CodeName>ST_3392f53f7e164fba9c2421bbf90bbf1c</msb:CodeName>
+    <msb:Language>msBuild</msb:Language>
+    <msb:DisplayName>ST_3392f53f7e164fba9c2421bbf90bbf1c</msb:DisplayName>
+    <msb:ProjectId>{3FD97B7D-9CB0-468E-B2B1-EA4B56FFCAE7}</msb:ProjectId>
+  </msb:PropertyGroup>
+  <msb:ItemGroup>
+    <msb:Project Include="ST_3392f53f7e164fba9c2421bbf90bbf1c.csproj" />
+    <msb:File Include="Properties\Settings.settings" />
+    <msb:File Include="Properties\AssemblyInfo.cs" />
+    <msb:File Include="Properties\Resources.resx" />
+    <msb:File Include="Properties\Resources.Designer.cs" />
+    <msb:File Include="Properties\Settings.Designer.cs" />
+    <msb:File Include="ScriptMain.cs" />
+    <msb:File Include="PlantillaCorreo.txt" />
+  </msb:ItemGroup>
+</c:Project>]]></ProjectItem>
+              <ProjectItem
+                Name="Properties\Settings.Designer.cs"
+                Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties.Settings.get_Default():ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties.Sett" +
+    "ings")]
+
+namespace ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties
+{
+
+
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase
+    {
+
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+
+        public static Settings Default
+        {
+            get
+            {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
+              <ProjectItem
+                Name="Properties\AssemblyInfo.cs"
+                Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_3bf4076c13c640ef982304a7067bf285.csproj")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("Microsoft")]
+[assembly: AssemblyProduct("ST_3bf4076c13c640ef982304a7067bf285.csproj")]
+[assembly: AssemblyCopyright("Copyright @ Microsoft 2022")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+              <ProjectItem
+                Name="Properties\Resources.Designer.cs"
+                Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties.Resources.get_ResourceManager():System.Resources.Resou" +
+    "rceManager")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties.Resources.get_Culture():System.Globalization.CultureIn" +
+    "fo")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties.Resources.set_Culture(System.Globalization.CultureInfo" +
+    "):Void")]
+
+namespace ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties
+{
+
+
+    /// <summary>
+    ///   A strongly-typed resource class, for looking up localized strings, etc.
+    /// </summary>
+    // This class was auto-generated by the StronglyTypedResourceBuilder
+    // class via a tool like ResGen or Visual Studio.
+    // To add or remove a member, edit your .ResX file then rerun ResGen
+    // with the /str option, or rebuild your VS project.
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+    internal class Resources
+    {
+
+        private static global::System.Resources.ResourceManager resourceMan;
+
+        private static global::System.Globalization.CultureInfo resourceCulture;
+
+        [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal Resources()
+        {
+        }
+
+        /// <summary>
+        ///   Returns the cached ResourceManager instance used by this class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Resources.ResourceManager ResourceManager
+        {
+            get
+            {
+                if ((resourceMan == null))
+                {
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ST_3bf4076c13c640ef982304a7067bf285.csproj.Properties.Resources", typeof(Resources).Assembly);
+                    resourceMan = temp;
+                }
+                return resourceMan;
+            }
+        }
+
+        /// <summary>
+        ///   Overrides the current thread's CurrentUICulture property for all
+        ///   resource lookups using this strongly typed resource class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Globalization.CultureInfo Culture
+        {
+            get
+            {
+                return resourceCulture;
+            }
+            set
+            {
+                resourceCulture = value;
+            }
+        }
+    }
+}]]></ProjectItem>
+              <BinaryItem
+                Name="ST_3392f53f7e164fba9c2421bbf90bbf1c.dll">TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFtIGNhbm5vdCBiZSBydW4gaW4gRE9TIG1v
+ZGUuDQ0KJAAAAAAAAABQRQAATAEDAIolIGcAAAAAAAAAAOAAIiALATAAACIAAAAIAAAAAAAASkAA
+AAAgAAAAYAAAAAAAEAAgAAAAAgAABAAAAAAAAAAGAAAAAAAAAACgAAAAAgAAAAAAAAMAYIUAABAA
+ABAAAAAAEAAAEAAAAAAAABAAAAAAAAAAAAAAAPg/AABPAAAAAGAAALwEAAAAAAAAAAAAAAAAAAAA
+AAAAAIAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAIAAACAAAAAAAAAAAAAAACCAAAEgAAAAAAAAAAAAAAC50ZXh0AAAAUCAAAAAgAAAAIgAAAAIA
+AAAAAAAAAAAAAAAAACAAAGAucnNyYwAAALwEAAAAYAAAAAYAAAAkAAAAAAAAAAAAAAAAAABAAABA
+LnJlbG9jAAAMAAAAAIAAAAACAAAAKgAAAAAAAAAAAAAAAAAAQAAAQgAAAAAAAAAAAAAAAAAAAAAs
+QAAAAAAAAEgAAAACAAUAKCMAABgcAAABAAAAAAAAAEA/AAC4AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAABswBgCpAQAAAQAAEQICKBAAAApvEQAACnIBAABwbxIAAApv
+EwAACm8UAAAKfQEAAARzFQAACgoCKBAAAApvEQAACnIjAABwbxIAAApvEwAACm8UAAAKF40dAAAB
+JRYfO51vFgAACgsWDCsZBwiaDQZvFwAACglzGAAACm8ZAAAKCBdYDAgHjmky4QZySwAAcHMYAAAK
+bxoAAAoGcokAAHBvGwAACgYCKAIAAAZvHAAACgYXbx0AAAoCKBAAAApvHgAACnK1AABwbx8AAAoC
+KBAAAApvIAAACm8hAAAKdB4AAAEYjR0AAAElFh89nSUXHzudbxYAAAoXmnMiAAAKBm8jAAAKAigQ
+AAAKbxEAAApyvwAAcG8SAAAKcuMAAHBvJAAACgIoEAAACm8RAAAKcvMAAHBvEgAACnIZAQBwbyQA
+AAoCKBAAAAoWbyUAAAreZBMEAigQAAAKbxEAAApyKwEAcG8SAAAKcjcBAHARBG8mAAAKcqcBAHAo
+JwAACm8kAAAKAigQAAAKbygAAAoWcmoCAHARBG8mAAAKfikAAAoWbyoAAAomAigQAAAKF28lAAAK
+3gAqAAAAQRwAAAAAAAAAAAAARAEAAEQBAABkAAAAEAAAARswBgB9AAAAAgAAEXKqAgBwcqEMAHAC
+ewEAAARvKwAACgreYwsCKBAAAApvEQAACnIrAQBwbxIAAApyuwwAcAdvJgAACnKnAQBwKCcAAApv
+JAAACgIoEAAACm8oAAAKFnJEDQBwB28mAAAKfikAAAoWbyoAAAomAigQAAAKF28lAAAKFAreAAYq
+AAAAARAAAAAAAAAYGABjEAAAAR4CKCwAAAoqHgIoLQAACiqufgIAAAQtHnJ2DQBw0AMAAAIoLgAA
+Cm8vAAAKczAAAAqAAgAABH4CAAAEKhp+AwAABCoeAoADAAAEKhp+BAAABCoeAigxAAAKKi5zCQAA
+BoAEAAAEKgAAQlNKQgEAAQAAAAAADAAAAHY0LjAuMzAzMTkAAAAABQBsAAAAoAQAACN+AAAMBQAA
+DAcAACNTdHJpbmdzAAAAABgMAAD4DQAAI1VTABAaAAAQAAAAI0dVSUQAAAAgGgAA+AEAACNCbG9i
+AAAAAAAAAAIAAAFXHaIJCQMAAAD6ATMAFgAAAQAAACgAAAAFAAAABwAAAAoAAAABAAAAMQAAAAIA
+AAAQAAAAAgAAAAIAAAADAAAABAAAAAEAAAABAAAABAAAAAEAAAABAAAAAAAaBAEAAAAAAAYAZgKA
+BQYA9QKABQYAsgFtBQ8A+wUAAAYA3wHABAYASQLABAYAKgLABAYA3ALABAYAhgLABAYAnwLABAYA
+9gHABAYAEQItAwoAugKaAwoAJgGaAw4AmAAKBAYA+gRaBAYAagRaBAYAlQFtBQYAowZaBAYAIAWg
+BQYACwWbBA4AWgH0Aw4AxgH0Aw4AQgGGBAYAegGABQoA4gOaAxIARAbRABIApADRAAYAFwVaBAYA
+SQNaBA4A0gQKBA4AbwYKBAYAAQDDAxIAWwbRABIAMAXRAA4A1wYKBAoAQgWaAwYA8QBaBAYArQBa
+BAYA+wbABAAAAAAOAAAAAAABAAEAAQAQAHsEUAM5AAEAAQAAABAApwUKBk0AAgAEAAABEABOBgoG
+YQAEAAgAAwEAAIMGAABFAAUACwAGAG8BjwARAG8E2gARABYB3gARAHwA4gAGBjYA5gBWgGcG6QBW
+gPYA6QBQIAAAAACGAIEEBgABACQiAAAAAIYA6wY6AAEAwCIAAAAAhhhgBQYAAQDIIgAAAACDGGAF
+BgABANAiAAAAAJMIHAXtAAEA/CIAAAAAkwj+APIAAQADIwAAAACTCAoB9wABAAsjAAAAAJYIvAb9
+AAIAEiMAAAAAhhhgBQYAAgAaIwAAAACRGGYFAgECAAAAAQAnAwkAYAUBABEAYAUGABkAYAUKACkA
+YAUQADEAYAUQADkAYAUQAEEAYAUQAEkAYAUQAFEAYAUQAFkAYAUQAGEAYAUQAGkAYAUGAJEAYAUG
+ALkAYAUVAMkAYAUGAHEAewYmANEAQAYrANkAUQQwAOEAEwM2AJkARwM6AHkAYAUGAPEAtgY+AHkA
+BAVFAAEBYAUQAAwAawBTAHkAYQRZAHkAqgYQAHkA4gYQAHkAQgRgANEAVwZlABEBUQRrANEAsAQ2
+ABkB6ARyACEBYAUQACEBbwB3AOEAHQN9ANEAyAYBAIEAjAA6APEAnAaCANEAkQaJAPEABAePACkB
+VgWSAPEAdAChAHEAYAUGAJkAYAUGADEBvwCnADEB9wawAKEAYAW2AMEAYAUGAAgAGADQAAgAHADV
+ACkAcwA9AS4ACwAVAS4AEwAeAS4AGwA9AS4AIwBGAS4AKwB2AS4AMwB2AS4AOwB8AS4AQwBGAS4A
+SwCLAS4AUwB2AS4AWwCrAUMAYwDVAEkAcwA9AWMAawDVAIEAewDVABsAmwADAAEABAADAAAAIAUG
+AQAAHgELAQAAwAYQAQIABQADAAIABgAFAAEABwAFAAIACAAHAEoABIAAAAEAAABrI5V+AAAAAAAA
+RwAAAAQAAAAAAAAAAAAAAL4APgAAAAAADwAAAAAAAAAAAAAAxwB7AwAAAAAEAAAAAAAAAAAAAAC+
+AFoEAAAAAA8AAAAAAAAAAAAAAMcAFwAAAAAAAAAAAAEAAACxBQAABQACAAAAAAAAQ29sbGVjdGlv
+bmAxADxNb2R1bGU+AE1pY3Jvc29mdC5TcWxTZXJ2ZXIuTWFuYWdlZERUUwB2YWx1ZV9fAG1zY29y
+bGliAFNUXzMzOTJmNTNmN2UxNjRmYmE5YzI0MjFiYmY5MGJiZjFjAEFkZABTZW5kAFJlcGxhY2UA
+ZGVmYXVsdEluc3RhbmNlAGdldF9NZXNzYWdlAE1haWxNZXNzYWdlAFZhcmlhYmxlAFJ1bnRpbWVU
+eXBlSGFuZGxlAEdldFR5cGVGcm9tSGFuZGxlAE1pY3Jvc29mdC5TcWxTZXJ2ZXIuRHRzLlJ1bnRp
+bWUAVHlwZQBGYWlsdXJlAGdldF9DdWx0dXJlAHNldF9DdWx0dXJlAHJlc291cmNlQ3VsdHVyZQBW
+U1RBUlRTY3JpcHRPYmplY3RNb2RlbEJhc2UAQXBwbGljYXRpb25TZXR0aW5nc0Jhc2UARWRpdG9y
+QnJvd3NhYmxlU3RhdGUARmVjaGFDb3J0ZQBDb21waWxlckdlbmVyYXRlZEF0dHJpYnV0ZQBEZWJ1
+Z2dlck5vblVzZXJDb2RlQXR0cmlidXRlAERlYnVnZ2FibGVBdHRyaWJ1dGUARWRpdG9yQnJvd3Nh
+YmxlQXR0cmlidXRlAEFzc2VtYmx5VGl0bGVBdHRyaWJ1dGUAQXNzZW1ibHlUcmFkZW1hcmtBdHRy
+aWJ1dGUAVGFyZ2V0RnJhbWV3b3JrQXR0cmlidXRlAEFzc2VtYmx5Q29uZmlndXJhdGlvbkF0dHJp
+YnV0ZQBBc3NlbWJseURlc2NyaXB0aW9uQXR0cmlidXRlAENvbXBpbGF0aW9uUmVsYXhhdGlvbnNB
+dHRyaWJ1dGUAQXNzZW1ibHlQcm9kdWN0QXR0cmlidXRlAEFzc2VtYmx5Q29weXJpZ2h0QXR0cmli
+dXRlAFNTSVNTY3JpcHRUYXNrRW50cnlQb2ludEF0dHJpYnV0ZQBBc3NlbWJseUNvbXBhbnlBdHRy
+aWJ1dGUAUnVudGltZUNvbXBhdGliaWxpdHlBdHRyaWJ1dGUAZ2V0X1ZhbHVlAHNldF9WYWx1ZQB2
+YWx1ZQBTeXN0ZW0uUnVudGltZS5WZXJzaW9uaW5nAFRvU3RyaW5nAFNUXzNiZjQwNzZjMTNjNjQw
+ZWY5ODIzMDRhNzA2N2JmMjg1LmNzcHJvagBNaWNyb3NvZnQuU3FsU2VydmVyLlNjcmlwdFRhc2sA
+TWljcm9zb2Z0LlNxbFNlcnZlci5EdHMuVGFza3MuU2NyaXB0VGFzawBTeXN0ZW0uQ29sbGVjdGlv
+bnMuT2JqZWN0TW9kZWwAU2NyaXB0T2JqZWN0TW9kZWwAU3lzdGVtLkNvbXBvbmVudE1vZGVsAFN5
+c3RlbS5OZXQuTWFpbABTVF8zMzkyZjUzZjdlMTY0ZmJhOWMyNDIxYmJmOTBiYmYxYy5kbGwAc2V0
+X0lzQm9keUh0bWwAZ2V0X0l0ZW0AU3lzdGVtAHNldF9Gcm9tAEVudW0AcmVzb3VyY2VNYW4AU2Ny
+aXB0TWFpbgBTeXN0ZW0uQ29uZmlndXJhdGlvbgBTeXN0ZW0uR2xvYmFsaXphdGlvbgBnZXRfVHJh
+bnNhY3Rpb24AU3lzdGVtLlJlZmxlY3Rpb24ATWFpbEFkZHJlc3NDb2xsZWN0aW9uAEFjcXVpcmVD
+b25uZWN0aW9uAEV4Y2VwdGlvbgBnZXRfVG8AQ3VsdHVyZUluZm8AQ2hhcgBnZXRfUmVzb3VyY2VN
+YW5hZ2VyAENvbm5lY3Rpb25NYW5hZ2VyAEV2ZW50c09iamVjdFdyYXBwZXIARmlyZUVycm9yAC5j
+dG9yAC5jY3RvcgBTeXN0ZW0uRGlhZ25vc3RpY3MAU3lzdGVtLlJ1bnRpbWUuQ29tcGlsZXJTZXJ2
+aWNlcwBTeXN0ZW0uUmVzb3VyY2VzAFNUXzNiZjQwNzZjMTNjNjQwZWY5ODIzMDRhNzA2N2JmMjg1
+LmNzcHJvai5Qcm9wZXJ0aWVzLlJlc291cmNlcy5yZXNvdXJjZXMARGVidWdnaW5nTW9kZXMAU1Rf
+M2JmNDA3NmMxM2M2NDBlZjk4MjMwNGE3MDY3YmYyODUuY3Nwcm9qLlByb3BlcnRpZXMAZ2V0X1Zh
+cmlhYmxlcwBTZXR0aW5ncwBnZXRfQ29ubmVjdGlvbnMAU3VjY2VzcwBNYWlsQWRkcmVzcwBnZXRf
+RHRzAFNjcmlwdFJlc3VsdHMAZ2V0X0V2ZW50cwBDb25jYXQAT2JqZWN0AHNldF9TdWJqZWN0AFNw
+bGl0AGdldF9EZWZhdWx0AHNldF9UYXNrUmVzdWx0AFNtdHBDbGllbnQAc2V0X0JvZHkAT2J0ZW5l
+ckJvZHkAZ2V0X0Fzc2VtYmx5AEVtcHR5AAAAACFVAHMAZQByADoAOgBGAGUAYwBoAGEAQwBvAHIA
+dABlAAAnVQBzAGUAcgA6ADoAQwBvAHIAcgBlAG8AUgBlAHAAbwByAHQAZQAAPVIAZQBwAG8AcgB0
+AGUARQBzAHQAYQBkAG8AQwB1AGUAbgB0AGEAQABiAGEAbgBwAGEAaQBzAC4AaABuAAArUgBlAHAA
+bwByAHQAZQAgAEUAcwB0AGEAZABvACAAQwB1AGUAbgB0AGEAAAlTAE0AVABQAAAjVABpAHAAbwBM
+AGwAZQBuAGEAcgBCAGEAbgBkAGUAagBhAAAPTABpAG0AcABpAGEAcgAAJVQAaQBwAG8ATABpAG0A
+cABpAGEAcgBSAGUAcABvAHIAdABlAAARQwBPAE0AUABMAEUAVABBAAALRQByAHIAbwByAABvRQBy
+AHIAbwByACAAZQBuACAAcAB1AGIAbABpAGMAIAB2AG8AaQBkACAATQBhAGkAbgAsACAAdABhAHIA
+ZQBhACAARQBuAHYAaQBvACAAQwBvAHIAcgBlAG8AIABSAGUAcABvAHIAdABlADoAIAAAgMEgAEYA
+YQB2AG8AcgAgAHIAZQB2AGkAcwBhAHIAIABlAGwAIABoAGkAcwB0APMAcgBpAGMAbwAgAGQAZQBs
+ACAASgBPAEIAIABbAFAAUgBPAEMARQBTAE8AXQAgAC0AIABbAFQAQwAgAC0AIABFAFMAVABBAEQA
+TwBTACAAQwBVAEUATgBUAEEAIABWAEEAUwBBAF0AIABwAGEAcgBhACAAbQDhAHMAIABpAG4AZgBv
+AHIAbQBhAGMAaQDzAG4ALgABP0UAcgByAG8AcgAgAGUAbgB2AGkAbwAgAGMAbwByAHIAZQBvACAA
+cgBlAHAAbwByAHQAZQAgAE0AYQBpAG4AAIn1PAAhAEQATwBDAFQAWQBQAEUAIABoAHQAbQBsACAA
+UABVAEIATABJAEMAIAAnAC0ALwAvAFcAMwBDAC8ALwBEAFQARAAgAFgASABUAE0ATAAgADEALgAw
+ACAAVAByAGEAbgBzAGkAdABpAG8AbgBhAGwALwAvAEUATgAnACAAJwBoAHQAdABwADoALwAvAHcA
+dwB3AC4AdwAzAC4AbwByAGcALwBUAFIALwB4AGgAdABtAGwAMQAvAEQAVABEAC8AeABoAHQAbQBs
+ADEALQB0AHIAYQBuAHMAaQB0AGkAbwBuAGEAbAAuAGQAdABkACcAPgAgADwAaAB0AG0AbAAgAHgA
+bQBsAG4AcwA9ACcAaAB0AHQAcAA6AC8ALwB3AHcAdwAuAHcAMwAuAG8AcgBnAC8AMQA5ADkAOQAv
+AHgAaAB0AG0AbAAnAD4AIAA8AGIAbwBkAHkAPgAgADwAcwB0AHkAbABlAD4AIAAuAFQAaQB0AHUA
+bABvAFQAYgBsACAAewAgAGIAYQBjAGsAZwByAG8AdQBuAGQALQBjAG8AbABvAHIAOgAgACMAMAAw
+ADQANAA2AGEAOwAgAGMAbwBsAG8AcgA6ACAAdwBoAGkAdABlADsAIAB0AGUAeAB0AC0AYQBsAGkA
+ZwBuADoAIABjAGUAbgB0AGUAcgA7ACAAfQAgAC4ASQBtAGEAZwBlAG4AIAB7ACAAdwBpAGQAdABo
+ADoAIAAzADUAJQA7ACAALwAqACAAcABvAHMAaQB0AGkAbwBuADoAIAByAGUAbABhAHQAaQB2AGUA
+OwAgAGwAZQBmAHQAOgAgADMAMAAwAHAAeAA7ACAAYgBvAHIAZABlAHIAOgAgADEAcAB4ACAAYgBs
+AGEAYwBrACAAcwBvAGwAaQBkADsAIAAqAC8AIAB9ACAAdABiAG8AZAB5ACAAdAByACAAdABkACAA
+ewAgAC8AKgAgAGIAbwByAGQAZQByADoAIAAxAHAAeAAgACMAMABmADUAOQBhADAAIABzAG8AbABp
+AGQAOwAgACoALwAgAHAAYQBkAGQAaQBuAGcAOgAgADUAcAB4ACAANQBwAHgAOwAgAH0AIAB0AGIA
+bwBkAHkAIAB7ACAAYgBvAHIAZABlAHIAOgAgADEAcAB4ACAAIwAwADAANAA0ADYAYQAgAHMAbwBs
+AGkAZAA7ACAAfQAgAC4AVABhAGIAbABhACAAewAgAC8AKgBtAGEAcgBnAGkAbgAtAHQAbwBwADoA
+IAAxADAAMABwAHgAOwAgAG0AYQByAGcAaQBuAC0AbABlAGYAdAA6ACAAMwA4ADAAUABYADsAIAAq
+AC8AIAB3AGkAZAB0AGgAOgAgADUANQAwAHAAeAA7ACAAYgBhAGMAawBnAHIAbwB1AG4AZAAtAGMA
+bwBsAG8AcgA6ACAAdwBoAGkAdABlADsAIAB9ACAAPAAvAHMAdAB5AGwAZQA+ACAAPABkAGkAdgAg
+AGMAbABhAHMAcwA9ACcAVABhAGIAbABhACcAPgAgADwAdABhAGIAbABlACAAcwB0AHkAbABlAD0A
+JwBmAG8AbgB0AC0AZgBhAG0AaQBsAHkAOgBDAGEAbABpAGIAcgBpADsAIABiAG8AcgBkAGUAcgAt
+AGMAbwBsAGwAYQBwAHMAZQA6ACAAYwBvAGwAbABhAHAAcwBlADsAIAB3AGkAZAB0AGgAOgAgADEA
+MAAwACUAOwAnAD4AIAA8AHQAaABlAGEAZAA+ACAAPAB0AHIAIABzAHQAeQBsAGUAPQAnAGIAYQBj
+AGsAZwByAG8AdQBuAGQALQBjAG8AbABvAHIAOgAgACMAZgBmAGUAZgAxADEAOwAnAD4AIAA8AHQA
+ZAAgAGMAbwBsAHMAcABhAG4APQAnADIAJwA+ADwAaQBtAGcAIABzAHIAYwA9ACcAaAB0AHQAcABz
+ADoALwAvAHcAdwB3AC4AYgBhAG4AcABhAGkAcwAuAGgAbgAvAGkAbQBhAGcAZQBzAC8AbABvAGcA
+bwAuAHAAbgBnACcAIABhAGwAdAA9ACcAJwAgAGMAbABhAHMAcwA9ACcASQBtAGEAZwBlAG4AJwAg
+AGEAbABpAGcAbgA9AGwAZQBmAHQAPgAgADwALwB0AGQAPgAgADwALwB0AHIAPgAgADwAdAByAD4A
+IAA8AHQAZAAgAGMAbwBsAHMAcABhAG4APQAnADIAJwAgAHMAdAB5AGwAZQA9ACcAYgBhAGMAawBn
+AHIAbwB1AG4AZAAtAGMAbwBsAG8AcgA6ACAAIwBmAGYAZQBmADEAMQA7ACcAPgAmAG4AYgBzAHAA
+OwA8AC8AdABkAD4AIAA8AC8AdAByAD4AIAA8AHQAcgA+ACAAPAB0AGQAIABjAG8AbABzAHAAYQBu
+AD0AJwAyACcAIABjAGwAYQBzAHMAPQAnAFQAaQB0AHUAbABvAFQAYgBsACcAPgBFAHMAdABhAGQA
+bwBzACAAZABlACAAQwB1AGUAbgB0AGEAIABkAGUAIABUAGEAcgBqAGUAdABhACAAZABlACAAQwBy
+ACYAZQBhAGMAdQB0AGUAOwBkAGkAdABvADwALwB0AGQAPgAgADwALwB0AHIAPgAgADwALwB0AGgA
+ZQBhAGQAPgAgADwAdABiAG8AZAB5AD4AIAA8AHQAcgA+ACAAPAB0AGQAIABjAG8AbABzAHAAYQBu
+AD0AJwAyACcAPgAgAEUAcwB0AGkAbQBhAGQAbwAoAGEAKQA6ACAAPAAvAHQAZAA+ACAAPAAvAHQA
+cgA+ACAAPAB0AHIAPgAgADwAdABkACAAYwBvAGwAcwBwAGEAbgA9ACcAMgAnAD4AIAA8AHAAPgBM
+AGUAIABpAG4AZgBvAHIAbQBhAG0AbwBzACAAcQB1AGUAIABlAGwAIABwAHIAbwBjAGUAcwBvACAA
+ZABlACAAZwBlAG4AZQByAGEAYwBpAPMAbgAgAGQAZQAgAEoAUwBPAE4AIABkAGUAIABlAHMAdABh
+AGQAbwBzACAAZABlACAAYwB1AGUAbgB0AGEAIABkAGUAIAB0AGEAcgBqAGUAdABhACAAZABlACAA
+YwByACYAZQBhAGMAdQB0AGUAOwBkAGkAdABvACAAZABlAGwAIABjAG8AcgB0AGUAIABbAEYAZQBj
+AGgAYQBDAG8AcgB0AGUAXQAgAGgAYQAgAGYAaQBuAGEAbABpAHoAYQBkAG8AIABjAG8AbgAgAGUA
+eABpAHQAbwAuADwALwBwAD4AIAA8AC8AdABkAD4AIAA8AC8AdAByAD4AIAA8AC8AdABiAG8AZAB5
+AD4AIAA8AC8AdABhAGIAbABlAD4AIAA8AC8AZABpAHYAPgAgADwALwBiAG8AZAB5AD4AIAA8AC8A
+aAB0AG0AbAA+AAEZWwBGAGUAYwBoAGEAQwBvAHIAdABlAF0AAICHRQByAHIAbwByACAAZQBuACAA
+cAB1AGIAbABpAGMAIABzAHQAcgBpAG4AZwAgAE8AYgB0AGUAbgBlAHIAQgBvAGQAeQAgAGUAbgAg
+AHQAYQByAGUAYQAgAEUAbgB2AGkAYQByACAAQwBvAHIAcgBlAG8AIABSAGUAcABvAHIAdABlADoA
+IAAAMUUAcgByAG8AcgAgAHMAdAByAGkAbgBnACAATwBiAHQAZQBuAGUAcgBCAG8AZAB5AAB/UwBU
+AF8AMwBiAGYANAAwADcANgBjADEAMwBjADYANAAwAGUAZgA5ADgAMgAzADAANABhADcAMAA2ADcA
+YgBmADIAOAA1AC4AYwBzAHAAcgBvAGoALgBQAHIAbwBwAGUAcgB0AGkAZQBzAC4AUgBlAHMAbwB1
+AHIAYwBlAHMAAAAAifs0GEAP10Sx8aAuvf/yxQAEIAEBCAMgAAEFIAEBEREEIAEBDgUgAQERWQoH
+BRI9HQ4IDhJBBCAAEmkEIAASbQUgARJxHAMgABwDIAAOBiABHQ4dAwQgABJ9CBUSgIUBEoCBBSAB
+ARMABiABARKAgQQgAQECBSAAEoCJBiABEoCNHAQgARwcBSABARI9BCABARwGAAMODg4OBSAAEoCV
+AgYOCCAFAggODg4IBQcCDhJBBSACDg4OCAABEoCZEYCdBSAAEoChByACAQ4SgKEIt3pcVhk04IkI
+iYRdzYCAzJEEAAAAAAQBAAAAAwYSUQMGElUDBhIQAgYIAwYRFAQAABJRBAAAElUFAAEBElUEAAAS
+EAMAAAEECAASUQQIABJVBAgAEhAIAQAIAAAAAAAeAQABAFQCFldyYXBOb25FeGNlcHRpb25UaHJv
+d3MBCAEAAgAAAAAALwEAKlNUXzNiZjQwNzZjMTNjNjQwZWY5ODIzMDRhNzA2N2JmMjg1LmNzcHJv
+agAABQEAAAAADgEACU1pY3Jvc29mdAAAHwEAGkNvcHlyaWdodCBAIE1pY3Jvc29mdCAyMDIyAABJ
+AQAaLk5FVEZyYW1ld29yayxWZXJzaW9uPXY0LjcBAFQOFEZyYW1ld29ya0Rpc3BsYXlOYW1lEi5O
+RVQgRnJhbWV3b3JrIDQuNwAAALQAAADOyu++AQAAAJEAAABsU3lzdGVtLlJlc291cmNlcy5SZXNv
+dXJjZVJlYWRlciwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQ
+dWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5I1N5c3RlbS5SZXNvdXJjZXMuUnVudGltZVJl
+c291cmNlU2V0AgAAAAAAAAAAAAAAUEFEUEFEULQAAAAgQAAAAAAAAAAAAAA6QAAAACAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAALEAAAAAAAAAAAAAAAABfQ29yRGxsTWFpbgBtc2NvcmVlLmRsbAAAAAAA
+/yUAIAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABABAA
+AAAYAACAAAAAAAAAAAAAAAAAAAABAAEAAAAwAACAAAAAAAAAAAAAAAAAAAABAAAAAABIAAAAWGAA
+AF4EAAAAAAAAAAAAAF4ENAAAAFYAUwBfAFYARQBSAFMASQBPAE4AXwBJAE4ARgBPAAAAAAC9BO/+
+AAABAAAAAQCVfmsjAAABAJV+ayM/AAAAAAAAAAQAAAACAAAAAAAAAAAAAAAAAAAARAAAAAEAVgBh
+AHIARgBpAGwAZQBJAG4AZgBvAAAAAAAkAAQAAABUAHIAYQBuAHMAbABhAHQAaQBvAG4AAAAAAAAA
+sAS+AwAAAQBTAHQAcgBpAG4AZwBGAGkAbABlAEkAbgBmAG8AAACaAwAAAQAwADAAMAAwADAANABi
+ADAAAAAaAAEAAQBDAG8AbQBtAGUAbgB0AHMAAAAAAAAANAAKAAEAQwBvAG0AcABhAG4AeQBOAGEA
+bQBlAAAAAABNAGkAYwByAG8AcwBvAGYAdAAAAH4AKwABAEYAaQBsAGUARABlAHMAYwByAGkAcAB0
+AGkAbwBuAAAAAABTAFQAXwAzAGIAZgA0ADAANwA2AGMAMQAzAGMANgA0ADAAZQBmADkAOAAyADMA
+MAA0AGEANwAwADYANwBiAGYAMgA4ADUALgBjAHMAcAByAG8AagAAAAAAPgAPAAEARgBpAGwAZQBW
+AGUAcgBzAGkAbwBuAAAAAAAxAC4AMAAuADkAMAA2ADcALgAzADIANAAwADUAAAAAAHAAKAABAEkA
+bgB0AGUAcgBuAGEAbABOAGEAbQBlAAAAUwBUAF8AMwAzADkAMgBmADUAMwBmADcAZQAxADYANABm
+AGIAYQA5AGMAMgA0ADIAMQBiAGIAZgA5ADAAYgBiAGYAMQBjAC4AZABsAGwAAABaABsAAQBMAGUA
+ZwBhAGwAQwBvAHAAeQByAGkAZwBoAHQAAABDAG8AcAB5AHIAaQBnAGgAdAAgAEAAIABNAGkAYwBy
+AG8AcwBvAGYAdAAgADIAMAAyADIAAAAAACoAAQABAEwAZQBnAGEAbABUAHIAYQBkAGUAbQBhAHIA
+awBzAAAAAAAAAAAAeAAoAAEATwByAGkAZwBpAG4AYQBsAEYAaQBsAGUAbgBhAG0AZQAAAFMAVABf
+ADMAMwA5ADIAZgA1ADMAZgA3AGUAMQA2ADQAZgBiAGEAOQBjADIANAAyADEAYgBiAGYAOQAwAGIA
+YgBmADEAYwAuAGQAbABsAAAAdgArAAEAUAByAG8AZAB1AGMAdABOAGEAbQBlAAAAAABTAFQAXwAz
+AGIAZgA0ADAANwA2AGMAMQAzAGMANgA0ADAAZQBmADkAOAAyADMAMAA0AGEANwAwADYANwBiAGYA
+MgA4ADUALgBjAHMAcAByAG8AagAAAAAAQgAPAAEAUAByAG8AZAB1AGMAdABWAGUAcgBzAGkAbwBu
+AAAAMQAuADAALgA5ADAANgA3AC4AMwAyADQAMAA1AAAAAABGAA8AAQBBAHMAcwBlAG0AYgBsAHkA
+IABWAGUAcgBzAGkAbwBuAAAAMQAuADAALgA5ADAANgA3AC4AMwAyADQAMAA1AAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAwAAABMMAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
+            </ScriptProject>
+          </DTS:ObjectData>
+        </DTS:Executable>
