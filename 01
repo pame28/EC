@@ -1,0 +1,62 @@
+Hola, mira que tengo un nuevo proyecto asignado se llama Estados de Cuenta, este consiste en generar un archivo JSON con el detalle de todas las transacciones de Tarjeta de Crédito para esa fecha de corte, y este se envia por correo a un proveedor que es el encargado de enviar los estados de cuenta a cada cliente.
+
+Actualmente ese proceso ya existe, se hace por medio de un DTSX, mi proyecto en si, se trata de:
+
+01. Migrarlo
+02. Que sea independiente de lo que actualmente hay
+03. No quieren que se cambie como la funcionalidad que actualmente hay, sino más bien que se mejore 
+04. Necesito crear una nueva BD que sea totalmente nueva
+05. Tengo que crear un nuevo dtsx, no quieren que cambie tanto el flujo, ni funcionalidad, sino que, a nivel de código se puedan hacer mejoras significativas, o si encuentro una mejor forma de hacerlo se haga asi, comprendes
+
+
+Este proyecto necesita de varias fases:
+
+La fase de creación de la BD
+La fase de creación del DTSX
+La fase de creación de una consola(Esta no me queda clara para qué)
+
+
+
+
+Te mostrare el plan de trabajo que me dieron tal vez tu entiendas: 
+
+Estados de cuenta JSON
+Base de datos
+Diseñar y crear de TablaParametros 
+Crear Procedimiento almacenado para extracción de datos JSON
+Crear Procedimiento almacenado para reporte
+Crear Objetos para proceso de EC
+Validar integridad de datos y relaciones
+Desarrollo .NET
+Configuración de entorno de Desarrollo
+Análisis y diseño técnico, estructura del proyecto (patron Repository)
+Configuración de conexiones y valores globales (apsettings.json)
+Construcción de modelos y clases utilitarias 
+Clase DatabaseConnection para la base de datos
+Clase SqlExecutor para ejecutar los procedimientos almacenados con SqlCommand
+Consumir procedimiento almacenado con información de los estados de cuenta
+Encriptar parametros de la base de datos con AES-GCM 256
+Parametrización de hilos
+Crear campo parametro hilo en la tabla de parametros
+Crear clase ParalelismoConfigurable para leer y aplicar el parámetro
+Implementar procesamiento paralelo con Parallel.ForEach o Task.Run
+Controlar número de hilos con MaxDegreeOfParallelism
+Implementar lógica de ajuste dinámico
+Pruebas y Validaciones
+Calcular tarjetas procesadas por segundo
+Validar comportamiento con distintos valores de hilos
+Consola JSON
+Transformar información obtenida en estructrura y contenido del JSON EC
+Validar datos para verificar la estructura y contenido del JSON
+Implementar ILogger de todos los eventos éxito/error que pasen en la aplicación
+Lógica para guardar archivos JSON generados en una carpeta del servidor
+Lógica para gestionar reintentos y reprocesar tarjetas fallidas
+Configurar manejo de excepciones hilos y recuperación por lote
+Documentar funcionalidades y flujo de ejecución 
+SFTP
+Pruebas y Validaciones
+Pruebas unitarias de la consola JSON xUnit + Moq
+Validar la estructura de los archivos generados JSON
+
+
+Respondeme esto y cuando estemos claros te enviaré el paso a paso del dtsx actual para que nos guiemos de eso para crear la BD nueva, porque me dijeron que, para yo saber lo que necesitaba en mi BD nueva ... tenia que guiarme del dtsx, no te puedo enviar el dtsx para que lo analices, verdad?
