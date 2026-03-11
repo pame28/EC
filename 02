@@ -1,735 +1,7 @@
-Segmento 08
+Segmento 09
 
                  <ProjectItem
-                    Name="ScriptMain.cs"
-                    Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
-
-#region Namespaces
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.IO;
-using System.Collections.Generic;
-using System.Web.Script.Serialization;
-//using System.Runtime.Serialization.Json;
-#endregion
-
-namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
-{
-	/// <summary>
-	/// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-	/// or parent of this class.
-	/// </summary>
-	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-	{
-		#region Help:  Using Integration Services variables and parameters in a script
-		/* To use a variable in this script, first ensure that the variable has been added to 
-         * either the list contained in the ReadOnlyVariables property or the list contained in 
-         * the ReadWriteVariables property of this script task, according to whether or not your
-         * code needs to write to the variable.  To add the variable, save this script, close this instance of
-         * Visual Studio, and update the ReadOnlyVariables and 
-         * ReadWriteVariables properties in the Script Transformation Editor window.
-         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-         * 
-         * Example of reading from a variable:
-         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
-         * 
-         * Example of writing to a variable:
-         *  Dts.Variables["User::myStringVariable"].Value = "new value";
-         * 
-         * Example of reading from a package parameter:
-         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
-         *  
-         * Example of reading from a project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
-         * 
-         * Example of reading from a sensitive project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
-         * */
-
-		#endregion
-
-		#region Help:  Firing Integration Services events from a script
-		/* This script task can fire events for logging purposes.
-         * 
-         * Example of firing an error event:
-         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
-         * 
-         * Example of firing an information event:
-         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
-         * 
-         * Example of firing a warning event:
-         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
-         * */
-		#endregion
-
-		#region Help:  Using Integration Services connection managers in a script
-		/* Some types of connection managers can be used in this script task.  See the topic 
-         * "Working with Connection Managers Programatically" for details.
-         * 
-         * Example of using an ADO.Net connection manager:
-         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
-         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
-         *
-         * Example of using a File connection manager
-         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
-         *  string filePath = (string)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
-         * */
-		#endregion
-
-
-		/// <summary>
-		/// This method is called when this script task executes in the control flow.
-		/// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-		/// To open Help, press F1.
-		/// </summary>
-		public void Main()
-		{
-
-			try
-			{
-				string FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
-				string Equivalente = Dts.Variables["User::Equivalente"].Value.ToString();
-				object Conexion = Dts.Connections["BPTarjetas"].AcquireConnection(Dts.Transaction);
-				string Cuenta = Dts.Variables["User::Cuenta"].Value.ToString();
-				int cantidad = Convert.ToInt32(Dts.Variables["User::Cant"].Value.ToString());
-				string CorreoCliente = Dts.Variables["User::Correo"].Value.ToString();
-				string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(FechaCorte).ToString("yyyy-MM-dd");
-				JavaScriptSerializer serializer = new JavaScriptSerializer();
-
-
-
-				int CantidadLote = Convert.ToInt32(Dts.Variables["User::CantidadLote"].Value.ToString());
-
-				int CantidadEjecucion = Convert.ToInt32(Dts.Variables["User::CantidadEjecucion"].Value.ToString());
-
-				string TipoGeneracion = Dts.Variables["User::TipoGeneracion"].Value.ToString();
-
-				//Obtener la lista que contiene el encabezado
-				List<E_EstadoCuenta> Encabezado = new List<E_EstadoCuenta>();
-				//Obtener la lista que contiene el detalle
-				List<D_EstadoCuenta> Detalle = new List<D_EstadoCuenta>();
-				//Obtener la lista que contiene los financiamientos
-				List<F_EstadoCuenta> Financiamientos = new List<F_EstadoCuenta>();
-
-				SQL Sql = new SQL();
-				Boolean isJson = false; //corte 2024-07-06 Se utiliza de validación para utilizar el metodo Getusp_WSEstadoCuentaJSON
-				if (isJson) { 
-					string EstadoCuentaJSON = string.Empty;
-					string TarjetaIndicador = string.Empty;
-					bool ConsultaJSON = Sql.Getusp_WSEstadoCuentaJSON(Equivalente, FechaCorte, Conexion, ref EstadoCuentaJSON, ref TarjetaIndicador);
-
-					string Tarjeta = "\"" + TarjetaIndicador + "\":";
-
-					//string path = @"" + RutaJson + "EstadosCuenta_" + DateNow + ".json";
-					string path = @"" + RutaJson + "\\" + "Estado_de_cuenta_corte_" + Convert.ToDateTime(FechaCorte).Day + ".json";
-					//Dts.Variables["User::NombreJson"].Value = "EstadosCuenta_" + DateNow + ".json";
-					Dts.Variables["User::NombreJson"].Value = "Estado_de_cuenta_corte_" + Convert.ToDateTime(FechaCorte).Day + ".json";
-					string path2 = @"" + RutaJson + "\\" + "Contador.txt";
-					string principio = "true";
-					string final = "true";
-
-					//Lee documento bandera para saber si es el principio del Json
-					string leido = File.ReadAllText(path2);
-
-					if (leido == "")
-					{
-						leido = "0";
-						File.AppendAllText(path2, leido);
-						principio = "true";
-					}
-					else
-					{
-						principio = "false";
-					}
-					//Suma los registros que se van ejecutando 1 a 1
-					if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-					{
-						int posicion = Convert.ToInt32(leido) + 1;
-						File.WriteAllText(path2, Convert.ToString(posicion));
-					}
-
-
-					//Condici�n para valdidar que el final es cuando solo resta un registro por procesar
-					if (cantidad == 1)
-					{
-						final = "true";
-					}
-					else
-					{
-						final = "false";
-					}
-					//Valida el principio y si es true agrega la llave inicial
-					if (principio == "true")
-					{
-						File.AppendAllText(path, "{");
-						principio = "false";
-					}
-					//Si el final es true cierra el Json y quita la coma del la ultima iteraci�n
-					if (final == "true")
-					{
-						if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-							File.AppendAllText(path, Tarjeta + EstadoCuentaJSON);
-						File.AppendAllText(path, "}");
-					}
-					else
-					{
-						if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-							File.AppendAllText(path, Tarjeta + EstadoCuentaJSON + ",");
-					}
-					object Conexion2 = Dts.Connections["BPTarjetas"].AcquireConnection(Dts.Transaction);
-					Sql.ActBandejaECTC(Conexion2, Equivalente, Cuenta, "1");
-					//Sql.InsertReporte(Parametros[0], Parametros[1], Parametros[2], Parametros[3], "1", Parametros[4], Conexion2);
-				}
-                else
-                {
-					bool Consulta = Sql.Getusp_WSEstadoCuenta(Equivalente, FechaCorte, Conexion, ref Encabezado, ref Detalle, ref Financiamientos);
-				
-					string[] Parametros = new string[7];
-					Parametros[0] = Dts.Variables["User::Cuenta"].Value.ToString();
-					Parametros[1] = Equivalente;
-					Parametros[3] = FechaCorte;
-					Parametros[4] = CorreoCliente;
-					//Creacion de archivo Json para estado de cuenta
-					#region Generacion de Json completo estado de cuenta
-					string EncabezadoCorreo1 = "";
-					string TarjetaIndicador = string.Empty;
-
-					foreach (E_EstadoCuenta item in Encabezado)
-					{
-						string Pago_Contado_MNSET = item.Pago_Contado_MN.ToString("0.00");
-						string Pago_Minimo_MNSET = item.Pago_Minimo_MN.ToString("0.00");
-						string Saldo_Vencido_MNSET = item.Saldo_Vencido_MN.ToString("0.00");
-						string Saldo_Anterior_MNSET = item.Saldo_Anterior_MN.ToString("0.00");
-						string Saldo_Final_MNSET = item.Saldo_Final_MN.ToString("0.00");
-						string Compras_Deb_MNSET = item.Compras_Deb_MN.ToString("0.00");
-						string Pagos_Cred_MNSET = item.Pagos_Cred_MN.ToString("0.00");
-						string Sobregiro_MNSET = item.Sobregiro_MN.ToString("0.00");
-						string Cuota_Mes_MNSET = item.Cuota_Mes_MN.ToString("0.00");
-
-						string Pago_Contado_MESET = item.Pago_Contado_ME.ToString("0.00");
-						string Pago_Minimo_MESET = item.Pago_Minimo_ME.ToString("0.00");
-						string Saldo_Vencido_MESET = item.Saldo_Vencido_ME.ToString("0.00");
-						string Saldo_Anterior_MESET = item.Saldo_Anterior_ME.ToString("0.00");
-						string Saldo_Final_MESET = item.Saldo_Final_ME.ToString("0.00");
-						string Saldo_Consumo_MNSET = item.Saldo_Consumo_MN.ToString("0.00");
-						string Saldo_Consumo_MESET = item.Saldo_Consumo_ME.ToString("0.00");
-						string Compras_Deb_MESET = item.Compras_Deb_ME.ToString("0.00");
-						string Pagos_Cred_MESET = item.Pagos_Cred_ME.ToString("0.00");
-						string Sobregiro_MESET = item.Sobregiro_ME.ToString("0.00");
-						string Cuota_Mes_MESET = item.Cuota_Mes_ME.ToString("0.00");
-
-						string Limite_CreditoSET = item.Limite_Credito.ToString("0.00");
-						string Disponible_Cta_MNSET = item.Disponible_Cta_MN.ToString("0.00");
-						string Disponible_Cta_MESET = item.Disponible_Cta_ME.ToString("0.00");
-						string Disponible_Ret_MNSET = item.Disponible_Ret_MN.ToString("0.00");
-						string Disponible_Ret_MESET = item.Disponible_Ret_ME.ToString("0.00");
-						string PTS_Saldo_AntSET = item.PTS_Saldo_Ant.ToString("0.00");
-						string PTS_GanadosSET = item.PTS_Ganados.ToString("0.00");
-						string PTS_UsuadosSET = item.PTS_Usuados.ToString("0.00");
-						string PTS_Saldo_ActualSET = item.PTS_Saldo_Actual.ToString("0.00");
-
-						string EF_LimiteSET = item.EF_Limite.ToString("0.00");
-						string EF_Saldo_MNSET = item.EF_Saldo_MN.ToString("0.00");
-						string EF_Debitos_MNSET = item.EF_Debitos_MN.ToString("0.00");
-						string EF_Creditos_MNSET = item.EF_Creditos_MN.ToString("0.00");
-						string EF_Saldo_MESET = item.EF_Saldo_ME.ToString("0.00");
-						string EF_Debitos_MESET = item.EF_Debitos_ME.ToString("0.00");
-						string EF_Creditos_MESET = item.EF_Creditos_ME.ToString("0.00");
-						string EF_Disponible_MNSET = item.EF_Disponible_MN.ToString("0.00");
-						string EF_Disponible_MESET = item.EF_Disponible_ME.ToString("0.00");
-						string Tasa_Int_Anual_MNSET = item.Tasa_Int_Anual_MN.ToString("0.00");
-						string Tasa_Int_Anual_MESET = item.Tasa_Int_Anual_ME.ToString("0.00");
-
-						string Costo_Anual_Tot_MNSET = item.Costo_Anual_Tot_MN.ToString("0.00");
-						string Costo_Anual_Tot_MESET = item.Costo_Anual_Tot_ME.ToString("0.00");
-
-						string Interes_Pago_Min_MNSET = item.Interes_Pago_Min_MN.ToString("0.00");
-						string Interes_Pago_Min_MESET = item.Interes_Pago_Min_ME.ToString("0.00");
-
-						string Limite_CreditoMNSET = item.Limite_CreditoMN.ToString("0.00");
-						string Interes_Corriente_MNSET = item.Interes_Corriente_MN.ToString("0.00");
-						string Interes_Corriente_MESET = item.Interes_Corriente_ME.ToString("0.00");
-
-						//Tarjeta Indicador
-						TarjetaIndicador = item.No_Tarjeta.ToString();
-						Parametros[2] = item.Nombre_TH_Tit.Trim();
-
-						E_EstadoCuenta E_EstadoCuenta = new E_EstadoCuenta
-						{
-							Tarjeta_Imprimir = item.Tarjeta_Imprimir.Trim(),
-							Origen = item.Origen.Trim(),
-							Emisor = item.Emisor.Trim(),
-							No_Cuenta = item.No_Cuenta.Trim(),
-							Nombre_TH_Tit = item.Nombre_TH_Tit.Trim(),
-							Emisor_Madre = item.Emisor_Madre.Trim(),
-							Cuenta_Madre = item.Cuenta_Madre.Trim(),
-							Nombre_Empresa = item.Nombre_Empresa.Trim(),
-							Tipo_Tarjeta = item.Tipo_Tarjeta.Trim(),
-							No_Tarjeta = item.No_Tarjeta.Trim(),
-							Fecha_Pago = item.Fecha_Pago.Trim(),
-							Fecha_Corte = item.Fecha_Corte.Trim(),
-
-							Pago_Contado_MN = Convert.ToDecimal(Pago_Contado_MNSET),
-							Pago_Minimo_MN = Convert.ToDecimal(Pago_Minimo_MNSET),
-							Saldo_Vencido_MN = Convert.ToDecimal(Saldo_Vencido_MNSET),
-							Saldo_Anterior_MN = Convert.ToDecimal(Saldo_Anterior_MNSET),
-							Saldo_Final_MN = Convert.ToDecimal(Saldo_Final_MNSET),
-							Compras_Deb_MN = Convert.ToDecimal(Compras_Deb_MNSET),
-							Pagos_Cred_MN = Convert.ToDecimal(Pagos_Cred_MNSET),
-							Sobregiro_MN = Convert.ToDecimal(Sobregiro_MNSET),
-							Cuota_Mes_MN = Convert.ToDecimal(Cuota_Mes_MNSET),
-
-							Pago_Contado_ME = Convert.ToDecimal(Pago_Contado_MESET),
-							Pago_Minimo_ME = Convert.ToDecimal(Pago_Minimo_MESET),
-							Saldo_Vencido_ME = Convert.ToDecimal(Saldo_Vencido_MESET),
-							Saldo_Anterior_ME = Convert.ToDecimal(Saldo_Anterior_MESET),
-							Saldo_Final_ME = Convert.ToDecimal(Saldo_Final_MESET),
-							Saldo_Consumo_MN = Convert.ToDecimal(Saldo_Consumo_MNSET),
-							Saldo_Consumo_ME = Convert.ToDecimal(Saldo_Consumo_MESET),
-							Compras_Deb_ME = Convert.ToDecimal(Compras_Deb_MESET),
-							Pagos_Cred_ME = Convert.ToDecimal(Pagos_Cred_MESET),
-							Sobregiro_ME = Convert.ToDecimal(Sobregiro_MESET),
-							Cuota_Mes_ME = Convert.ToDecimal(Cuota_Mes_MESET),
-
-							Moneda_Lim_Cre = item.Moneda_Lim_Cre,
-
-							Limite_Credito = Convert.ToDecimal(Limite_CreditoSET),
-							Disponible_Cta_MN = Convert.ToDecimal(Disponible_Cta_MNSET),
-							Disponible_Cta_ME = Convert.ToDecimal(Disponible_Cta_MESET),
-							Disponible_Ret_MN = Convert.ToDecimal(Disponible_Ret_MNSET),
-							Disponible_Ret_ME = Convert.ToDecimal(Disponible_Ret_MESET),
-							PTS_Saldo_Ant = Convert.ToDecimal(PTS_Saldo_AntSET),
-							PTS_Ganados = Convert.ToDecimal(PTS_GanadosSET),
-							PTS_Usuados = Convert.ToDecimal(PTS_UsuadosSET),
-							PTS_Saldo_Actual = Convert.ToDecimal(PTS_Saldo_ActualSET),
-
-							Moneda_Lim_EF = item.Moneda_Lim_EF,
-
-							EF_Limite = Convert.ToDecimal(EF_LimiteSET),
-							EF_Saldo_MN = Convert.ToDecimal(EF_Saldo_MNSET),
-							EF_Debitos_MN = Convert.ToDecimal(EF_Debitos_MNSET),
-							EF_Creditos_MN = Convert.ToDecimal(EF_Creditos_MNSET),
-							EF_Saldo_ME = Convert.ToDecimal(EF_Saldo_MESET),
-							EF_Debitos_ME = Convert.ToDecimal(EF_Debitos_MESET),
-							EF_Creditos_ME = Convert.ToDecimal(EF_Creditos_MESET),
-							EF_Disponible_MN = Convert.ToDecimal(EF_Disponible_MNSET),
-							EF_Disponible_ME = Convert.ToDecimal(EF_Disponible_MESET),
-							Tasa_Int_Anual_MN = Convert.ToDecimal(Tasa_Int_Anual_MNSET),
-							Tasa_Int_Anual_ME = Convert.ToDecimal(Tasa_Int_Anual_MESET),
-
-							Direccion_1 = item.Direccion_1.Trim(),
-							Direccion_2 = item.Direccion_2.Trim(),
-							Direccion_3 = item.Direccion_3.Trim(),
-							Apdo_Postal = item.Apdo_Postal.Trim(),
-							Cidudad = item.Cidudad.Trim(),
-							Mensaje_1 = item.Mensaje_1.Trim(),
-							Mensaje_2 = item.Mensaje_2.Trim(),
-							Mensaje_3 = item.Mensaje_3.Trim(),
-							Mensaje_4 = item.Mensaje_4.Trim(),
-							Mensaje_5 = item.Mensaje_5.Trim(),
-
-
-							Costo_Anual_Tot_MN = Convert.ToDecimal(Costo_Anual_Tot_MNSET),
-							Costo_Anual_Tot_ME = Convert.ToDecimal(Costo_Anual_Tot_MESET),
-
-							Plazo_Canc_Deuda_MN = item.Plazo_Canc_Deuda_MN,
-							Plazo_Canc_Deuda_ME = item.Plazo_Canc_Deuda_ME,
-
-							Interes_Pago_Min_MN = Convert.ToDecimal(Interes_Pago_Min_MNSET),
-							Interes_Pago_Min_ME = Convert.ToDecimal(Interes_Pago_Min_MESET),
-
-							Correo = item.Correo,
-							FechaCarga = item.FechaCarga,
-
-							Limite_CreditoMN = Convert.ToDecimal(Limite_CreditoMNSET),
-							Interes_Corriente_MN = Convert.ToDecimal(Interes_Corriente_MNSET),
-							Interes_Corriente_ME = Convert.ToDecimal(Interes_Corriente_MESET),
-
-							Estado = item.Estado
-						};
-
-						string json = serializer.Serialize(E_EstadoCuenta);
-						EncabezadoCorreo1 = json;
-						//string json = JsonConvert.SerializeObject(E_EstadoCuenta);
-						//EncabezadoCorreo1 = json;
-					}
-					string DetalleCorreo1 = "";
-					List<D_EstadoCuenta> listaDetalle = new List<D_EstadoCuenta>();
-					foreach (D_EstadoCuenta item2 in Detalle)
-					{
-						string DebitosMNSet = item2.DebitosMN.ToString("0.00");
-						string DebitosMESet = item2.DebitosME.ToString("0.00");
-						string CreditosMNSet = item2.CreditosMN.ToString("0.00");
-						string CreditosMESet = item2.CreditosME.ToString("0.00");
-
-						D_EstadoCuenta D_EstadoCuenta = new D_EstadoCuenta
-						{
-							Fecha_Consumo = item2.Fecha_Consumo,
-							Tipo_Reg = item2.Tipo_Reg,
-							Descripcion_Mov = item2.Descripcion_Mov.Trim(),
-							DebitosMN = Convert.ToDecimal(DebitosMNSet),
-							DebitosME = Convert.ToDecimal(DebitosMESet),
-							CreditosMN = Convert.ToDecimal(CreditosMNSet),
-							CreditosME = Convert.ToDecimal(CreditosMESet)
-						};
-						listaDetalle.Add(D_EstadoCuenta);
-					}
-
-					string jsonDET = serializer.Serialize(listaDetalle);
-					DetalleCorreo1 = jsonDET;
-
-					string Financiamientos1 = "";
-					List<F_EstadoCuenta> listaFinanciamiento = new List<F_EstadoCuenta>();
-					foreach (F_EstadoCuenta item3 in Financiamientos)
-					{
-
-						string montoSet = item3.Monto.ToString("0.00");
-						string cuotaSet = item3.Cuota.ToString("0.00");
-						string saldoSet = item3.Saldo.ToString("0.00");
-
-						F_EstadoCuenta F_EstadoCuenta = new F_EstadoCuenta
-						{
-							Tipo = item3.Tipo.Trim(),
-							Fecha = item3.Fecha,
-							Monto = Convert.ToDecimal(montoSet),
-							Moneda = item3.Moneda.Trim(),
-							Cuota = Convert.ToDecimal(cuotaSet),
-							Plazo = item3.Plazo,
-							CuotaAplicada = item3.CuotaAplicada,
-							Tasa = item3.Tasa,
-							Saldo = Convert.ToDecimal(saldoSet)
-
-						};
-						listaFinanciamiento.Add(F_EstadoCuenta);
-					}
-					string jsonFIN = serializer.Serialize(listaFinanciamiento);
-					Financiamientos1 = jsonFIN;
-
-					string EncabezadoJson = EncabezadoCorreo1;
-					string DetalleJson = DetalleCorreo1;
-					string FinanciamientosJson = Financiamientos1;
-
-					//if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-					//{
-					//TarjetaIndicador = File.ReadAllText(@"" + RutaJson + "\\" + "Contador.txt");
-
-					string Tarjeta = "\"" + TarjetaIndicador + "\":";
-
-					//string path = @"" + RutaJson + "EstadosCuenta_" + DateNow + ".json";
-					string path = @"" + RutaJson + "\\" + "Estado_de_cuenta_corte_" + Convert.ToDateTime(FechaCorte).Day + ".json";
-					//Dts.Variables["User::NombreJson"].Value = "EstadosCuenta_" + DateNow + ".json";
-					Dts.Variables["User::NombreJson"].Value = "Estado_de_cuenta_corte_" + Convert.ToDateTime(FechaCorte).Day + ".json";
-					string path2 = @"" + RutaJson + "\\" + "Contador.txt";
-					string principio = "true";
-					string final = "true";
-
-					//Valida que los datos no vengan en blanco, completa el Json para no generar error
-					if (FinanciamientosJson == "")
-					{
-						FinanciamientosJson = "{\"N/D\":\"N/D\"}";
-					}
-					else if (EncabezadoJson == "")
-					{
-						EncabezadoJson = "{\"N/D\":\"N/D\"}";
-					}
-					else if (DetalleJson == "")
-					{
-						DetalleJson = "{\"N/D\":\"N/D\"}";
-					}
-
-					//Lee documento bandera para saber si es el principio del Json
-					string leido = File.ReadAllText(path2);
-
-					if (leido == "")
-					{
-						leido = "0";
-						File.AppendAllText(path2, leido);
-						principio = "true";
-					}
-					else
-					{
-						principio = "false";
-					}
-					//Suma los registros que se van ejecutando 1 a 1
-					if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-					{
-						int posicion = Convert.ToInt32(leido) + 1;
-						File.WriteAllText(path2, Convert.ToString(posicion));
-					}
-
-
-					//Condici�n para valdidar que el final es cuando solo resta un registro por procesar
-					if (cantidad == 1)
-					{
-						final = "true";
-					}
-					else
-					{
-						final = "false";
-					}
-					//Valida el principio y si es true agrega la llave inicial
-					if (principio == "true")
-					{
-						File.AppendAllText(path, "{");
-						principio = "false";
-					}
-					//Si el final es true cierra el Json y quita la coma del la ultima iteraci�n
-					if (final == "true")
-					{
-						if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-							File.AppendAllText(path, Tarjeta + "{" + "\"Encabezado\":" + EncabezadoJson + ",\"Detalle\":" + DetalleJson + ",\"Financiamientos\":" + FinanciamientosJson + "}");
-						File.AppendAllText(path, "}");
-					}
-					else
-					{
-						if (!string.IsNullOrEmpty(TarjetaIndicador) && !string.IsNullOrWhiteSpace(TarjetaIndicador))
-							File.AppendAllText(path, Tarjeta + "{" + "\"Encabezado\":" + EncabezadoJson + ",\"Detalle\":" + DetalleJson + ",\"Financiamientos\":" + FinanciamientosJson + "},");
-					}
-					object Conexion2 = Dts.Connections["BPTarjetas"].AcquireConnection(Dts.Transaction);
-					Sql.ActBandejaECTC(Conexion2, Equivalente, Cuenta, "1");
-					Sql.InsertReporte(Parametros[0], Parametros[1], Parametros[2], Parametros[3], "1", Parametros[4], Conexion2);
-
-				}
-				#endregion
-			}
-			catch (Exception ex)
-			{
-				Dts.Variables["Error"].Value = "Error en main, " + ex.Message + " Favor revisar el historico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para mas informacion.";
-			}
-		}
-
-		#region ScriptResults declaration
-		/// <summary>
-		/// This enum provides a convenient shorthand within the scope of this class for setting the
-		/// result of the script.
-		/// 
-		/// This code was generated automatically.
-		/// </summary>
-		enum ScriptResults
-		{
-			Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
-			Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
-		};
-		#endregion
-
-	}
-}]]></ProjectItem>
-                  <ProjectItem
-                    Name="E_EstadoCuenta.cs"
-                    Encoding="UTF8"><![CDATA[using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
-{
-    class E_EstadoCuenta
-    {
-        //Encabezado
-
-        public string Origen { get; set; }
-
-        public string Emisor { get; set; }
-
-        public string No_Cuenta { get; set; }
-
-        public string Nombre_TH_Tit { get; set; }
-
-        public string Emisor_Madre { get; set; }
-
-        public string Cuenta_Madre { get; set; }
-
-        public string Nombre_Empresa { get; set; }
-
-        public string Tipo_Tarjeta { get; set; }
-        //public string Descripcion_Tipo_Tarjeta { get; set; }
-
-        public string No_Tarjeta { get; set; }
-
-        public string Fecha_Pago { get; set; }
-
-        public string Fecha_Corte { get; set; }
-
-        public decimal Pago_Contado_MN { get; set; }
-
-        public decimal Pago_Minimo_MN { get; set; }
-
-        public decimal Saldo_Vencido_MN { get; set; }
-
-        public decimal Saldo_Anterior_MN { get; set; }
-
-        public decimal Saldo_Final_MN { get; set; }
-
-        public decimal Compras_Deb_MN { get; set; }
-
-        public decimal Pagos_Cred_MN { get; set; }
-
-        public decimal Sobregiro_MN { get; set; }
-
-        public decimal Cuota_Mes_MN { get; set; }
-
-        public decimal Pago_Contado_ME { get; set; }
-
-        public decimal Pago_Minimo_ME { get; set; }
-
-        public decimal Saldo_Vencido_ME { get; set; }
-
-        public decimal Saldo_Anterior_ME { get; set; }
-
-        public decimal Saldo_Final_ME { get; set; }
-        public decimal Saldo_Consumo_MN { get; set; }
-        public decimal Saldo_Consumo_ME { get; set; }
-        public decimal Compras_Deb_ME { get; set; }
-
-        public decimal Pagos_Cred_ME { get; set; }
-
-        public decimal Sobregiro_ME { get; set; }
-
-        public decimal Cuota_Mes_ME { get; set; }
-
-        public string Moneda_Lim_Cre { get; set; }
-
-        public decimal Limite_Credito { get; set; }
-
-        public decimal Disponible_Cta_MN { get; set; }
-
-        public decimal Disponible_Cta_ME { get; set; }
-
-        public decimal Disponible_Ret_MN { get; set; }
-
-        public decimal Disponible_Ret_ME { get; set; }
-
-        public decimal PTS_Saldo_Ant { get; set; }
-
-        public decimal PTS_Ganados { get; set; }
-
-        public decimal PTS_Usuados { get; set; }
-
-        public decimal PTS_Saldo_Actual { get; set; }
-
-        public string Moneda_Lim_EF { get; set; }
-
-        public decimal EF_Limite { get; set; }
-
-        public decimal EF_Saldo_MN { get; set; }
-
-        public decimal EF_Debitos_MN { get; set; }
-
-        public decimal EF_Creditos_MN { get; set; }
-
-        public decimal EF_Saldo_ME { get; set; }
-
-        public decimal EF_Debitos_ME { get; set; }
-
-        public decimal EF_Creditos_ME { get; set; }
-
-        public decimal EF_Disponible_MN { get; set; }
-
-        public decimal EF_Disponible_ME { get; set; }
-
-        public decimal Tasa_Int_Anual_MN { get; set; }
-
-        public decimal Tasa_Int_Anual_ME { get; set; }
-
-        public string Direccion_1 { get; set; }
-
-        public string Direccion_2 { get; set; }
-
-        public string Direccion_3 { get; set; }
-
-        public string Apdo_Postal { get; set; }
-
-        public string Cidudad { get; set; }
-
-        public string Mensaje_1 { get; set; }
-
-        public string Mensaje_2 { get; set; }
-
-        public string Mensaje_3 { get; set; }
-
-        public string Mensaje_4 { get; set; }
-
-        public string Mensaje_5 { get; set; }
-
-        public string Tarjeta_Imprimir { get; set; }
-
-        public decimal Costo_Anual_Tot_MN { get; set; }
-
-        public decimal Costo_Anual_Tot_ME { get; set; }
-
-        public int? Plazo_Canc_Deuda_MN { get; set; }
-
-        public int? Plazo_Canc_Deuda_ME { get; set; }
-
-        public decimal Interes_Pago_Min_MN { get; set; }
-
-        public decimal Interes_Pago_Min_ME { get; set; }
-
-        public string Correo { get; set; }
-
-        public string FechaCarga { get; set; }
-
-        public decimal Limite_CreditoMN { get; set; }
-
-        public decimal Interes_Corriente_MN { get; set; }
-
-        public decimal Interes_Corriente_ME { get; set; }
-
-        public int? Estado { get; set; }
-    }
-}]]></ProjectItem>
-                  <ProjectItem
-                    Name="Project"
-                    Encoding="UTF16LE"><![CDATA[<?xml version="1.0" encoding="UTF-16" standalone="yes"?>
-<c:Project xmlns:c="http://schemas.microsoft.com/codeprojectml/2010/08/main" xmlns:msb="http://schemas.microsoft.com/developer/msbuild/2003" runtimeVersion="4.0" schemaVersion="1.0">
-  <msb:PropertyGroup>
-    <msb:CodeName>ST_c72b21f52fe04a7cb5624ab6fff3c847</msb:CodeName>
-    <msb:Language>msBuild</msb:Language>
-    <msb:DisplayName>ST_c72b21f52fe04a7cb5624ab6fff3c847</msb:DisplayName>
-    <msb:ProjectId>{D83291DE-78F1-4DEF-A7E7-9635F59C2101}</msb:ProjectId>
-  </msb:PropertyGroup>
-  <msb:ItemGroup>
-    <msb:Project Include="ST_c72b21f52fe04a7cb5624ab6fff3c847.csproj" />
-    <msb:File Include="D_EstadoCuenta.cs" />
-    <msb:File Include="E_EstadoCuenta.cs" />
-    <msb:File Include="F_EstadoCuenta.cs" />
-    <msb:File Include="Properties\Settings.settings" />
-    <msb:File Include="Properties\AssemblyInfo.cs" />
-    <msb:File Include="SQL.cs" />
-    <msb:File Include="Properties\Resources.resx" />
-    <msb:File Include="Properties\Resources.Designer.cs" />
-    <msb:File Include="Properties\Settings.Designer.cs" />
-    <msb:File Include="ScriptMain.cs" />
-    <msb:Breakpoint Include="dff983780c38467c943a727e11c359fb">
-      <msb:FileName>ScriptMain.cs</msb:FileName>
-      <msb:LineNumber>100</msb:LineNumber>
-      <msb:ColumnNumber>5</msb:ColumnNumber>
-      <msb:Enabled>True</msb:Enabled>
-      <msb:ConditionType>1</msb:ConditionType>
-      <msb:Condition>
-      </msb:Condition>
-      <msb:Language>C#</msb:Language>
-      <msb:HitCountType>1</msb:HitCountType>
-      <msb:HitCountTarget>1</msb:HitCountTarget>
-    </msb:Breakpoint>
-  </msb:ItemGroup>
-</c:Project>]]></ProjectItem>
-                  <ProjectItem
-                    Name="Properties\Settings.Designer.cs"
+                    Name="Properties\Resources.Designer.cs"
                     Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
 // <auto-generated>
 //     This code was generated by a tool.
@@ -739,393 +11,328 @@ namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties.Settings.get_Default():ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties.Sett" +
-    "ings")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties.Resources.get_ResourceManager():System.Resources.Resou" +
+    "rceManager")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties.Resources.get_Culture():System.Globalization.CultureIn" +
+    "fo")]
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties.Resources.set_Culture(System.Globalization.CultureInfo" +
+    "):Void")]
 
 namespace ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties {
     
     
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+    /// <summary>
+    ///   A strongly-typed resource class, for looking up localized strings, etc.
+    /// </summary>
+    // This class was auto-generated by the StronglyTypedResourceBuilder
+    // class via a tool like ResGen or Visual Studio.
+    // To add or remove a member, edit your .ResX file then rerun ResGen
+    // with the /str option, or rebuild your VS project.
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+    internal class Resources {
         
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
+        private static global::System.Resources.ResourceManager resourceMan;
         
-        public static Settings Default {
+        private static global::System.Globalization.CultureInfo resourceCulture;
+        
+        [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal Resources() {
+        }
+        
+        /// <summary>
+        ///   Returns the cached ResourceManager instance used by this class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Resources.ResourceManager ResourceManager {
             get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
-                  <ProjectItem
-                    Name="D_EstadoCuenta.cs"
-                    Encoding="UTF8"><![CDATA[using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
-{
-    class D_EstadoCuenta
-    {
-        //Detalle
-        //public string No_Cuenta { get; set; }
-        //public string No_Tarjeta { get; set; }
-        //public string No_Autorizacion { get; set; }
-
-        //public string Fecha_Corte { get; set; }
-
-        public string Fecha_Consumo { get; set; }
-        public int Tipo_Reg { get; set; }
-        public string Descripcion_Mov { get; set; }
-        public decimal DebitosMN { get; set; }
-        public decimal CreditosMN { get; set; }
-        public decimal DebitosME { get; set; }
-        public decimal CreditosME { get; set; }
-    }
-}]]></ProjectItem>
-                  <ProjectItem
-                    Name="SQL.cs"
-                    Encoding="UTF8"><![CDATA[using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Data.SqlClient;
-using System.Data;
-
-namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
-{
-    class SQL
-    {
-        public bool Getusp_WSEstadoCuenta(string Equivalente, string FechaCorte, object CM, ref List<E_EstadoCuenta> LstEncabezado, ref List<D_EstadoCuenta> LstDetalle, ref List<F_EstadoCuenta> LstFinanciamiento)
-        {
-            SqlConnection conn = (System.Data.SqlClient.SqlConnection)CM;
-
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-
-            SqlCommand comm = new SqlCommand("[dbo].usp_SBEstadoCuenta", conn);
-            comm.CommandType = CommandType.StoredProcedure;
-
-            comm.Parameters.Add(new SqlParameter("Equivalente", Equivalente));
-            comm.Parameters.Add(new SqlParameter("FechaCorte", FechaCorte));
-            //Ejecutar la consulta y pasarlo a un DA
-            SqlDataAdapter DA = new SqlDataAdapter(comm);
-            DataSet Datos = new DataSet();
-            //Llenar el DS
-            DA.Fill(Datos);
-            //Cerrar la conexion
-            conn.Close();
-            //Eliminar el objeto
-            conn.Dispose();
-            comm.Dispose();
-            DA.Dispose();
-            //Pasar los datos de DS a DT
-            DataTable Encabezado = Datos.Tables[0];
-            DataTable Detalle = Datos.Tables[1];
-            DataTable Financiamientos = Datos.Tables[2];
-            //Eliminar el DS
-            Datos.Dispose();
-            //Definir las listas para pasar los datos de los DT a ellas
-            List<E_EstadoCuenta> LstE = new List<E_EstadoCuenta>();
-            List<D_EstadoCuenta> LstD = new List<D_EstadoCuenta>();
-            List<F_EstadoCuenta> LstF = new List<F_EstadoCuenta>();
-
-            for (int i = 0; i < Encabezado.Rows.Count; i++)
-            {
-                E_EstadoCuenta EC = new E_EstadoCuenta();
-                EC.Origen = Encabezado.Rows[i]["Origen"].ToString();
-                EC.Emisor = Encabezado.Rows[i]["Emisor"].ToString();
-                EC.No_Cuenta = Encabezado.Rows[i]["No_Cuenta"].ToString();
-                EC.Nombre_TH_Tit = Encabezado.Rows[i]["Nombre_TH_Tit"].ToString();
-                EC.Emisor_Madre = Encabezado.Rows[i]["Emisor_Madre"].ToString();
-                EC.Cuenta_Madre = Encabezado.Rows[i]["Cuenta_Madre"].ToString();
-                EC.Nombre_Empresa = Encabezado.Rows[i]["Nombre_Empresa"].ToString();
-                EC.Tipo_Tarjeta = Encabezado.Rows[i]["Tipo_Tarjeta"].ToString();
-                //EC.Descripcion_Tipo_Tarjeta = Encabezado.Rows[i]["Descripcion_Tipo_Tarjeta"].ToString();
-                EC.No_Tarjeta = Encabezado.Rows[i]["No_Tarjeta"].ToString();
-                EC.Fecha_Pago = Encabezado.Rows[i]["Fecha_Pago"].ToString();
-                EC.Fecha_Corte = Encabezado.Rows[i]["Fecha_Corte"].ToString();
-                EC.Pago_Contado_MN = Convert.ToDecimal(Encabezado.Rows[i]["Pago_Contado_MN"]);
-                EC.Pago_Minimo_MN = Convert.ToDecimal(Encabezado.Rows[i]["Pago_Minimo_MN"]);
-                EC.Saldo_Vencido_MN = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Vencido_MN"]);
-                EC.Saldo_Anterior_MN = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Anterior_MN"]);
-                EC.Saldo_Final_MN = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Final_MN"]);
-                EC.Compras_Deb_MN = Convert.ToDecimal(Encabezado.Rows[i]["Compras_Deb_MN"]);
-                EC.Pagos_Cred_MN = Convert.ToDecimal(Encabezado.Rows[i]["Pagos_Cred_MN"]);
-                EC.Sobregiro_MN = Convert.ToDecimal(Encabezado.Rows[i]["Sobregiro_MN"]);
-                EC.Cuota_Mes_MN = Convert.ToDecimal(Encabezado.Rows[i]["Cuota_Mes_MN"]);
-                EC.Pago_Contado_ME = Convert.ToDecimal(Encabezado.Rows[i]["Pago_Contado_ME"]);
-                EC.Pago_Minimo_ME = Convert.ToDecimal(Encabezado.Rows[i]["Pago_Minimo_ME"]);
-                EC.Saldo_Vencido_ME = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Vencido_ME"]);
-                EC.Saldo_Anterior_ME = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Anterior_ME"]);
-                EC.Saldo_Final_ME = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Final_ME"]);
-                EC.Saldo_Consumo_MN = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Consumo_MN"]);
-                EC.Saldo_Consumo_ME = Convert.ToDecimal(Encabezado.Rows[i]["Saldo_Consumo_ME"]);
-                EC.Compras_Deb_ME = Convert.ToDecimal(Encabezado.Rows[i]["Compras_Deb_ME"]);
-                EC.Pagos_Cred_ME = Convert.ToDecimal(Encabezado.Rows[i]["Pagos_Cred_ME"]);
-                EC.Sobregiro_ME = Convert.ToDecimal(Encabezado.Rows[i]["Sobregiro_ME"]);
-                EC.Cuota_Mes_ME = Convert.ToDecimal(Encabezado.Rows[i]["Cuota_Mes_ME"]);
-                EC.Moneda_Lim_Cre = Encabezado.Rows[i]["Moneda_Lim_Cre"].ToString();
-                EC.Limite_Credito = Convert.ToDecimal(Encabezado.Rows[i]["Limite_Credito"]);
-                EC.Disponible_Cta_MN = Convert.ToDecimal(Encabezado.Rows[i]["Disponible_Cta_MN"]);
-                EC.Disponible_Cta_ME = Convert.ToDecimal(Encabezado.Rows[i]["Disponible_Cta_ME"]);
-                EC.Disponible_Ret_MN = Convert.ToDecimal(Encabezado.Rows[i]["Disponible_Ret_MN"]);
-                EC.Disponible_Ret_ME = Convert.ToDecimal(Encabezado.Rows[i]["Disponible_Ret_ME"]);
-                EC.PTS_Saldo_Ant = Convert.ToInt32(Encabezado.Rows[i]["PTS_Saldo_Ant"]);
-                EC.PTS_Ganados = Convert.ToInt32(Encabezado.Rows[i]["PTS_Ganados"]);
-                EC.PTS_Usuados = Convert.ToInt32(Encabezado.Rows[i]["PTS_Usuados"]);
-                EC.PTS_Saldo_Actual = Convert.ToInt32(Encabezado.Rows[i]["PTS_Saldo_Actual"]);
-                EC.Moneda_Lim_EF = Encabezado.Rows[i]["Moneda_Lim_EF"].ToString();
-                EC.EF_Limite = Convert.ToDecimal(Encabezado.Rows[i]["EF_Limite"]);
-                EC.EF_Saldo_MN = Convert.ToDecimal(Encabezado.Rows[i]["EF_Saldo_MN"]);
-                EC.EF_Debitos_MN = Convert.ToDecimal(Encabezado.Rows[i]["EF_Debitos_MN"]);
-                EC.EF_Creditos_MN = Convert.ToDecimal(Encabezado.Rows[i]["EF_Creditos_MN"]);
-                EC.EF_Saldo_ME = Convert.ToDecimal(Encabezado.Rows[i]["EF_Saldo_ME"]);
-                EC.EF_Debitos_ME = Convert.ToDecimal(Encabezado.Rows[i]["EF_Debitos_ME"]);
-                EC.EF_Creditos_ME = Convert.ToDecimal(Encabezado.Rows[i]["EF_Creditos_ME"]);
-                EC.EF_Disponible_MN = Convert.ToDecimal(Encabezado.Rows[i]["EF_Disponible_MN"]);
-                EC.EF_Disponible_ME = Convert.ToDecimal(Encabezado.Rows[i]["EF_Disponible_ME"]);
-                EC.Tasa_Int_Anual_MN = Convert.ToDecimal(Encabezado.Rows[i]["Tasa_Int_Anual_MN"]);
-                EC.Tasa_Int_Anual_ME = Convert.ToDecimal(Encabezado.Rows[i]["Tasa_Int_Anual_ME"]);
-                EC.Direccion_1 = Encabezado.Rows[i]["Direccion_1"].ToString();
-                EC.Direccion_2 = Encabezado.Rows[i]["Direccion_2"].ToString();
-                EC.Direccion_3 = Encabezado.Rows[i]["Direccion_3"].ToString();
-                EC.Apdo_Postal = Encabezado.Rows[i]["Apdo_Postal"].ToString();
-                EC.Cidudad = Encabezado.Rows[i]["Cidudad"].ToString();
-                EC.Mensaje_1 = Encabezado.Rows[i]["Mensaje_1"].ToString();
-                EC.Mensaje_2 = Encabezado.Rows[i]["Mensaje_2"].ToString();
-                EC.Mensaje_3 = Encabezado.Rows[i]["Mensaje_3"].ToString();
-                EC.Mensaje_4 = Encabezado.Rows[i]["Mensaje_4"].ToString();
-                EC.Mensaje_5 = Encabezado.Rows[i]["Mensaje_5"].ToString();
-                EC.Tarjeta_Imprimir = Encabezado.Rows[i]["Tarjeta_Imprimir"].ToString();
-                EC.Costo_Anual_Tot_MN = Convert.ToDecimal(Encabezado.Rows[i]["Costo_Anual_Tot_MN"]);
-                EC.Costo_Anual_Tot_ME = Convert.ToDecimal(Encabezado.Rows[i]["Costo_Anual_Tot_ME"]);
-                EC.Plazo_Canc_Deuda_MN = Convert.ToInt32(Encabezado.Rows[i]["Plazo_Canc_Deuda_MN"]);
-                EC.Plazo_Canc_Deuda_ME = Convert.ToInt32(Encabezado.Rows[i]["Plazo_Canc_Deuda_ME"]);
-                EC.Interes_Pago_Min_MN = Convert.ToDecimal(Encabezado.Rows[i]["Interes_Pago_Min_MN"]);
-                EC.Interes_Pago_Min_ME = Convert.ToDecimal(Encabezado.Rows[i]["Interes_Pago_Min_ME"]);
-                EC.Correo = Encabezado.Rows[i]["Correo"].ToString();
-                EC.Limite_CreditoMN = Convert.ToDecimal(Encabezado.Rows[i]["Limite_CreditoMN"]);
-                EC.Interes_Corriente_MN = Convert.ToDecimal(Encabezado.Rows[i]["Interes_Corriente_MN"]);
-                EC.Interes_Corriente_ME = Convert.ToDecimal(Encabezado.Rows[i]["Interes_Corriente_ME"]);
-                EC.Estado = Convert.ToInt32(Encabezado.Rows[i]["Estado"]);
-                EC.No_Tarjeta = Encabezado.Rows[i]["No_Tarjeta"].ToString();
-                LstE.Add(EC);
-            }
-
-            Encabezado.Dispose();
-
-            for (int i = 0; i < Detalle.Rows.Count; i++)
-            {
-                D_EstadoCuenta DEC = new D_EstadoCuenta();
-                //*************D E T A L L E**************************************************
-                //DEC.No_Cuenta = Detalle.Rows[i]["No_Cuenta"].ToString();
-                //DEC.No_Tarjeta = Detalle.Rows[i]["No_Tarjeta"].ToString();
-                //DEC.No_Autorizacion = Detalle.Rows[i]["No_Autorizacion"].ToString();
-                //DEC.Fecha_Corte = Detalle.Rows[i]["Fecha_Corte"].ToString();
-                DEC.Fecha_Consumo = Detalle.Rows[i]["Fecha_Consumo"].ToString();
-                DEC.Tipo_Reg = Convert.ToInt32(Detalle.Rows[i]["Tipo_Reg"]);
-                DEC.Descripcion_Mov = Detalle.Rows[i]["Descripcion_Mov"].ToString();
-                DEC.DebitosMN = Convert.ToDecimal(Detalle.Rows[i]["DebitosMN"]);
-                DEC.CreditosMN = Convert.ToDecimal(Detalle.Rows[i]["CreditosMN"]);
-                DEC.DebitosME = Convert.ToDecimal(Detalle.Rows[i]["DebitosME"]);
-                DEC.CreditosME = Convert.ToDecimal(Detalle.Rows[i]["CreditosME"]);
-                LstD.Add(DEC);
-            }
-
-            Detalle.Dispose();
-
-            for (int i = 0; i < Financiamientos.Rows.Count; i++)
-            {
-                F_EstadoCuenta FEC = new F_EstadoCuenta();
-                //************F I N A N C I A M I E N T O*************************************
-                FEC.Tipo = Financiamientos.Rows[i]["Tipo"].ToString();
-                FEC.Fecha = Financiamientos.Rows[i]["Fecha"].ToString();
-                FEC.Monto = Convert.ToDecimal(Financiamientos.Rows[i]["Monto"]);
-                FEC.Moneda = Financiamientos.Rows[i]["Moneda"].ToString();
-                FEC.Cuota = Convert.ToDecimal(Financiamientos.Rows[i]["Cuota"]);
-                FEC.Plazo = Convert.ToInt32(Financiamientos.Rows[i]["Plazo"]);
-                FEC.CuotaAplicada = Convert.ToInt32(Financiamientos.Rows[i]["CuotaAplicada"]);
-                FEC.Tasa = Financiamientos.Rows[i]["Tasa"].ToString();
-                FEC.Saldo = Convert.ToDecimal(Financiamientos.Rows[i]["Saldo"]);
-                LstF.Add(FEC);
-            }
-
-            Financiamientos.Dispose();
-
-            //var Listas = Tuple.Create(LstE, LstD, LstF);
-            LstEncabezado = LstE;
-            LstDetalle = LstD;
-            LstFinanciamiento = LstF;
-            //return Listas;}
-            return true;
-        }
-        public bool Getusp_WSEstadoCuentaJSON(string Equivalente, string FechaCorte, object CM, ref string EstadoCuentaJSON, ref string TarjetaIndicador)
-        {
-            SqlConnection conn = (System.Data.SqlClient.SqlConnection)CM;
-            string tempEstadoCuentaJSON = string.Empty;
-            string tempTarjetaIndicador = string.Empty;
-
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-
-            SqlCommand comm = new SqlCommand("[dbo].usp_SBEstadoCuentaJSON", conn);
-            comm.CommandType = CommandType.StoredProcedure;
-
-            comm.Parameters.Add(new SqlParameter("Equivalente", Equivalente));
-            comm.Parameters.Add(new SqlParameter("FechaCorte", FechaCorte));
-            //Ejecutar la consulta y pasarlo a un DA
-            SqlDataAdapter DA = new SqlDataAdapter(comm);
-            DataSet Datos = new DataSet();
-            //Llenar el DS
-            DA.Fill(Datos);
-            //Cerrar la conexion
-            conn.Close();
-            //Eliminar el objeto
-            conn.Dispose();
-            comm.Dispose();
-            DA.Dispose();
-            //Pasar los datos de DS a DT
-            tempEstadoCuentaJSON = Datos.Tables[0].Rows[0][0] != null ? Datos.Tables[0].Rows[0][0].ToString() : "{}";
-            //Eliminar el DS
-            Datos.Dispose();
-
-            EstadoCuentaJSON = tempEstadoCuentaJSON;
-            TarjetaIndicador = Equivalente;
-            //return Listas;}
-            return true;
-        }
-
-        public bool InsertReporte(string Cuenta, string NoTarjeta, string Nombre, string FechaCorte, string Estado, string Correo, Object CM, string Error = " ")
-        {
-            SqlConnection conn = (System.Data.SqlClient.SqlConnection)CM;
-
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-
-            //Extraer el usuario y el dominio del correo
-            //string[] Array = Correo.Split('@');
-            //string Usuario = Array[0];
-            //string Dominio = Array[1];
-
-            //Buscar el NoCuentaVASA
-            //select E.NoCuentaClaro from ETarjetas E where e.NoUsuario='5000001174384'
-            string CuentaVASA = BuscarCuentaVASA(CM, Cuenta);
-
-            if (string.IsNullOrEmpty(Nombre) | string.IsNullOrWhiteSpace(Nombre))
-            {
-                Error = "El campo nombre es nulo o esta vacío, no se encuentra en HEstadoCuenta_BandejaEnvioTC con cuenta: " + Cuenta;
-                Nombre = " ";
-            }
-
-            if (string.IsNullOrEmpty(CuentaVASA) | string.IsNullOrWhiteSpace(CuentaVASA))
-            {
-                Error = "El campo NoCuentaClaro AS CuentaVASA es nulo o esta vacío, no se encuentra en dbo.ETarjetas con cuenta: "+ Cuenta;
-                CuentaVASA = " ";
-            }
-
-            if (string.IsNullOrEmpty(FechaCorte) | string.IsNullOrWhiteSpace(FechaCorte))
-            {
-                Error = "El campo FechaCorte es nulo o esta vacío, no se encuentra en ";
-            }
-
-            if (string.IsNullOrEmpty(Cuenta) | string.IsNullOrWhiteSpace(Cuenta))
-            {
-                Error = "El campo Cuenta es nulo o esta vacío, no se encuentra en ";
-                Cuenta = " ";
-            }
-
-            if (string.IsNullOrEmpty(Correo) | string.IsNullOrWhiteSpace(Correo))
-            {
-                Error = "El campo Correo es nulo o esta vacío, no se encuentra en ";
-                Correo = " ";
-            }
-
-            //Realizar insert
-            SqlCommand comm = new SqlCommand("INSERT INTO [dbo].[HistoricoCorreosECTC] ([FechaCorte] ,[NoCuenta] ,[NoCuentaVASA] ,[Nombre] ,[CorreoCliente] ,[Estado], [Error]) VALUES (@FechaCorte ,@NoCuenta ,@NoCuentaVASA ,@Nombre ,@CorreoCliente ,@Estado, @Error)", conn);
-            comm.Parameters.Add("@FechaCorte", SqlDbType.VarChar, 50).Value = FechaCorte;
-            comm.Parameters.Add("@NoCuenta", SqlDbType.VarChar, 50).Value = Cuenta;
-            comm.Parameters.Add("@NoCuentaVASA", SqlDbType.VarChar, 50).Value = CuentaVASA;
-            comm.Parameters.Add("@Nombre", SqlDbType.VarChar, 100).Value = Nombre;
-            //comm.Parameters.Add("@CorreoUsuario", SqlDbType.VarChar, 100).Value = Usuario;
-            //comm.Parameters.Add("@CorreoDominio", SqlDbType.VarChar, 100).Value = Dominio;
-            comm.Parameters.Add("@CorreoCliente", SqlDbType.VarChar, 100).Value = Correo;
-            comm.Parameters.Add("@Estado", SqlDbType.VarChar, 100).Value = Estado;
-
-            if (!string.IsNullOrEmpty(Error)) {
-                comm.Parameters.Add("@Error", SqlDbType.VarChar, int.MaxValue).Value = Error;
-            }
-            comm.CommandType = CommandType.Text;
-            int Result = comm.ExecuteNonQuery();
-
-            if (Result > 0)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        private string BuscarCuentaVASA(Object CM, string Cuenta)
-        {
-            SqlConnection conn = (System.Data.SqlClient.SqlConnection)CM;
-
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
-            }
-
-            SqlCommand comm = new SqlCommand("select TOP(1) E.NoCuentaClaro CuentaVASA from dbo.ETarjetas E where e.NoUsuario='" + Cuenta + "'", conn);
-            comm.CommandType = CommandType.Text;
-            SqlDataReader sqlDataReader = comm.ExecuteReader();
-            //Eliminar el objeto
-            //conn.Dispose();
-            comm.Dispose();
-
-            string CuentaVASA = string.Empty;
-            while (sqlDataReader.Read())
-            {
-                if (!string.IsNullOrEmpty(sqlDataReader["CuentaVASA"].ToString())) {
-                    CuentaVASA = sqlDataReader["CuentaVASA"].ToString();
+                if ((resourceMan == null)) {
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ST_c72b21f52fe04a7cb5624ab6fff3c847.Properties.Resources", typeof(Resources).Assembly);
+                    resourceMan = temp;
                 }
+                return resourceMan;
             }
-
-            //Eliminar data reader
-            sqlDataReader.Dispose();
-
-            return CuentaVASA;
         }
-
-        public bool ActBandejaECTC(Object CM, string NoTarjeta, string Cuenta, string Estado) 
-        {
-            SqlConnection conn = (System.Data.SqlClient.SqlConnection)CM;
-
-            if (conn.State != ConnectionState.Open)
-            {
-                conn.Open();
+        
+        /// <summary>
+        ///   Overrides the current thread's CurrentUICulture property for all
+        ///   resource lookups using this strongly typed resource class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Globalization.CultureInfo Culture {
+            get {
+                return resourceCulture;
             }
-            SqlCommand comm = new SqlCommand("update BandejaECTC set Estado='"+Estado+"' where No_Tarjeta='"+NoTarjeta+"' and No_Cuenta='"+Cuenta+"'", conn);
-            comm.CommandType = CommandType.Text;
-            int Result=comm.ExecuteNonQuery();
-            if (Result > 1)
-            {
-                return true;
+            set {
+                resourceCulture = value;
             }
-            else
-            {
-                return false;
-            }
-            
         }
-
     }
 }]]></ProjectItem>
+                  <BinaryItem
+                    Name="ST_c72b21f52fe04a7cb5624ab6fff3c847.dll">TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFtIGNhbm5vdCBiZSBydW4gaW4gRE9TIG1v
+ZGUuDQ0KJAAAAAAAAABQRQAATAEDAKglIGcAAAAAAAAAAOAAIiALATAAAIwAAAAIAAAAAAAAGqoA
+</BinaryItem>
+                  <Breakpoint
+                    Enabled="True"
+                    File="ScriptMain.cs"
+                    Line="100"
+                    Column="5" />
+                </ScriptProject>
+              </DTS:ObjectData>
+            </DTS:Executable>
+            <DTS:Executable
+              DTS:refId="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Obtener No TC, cuenta y correo"
+              DTS:CreationName="Microsoft.ExecuteSQLTask"
+              DTS:Description="Tarea Ejecutar SQL"
+              DTS:DTSID="{AEC600E3-D1B5-4E30-A63D-F866A99B02BD}"
+              DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+              DTS:LocaleID="-1"
+              DTS:ObjectName="Obtener No TC, cuenta y correo"
+              DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+              DTS:ThreadHint="0">
+              <DTS:Variables />
+              <DTS:ObjectData>
+                <SQLTask:SqlTaskData
+                  SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+                  SQLTask:SqlStmtSourceType="Variable"
+                  SQLTask:SqlStatementSource="User::QueryObtenerEquivalente"
+                  SQLTask:ResultType="ResultSetType_SingleRow" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+                  <SQLTask:ResultBinding
+                    SQLTask:ResultName="0"
+                    SQLTask:DtsVariableName="User::FechaCorte" />
+                  <SQLTask:ResultBinding
+                    SQLTask:ResultName="1"
+                    SQLTask:DtsVariableName="User::Equivalente" />
+                  <SQLTask:ResultBinding
+                    SQLTask:ResultName="2"
+                    SQLTask:DtsVariableName="User::Cuenta" />
+                  <SQLTask:ResultBinding
+                    SQLTask:ResultName="3"
+                    SQLTask:DtsVariableName="User::Correo" />
+                </SQLTask:SqlTaskData>
+              </DTS:ObjectData>
+            </DTS:Executable>
+          </DTS:Executables>
+          <DTS:PrecedenceConstraints>
+            <DTS:PrecedenceConstraint
+              DTS:refId="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta.PrecedenceConstraints[Constraint]"
+              DTS:CreationName=""
+              DTS:DTSID="{43AE076C-CB92-406F-A1AD-0514C222C6EA}"
+              DTS:From="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Obtener No TC, cuenta y correo"
+              DTS:LogicalAnd="True"
+              DTS:ObjectName="Constraint"
+              DTS:To="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Genera EC" />
+            <DTS:PrecedenceConstraint
+              DTS:refId="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta.PrecedenceConstraints[Restricción]"
+              DTS:CreationName=""
+              DTS:DTSID="{095D57AD-2384-4F31-B2ED-B85C6CA76424}"
+              DTS:From="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Genera EC"
+              DTS:LogicalAnd="True"
+              DTS:ObjectName="Restricción"
+              DTS:To="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta\Cantidad de registros" />
+          </DTS:PrecedenceConstraints>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Generación de estados de cuenta JSON\Revision por Tipo Generacion"
+          DTS:CreationName="Microsoft.ScriptTask"
+          DTS:DTSID="{7ED35889-E694-4941-85CD-989A16CDEBFA}"
+          DTS:ExecutableType="Microsoft.ScriptTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Revision por Tipo Generacion"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <ScriptProject
+              Name="ST_d3f9d4066c5f4b1983851fee25e55b92"
+              VSTAMajorVersion="15"
+              VSTAMinorVersion="0"
+              Language="CSharp" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Constraint 4]"
+          DTS:CreationName=""
+          DTS:DTSID="{65693C4B-E256-45EA-8264-7DFBE0F4A5D9}"
+          DTS:From="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta"
+          DTS:ObjectName="Constraint 4"
+          DTS:To="Package\Generación de estados de cuenta JSON\Elimina Contador" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Constraint 5]"
+          DTS:CreationName=""
+          DTS:DTSID="{9BA335C0-11F1-4455-A041-5356B0D8DDE5}"
+          DTS:From="Package\Generación de estados de cuenta JSON\Elimina Contador"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 5"
+          DTS:To="Package\Generación de estados de cuenta JSON\Encripta Data" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción]"
+          DTS:CreationName=""
+          DTS:DTSID="{BAC64B00-F2C3-4A44-B7A7-47659A6035EF}"
+          DTS:From="Package\Generación de estados de cuenta JSON\Encripta Data"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Restricción"
+          DTS:To="Package\Generación de estados de cuenta JSON\Copiar JSON a historico" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 1]"
+          DTS:CreationName=""
+          DTS:DTSID="{459D512C-2B6B-4077-BF97-2CE28301B604}"
+          DTS:From="Package\Generación de estados de cuenta JSON\Copiar JSON a historico"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Restricción 1"
+          DTS:To="Package\Generación de estados de cuenta JSON\Elimina archivos" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 2]"
+          DTS:CreationName=""
+          DTS:DTSID="{3F6587BC-2655-4413-B3F2-51B1E3534268}"
+          DTS:From="Package\Generación de estados de cuenta JSON\Contenedor de secuencias"
+          DTS:ObjectName="Restricción 2"
+          DTS:To="Package\Generación de estados de cuenta JSON\Elimina Contador" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 3]"
+          DTS:CreationName=""
+          DTS:DTSID="{DA4B7BB9-F60C-4AC6-AA4E-EDFB16AC7DDD}"
+          DTS:EvalOp="1"
+          DTS:Expression="@[User::TipoGeneracion] == &quot;INDIVIDUAL&quot;"
+          DTS:From="Package\Generación de estados de cuenta JSON\Revision por Tipo Generacion"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Restricción 3"
+          DTS:To="Package\Generación de estados de cuenta JSON\Genera Estados de Cuenta" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Generación de estados de cuenta JSON.PrecedenceConstraints[Restricción 4]"
+          DTS:CreationName=""
+          DTS:DTSID="{6C5E1702-7103-4333-B2CE-27B8E6362B8D}"
+          DTS:EvalOp="1"
+          DTS:Expression="@[User::TipoGeneracion] == &quot;LOTE&quot;"
+          DTS:From="Package\Generación de estados de cuenta JSON\Revision por Tipo Generacion"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Restricción 4"
+          DTS:To="Package\Generación de estados de cuenta JSON\Contenedor de secuencias" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Limpiar bandejas"
+      DTS:CreationName="STOCK:SEQUENCE"
+      DTS:Description="Sequence Container"
+      DTS:DTSID="{1F7EF4DA-C549-4A5D-9F90-1684A39F7D61}"
+      DTS:ExecutableType="STOCK:SEQUENCE"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Limpiar bandejas">
+      <DTS:Variables />
+      <DTS:Executables>
+        <DTS:Executable
+          DTS:refId="Package\Limpiar bandejas\Actualizar fecha corte"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:Description="Tarea Ejecutar SQL"
+          DTS:DTSID="{349EBD7A-7DCF-48F7-9FBD-B0F16FD3759A}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Actualizar fecha corte"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:IsStoredProc="True"
+              SQLTask:SqlStatementSource="usp_ActFechaCorte" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Limpiar bandejas\Limpiar bandeja"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:Description="Tarea Ejecutar SQL"
+          DTS:DTSID="{05B3CDB7-4F15-4D41-B0AE-48A259F4DD81}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Limpiar bandeja"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:IsStoredProc="True"
+              SQLTask:SqlStatementSource="usp_LlenarBandejaECTC" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="Tipo"
+                SQLTask:DtsVariableName="User::TipoLimpiarBandeja"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="16"
+                SQLTask:ParameterSize="20" />
+            </SQLTask:SqlTaskData>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Limpiar bandejas\Limpiar tabla reporte"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:Description="Tarea Ejecutar SQL"
+          DTS:DTSID="{034839C3-5B1B-4765-8024-CBFCA83358DA}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Limpiar tabla reporte"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:IsStoredProc="True"
+              SQLTask:SqlStatementSource="usp_LimpiarTablaHistoricoReporteEC" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask">
+              <SQLTask:ParameterBinding
+                SQLTask:ParameterName="Tipo"
+                SQLTask:DtsVariableName="User::TipoLimpiarReporte"
+                SQLTask:ParameterDirection="Input"
+                SQLTask:DataType="16"
+                SQLTask:ParameterSize="20" />
+            </SQLTask:SqlTaskData>
+          </DTS:ObjectData>
+        </DTS:Executable>
+        <DTS:Executable
+          DTS:refId="Package\Limpiar bandejas\Mover data reporte al historico"
+          DTS:CreationName="Microsoft.ExecuteSQLTask"
+          DTS:Description="Tarea Ejecutar SQL"
+          DTS:DTSID="{EA9A3B27-6E84-41F3-BFE6-36F6600EDEFE}"
+          DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+          DTS:LocaleID="-1"
+          DTS:ObjectName="Mover data reporte al historico"
+          DTS:TaskContact="Execute SQL Task; Microsoft Corporation; SQL Server 2012; © 2007 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+          DTS:ThreadHint="0">
+          <DTS:Variables />
+          <DTS:ObjectData>
+            <SQLTask:SqlTaskData
+              SQLTask:Connection="{8B7A295D-AB86-4C0D-BA20-46BB8FC0A327}"
+              SQLTask:IsStoredProc="True"
+              SQLTask:SqlStatementSource="usp_MoverHistoricoReporte" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          </DTS:ObjectData>
+        </DTS:Executable>
+      </DTS:Executables>
+      <DTS:PrecedenceConstraints>
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Limpiar bandejas.PrecedenceConstraints[Constraint]"
+          DTS:CreationName=""
+          DTS:DTSID="{094DB54A-F169-4887-8E1F-65A1620782C2}"
+          DTS:From="Package\Limpiar bandejas\Mover data reporte al historico"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint"
+          DTS:To="Package\Limpiar bandejas\Limpiar tabla reporte" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Limpiar bandejas.PrecedenceConstraints[Constraint 1]"
+          DTS:CreationName=""
+          DTS:DTSID="{8F8A14A3-12F5-4161-A3A7-E19EB15B5A7F}"
+          DTS:From="Package\Limpiar bandejas\Limpiar tabla reporte"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 1"
+          DTS:To="Package\Limpiar bandejas\Limpiar bandeja" />
+        <DTS:PrecedenceConstraint
+          DTS:refId="Package\Limpiar bandejas.PrecedenceConstraints[Constraint 2]"
+          DTS:CreationName=""
+          DTS:DTSID="{99AC8560-0CF3-4D0C-90C0-7E2553DA5862}"
+          DTS:From="Package\Limpiar bandejas\Limpiar bandeja"
+          DTS:LogicalAnd="True"
+          DTS:ObjectName="Constraint 2"
+          DTS:To="Package\Limpiar bandejas\Actualizar fecha corte" />
+      </DTS:PrecedenceConstraints>
+    </DTS:Executable>
