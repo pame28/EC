@@ -1,345 +1,55 @@
-Mira, lo que hice fue tomar el paso 01 que es que limpia y llena tablas temporales con el procedimiento
-
-USE [BPTarjetas]
+USE [EstadosCuentaJSONProcesador]
 GO
-/****** Object:  StoredProcedure [dbo].[usp_LlenaBandejasEstadoCuenta]    Script Date: 11/3/2026 11:38:54 ******/
+
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE  [dbo].[usp_LlenaBandejasEstadoCuenta]
--- =============================================
--- Author:		henrry M .Padilla
--- Create date: 27/06/2022
--- Description:	Limpia y llena las bandejas de información de estados de cuenta por fecha de carga (cada corte)
--- =============================================
+
+ALTER PROCEDURE [dbo].[usp_LlenaBandejasEstadoCuenta]
 AS
 BEGIN
+    SET NOCOUNT ON;
 
-DECLARE @FechaCorte as date = (Select FechaCorte from Param_IS_ECTC Where Estado='1'),
-		@Reproceso INT= (SELECT COUNT(1) FROM BandejaECTC WHERE Estado=2);
+    DECLARE @FechaCorte DATE = (SELECT TOP(1) FechaCorte FROM ParametrosCorte WHERE Estado='1');
+    DECLARE @Reproceso INT = (SELECT COUNT(1) FROM BandejaEstadoCuenta WHERE Estado='2');
 
-	--IF(@Reproceso<1)
-	--BEGIN
-	--Limpiar badejas
-		Truncate Table [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]
-		Truncate Table [BPTarjetas].[dbo].[DEstadoCuenta_BandejaEnvioTC] 
-		Truncate Table [BPTarjetas].[dbo].[Financiamientos_BandejaEnvioTC]
+    BEGIN TRY
+        BEGIN TRANSACTION;
 
-	--llenar bandejas
+        -- Limpiar tablas bandejas
+        IF OBJECT_ID('dbo.BandejaEncabezado', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaEncabezado;
+        IF OBJECT_ID('dbo.BandejaDetalle', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaDetalle;
+        IF OBJECT_ID('dbo.BandejaFinanciamientos', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaFinanciamientos;
 
-		Insert into  [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]
-		Select * from [BPTarjetas].[dbo].HEstadoCuenta Where Fecha_Corte=@FechaCorte --And No_Tarjeta='1000000003294902'
-	
-		Insert into [BPTarjetas].[dbo].[DEstadoCuenta_BandejaEnvioTC]
-		Select * from [BPTarjetas].[dbo].[DEstadoCuenta] Where Fecha_Corte=@FechaCorte --And EC_DetalleNo_Tarjeta='1000000003294902'
-	
-		Insert into [BPTarjetas].[dbo].[Financiamientos_BandejaEnvioTC]
-		SELECT * FROM [BPTarjetas].[dbo].[Financiamientos] WHERE FechaCierre=@FechaCorte --And NumeroCuenta='5000001656764'
-	--END
+        -- Llenar bandeja encabezado
+        INSERT INTO dbo.BandejaEncabezado
+        SELECT *
+        FROM dbo.EstadoCuentaEncabezado
+        WHERE FechaCorte = @FechaCorte;
+
+        -- Llenar bandeja detalle
+        INSERT INTO dbo.BandejaDetalle
+        SELECT *
+        FROM dbo.EstadoCuentaDetalle
+        WHERE FechaCorte = @FechaCorte;
+
+        -- Llenar bandeja financiamientos
+        INSERT INTO dbo.BandejaFinanciamientos
+        SELECT *
+        FROM dbo.EstadoCuentaFinanciamientos
+        WHERE FechaCierre = @FechaCorte;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+
+        DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
+        DECLARE @ErrorNum INT = ERROR_NUMBER();
+
+        -- Opcional: registrar error en tabla de log
+        RAISERROR('Error %d: %s', 16, 1, @ErrorNum, @ErrorMsg);
+    END CATCH
 END
-
-
-
-
-Basado de eso creé las 8 tablas que utiliza
-
---Crear base de datos
-CREATE DATABASE EstadosCuentaJSONProcesador
-
---Usar esa base de datos
-use EstadosCuentaJSONProcesador
-
---Crear tablas
-
-CREATE TABLE [dbo].[BandejaEncabezado](
-	[idRow] [int] NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[Emisor] [char](8) NULL,
-	[NoCuenta] [char](13) NULL,
-	[NombreTHTit] [char](40) NULL,
-	[EmisorMadre] [char](8) NULL,
-	[CuentaMadre] [char](10) NULL,
-	[NombreEmpresa] [char](30) NULL,
-	[TipoTarjeta] [char](10) NULL,
-	[NoTarjeta] [char](16) NULL,
-	[FechaPago] [datetime] NULL,
-	[FechaCorte] [datetime] NULL,
-	[PagoContadoMN] [money] NULL,
-	[PagoMinimoMN] [money] NULL,
-	[SaldoVencidoMN] [money] NULL,
-	[SaldoAnteriorMN] [money] NULL,
-	[SaldoFinalMN] [money] NULL,
-	[ComprasDebMN] [money] NULL,
-	[PagosCredMN] [money] NULL,
-	[SobregiroMN] [money] NULL,
-	[CuotaMesMN] [money] NULL,
-	[PagoContadoME] [money] NULL,
-	[PagoMinimoME] [money] NULL,
-	[SaldoVencidoME] [money] NULL,
-	[SaldoAnteriorME] [money] NULL,
-	[SaldoFinalME] [money] NULL,
-	[ComprasDebME] [money] NULL,
-	[PagosCredME] [money] NULL,
-	[SobregiroME] [money] NULL,
-	[CuotaMesME] [money] NULL,
-	[MonedaLimCre] [varchar](1) NULL,
-	[LimiteCredito] [money] NULL,
-	[DisponibleCtaMN] [money] NULL,
-	[DisponibleCtaME] [money] NULL,
-	[DisponibleRetMN] [money] NULL,
-	[DisponibleRetME] [money] NULL,
-	[PTSSaldoAnt] [money] NULL,
-	[PTSGanados] [money] NULL,
-	[PTSUsuados] [money] NULL,
-	[PTSSaldoActual] [money] NULL,
-	[MonedaLimEF] [varchar](1) NULL,
-	[EFLimite] [money] NULL,
-	[EFSaldoMN] [money] NULL,
-	[EFDebitosMN] [money] NULL,
-	[EFCreditosMN] [money] NULL,
-	[EFSaldoME] [money] NULL,
-	[EFDebitosME] [money] NULL,
-	[EFCreditosME] [money] NULL,
-	[EFDisponibleMN] [money] NULL,
-	[EFDisponibleME] [money] NULL,
-	[TasaIntAnualMN] [money] NULL,
-	[TasaIntAnualME] [money] NULL,
-	[Direccion1] [char](40) NULL,
-	[Direccion2] [char](40) NULL,
-	[Direccion3] [char](40) NULL,
-	[ApdoPostal] [char](15) NULL,
-	[Cidudad] [char](25) NULL,
-	[Mensaje1] [char](50) NULL,
-	[Mensaje2] [char](50) NULL,
-	[Mensaje3] [char](50) NULL,
-	[Mensaje4] [char](50) NULL,
-	[Mensaje5] [char](50) NULL,
-	[TarjetaImprimir] [varchar](4) NULL,
-	[CostoAnualTotMN] [money] NULL,
-	[CostoAnualTotME] [money] NULL,
-	[PlazoCancDeudaMN] [int] NULL,
-	[PlazoCancDeudaME] [int] NULL,
-	[InteresPagoMinMN] [money] NULL,
-	[InteresPagoMinME] [money] NULL,
-	[Correo] [varchar](100) NULL,
-	[FechaCarga] [date] NULL,
-	[LimiteCreditoMN] [money] NULL,
-	[InteresCorrienteMN] [money] NULL,
-	[InteresCorrienteME] [money] NULL,
-	[NoCuentaClaro] [varchar](10) NULL
-) ON [PRIMARY]
-
 GO
-
-CREATE TABLE [dbo].[BandejaDetalle](
-	[idRow] [int] NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[FechaCarga] [date] NULL,
-	[CodigoEmisor] [char](8) NULL,
-	[ECDetalleNoCuenta] [char](13) NULL,
-	[FechaCorte] [datetime] NULL,
-	[ECDetalleNoTarjeta] [char](16) NULL,
-	[NombreTHP] [varchar](40) NULL,
-	[ECDetalleEmisorMadre] [char](8) NULL,
-	[ECDetalleCuentaMadre] [char](5) NULL,
-	[NoAutorizacion] [varchar](12) NULL,
-	[FechaConsumo] [datetime] NULL,
-	[CodigoMov] [char](2) NULL,
-	[DescripcionMov] [varchar](45) NULL,
-	[MonedaMov] [char](2) NULL,
-	[MontoMov] [money] NULL,
-	[TarjetaImprimir] [varchar](4) NULL,
-	[TasaEfectivaAnualEFMN] [money] NULL,
-	[TasaEfectivaAnualEFME] [money] NULL,
-	[NoCuentaClaro] [varchar](10) NULL
-) ON [PRIMARY]
-
-GO
-
-
-CREATE TABLE [dbo].[BandejaFinanciamientos](
-	[NumeroCuenta] [varchar](13) NULL,
-	[GrupoMovimientos] [varchar](3) NULL,
-	[CodigoOperacion] [varchar](6) NULL,
-	[NoCutRelacionado] [varchar](12) NULL,
-	[MonedaMovimiento] [varchar](2) NULL,
-	[Importe] [numeric](15, 2) NULL,
-	[ImporteTotalPlan] [numeric](12, 2) NULL,
-	[InteresCuotaLiquida] [numeric](12, 2) NULL,
-	[PlanCuotaCapitalPend] [numeric](14, 2) NULL,
-	[PlanCuotaInteresPend] [numeric](12, 2) NULL,
-	[PlanExtraTasa] [numeric](8, 4) NULL,
-	[NoCuotaLiquidada] [tinyint] NULL,
-	[CantidadCuotasPlan] [tinyint] NULL,
-	[NombreTarjeta] [varchar](40) NULL,
-	[EsIntra] [bit] NULL,
-	[EsExtra] [bit] NULL,
-	[FechaCierre] [date] NULL,
-	[FechaOtorgamiento] [date] NULL
-) ON [PRIMARY]
-GO
-
-
-
-CREATE TABLE [dbo].[EstadoCuentaEncabezado](
-	[idRow] [int] IDENTITY(19867428,1) NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[Emisor] [char](8) NULL,
-	[NoCuenta] [char](13) NULL,
-	[NombreTHIt] [char](40) NULL,
-	[EmisorMadre] [char](8) NULL,
-	[CuentaMadre] [char](10) NULL,
-	[NombreEmpresa] [char](30) NULL,
-	[TipoTarjeta] [char](10) NULL,
-	[NoTarjeta] [char](16) NULL,
-	[FechaPago] [datetime2](3) NULL,
-	[FechaCorte] [datetime2](3) NULL,
-	[PagoContadoMN] [money] NULL,
-	[PagoMinimoMN] [money] NULL,
-	[SaldoVencidoMN] [money] NULL,
-	[SaldoAnteriorMN] [money] NULL,
-	[SaldoFinalMN] [money] NULL,
-	[ComprasDebMN] [money] NULL,
-	[PagosCredMN] [money] NULL,
-	[SobregiroMN] [money] NULL,
-	[CuotaMesMN] [money] NULL,
-	[PagoContadoME] [money] NULL,
-	[PagoMinimoME] [money] NULL,
-	[SaldoVencidoME] [money] NULL,
-	[SaldoAnteriorME] [money] NULL,
-	[SaldoFinalME] [money] NULL,
-	[ComprasDebME] [money] NULL,
-	[PagosCredME] [money] NULL,
-	[SobregiroME] [money] NULL,
-	[CuotaMesME] [money] NULL,
-	[MonedaLimCre] [varchar](1) NULL,
-	[LimiteCredito] [money] NULL,
-	[DisponibleCtaMN] [money] NULL,
-	[DisponibleCtaME] [money] NULL,
-	[DisponibleRetMN] [money] NULL,
-	[DisponibleRetME] [money] NULL,
-	[PTSSaldoAnt] [money] NULL,
-	[PTSGanados] [money] NULL,
-	[PTSUsuados] [money] NULL,
-	[PTSSaldoActual] [money] NULL,
-	[MonedaLimEF] [varchar](1) NULL,
-	[EFLimite] [money] NULL,
-	[EFSaldoMN] [money] NULL,
-	[EFDebitosMN] [money] NULL,
-	[EFCreditosMN] [money] NULL,
-	[EFSaldoME] [money] NULL,
-	[EFDebitosME] [money] NULL,
-	[EFCreditosME] [money] NULL,
-	[EFDisponibleMN] [money] NULL,
-	[EFDisponibleME] [money] NULL,
-	[TasaIntAnualMN] [money] NULL,
-	[TasaIntAnualME] [money] NULL,
-	[Direccion1] [char](40) NULL,
-	[Direccion2] [char](40) NULL,
-	[Direccion3] [char](40) NULL,
-	[ApdoPostal] [char](15) NULL,
-	[Cidudad] [char](25) NULL,
-	[Mensaje1] [char](50) NULL,
-	[Mensaje2] [char](50) NULL,
-	[Mensaje3] [char](50) NULL,
-	[Mensaje4] [char](50) NULL,
-	[Mensaje5] [char](50) NULL,
-	[TarjetaImprimir] [varchar](4) NULL,
-	[CostoAnualTotMN] [money] NULL,
-	[CostoAnualTotME] [money] NULL,
-	[PlazoCancDeudaMN] [int] NULL,
-	[PlazoCancDeudaME] [int] NULL,
-	[InteresPagoMinMN] [money] NULL,
-	[InteresPagoMinME] [money] NULL,
-	[Correo] [varchar](100) NULL,
-	[FechaCarga] [date] NULL,
-	[LimiteCreditoMN] [money] NULL,
-	[InteresCorrienteMN] [money] NULL,
-	[InteresCorrienteME] [money] NULL,
-	[NoCuentaClaro] [varchar](10) NULL
-) ON [PRIMARY]
-GO
-
-
-
-CREATE TABLE [dbo].[EstadoCuentaDetalle](
-	[idRow] [int] IDENTITY(91692083,1) NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[FechaCarga] [date] NULL,
-	[CodigoEmisor] [char](8) NULL,
-	[ECDetalleNoCuenta] [char](13) NULL,
-	[FechaCorte] [datetime2](3) NULL,
-	[ECDetalleNoTarjeta] [char](16) NULL,
-	[NombreTHP] [varchar](40) NULL,
-	[ECDetalleEmisorMadre] [char](8) NULL,
-	[ECDetalleCuentaMadre] [char](5) NULL,
-	[NoAutorizacion] [varchar](12) NULL,
-	[FechaConsumo] [datetime2](3) NULL,
-	[CodigoMov] [char](2) NULL,
-	[DescripcionMov] [varchar](45) NULL,
-	[MonedaMov] [char](2) NULL,
-	[MontoMov] [money] NULL,
-	[TarjetaImprimir] [varchar](4) NULL,
-	[TasaEfectivaAnualEFMN] [money] NULL,
-	[TasaEfectivaAnualEFME] [money] NULL,
-	[NoCuentaClaro] [varchar](10) NULL
-) ON [PRIMARY]
-GO
-
-
-
-
-
-CREATE TABLE [dbo].[EstadoCuentaFinanciamientos](
-	[NumeroCuenta] [varchar](13) NULL,
-	[GrupoMovimientos] [varchar](3) NULL,
-	[CodigoOperacion] [varchar](6) NULL,
-	[NoCutRelacionado] [varchar](12) NULL,
-	[MonedaMovimiento] [varchar](2) NULL,
-	[Importe] [numeric](15, 2) NULL,
-	[ImporteTotalPlan] [numeric](12, 2) NULL,
-	[InteresCuotaLiquida] [numeric](12, 2) NULL,
-	[PlanCuotaCapitalPend] [numeric](14, 2) NULL,
-	[PlanCuotaInteresPend] [numeric](12, 2) NULL,
-	[PlanExtraTasa] [numeric](8, 4) NULL,
-	[NoCuotaLiquidada] [tinyint] NULL,
-	[CantidadCuotasPlan] [tinyint] NULL,
-	[NombreTarjeta] [varchar](40) NULL,
-	[EsIntra] [bit] NULL,
-	[EsExtra] [bit] NULL,
-	[FechaCierre] [date] NULL,
-	[FechaOtorgamiento] [date] NULL
-) ON [PRIMARY]
-GO
-
-
-
-CREATE TABLE [dbo].[BandejaEstadoCuenta](
-	[FechaCorte] [varchar](15) NULL,
-	[NoTarjeta] [varchar](50) NULL,
-	[NoCuenta] [varchar](50) NULL,
-	[Correo] [varchar](max) NULL,
-	[Estado] [varchar](15) NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-
-
-
-
-CREATE TABLE [dbo].[ParametrosCorte](
-	[Id] [int] IDENTITY(1,1) NOT NULL,
-	[FechaCorte] [date] NULL,
-	[Destinatario] [varchar](30) NULL,
-	[Remitente] [varchar](30) NULL,
-	[Estado] [char](1) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-
-
-
-Ya con eso creo que puedo crear el SP, cierto? que modificaciones o adecuaciones se pueden hacer para que no cambie funcionalidad, ni estructura pero si con mejores practicas, optimizado, etc
