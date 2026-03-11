@@ -1,69 +1,10 @@
-CREATE PROCEDURE dbo.usp_LlenarBandejaEstadoCuenta
+CREATE PROCEDURE dbo.usp_LimpiarBandejaEstadoCuenta
 AS
 BEGIN
 
 SET NOCOUNT ON;
 
-DECLARE @Cantidad INT
-DECLARE @FechaCorte DATE
-
-SELECT @Cantidad = COUNT(*)
-FROM dbo.BandejaEstadoCuenta
-
-SELECT @FechaCorte = FechaCorte
-FROM dbo.Param_IS_ECTC
-WHERE Estado = 1
-
-
-IF (@Cantidad < 1)
-BEGIN
-
-    INSERT INTO dbo.BandejaEstadoCuenta
-    (
-        Fecha_Corte,
-        No_Tarjeta,
-        No_Cuenta,
-        Correo,
-        Estado
-    )
-
-    SELECT
-        h.Fecha_Corte,
-        TRIM(h.No_Tarjeta),
-        TRIM(h.No_Cuenta),
-        TRIM(h.Correo),
-        2
-    FROM dbo.BandejaEncabezado h
-
-    INNER JOIN dbo.FechaCarga fc
-        ON h.Origen = fc.Origen
-
-    WHERE
-        h.Fecha_Corte = @FechaCorte
-
-        AND h.Correo <> ''
-
-        AND h.Correo NOT IN
-        (
-            SELECT Correo
-            FROM dbo.CorreosNoValidos
-            WHERE Estado = 1
-        )
-
-        AND
-        (
-            EXISTS
-            (
-                SELECT 1
-                FROM dbo.BandejaDetalle d
-                WHERE d.ECDetalleNoCuenta = h.No_Cuenta
-                AND d.FechaCorte = h.Fecha_Corte
-            )
-            OR h.Pago_Contado_MN <> 0
-            OR h.Pago_Contado_ME <> 0
-        )
-
-END
+TRUNCATE TABLE dbo.BandejaEstadoCuenta;
 
 END
 GO
