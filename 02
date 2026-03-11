@@ -1,7 +1,5 @@
 Mira, yo tenia este pequeño resumen de lo que hace, y me tomé el tiempo de agregar la estructura de algunas tablas 
 
-
-
 PREPARA DATA DEL CORTE
 
 Paso 01. Limpia e inserta bandejas temporales
@@ -559,9 +557,6 @@ CREATE TABLE [dbo].[EstadoCuentaHTML](
 GO
 
 
-	1	<STYLE type=text/css> table th { font-family: Tahoma, Geneva, sans-serif; font-weight: normal; border: 0px; } #num { text-align: right; } table { width: 100%; Border: 0; } table td { font-family: Tahoma, Geneva, sans-serif; Border: 0; font-size: 10px } .style1 { height: 16px; } #TituloTbl { background-color: #0f59a0; color: white; text-align: center; } </STYLE> <TABLE style='FONT-SIZE: 16px; FONT-FAMILY: Tahoma, Verdana, Arial' width='100%' border=0> <TBODY> <TR> <TD colSpan=3> <DIV style='FONT-SIZE: 14px'><STRONG>ESTADO DE CUENTA DE TARJETA DE CREDITO</STRONG></DIV> </TD> <TD><EM><IMG border=0 alt='' src='https://www.banpais.hn/images/logo.png' align=left></EM></TD> </TR> <TR> <TD colSpan=2> <DIV style='FONT-SIZE: 14px'> Nombre_TH_Tit </DIV> </TD> <TD width=171> <DIV style='FONT-SIZE: 14px'>No. de tarjeta:</DIV> </TD> <TD width=180> <DIV style='FONT-SIZE: 14px'> Tarjeta_Imprimir </DIV> </TD> </TR> <TR> <TD width='33%'> <TABLE style='FONT-SIZE: 10px' width='100%'> <TBODY> <TR style='BACKGROUND: #0f59a0; COLOR: #fff'> <TD width=141 colSpan=2 align=center>LIMITE DE CREDITO</TD> <TD width=129 colSpan=2 align=center>CREDITO DISPONIBLE</TD> </TR> <TR> <!--LIMITE DE CREDITO--> <TD>L. Limite_CreditoMN </TD> <TD>US$. Limite_Credito </TD> <!--CREDITO DISPONIBLE--> <TD>L. Disponible_Cta_MN </TD> <TD>US$. Disponible_Cta_ME </TD> </TR> </TBODY> </TABLE> </TD> <TD width='33%'> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=2 align=center>PAGO DE CONTADO</TD> <TD colSpan=2 align=center>PAGO MINIMO</TD> </TR> <TR> <!--PAGO DE CONTADO--> <td id='num'>L. Pago_Contado_MN </td> <td id='num'>US$. Pago_Contado_ME </td> <!--PAGO MINIMO--> <td id='num'>L. Pago_Minimo_MN </td> <td id='num'>US$. Pago_Minimo_ME </td> </TR> </TBODY> </TABLE> </TD> <TD vAlign=top width='33%' colSpan=2> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center>FECHA DE CORTE</TD> <TD align=center>FECHA DE PAGO</TD> </TR> <TR> <TD> <P align=center> Fecha_Corte </P> </TD> <TD> <P align=center> Fecha_Pago </P> </TD> </TR> </TBODY> </TABLE> </TD> </TR> <TR> <TD vAlign=top width='33%'> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <thead> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center colspan='4'>RESUMEN DEL PERIODO</TD> </TR> <tr> <th colspan='2'>Descripci&oacute;n</th> <th colspan='1'>Lempiras</th> <th colspan='1'>US$</th> </tr> </thead> <tbody> <tr> <!--RESUMEN DEL PERIODO PRIMERA FILA--> <td colspan='2'>Saldo Anterior</td> <td colspan='1' id='num'> Saldo_Anterior_MN </td> <td colspan='1' id='num'> Saldo_Anterior_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO SEGUNDA FILA--> <td colspan='2'>Compras/D&eacute;bitos</td> <td colspan='1' id='num'> Compras_Deb_MN </td> <td colspan='1' id='num'> Compras_Deb_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO TERCERA FILA--> <td colspan='2'>Pagos/Cr&eacute;ditos</td> <td colspan='1' id='num'> Pagos_Cred_MN </td> <td colspan='1' id='num'> Pagos_Cred_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO CUARTA FILA--> <td colspan='2'>Pago de contado</td> <td colspan='1' id='num'> Pago_Contado_MN </td> <td colspan='1' id='num'> Pago_Contado_ME </td> </tr> <tr> <!--RESUMEN DEL PERIODO QUINTA FILA--> <td colspan='2'></td> <td colspan='1'></td> <td colspan='1'></td> </tr> </tbody> </TABLE> </TD> <TD vAlign=top width='33%' align=right> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <thead> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center colspan='4'>PAGO MINIMO</TD> </TR> <tr> <th colspan='2'>Descripci&oacute;n</th> <th colspan='1'>Lempiras</th> <th colspan='1'>US$</th> </tr> </thead> <!--PAGO MINIMO--> <tbody> <!--PRIMERA FILA--> <tr> <td colspan='2'>Saldo vencido</td> <td colspan='1' id='num'> Saldo_Vencido_MN </td> <td colspan='1' id='num'> Saldo_Vencido_ME </td> </tr> <!--SEGUNDA FILA--> <tr> <td colspan='2'>Sobregiro</td> <td colspan='1' id='num'> Sobregiro_MN </td> <td colspan='1' id='num'> Sobregiro_ME </td> </tr> <!--TERCERA FILA--> <tr> <td colspan='2'>Cuota del mes</td> <td colspan='1' id='num'> Cuota_Mes_MN </td> <td colspan='1' id='num'> Cuota_Mes_ME </td> </tr> <!--CUARTA FILA--> <tr> <td colspan='2'>Pago minimo</td> <td colspan='1' id='num'> Pago_Minimo_MN </td> <td colspan='1' id='num'> Pago_Minimo_ME </td> </tr> <!--QUINTA FILA--> <tr> <td colspan='2'>Tasa de inter&eacute;s anual</td> <td colspan='1' id='num'> Tasa_Int_Anual_MN %</td> <td colspan='1' id='num'> Tasa_Int_Anual_ME %</td> </tr> </tbody> </TABLE> </TD> <TD vAlign=top width='33%' colSpan=2> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=2 align=center>BP PUNTOS</TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width='50%'>Saldo Anterior:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width='50%'> PTS_Saldo_Ant </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> +Ganados:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> PTS_Ganados </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> -Debitados:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> PTS_Usuados </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Saldo Actual:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> PTS_Saldo_Actual </TD> </TR> </TBODY> </TABLE> </TD> </TR> <TR> <TD vAlign=top width='33%'> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=3 align=center>INFORMACION EXTRAFINANCIAMIENTO</TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width=102> <P>Descripción</P> </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width=73 align=center>Lempiras</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' width=83 align=center>Dólares</TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Saldo:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Saldo_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Saldo_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Cuota del mes:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Debitos_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Debitos_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Pago del mes:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Creditos_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Creditos_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> Disponible:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Disponible_MN </TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> EF_Disponible_ME </TD> </TR> <TR> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px'> CAT:</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> Costo_Anual_Tot_MN%</TD> <TD style='BORDER-LEFT-WIDTH: 0px; BORDER-RIGHT-WIDTH: 0px; BORDER-BOTTOM-WIDTH: 0px; BORDER-TOP-WIDTH: 0px' align=right> Costo_Anual_Tot_ME%</TD> </TR> </TBODY> </TABLE> </TD> <TD vAlign=top width='33%'> <DIV> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <thead> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD align=center colspan='4'>RESUMEN DE SALDO TOTAL</TD> </TR> <tr> <th colspan='2'>Descripci&oacute;n</th> <th colspan='1'>Lempiras</th> <th colspan='1'>US$</th> </tr> </thead> <tbody> <!--PRIMERA FILA--> <tr> <td colspan='2'>Saldo por consumo</td> <td colspan='1' id='num'> Saldo_Consumo_MN </td> <td colspan='1' id='num'> Saldo_Consumo_ME </td> </tr> <!--SEGUNDA FILA--> <tr> <td colspan='2'>Intereses corrientes adeudados</td> <td colspan='1' id='num'> Interes_Corriente_MN </td> <td colspan='1' id='num'> Interes_Corriente_ME </td> </tr> <!--TERCERA FILA--> <tr> <td colspan='2'>Saldo total</td> <td colspan='1' id='num'> Saldo_Final_MN </td> <td colspan='1' id='num'> Saldo_Final_ME </td> </tr> <!--CUARTA FILA--> <tr> <td colspan='2'></td> <td colspan='1'></td> <td colspan='1'></td> </tr> <!--QUINTA FILA--> <tr> <td colspan='2'></td> <td colspan='1'></td> <td colspan='1'></td> </tr> </tbody> </TABLE> </DIV> </TD> <TD vAlign=top width='33%' colSpan=2> <TABLE style='FONT-SIZE: 9px' width='100%' border=1> <TBODY> <TR style='COLOR: #fff; BACKGROUND-COLOR: #0f59a0'> <TD colSpan=2 align=center>INFORMACI&Oacute;N IMPORTANTE</TD> </TR> <TR> <TD colSpan=2 align=center>Plazo Cancelaci&oacute;n</TD> </TR> <TR> <TD width='50%'> <P align=center> Plazo_Canc_Deuda_MN </P> </TD> <TD width='50%'> <P align=center> Plazo_Canc_Deuda_ME </P> </TD> </TR> <TR> <TD colSpan=2 align=center>Intereses a facturar</TD> </TR> <TR> <TD> <P align=center>L. Interes_Pago_Min_MN </P> </TD> <TD> <P align=center>US$. Interes_Pago_Min_ME </P> </TD> </TR> </TBODY> </TABLE> </TD> </TR>	<!--AQUI FINALIZA ENCABEZADO--> <!-- <TR> <TD style='BACKGROUND: #0f59a0' colSpan=4> <DIV style='COLOR: #ffffff; TEXT-ALIGN: center'>DETALLE DE MOVIMIENTOS</DIV> </TD> </TR> --> <TR> <TD colSpan=4> <table id='fl' style='FONT-SIZE: 9px' width='100%'> <thead id='fl'> <th id='TituloTbl'>Fecha <br> dd/mm/aaaa</th> <!-- <th>&nbsp;</th> --> <th colspan='5' id='TituloTbl'>Descripci&oacute;n</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Compras/D&eacute;bitos <br> Lempiras </th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Pagos/Cr&eacute;ditos <br> Lempiras </th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Compras/D&eacute;bitos <br> US$ </th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Pagos/Cr&eacute;ditos <br> US$ </th> </thead> <tbody>	<tr> <td> Fecha_Consumo </td> <!-- <td>&nbsp;</td> --> <td colspan='5'> Descripcion_Mov </td> <!-- <td>&nbsp;</td> --> <td id='num'>  DebitosMN </td> <!-- <td>&nbsp;</td> --> <td id='num'>  CreditosMN  </td> <!-- <td>&nbsp;</td> --> <td id='num'>  DebitosME  </td> <!-- <td>&nbsp;</td> --> <td id='num'> CreditosME </td> </tr>	</tbody> </table></TD> </tr>	<!--AQUI FINALIZA DETALLE--> <TR> <TD colSpan=4></TD> </TR> <TR> <TD style='BACKGROUND: #0f59a0' colSpan=4> <DIV style='COLOR: #ffffff; TEXT-ALIGN: center'>DETALLE DE FINANCIAMIENTOS</DIV> </TD> </TR> <TR> <TD colSpan=4> <table id='fl' style='FONT-SIZE: 9px' width='100%'> <thead id='fl'> <tr> <th colspan='2' id='TituloTbl'>Tipo</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Fecha</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Monto otorgado</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Moneda</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Monto cuota</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Plazo (meses)</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Cuota</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Tasa de inter&eacute;s</th> <!-- <th>&nbsp;</th> --> <th id='TituloTbl'>Saldo</th> </tr> </thead> <tbody> 	<tr> <td colspan='2'> Tipo </td> <!-- <td>&nbsp;</td> --> <td> Fecha </td> <!-- <td>&nbsp;</td> --> <td id='num'> Monto </td> <!-- <td>&nbsp;</td> --> <td id='num'> Moneda </td> <!-- <td>&nbsp;</td> --> <td id='num'> Cuota </td> <!-- <td>&nbsp;</td> --> <td id='num'> Plazo </td> <!-- <td>&nbsp;</td> --> <td id='num'> Aplicada </td> <!-- <td>&nbsp;</td> --> <td id='num'> Tasa </td> <!-- <td>&nbsp;</td> --> <td id='num'> Saldo </td> </tr> 	</tbody> </table> </TD> </TR>	 <!--AQUI FINALIZA FINANCIAMIENTO--> <TR> <TD colSpan=4> <DIV><STRONG>Notas:</STRONG></DIV> </TD> </TR> <TR> <TD class=style1 colSpan=4> <DIV><STRONG>Interés a facturar:</STRONG> Valor máximo a facturar en caso de no se realice ningún pago </DIV> </TD> </TR> <TR> <TD colSpan=4> <DIV><STRONG>Plazo de cancelación: </STRONG>Tiempo en meses para cancelar el saldo total si únicamente realiza el pago mínimo<STRONG><SPAN style='FONT-SIZE: 11pt; FONT-FAMILY: Calibri,sans-serif; COLOR: #1f497d'><EM><BR></EM></SPAN></STRONG> </DIV> </TD> </TR> </TBODY> <TBODY> <TR> <TD colSpan=4> <DIV> Mensaje_1 </DIV> </TD> </TR> </TBODY> <TBODY> <TR> <TD colSpan=4> <DIV> <P>Banco del País S.A. tiene a su disposición el <STRONG>Programa de Cobertura Mundial contra Hurto, Robo y Extravío (HRE)</STRONG>, para mayor información visite nuestra página <A href='http://www.banpais.hn'>www.banpais.hn</A> o llame al 2545-1212.</P> <H4><EM><SPAN style='COLOR: #000000'>Queremos brindarte un mejor servicio, actualiza tus datos <A style='COLOR: #000000' href='https://www.banpais.hn/actualizadatos/'>aquí</A></SPAN></EM></H4> </DIV> </TD> </TR> </TBODY> </TABLE> <P></P> 	select top 1 B.Fecha_Corte, B.No_Tarjeta, B.No_Cuenta, B.Correo from BandejaECTC B where B.Estado=2	true	SELECT CONVERT(VARCHAR(10), a.Fecha_Corte, 120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, LTRIM(RTRIM(a.Nombre_TH_Tit)) AS Nombre, a.NoCuentaClaro AS NoCuentaVASA FROM HEstadoCuenta_BandejaEnvioTC AS a INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = ( SELECT Fechacorte FROM Param_IS_ECTC WHERE Estado = 1 ) WHERE (a.Correo <> '') AND ( a.Correo IN ( SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1 ) ) AND ( EXISTS ( SELECT 1 FROM dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte ) OR a.Pago_Contado_MN != 0 OR a.Pago_Contado_ME != 0 ) ORDER BY a.Correo	select COUNT(*)  from BandejaECTC B where B.Estado=2	https://pcireporting.banpais.hn/Reports/Pages/Folder.aspx	C:\Procesos\EstadosCuenta\Generados\	C:\Procesos\EstadosCuenta\Historico\	qeH8b6jBD5h9i4KjMZBqYA==
-	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
-
 Paso 11. Crea Contador. Tiene esta programación:
 
 		public void Main()
@@ -984,47 +979,11 @@ Step 14.2.2. Genera Estado de cuenta por Lote
 User::Cant,User::CantidadEjecucion,User::CantidadLotes,User::ContadorLote,User::Correo,User::Cuenta,User::Equivalente,User::FechaCorte,User::NombreJson,User::pruebas_flag,User::RegistrosPorLote,User::RutaArchivoJson,User::RutaContador,User::RutaJson,User::TipoGeneracion
 
 
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
-
-#region Namespaces
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.IO;
-using System.Collections.Generic;
-using System.Web.Script.Serialization;
-using System.Linq;
-using System.Text;
-#endregion
-
-namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
-{
-	/// <summary>
-	/// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-	/// or parent of this class.
-	/// </summary>
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
 
 
-	
-
-
-		/// <summary>
-		/// This method is called when this script task executes in the control flow.
-		/// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-		/// To open Help, press F1.
-		/// </summary>
-		/// 
 		public void Main2()
 		{
 			int CantidadLotes = Convert.ToInt32(Dts.Variables["User::CantidadLotes"].Value.ToString());
@@ -1118,34 +1077,6 @@ Step 14.2.3. Finalización Json: User::FechaCorte,User::NombreJson,User::RutaArc
 
 
 
-#region Namespaces
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.IO;
-using System.IO.Compression;
-using System.Text;
-#endregion
-
-namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
-{
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
-	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-	{
-
-
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
             // TODO: Add your code here
@@ -1204,40 +1135,7 @@ namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
 
 Paso 15. Elimina contador:User::FechaCorte,User::RutaJson
 
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
 
-
-#region Namespaces
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.IO;
-#endregion
-
-namespace ST_3a6c2b47a3ba458aa574102805da6e4e
-{
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
-	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-	{
-       
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
             // TODO: Add your code here
@@ -1254,13 +1152,7 @@ namespace ST_3a6c2b47a3ba458aa574102805da6e4e
             Dts.TaskResult = (int)ScriptResults.Success;
 		}
 
-        #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
+      
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -1282,41 +1174,7 @@ Readonly variable: User::FechaCorte,User::Llave,User::NombreJson,User::RutaJson,
 
 ReadWriteVariable: User::RutaLlavePublica
 
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
 
-
-#region Namespaces
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.Security.Cryptography;
-using System.IO;
-using System.IO.Compression;
-using ST_3ba5fe2c14ce475cbf9d979b3056e0ab.src;
-#endregion
-
-namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
-{
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
-	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-	{
-        
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
             string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
@@ -1404,41 +1262,7 @@ SourceVariable 	       User::RutaJson
 Paso 18. Elimina archivos.
 ReadOnlyVaribles User::FechaCorte,User::RutaJson
 
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
 
-
-#region Namespaces
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.Security.Cryptography;
-using System.IO;
-#endregion
-
-namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
-{
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
-	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-	{
-       
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
 			string sourceDirectory = @"" + Dts.Variables["RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["FechaCorte"].Value).ToString("yyyy-MM-dd");
