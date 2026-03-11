@@ -14,11 +14,8 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE  [dbo].[usp_LlenaBandejasEstadoCuenta]
--- =============================================
--- Author:		henrry M .Padilla
--- Create date: 27/06/2022
--- Description:	Limpia y llena las bandejas de información de estados de cuenta por fecha de carga (cada corte)
--- =============================================
+
+
 AS
 BEGIN
 
@@ -67,17 +64,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
--- =====================================================================================
--- Autor:				Carlos Elvir PBS
--- Fecha creacion:		08-06-2022
--- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
--- de TC 
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---Carlos Elvir		Creacion del SP.										08-06-202
--- =======================================================================================
+
 AS
 BEGIN
 Declare @@Cantidad int;
@@ -123,17 +110,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER procedure [dbo].[usp_LimpiarTablaHistoricoReporteEC](@Tipo varchar(20))
- -- =====================================================================================
--- Autor:				PBS Carlos Elvir
--- Fecha creacion:		18-05-2022
--- Description:	Limpia la tabla que genera el reporte de Estado de Cuenta enviados y 
--- no enviados.
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---PBS Carlos Elvir	Se creo usp												18-05-2022
--- =======================================================================================
+
 AS
 BEGIN
 	if(@Tipo='COMPLETA')
@@ -299,8 +276,6 @@ ALTER TABLE [dbo].[FechaCarga] ADD  CONSTRAINT [DF_FechaCarga_RecargaMTC]  DEFAU
 GO
 
 
-
-
 Tercera tabla:
 
 USE [BPTarjetas]
@@ -404,10 +379,6 @@ FROM
 GO
 
 
-
-
-
-
 Destino: HistoricoCorreosECTC
 USE [BPTarjetas]
 GO
@@ -486,18 +457,7 @@ GO
 
 
 ALTER PROCEDURE [dbo].[usp_ObtenerQuery]
--- =====================================================================================
--- Autor:				Carlos Elvir PBS
--- Fecha creacion:		08-06-2022
--- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
--- de TC 
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---Carlos Elvir		Creacion del SP.										08-06-2022 
---Angel Hernandez	Se agregaron campos para controlar lotes de EC			28-08-2024
--- =======================================================================================
+
 AS
 BEGIN
 DECLARE @FechaCorte DATE;
@@ -594,18 +554,7 @@ GO
 
 
 ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson]
--- =====================================================================================
--- Autor:				Angel Hernandez
--- Fecha creacion:		28-08-2024
--- Description:	        Llena la bandeja ECTC Json con los json generados segun la fecha
---                      de corte establecida en la paremetrización y las demás bandejas 
---                      previamente cargadas
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			    Descripcion												Fecha
---Angel Hernandez		Creacion del SP.										28-08-2024
--- =======================================================================================
+
 AS
 BEGIN 
 
@@ -891,9 +840,6 @@ END
 
 
 
-
-
-
 -------------------------------------------------------------
 
 GENERACIÓN DE ESTADOS DE CUENTA JSON
@@ -1130,9 +1076,6 @@ Step 14.2.3. Finalización Json: User::FechaCorte,User::NombreJson,User::RutaArc
 
 
 
-
-
-
 Paso 15. Elimina contador:User::FechaCorte,User::RutaJson
 
 
@@ -1162,8 +1105,6 @@ Paso 15. Elimina contador:User::FechaCorte,User::RutaJson
 
 	}
 }
-
-
 
 
 
@@ -1366,8 +1307,6 @@ PRIMARY KEY CLUSTERED
 GO
 
 
-
-
 Paso 20. Enviar correo.
 
 ReadOnlyVariables	User::ArchivoFinal,User::CorreoReporte,User::FechaCorte	
@@ -1504,17 +1443,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER procedure [dbo].[usp_MoverHistoricoReporte]
- -- =====================================================================================
--- Autor:				PBS Carlos Elvir
--- Fecha creacion:		19-05-2022
--- Description:	Mueve la data transaccional del reporte de Estado de Cuenta de TC a la 
--- tabla histórica.
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---PBS Carlos Elvir	Se creo usp												19-05-2022
--- =======================================================================================
+
 AS
 BEGIN
 
@@ -1538,17 +1467,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER procedure [dbo].[usp_LimpiarTablaHistoricoReporteEC](@Tipo varchar(20))
- -- =====================================================================================
--- Autor:				PBS Carlos Elvir
--- Fecha creacion:		18-05-2022
--- Description:	Limpia la tabla que genera el reporte de Estado de Cuenta enviados y 
--- no enviados.
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---PBS Carlos Elvir	Se creo usp												18-05-2022
--- =======================================================================================
+
 AS
 BEGIN
 	if(@Tipo='COMPLETA')
@@ -1575,17 +1494,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
--- =====================================================================================
--- Autor:				Carlos Elvir PBS
--- Fecha creacion:		08-06-2022
--- Description:	Llena la bandeja con los registros a procesar para generar el estado de cuenta
--- de TC 
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---Carlos Elvir		Creacion del SP.										08-06-202
--- =======================================================================================
+
 AS
 BEGIN
 Declare @@Cantidad int;
@@ -1627,18 +1536,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[usp_ActFechaCorte]
--- =====================================================================================
--- Autor original:		PBS - CARLOS ELVIR
--- Fecha creacion:		31-05-2022
--- Description:	actualiza la fecha de corte para que se 
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---PBS Carlos Elvir  Se creó el procedimiento almacenado					    31-05-2022
---PBS Carlos Elvir  Se agregó la validacion de reproceso					12-09-2022
---Edman V. Montoya  Se agregó nueva fecha de corte del dia 10				17-05-2024
--- =======================================================================================
+
 AS
 BEGIN
 	declare @FechaCorteActual date,
