@@ -1,54 +1,21 @@
-CREATE PROCEDURE dbo.usp_ConsultarCorreosInvalidosEstadoCuenta
-AS
-BEGIN
+Mira, voy por el paso 07 y solo tiene ese query:
 
-SET NOCOUNT ON;
-
-DECLARE @FechaCorte DATE
-
-SELECT @FechaCorte = FechaCorte
-FROM dbo.ParametrosCorte
-WHERE Estado = 1
+select Correo from Param_CorreosEC where Tipo='T' and Estado=1;
 
 
-SELECT
-    h.FechaCorte,
-    TRIM(h.NoTarjeta) AS NoTarjeta,
-    TRIM(h.NoCuenta) AS NoCuenta,
-    TRIM(h.Correo) AS Correo
 
-FROM dbo.BandejaEncabezado h
 
-INNER JOIN dbo.FechaCarga fc
-    ON h.Origen = fc.Origen
+CREATE TABLE [dbo].[Param_CorreosEC](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[Correo] [varchar](255) NULL,
+	[Tipo] [char](2) NULL,
+	[Estado] [char](2) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 
-WHERE
 
-    h.FechaCorte = @FechaCorte
-
-    AND h.Correo <> ''
-
-    AND h.Correo IN
-    (
-        SELECT Correo
-        FROM dbo.CorreosNoValidos
-        WHERE Estado = 1
-    )
-
-    AND
-    (
-        EXISTS
-        (
-            SELECT 1
-            FROM dbo.BandejaDetalle d
-            WHERE d.ECDetalleNoCuenta = h.NoCuenta
-            AND d.FechaCorte = h.FechaCorte
-        )
-
-        OR h.PagoContadoMN <> 0
-        OR h.PagoContadoME <> 0
-    )
-
-ORDER BY h.Correo
-
-END
+Pero considero que lo correcto es que haya un SP, por cierto, ayudame a cambiar el nombre de la tabla
