@@ -1,80 +1,95 @@
-Mira este SP es el siguiente paso en el dtsx, si consideras que necesita mejoras, hazlo, tambien ayudame a cambiarle el nombre a la tabla que usa
+En el siguiente paso tiene un query en seco:
 
-USE [BPTarjetas]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricaEC]    Script Date: 12/3/2026 04:30:51 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Orlin Alvarado
--- Create date: 2014-10-24
--- Description:	Limpiar tabla Historica de Envio d estados de cuenta
--- =============================================
-ALTER PROCEDURE [dbo].[usp_LimpiarTablaHistoricaEC] 
-	@FechaCorte VARCHAR(10)
-	,@Origen VARCHAR(4)
+select QueryCNV from EstadoCuentaHTML where IdRows=1;
+
+
+Busqué en la BD qué tenia ese query y me salió esto, que si mal no recuerdo ya lo habiamos visto en un SP:
+
+select convert(varchar(10) ,a.Fecha_Corte ,120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo    
+FROM   [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]  AS a   
+INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = 
+(select Fechacorte from Param_IS_ECTC where Estado=1)   
+where  (a.Correo <> '') and (a.Correo in (select Correo from dbo.CorreosNoValidos where Estado=1))  
+and  (EXISTS (SELECT 1 FROM  dbo.EC_Detalle_Envio_Estado_Correo AS Det
+WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte)     
+Or a.Pago_Contado_MN != 0     Or a.Pago_Contado_ME != 0)     order by a.Correo 
+
+
+
+Y el SP nos quedó asi:
+
+CREATE PROCEDURE dbo.usp_LlenarBandejaEstadoCuenta
 AS
 BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
 
-    DELETE FROM tbl_HisEC_Email
-    WHERE Origen = @Origen AND Fecha_Corte = @FechaCorte 
+SET NOCOUNT ON;
+
+DECLARE @Cantidad INT
+DECLARE @FechaCorte DATE
+
+SELECT @Cantidad = COUNT(*)
+FROM dbo.BandejaEstadoCuenta
+
+SELECT @FechaCorte = FechaCorte
+FROM [dbo].[ParametrosCorte]
+WHERE Estado = 1
+
+
+IF (@Cantidad < 1)
+BEGIN
+
+    INSERT INTO dbo.BandejaEstadoCuenta
+    (
+        FechaCorte,
+        NoTarjeta,
+        NoCuenta,
+        Correo,
+        Estado
+    )
+
+    SELECT
+        h.FechaCorte,
+        TRIM(h.NoTarjeta),
+        TRIM(h.NoCuenta),
+        TRIM(h.Correo),
+        2
+    FROM dbo.BandejaEncabezado h
+
+    INNER JOIN dbo.FechaCarga fc
+        ON h.Origen = fc.Origen
+
+    WHERE
+        h.FechaCorte = @FechaCorte
+
+        AND h.Correo <> ''
+
+        AND h.Correo NOT IN
+        (
+            SELECT Correo
+            FROM dbo.CorreosNoValidos
+            WHERE Estado = 1
+        )
+
+        AND
+        (
+            EXISTS
+            (
+                SELECT 1
+                FROM dbo.BandejaDetalle d
+                WHERE d.ECDetalleNoCuenta = h.NoCuenta
+                AND d.FechaCorte = h.FechaCorte
+            )
+            OR h.PagoContadoMN <> 0
+            OR h.PagoContadoME <> 0
+        )
+
 END
 
-
-
-
----------------------------------------
-
-USE [BPTarjetas]
-GO
-
-/****** Object:  Table [dbo].[tbl_HisEC_Email]    Script Date: 12/3/2026 04:31:57 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE TABLE [dbo].[tbl_HisEC_Email](
-	[ID] [numeric](38, 0) IDENTITY(1,1) NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[Email] [varchar](100) NULL,
-	[No_Cuenta] [varchar](13) NULL,
-	[Nombre] [char](40) NULL,
-	[Fecha_CorteB] [char](10) NULL,
-	[Fecha_Pago] [char](10) NULL,
-	[Pago_Contado_MN] [money] NULL,
-	[Pago_Minimo_MN] [money] NULL,
-	[Saldo_Vencido_MN] [money] NULL,
-	[Pago_Contado_ME] [money] NULL,
-	[Pago_Minimo_ME] [money] NULL,
-	[Saldo_Vencido_ME] [money] NULL,
-	[PTS_Saldo_Ant] [money] NULL,
-	[PTS_Ganados] [money] NULL,
-	[PTS_Usuados] [money] NULL,
-	[PTS_Saldo_Actual] [money] NULL,
-	[Limite_Credito] [money] NULL,
-	[Disponible_Cta] [money] NULL,
-	[Disponible_Ret] [money] NULL,
-	[EF_Saldo_MN] [money] NULL,
-	[EF_Saldo_ME] [money] NULL,
-	[Total_Cuotas] [int] NOT NULL,
-	[Tasa_Int_Anual_MN] [money] NULL,
-	[Tasa_Int_Anual_ME] [money] NULL,
-	[FechaEnvio] [datetime] NOT NULL,
-	[Tarjeta_Imprimir] [char](10) NULL,
-	[No_Tarjeta] [char](16) NOT NULL,
-	[Fecha_Corte] [datetime] NOT NULL,
- CONSTRAINT [PK_tbl_HisEC_Email] PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
+END
 GO
 
 
+
+
+
+¿Que solucionaes me aconsejas para ese paso? Para no tener que crear una tabla con ese query ? o lo mejor es que si se haga asi?
