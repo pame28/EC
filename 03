@@ -1,21 +1,12 @@
-Mira, voy por el paso 07 y solo tiene ese query:
+CREATE PROCEDURE dbo.usp_ObtenerCorreosTecnicosEstadoCuenta
+AS
+BEGIN
 
-select Correo from Param_CorreosEC where Tipo='T' and Estado=1;
+SET NOCOUNT ON;
 
+SELECT Correo
+FROM dbo.CorreosEstadoCuenta
+WHERE Tipo = 'T'
+AND Estado = 1
 
-
-
-CREATE TABLE [dbo].[Param_CorreosEC](
-	[IdRow] [int] IDENTITY(1,1) NOT NULL,
-	[Correo] [varchar](255) NULL,
-	[Tipo] [char](2) NULL,
-	[Estado] [char](2) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[IdRow] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-
-
-Pero considero que lo correcto es que haya un SP, por cierto, ayudame a cambiar el nombre de la tabla
+END
