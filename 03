@@ -1,20 +1,80 @@
-USE [EstadosCuentaJSONProcesador]
+Mira este SP es el siguiente paso en el dtsx, si consideras que necesita mejoras, hazlo, tambien ayudame a cambiarle el nombre a la tabla que usa
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricaEC]    Script Date: 12/3/2026 04:30:51 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Orlin Alvarado
+-- Create date: 2014-10-24
+-- Description:	Limpiar tabla Historica de Envio d estados de cuenta
+-- =============================================
+ALTER PROCEDURE [dbo].[usp_LimpiarTablaHistoricaEC] 
+	@FechaCorte VARCHAR(10)
+	,@Origen VARCHAR(4)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+    DELETE FROM tbl_HisEC_Email
+    WHERE Origen = @Origen AND Fecha_Corte = @FechaCorte 
+END
+
+
+
+
+---------------------------------------
+
+USE [BPTarjetas]
 GO
 
-/****** Object:  Table [dbo].[BandejaEstadoCuenta]    Script Date: 11/3/2026 14:01:21 ******/
+/****** Object:  Table [dbo].[tbl_HisEC_Email]    Script Date: 12/3/2026 04:31:57 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[BandejaEstadoCuenta](
-	[FechaCorte] [varchar](15) NULL,
-	[NoTarjeta] [varchar](50) NULL,
-	[NoCuenta] [varchar](50) NULL,
-	[Correo] [varchar](max) NULL,
-	[Estado] [varchar](15) NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+CREATE TABLE [dbo].[tbl_HisEC_Email](
+	[ID] [numeric](38, 0) IDENTITY(1,1) NOT NULL,
+	[Origen] [varchar](4) NULL,
+	[Email] [varchar](100) NULL,
+	[No_Cuenta] [varchar](13) NULL,
+	[Nombre] [char](40) NULL,
+	[Fecha_CorteB] [char](10) NULL,
+	[Fecha_Pago] [char](10) NULL,
+	[Pago_Contado_MN] [money] NULL,
+	[Pago_Minimo_MN] [money] NULL,
+	[Saldo_Vencido_MN] [money] NULL,
+	[Pago_Contado_ME] [money] NULL,
+	[Pago_Minimo_ME] [money] NULL,
+	[Saldo_Vencido_ME] [money] NULL,
+	[PTS_Saldo_Ant] [money] NULL,
+	[PTS_Ganados] [money] NULL,
+	[PTS_Usuados] [money] NULL,
+	[PTS_Saldo_Actual] [money] NULL,
+	[Limite_Credito] [money] NULL,
+	[Disponible_Cta] [money] NULL,
+	[Disponible_Ret] [money] NULL,
+	[EF_Saldo_MN] [money] NULL,
+	[EF_Saldo_ME] [money] NULL,
+	[Total_Cuotas] [int] NOT NULL,
+	[Tasa_Int_Anual_MN] [money] NULL,
+	[Tasa_Int_Anual_ME] [money] NULL,
+	[FechaEnvio] [datetime] NOT NULL,
+	[Tarjeta_Imprimir] [char](10) NULL,
+	[No_Tarjeta] [char](16) NOT NULL,
+	[Fecha_Corte] [datetime] NOT NULL,
+ CONSTRAINT [PK_tbl_HisEC_Email] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
 GO
 
 
