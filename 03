@@ -1,13 +1,9 @@
-Tengo una pregunta con esto de Openshift: 
-
-Donde dice Output, yo tengo que agregar todas mis aplicaciones? pensé que no era necesario hacerlo .. esperaba que tomara todo el namespace, sin yo poner las aplicaciones manualmente, porque eso significa que,
-cuando yo tenga una aplicacion nueva, tengo que venir a actualizar este archivo
-
 apiVersion: observability.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: forward-pu-procesadortc-bp
   namespace: pu-procesadortc-bp
+
 spec:
   serviceAccount:
     name: logcollector
@@ -24,7 +20,7 @@ spec:
           - namespace: pu-procesadortc-bp
 
   outputs:
-    - name: syslog-api-procesador
+    - name: syslog-procesador
       type: syslog
       syslog:
         url: udp://10.100.206.87:514
@@ -32,32 +28,12 @@ spec:
         facility: local3
         severity: informational
         enrichment: KubernetesMinimal
-        appName: "api-procesador"   # valor fijo, no usa expression
-
-    # Si tienes otra app:
-    - name: syslog-worker-procesador
-      type: syslog
-      syslog:
-        url: udp://10.100.206.87:514
-        rfc: RFC5424
-        facility: local3
-        severity: informational
-        enrichment: KubernetesMinimal
-        appName: "worker-procesador"
 
   pipelines:
-    - name: pipeline-api-procesador
+    - name: pipeline-procesador
       inputRefs:
         - application-logs
       filterRefs:
         - detect-java-multiline
       outputRefs:
-        - syslog-api-procesador
-
-    - name: pipeline-worker-procesador
-      inputRefs:
-        - application-logs
-      filterRefs:
-        - detect-java-multiline
-      outputRefs:
-        - syslog-worker-procesador
+        - syslog-procesador
