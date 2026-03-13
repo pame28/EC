@@ -4,6 +4,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# =========================
+# CONFIGURAR PROXY
+# =========================
+ARG http_proxy
+ARG https_proxy
+ENV http_proxy=http://TU_PROXY_IP:9090
+ENV https_proxy=http://TU_PROXY_IP:9090
+
 # Copiar proyecto y nuget.config
 COPY *.csproj ./
 COPY nuget.config ./
@@ -15,6 +23,7 @@ RUN update-ca-certificates
 # Forzar .NET a confiar en certificados añadidos
 ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
 ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
+ENV DOTNET_HTTP_PROXY=${http_proxy}
 
 # Verificar acceso a NuGet
 RUN curl -Iv https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"
@@ -63,6 +72,12 @@ RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# =========================
+# CONFIGURAR PROXY EN RUNTIME (si es necesario)
+# =========================
+ENV http_proxy=http://TU_PROXY_IP:9090
+ENV https_proxy=http://TU_PROXY_IP:9090
+
 # Copiar app publicada
 COPY --from=build /app/publish .
 
@@ -102,7 +117,3 @@ RUN if [ -x /opt/odbc/bin/odbcinst ]; then \
     fi
 
 ENTRYPOINT ["dotnet", "Criptografia.dll"]
-
-
-
-Mira asi tengo mi dockerfle actualmente dime, cual es el error
