@@ -1,35 +1,60 @@
- => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:478b9038d187e5b5c29bfa8173ded5d29e864b5ad06102a12106380ee01e2e49        0.0s
- => [internal] load build context                                                                                               0.0s
- => => transferring context: 5.60kB                                                                                             0.0s
- => [final  1/11] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a04d1c1d2d26119049494057d80ea6cda25bbd8aef7c444a1fc1ef874fd  0.1s
- => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a04d1c1d2d26119049494057d80ea6cda25bbd8aef7c444a1fc1ef874fd3955b     0.0s
- => CACHED [final  2/11] WORKDIR /app                                                                                           0.0s
- => CACHED [build 2/8] WORKDIR /src                                                                                             0.0s
- => [build 3/8] RUN apt-get update &&     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends       uni  92.7s
- => [build 4/8] COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/                                                                   0.1s
- => [build 5/8] RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then       dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd  64.6s
- => [build 6/8] COPY . .                                                                                                        0.2s
- => ERROR [build 7/8] RUN dotnet publish -c Release -o /app/publish                                                            18.3s
-------
- > [build 7/8] RUN dotnet publish -c Release -o /app/publish:
-2.495   Determining projects to restore...
-18.01 /src/reposicion_pin.csproj : error NU1301: Unable to load the service index for source https://api.nuget.org/v3/index.json.
-18.01 /src/reposicion_pin.csproj : error NU1301:   The SSL connection could not be established, see inner exception.
-18.01 /src/reposicion_pin.csproj : error NU1301:   The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot
-18.21   Failed to restore /src/reposicion_pin.csproj (in 14.9 sec).
-------
+# =========================
+# BUILD STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
- 1 warning found (use docker --debug to expand):
- - UndefinedVar: Usage of undefined variable '$LD_LIBRARY_PATH' (line 74)
-Dockerfile:27
---------------------
-  25 |     # copiar resto del código y publicar
-  26 |     COPY . .
-  27 | >>> RUN dotnet publish -c Release -o /app/publish
-  28 |
-  29 |     # snapshot de librerías y utilidades ODBC necesarias para runtime
---------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c dotnet publish -c Release -o /app/publish" did not complete successfully: exit code: 1
+WORKDIR /src
 
-View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/wz9ro0dfnrzvimgsejve8gkx8
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin>
+# Instalar dependencias necesarias y certificados
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        unixodbc \
+        unixodbc-dev \
+        libltdl7 \
+        wget \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar paquete IBM iAccess
+COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/
+
+# Instalar IBM iAccess
+RUN dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || apt-get install -f -y
+
+# Copiar el resto del proyecto
+COPY . .
+
+# Restaurar paquetes NuGet
+RUN dotnet restore
+
+# Publicar aplicación
+RUN dotnet publish -c Release -o /app/publish
+
+# =========================
+# RUNTIME STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+
+WORKDIR /app
+
+# Instalar dependencias runtime necesarias
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        ca-certificates \
+        unixodbc \
+        libltdl7 \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configurar variable de entorno ODBC
+ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib
+
+# Copiar IBM iAccess desde el build
+COPY --from=build /opt/ibm /opt/ibm
+
+# Copiar aplicación publicada
+COPY --from=build /app/publish .
+
+# Mantener entrypoint original
+ENTRYPOINT ["dotnet", "reposicion_pin.dll"]
