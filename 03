@@ -1,33 +1,104 @@
- => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:478b9038d187e5b5c29bfa8173ded5d29e864b5ad06102a12106380ee01e2e49        0.1s
- => [internal] load build context                                                                                               0.1s
- => => transferring context: 6.49kB                                                                                             0.1s
- => [final 1/5] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a04d1c1d2d26119049494057d80ea6cda25bbd8aef7c444a1fc1ef874fd39  0.1s
- => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a04d1c1d2d26119049494057d80ea6cda25bbd8aef7c444a1fc1ef874fd3955b     0.1s
- => CACHED [final 2/5] WORKDIR /app                                                                                             0.0s
- => [final 3/5] RUN apt-get update &&     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends           197.6s
- => CACHED [build 2/8] WORKDIR /src                                                                                             0.0s
- => [build 3/8] RUN apt-get update &&     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends           206.2s
- => [build 4/8] COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/                                                                   0.1s
- => [build 5/8] RUN dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || apt-get install -f -y                                    1.7s
- => [build 6/8] COPY . .                                                                                                        0.2s
- => ERROR [build 7/8] RUN dotnet restore                                                                                       18.0s
-------
- > [build 7/8] RUN dotnet restore:
-2.276   Determining projects to restore...
-17.67 /src/reposicion_pin.csproj : error NU1301: Unable to load the service index for source https://api.nuget.org/v3/index.json.
-17.67 /src/reposicion_pin.csproj : error NU1301:   The SSL connection could not be established, see inner exception.
-17.67 /src/reposicion_pin.csproj : error NU1301:   The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot
-17.88   Failed to restore /src/reposicion_pin.csproj (in 14.68 sec).
-------
-Dockerfile:29
---------------------
-  27 |
-  28 |     # Restaurar paquetes NuGet
-  29 | >>> RUN dotnet restore
-  30 |
-  31 |     # Publicar aplicación
---------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c dotnet restore" did not complete successfully: exit code: 1
+# =========================
+# BUILD STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
 
+# Copiar proyecto y nuget.config
+COPY *.csproj ./
+COPY nuget.config ./
 
-Sigo teniendo el mismo problema, dime que hago
+# Copiar certificado raíz corporativo/proxy
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# Forzar .NET a confiar en certificados añadidos
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
+
+# Verificar acceso a NuGet
+RUN curl -Iv https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"
+
+# Restaurar paquetes NuGet
+RUN dotnet restore
+
+# Instalar unixODBC, libltdl y utilidades necesarias
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copiar .deb de IBM i Access si lo tienes
+COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/
+
+# Instalar .deb y resolver dependencias
+RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then \
+      dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || true && \
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get -y --fix-broken install; \
+    fi && \
+    rm -rf /var/lib/apt/lists/* /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb
+
+# Declarar LD_LIBRARY_PATH para linter / compilación
+ARG LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64:${LD_LIBRARY_PATH}
+
+# Copiar resto del código y publicar
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+# Snapshot de librerías y utilidades ODBC necesarias para runtime
+RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
+    cp -a /usr/lib/x86_64-linux-gnu/libodbc* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/lib/x86_64-linux-gnu/libodbcinst* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/lib/x86_64-linux-gnu/libltdl.so.7* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
+    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
+
+# =========================
+# RUNTIME STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+# Copiar app publicada
+COPY --from=build /app/publish .
+
+# Copiar snapshot ODBC desde build
+COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
+COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
+COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
+COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
+
+# Asegurar permisos legibles por usuario no-root
+RUN chmod -R a+r /opt/odbc || true && \
+    chmod -R a+rx /opt/odbc/bin || true && \
+    chmod -R a+r /opt/ibm || true
+
+# Crear odbcinst.ini en directorio que usaremos como ODBCSYSINI
+RUN mkdir -p /opt/odbc && \
+    if [ -f /opt/odbc/etc/odbcinst.ini ]; then \
+      cp /opt/odbc/etc/odbcinst.ini /opt/odbc/odbcinst.ini; \
+    else \
+      printf '%s\n' '[iSeries Access ODBC Driver]' \
+        'Description=IBM i Access for Linux ODBC Driver' \
+        'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
+        'FileUsage=1' > /opt/odbc/odbcinst.ini; \
+    fi
+
+# Actualizar cache de librerías
+RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
+
+# Rutas para loader y configuración ODBC
+ENV LD_LIBRARY_PATH=/opt/odbc/lib64:/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
+ENV ODBCSYSINI=/opt/odbc
+ENV ODBCINI=/opt/odbc/odbc.ini
+
+# Registrar driver con odbcinst si está disponible
+RUN if [ -x /opt/odbc/bin/odbcinst ]; then \
+      /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true; \
+    fi
+
+ENTRYPOINT ["dotnet", "Criptografia.dll"]
