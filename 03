@@ -1,96 +1,108 @@
-PS C:\Users\80730.HN\Desktop\api-crypto\api_crypto\Criptografia> docker build -t api-crypto:1.0 .
-[+] Building 60.7s (16/30)                                                                                      docker:desktop-linux
- => [internal] load build definition from Dockerfile                                                                            0.1s
- => => transferring dockerfile: 4.05kB                                                                                          0.0s
- => [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                                           1.1s
- => [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                                              1.1s
- => [internal] load .dockerignore                                                                                               0.0s
- => => transferring context: 464B                                                                                               0.0s
- => [build  1/14] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:478b9038d187e5b5c29bfa8173ded5d29e864b5ad06102a12106380ee01e2e  0.0s
- => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:478b9038d187e5b5c29bfa8173ded5d29e864b5ad06102a12106380ee01e2e49        0.0s
- => [final  1/11] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a04d1c1d2d26119049494057d80ea6cda25bbd8aef7c444a1fc1ef874fd  0.0s
- => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:a04d1c1d2d26119049494057d80ea6cda25bbd8aef7c444a1fc1ef874fd3955b     0.0s
- => [internal] load build context                                                                                               0.3s
- => => transferring context: 5.66MB                                                                                             0.3s
- => CACHED [build  2/14] WORKDIR /src                                                                                           0.0s
- => CACHED [final  2/11] WORKDIR /app                                                                                           0.0s
- => [build  3/14] COPY *.csproj ./                                                                                              0.0s
- => [build  4/14] COPY nuget.config ./                                                                                          0.1s
- => [build  5/14] COPY proxy-root.crt /usr/local/share/ca-certificates/                                                         0.1s
- => [build  6/14] RUN update-ca-certificates                                                                                    1.8s
- => [build  7/14] RUN curl -Iv https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"                        4.5s
- => [build  8/14] RUN dotnet restore                                                                                           25.3s
- => ERROR [build  9/14] RUN apt-get update &&     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends    27.2s
-------
- > [build  9/14] RUN apt-get update &&     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends       unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget &&     rm -rf /var/lib/apt/lists/*:
-1.408 Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
-1.425 Get:2 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]
-2.256 Get:3 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [3315 kB]
-2.498 Get:4 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
-3.076 Get:5 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
-3.584 Get:6 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages [1808 kB]
-5.515 Get:7 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1906 kB]
-5.864 Ign:8 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
-5.864 Ign:9 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
-5.864 Ign:10 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages
-5.864 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
-5.864 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
-5.864 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
-5.864 Ign:14 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
-6.103 Get:15 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [79.5 kB]
-6.153 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
-6.153 Ign:17 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
-6.153 Ign:8 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
-6.190 Ign:9 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
-6.247 Ign:10 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages
-6.332 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
-6.387 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
-6.387 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
-6.608 Get:14 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [3502 kB]
-6.707 Ign:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
-6.707 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
-7.003 Get:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1261 kB]
-8.393 Get:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [34.8 kB]
-10.69 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
-10.69 Ign:17 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
-10.69 Get:8 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages [15.0 MB]
-23.49 Get:9 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages [93.9 kB]
-23.59 Get:10 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages [269 kB]
-23.79 Get:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [32.1 kB]
-23.81 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
-23.81 Get:13 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1815 kB]
-25.09 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
-25.09 Ign:17 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
-25.21 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
-25.26 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
-25.32 Ign:17 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
-25.38 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
-25.46 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
-25.52 Ign:17 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
-25.62 Err:12 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
-25.62   401  authenticationrequired [IP: 185.125.190.81 80]
-25.67 Err:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
-25.67   401  authenticationrequired [IP: 185.125.190.81 80]
-25.77 Ign:17 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
-25.86 Fetched 29.8 MB in 25s (1183 kB/s)
-25.86 Reading package lists...
-27.18 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/universe/binary-amd64/Packages  401  authenticationrequired [IP: 185.125.190.81 80]
-27.18 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/universe/binary-amd64/Packages  401  authenticationrequired [IP: 185.125.190.81 80]
-27.18 E: Some index files failed to download. They have been ignored, or old ones used instead.
-------
+# =========================
+# BUILD STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
 
- 1 warning found (use docker --debug to expand):
- - UndefinedVar: Usage of undefined variable '$LD_LIBRARY_PATH' (line 95)
-Dockerfile:26
---------------------
-  25 |     # Instalar unixODBC, libltdl y utilidades necesarias
-  26 | >>> RUN apt-get update && \
-  27 | >>>     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-  28 | >>>       unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget && \
-  29 | >>>     rm -rf /var/lib/apt/lists/*
-  30 |
---------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update &&     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends       unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget &&     rm -rf /var/lib/apt/lists/*" did not complete successfully: exit code: 100
+# Copiar proyecto y nuget.config
+COPY *.csproj ./
+COPY nuget.config ./
 
-View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/m64ed51zw7yqqudxl1vyrqnyb
-PS C:\Users\80730.HN\Desktop\api-crypto\api_crypto\Criptografia>
+# Copiar certificado raíz corporativo/proxy
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# Forzar .NET a confiar en certificados añadidos
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
+
+# Verificar acceso a NuGet
+RUN curl -Iv https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"
+
+# Restaurar paquetes NuGet
+RUN dotnet restore
+
+# Instalar unixODBC, libltdl y utilidades necesarias
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copiar .deb de IBM i Access si lo tienes
+COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/
+
+# Instalar .deb y resolver dependencias
+RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then \
+      dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || true && \
+      apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get -y --fix-broken install; \
+    fi && \
+    rm -rf /var/lib/apt/lists/* /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb
+
+# Declarar LD_LIBRARY_PATH para linter / compilación
+ARG LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64:${LD_LIBRARY_PATH}
+
+# Copiar resto del código y publicar
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+# Snapshot de librerías y utilidades ODBC necesarias para runtime
+RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
+    cp -a /usr/lib/x86_64-linux-gnu/libodbc* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/lib/x86_64-linux-gnu/libodbcinst* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/lib/x86_64-linux-gnu/libltdl.so.7* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
+    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
+
+# =========================
+# RUNTIME STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+# Copiar app publicada
+COPY --from=build /app/publish .
+
+# Copiar snapshot ODBC desde build
+COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
+COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
+COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
+COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
+
+# Asegurar permisos legibles por usuario no-root
+RUN chmod -R a+r /opt/odbc || true && \
+    chmod -R a+rx /opt/odbc/bin || true && \
+    chmod -R a+r /opt/ibm || true
+
+# Crear odbcinst.ini en directorio que usaremos como ODBCSYSINI
+RUN mkdir -p /opt/odbc && \
+    if [ -f /opt/odbc/etc/odbcinst.ini ]; then \
+      cp /opt/odbc/etc/odbcinst.ini /opt/odbc/odbcinst.ini; \
+    else \
+      printf '%s\n' '[iSeries Access ODBC Driver]' \
+        'Description=IBM i Access for Linux ODBC Driver' \
+        'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
+        'FileUsage=1' > /opt/odbc/odbcinst.ini; \
+    fi
+
+# Actualizar cache de librerías
+RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
+
+# Rutas para loader y configuración ODBC
+ENV LD_LIBRARY_PATH=/opt/odbc/lib64:/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
+ENV ODBCSYSINI=/opt/odbc
+ENV ODBCINI=/opt/odbc/odbc.ini
+
+# Registrar driver con odbcinst si está disponible
+RUN if [ -x /opt/odbc/bin/odbcinst ]; then \
+      /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true; \
+    fi
+
+ENTRYPOINT ["dotnet", "Criptografia.dll"]
+
+
+
+Mira asi tengo mi dockerfle actualmente dime, cual es el error
