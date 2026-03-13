@@ -1,10 +1,94 @@
-ca-certificates_20240203_all
-dpkg_1.22.6ubuntu6.5_amd64
-libltdl7_2.4.7-7build1_amd64
-unixodbc_2.3.12-1ubuntu0.24.04.1_amd64
-unixodbc-dev_2.3.12-1ubuntu0.24.04.1_amd64
-wget_1.21.4-1ubuntu4.1_amd64
+# =========================
+# BUILD STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
 
+# Copiar proyecto y nuget.config
+COPY *.csproj ./
+COPY nuget.config ./
 
+# Copiar certificado corporativo (si existe)
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates || true
 
-Deberia cambiarles el nombre a los instaladores?
+# Variables para certificados
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
+
+# Restaurar paquetes NuGet
+RUN dotnet restore
+
+# =========================
+# INSTALAR LIBRERIAS ODBC OFFLINE
+# =========================
+
+# Copiar paquetes .deb
+COPY odbc-libraries/*.deb /tmp/odbc/
+
+# Instalar dependencias en orden
+RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
+    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
+    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
+    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
+    dpkg -i /tmp/odbc/wget*.deb || true && \
+    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true
+
+# Declarar ruta de librerías IBM
+ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
+
+# Copiar resto del código
+COPY . .
+
+# Publicar aplicación
+RUN dotnet publish -c Release -o /app/publish
+
+# =========================
+# SNAPSHOT ODBC PARA RUNTIME
+# =========================
+RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
+    cp -a /usr/lib/x86_64-linux-gnu/libodbc* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/lib/x86_64-linux-gnu/libodbcinst* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/lib/x86_64-linux-gnu/libltdl.so.7* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
+    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
+
+# =========================
+# RUNTIME STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+# Copiar aplicación publicada
+COPY --from=build /app/publish .
+
+# Copiar librerías ODBC
+COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
+COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
+COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
+COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
+
+# Permisos para OpenShift (usuario no root)
+RUN chmod -R a+r /opt/odbc || true && \
+    chmod -R a+rx /opt/odbc/bin || true && \
+    chmod -R a+r /opt/ibm || true
+
+# Crear configuración del driver ODBC
+RUN mkdir -p /opt/odbc && \
+    printf '%s\n' '[iSeries Access ODBC Driver]' \
+    'Description=IBM i Access for Linux ODBC Driver' \
+    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
+    'FileUsage=1' > /opt/odbc/odbcinst.ini
+
+# Actualizar cache de librerías
+RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
+
+# Variables de entorno ODBC
+ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
+ENV ODBCSYSINI=/opt/odbc
+ENV ODBCINI=/opt/odbc/odbc.ini
+
+# Ejecutar aplicación
+ENTRYPOINT ["dotnet", "Criptografia.dll"]
