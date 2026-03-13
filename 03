@@ -1,39 +1,16 @@
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
+apiVersion: v1
+kind: ServiceAccount
 metadata:
-  name: forward-pu-procesadortc-bp
+  name: logcollector
   namespace: pu-procesadortc-bp
 
-spec:
-  serviceAccount:
-    name: logcollector
 
-  filters:
-    - name: detect-java-multiline
-      type: detectMultilineException
 
-  inputs:
-    - name: application-logs
-      type: application
-      application:
-        includes:
-          - namespace: pu-procesadortc-bp
 
-  outputs:
-    - name: syslog-procesador
-      type: syslog
-      syslog:
-        url: udp://10.100.206.87:514
-        rfc: RFC5424
-        facility: local3
-        severity: informational
-        enrichment: KubernetesMinimal
 
-  pipelines:
-    - name: pipeline-procesador
-      inputRefs:
-        - application-logs
-      filterRefs:
-        - detect-java-multiline
-      outputRefs:
-        - syslog-procesador
+
+
+oc adm policy add-cluster-role-to-user \
+cluster-logging-collector \
+-z logcollector \
+-n pu-procesadortc-bp
