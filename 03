@@ -1,48 +1,48 @@
+# =========================
+# BUILD STAGE
+# =========================
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# Copiar solo archivos necesarios para restore
 COPY *.csproj ./
 COPY nuget.config ./
+
+# Agregar certificado proxy (si aplica)
 COPY proxy-root.crt /usr/local/share/ca-certificates/
 RUN update-ca-certificates
 
+# Probar acceso a NuGet.org
 RUN curl -I https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"
+
+# Restaurar paquetes NuGet
 RUN dotnet restore
 
-# instalar unixODBC, libltdl y utilidades necesarias en build
+# Instalar dependencias necesarias
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget && \
+      unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget curl && \
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# copiar .deb al contexto (si los tienes). Aseg�rate de incluir los .deb de IBM i Access en el contexto.
+# Copiar paquete IBM iAccess y el resto del código
 COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/
+COPY . .
 
-# instalar los .deb y resolver dependencias (si existen)
-RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then \
+# Instalar IBM iAccess y dependencias rotas
+RUN if [ -f /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb ]; then \
       dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || true && \
       apt-get update && \
       DEBIAN_FRONTEND=noninteractive apt-get -y --fix-broken install; \
     fi && \
-    rm -rf /var/lib/apt/lists/* /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb
+    rm -rf /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb /var/lib/apt/lists/*
 
-# declarar LD_LIBRARY_PATH para el linter
+# Configurar variable de entorno para linter y ODBC
 ARG LD_LIBRARY_PATH
 ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64:${LD_LIBRARY_PATH}
 
-# copiar resto del c�digo y publicar
-COPY . .
+# Publicar la aplicación
 RUN dotnet publish -c Release -o /app/publish
-
-# snapshot de librer�as y utilidades ODBC necesarias para runtime
-RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
-    cp -a /usr/lib/x86_64-linux-gnu/libodbc* /odbc-snapshot/lib/ 2>/dev/null || true && \
-    cp -a /usr/lib/x86_64-linux-gnu/libodbcinst* /odbc-snapshot/lib/ 2>/dev/null || true && \
-    cp -a /usr/lib/x86_64-linux-gnu/libltdl.so.7* /odbc-snapshot/lib/ 2>/dev/null || true && \
-    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
-    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
 
 # =========================
 # RUNTIME STAGE
@@ -50,21 +50,21 @@ RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-# copiar app publicada
+# Copiar aplicación publicada
 COPY --from=build /app/publish .
 
-# copiar snapshot ODBC desde build
+# Copiar snapshot ODBC
 COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
 COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
 COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
 COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
 
-# asegurar permisos legibles por el usuario no-root de OpenShift
-RUN chmod -R a+r /opt/odbc || true && \
-    chmod -R a+rx /opt/odbc/bin || true && \
-    chmod -R a+r /opt/ibm || true
+# Permisos para OpenShift
+RUN chmod -R a+r /opt/odbc && \
+    chmod -R a+rx /opt/odbc/bin && \
+    chmod -R a+r /opt/ibm
 
-# crear odbcinst.ini en el directorio que usaremos como ODBCSYSINI
+# Configuración ODBC
 RUN mkdir -p /opt/odbc && \
     if [ -f /opt/odbc/etc/odbcinst.ini ]; then \
       cp /opt/odbc/etc/odbcinst.ini /opt/odbc/odbcinst.ini; \
@@ -75,20 +75,17 @@ RUN mkdir -p /opt/odbc && \
         'FileUsage=1' > /opt/odbc/odbcinst.ini; \
     fi
 
-# actualizar cache de librer�as para que ldconfig conozca las nuevas rutas
-RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
+# Actualizar cache de librerías
+RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig
 
-# Rutas para el loader y configuraci�n ODBC
+# Variables de entorno ODBC
 ENV LD_LIBRARY_PATH=/opt/odbc/lib64:/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
 ENV ODBCSYSINI=/opt/odbc
 ENV ODBCINI=/opt/odbc/odbc.ini
 
-# registro opcional del driver con odbcinst si est� disponible
+# Registrar driver si odbcinst está disponible
 RUN if [ -x /opt/odbc/bin/odbcinst ]; then \
       /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true; \
     fi
+
 ENTRYPOINT ["dotnet", "Criptografia.dll"]
-
-
-
-Ahora ayudame a modifcar este
