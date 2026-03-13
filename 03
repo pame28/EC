@@ -1,13 +1,52 @@
+50.10 Err:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+50.10   File has unexpected size (3485972 != 3501624). Mirror sync in progress? [IP: 91.189.92.24 80]
+50.10   Hashes of expected file:
+50.10    - Filesize:3501624 [weak]
+50.10    - SHA256:f33398431730540947c27f8edf3aed8c93e1e8ed46992b4eb73f835d3d3599b8
+50.10    - SHA1:f9521b8602d15a6ed37c0c949b452b19d81baa3f [weak]
+50.10    - MD5Sum:806662d12b1b4a8739c62c6c64004044 [weak]
+50.10   Release file created at: Fri, 13 Mar 2026 19:02:29 +0000
+54.83 Get:16 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [2295 kB]
+54.83 Err:16 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+54.83
+54.85 Fetched 30.9 MB in 54s (577 kB/s)
+54.85 Reading package lists...
+56.46 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/restricted/binary-amd64/Packages.gz  File has unexpected size (3485972 != 3501624). Mirror sync in progress? [IP: 91.189.92.24 80]
+56.46    Hashes of expected file:
+56.46     - Filesize:3501624 [weak]
+56.46     - SHA256:f33398431730540947c27f8edf3aed8c93e1e8ed46992b4eb73f835d3d3599b8
+56.46     - SHA1:f9521b8602d15a6ed37c0c949b452b19d81baa3f [weak]
+56.46     - MD5Sum:806662d12b1b4a8739c62c6c64004044 [weak]
+56.46    Release file created at: Fri, 13 Mar 2026 19:02:29 +0000
+56.46 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/main/binary-amd64/Packages.gz
+56.46 E: Some index files failed to download. They have been ignored, or old ones used instead.
+------
+
+ 1 warning found (use docker --debug to expand):
+ - UndefinedVar: Usage of undefined variable '$LD_LIBRARY_PATH' (line 74)
+Dockerfile:14
+--------------------
+  13 |     # instalar los .deb y resolver dependencias (si existen)
+  14 | >>> RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then \
+  15 | >>>       dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || true && \
+  16 | >>>       apt-get update && \
+  17 | >>>       DEBIAN_FRONTEND=noninteractive apt-get -y --fix-broken install; \
+  18 | >>>     fi && \
+  19 | >>>     rm -rf /var/lib/apt/lists/* /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb
+  20 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c if [ -n \"$(ls -A /tmp/*.deb 2>/dev/null || true)\" ]; then       dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || true &&       apt-get update &&       DEBIAN_FRONTEND=noninteractive apt-get -y --fix-broken install;     fi &&     rm -rf /var/lib/apt/lists/* /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb" did not complete successfully: exit code: 100
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ufwvuadn315eq13yyp6qbkv64
+PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin>
+
+
+
+
+
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-
-COPY *.csproj ./
-COPY nuget.config ./
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates
-
-RUN curl -I https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"
-RUN dotnet restore
 
 # instalar unixODBC, libltdl y utilidades necesarias en build
 RUN apt-get update && \
@@ -15,7 +54,7 @@ RUN apt-get update && \
       unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget && \
     rm -rf /var/lib/apt/lists/*
 
-# copiar .deb al contexto (si los tienes). Aseg�rate de incluir los .deb de IBM i Access en el contexto.
+# copiar .deb al contexto (si los tienes). Asegúrate de incluir los .deb de IBM i Access en el contexto.
 COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/
 
 # instalar los .deb y resolver dependencias (si existen)
@@ -30,11 +69,11 @@ RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then \
 ARG LD_LIBRARY_PATH
 ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64:${LD_LIBRARY_PATH}
 
-# copiar resto del c�digo y publicar
+# copiar resto del código y publicar
 COPY . .
 RUN dotnet publish -c Release -o /app/publish
 
-# snapshot de librer�as y utilidades ODBC necesarias para runtime
+# snapshot de librerías y utilidades ODBC necesarias para runtime
 RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
     cp -a /usr/lib/x86_64-linux-gnu/libodbc* /odbc-snapshot/lib/ 2>/dev/null || true && \
     cp -a /usr/lib/x86_64-linux-gnu/libodbcinst* /odbc-snapshot/lib/ 2>/dev/null || true && \
@@ -75,18 +114,22 @@ RUN mkdir -p /opt/odbc && \
         'FileUsage=1' > /opt/odbc/odbcinst.ini; \
     fi
 
-# actualizar cache de librer�as para que ldconfig conozca las nuevas rutas
+# actualizar cache de librerías para que ldconfig conozca las nuevas rutas
 RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
 
-# Rutas para el loader y configuraci�n ODBC
+# Rutas para el loader y configuración ODBC
 ENV LD_LIBRARY_PATH=/opt/odbc/lib64:/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
 ENV ODBCSYSINI=/opt/odbc
 ENV ODBCINI=/opt/odbc/odbc.ini
 
-# registro opcional del driver con odbcinst si est� disponible
+# registro opcional del driver con odbcinst si está disponible
 RUN if [ -x /opt/odbc/bin/odbcinst ]; then \
       /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true; \
     fi
-ENTRYPOINT ["dotnet", "Criptografia.dll"]
+
+ENTRYPOINT ["dotnet", "reposicion_pin.dll"]
+
+
+
 
 
