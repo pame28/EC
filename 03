@@ -1,347 +1,63 @@
-Ahora tengo que migrar este:
+Tengo una pregunta con esto de Openshift: 
 
-USE [BPTarjetas]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_SBEstadoCuentaJson]    Script Date: 12/3/2026 06:47:45 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+Donde dice Output, yo tengo que agregar todas mis aplicaciones? pensé que no era necesario hacerlo .. esperaba que tomara todo el namespace, sin yo poner las aplicaciones manualmente, porque eso significa que,
+cuando yo tenga una aplicacion nueva, tengo que venir a actualizar este archivo
 
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: forward-pu-procesadortc-bp
+  namespace: pu-procesadortc-bp
+spec:
+  serviceAccount:
+    name: logcollector
 
+  filters:
+    - name: detect-java-multiline
+      type: detectMultilineException
 
--- =====================================================================================
--- Autor original:		Orlin Alvarado
--- Fecha creacion:		05-05-2015
--- Fecha copia:			06-04-2022
--- Description:	Obtiene la información del estado de cuenta de una tarjeta en específico
--- Es una copia del usp_WSEstadoCuenta, que sirve para recolectar información para el envío
--- del estado de cuenta de tarjeta de credito como parte del proyecto de migración de servidores Smart Bulleting
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
---Nery Monjarás		Se incluyen las condiciones para tarjetas Prepago.		06-06-2017
---PBS Carlos Elvir	Copia de db_ws.usp_WSEstadoCuenta para Smat Bulleting	06-04-2022
---PBS Carlos Elvir  Se modificó el case de financiamientos para muestre HN 
---					en lugar de L en la moneda								16-05-2022
---PBS Carlos Elvir  Se modificó el convert para que las fechas se muesrten
---					en formato dd/mm/yyyyy									31-05-2022
---Henrry Padilla Se modificó Stored para consultar las bandejas 27/06/2022
---Carlos Elvir		Se creó copia para que se genere datos en JSON			09/08/2024
--- =======================================================================================
-ALTER PROCEDURE [dbo].[usp_SBEstadoCuentaJson]
--- Add the parameters for the stored procedure here
-	@Equivalente VARCHAR(16),
-	@FechaCorte date
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-	
-	DECLARE @No_Cuenta AS VARCHAR(13), @Json VARCHAR(MAX), @JsonFinanciamientos VARCHAR(MAX), @JsonDetalle VARCHAR(MAX)
-	DECLARE @NumeroEquivalente AS VARCHAR(16)
-	IF(@Equivalente NOT LIKE '10%')
-	BEGIN
-		SELECT @NumeroEquivalente = et.Equivalencia
-		  FROM BandejaATH.dbo.EquivalenciasTarjetas et
-		WHERE BandejaATH.dbo.ufn_Hashing(@Equivalente) = et.NumeroTarjetaHash
-		
-		IF(@NumeroEquivalente IS NOT NULL)
-		BEGIN
-			SET @Equivalente = @NumeroEquivalente
-		END
-	END
+  inputs:
+    - name: application-logs
+      type: application
+      application:
+        includes:
+          - namespace: pu-procesadortc-bp
 
+  outputs:
+    - name: syslog-api-procesador
+      type: syslog
+      syslog:
+        url: udp://10.100.206.87:514
+        rfc: RFC5424
+        facility: local3
+        severity: informational
+        enrichment: KubernetesMinimal
+        appName: "api-procesador"   # valor fijo, no usa expression
 
-	;with cte
-	as
-	(
-		select  NoUsuario No_Cuenta
-			FROM  dbo.ETarjetas
-			--WHERE ModeloLiquidacion <> '999'
-			where NumeroTarjeta = @Equivalente
-		union all 
-		select distinct No_Cuenta 
-			from HEstadoCuenta_BandejaEnvioTC
-			where No_Tarjeta = @Equivalente
-			and Origen in ('ATH')
-	)
-		SELECT 
-			@No_Cuenta =  No_Cuenta
-			FROM HEstadoCuenta_BandejaEnvioTC hc
-			WHERE exists (select 1 from cte where cte.No_Cuenta = hc.No_Cuenta)
-			and Fecha_Corte = @FechaCorte
-	       
-	--Agregado
-	DECLARE @Estado NVARCHAR(10)
-	SELECT TOP 1 @Estado = e.EstadoTarjeta
-	FROM dbo.ETarjetas e
-	WHERE e.NumeroTarjeta = @Equivalente
-	
-	--Encabezado
+    # Si tienes otra app:
+    - name: syslog-worker-procesador
+      type: syslog
+      syslog:
+        url: udp://10.100.206.87:514
+        rfc: RFC5424
+        facility: local3
+        severity: informational
+        enrichment: KubernetesMinimal
+        appName: "worker-procesador"
 
-	SELECT @JSON=
-	   '{' +'"Encabezado": {' +'"Origen": "' + LTRIM(RTRIM(ISNULL(hc.Origen, ''))) + '",' +
-		   '"Emisor": "' + LTRIM(RTRIM(ISNULL(hc.Emisor, ''))) + '"' +',' +
-	   '"No_Cuenta": "' + LTRIM(RTRIM(ISNULL(hc.No_Cuenta, ''))) + '",' +
-	   '"Nombre_TH_Tit": "' + LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))) + '",' +
-	   '"Emisor_Madre": "' + LTRIM(RTRIM(ISNULL(hc.Emisor_Madre, ''))) + '",' +
-	   '"Cuenta_Madre": "' + LTRIM(RTRIM(ISNULL(hc.Cuenta_Madre, ''))) + '",' +
-	   '"Nombre_Empresa": "' + LTRIM(RTRIM(ISNULL(hc.Nombre_Empresa, ''))) + '",' +
-	   '"Tipo_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.Tipo_Tarjeta, ''))) + '",' +
-	   --'"Descripcion_Tipo_Tarjeta": "' + LTRIM(RTRIM(ISNULL(produc.Producto, ''))) + '",' +
-	   '"No_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.No_Tarjeta, ''))) + '",' +
-	   '"Fecha_Pago": "' + CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Pago, ''),103) + '",' +
-	   '"Fecha_Corte": "' + CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Corte, ''),103) + '",' +
-	   '"Pago_Contado_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Contado_MN, 0)) + ',' +
-	   '"Pago_Minimo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Minimo_MN, 0)) + ',' +
-	   '"Saldo_Vencido_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Vencido_MN, 0)) + ',' +
-	   '"Saldo_Anterior_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Anterior_MN, 0)) + ',' +
-	   '"Saldo_Final_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Final_MN, 0)) + ',' +
-	   '"Compras_Deb_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Compras_Deb_MN, 0)) + ',' +
-	   '"Pagos_Cred_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pagos_Cred_MN, 0)) + ',' +
-	   '"Sobregiro_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Sobregiro_MN, 0)) + ',' +
-	   '"Cuota_Mes_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Cuota_Mes_MN, 0)) + ',' +
-	   '"Pago_Contado_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Contado_ME, 0)) + ',' +
-	   '"Pago_Minimo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Minimo_ME, 0)) + ',' +
-	   '"Saldo_Vencido_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Vencido_ME, 0)) + ',' +
-	   '"Saldo_Anterior_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Anterior_ME, 0)) + ',' +
-	   '"Saldo_Final_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Final_ME, 0)) + ',' +
-	   '"Saldo_Consumo_MN": ' + CONVERT(VARCHAR, ISNULL((hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN), 0)) + ',' +
-	   '"Saldo_Consumo_ME": ' + CONVERT(VARCHAR, ISNULL((hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME), 0)) + ',' +
-	   '"Compras_Deb_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Compras_Deb_ME, 0)) + ',' +
-	   '"Pagos_Cred_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pagos_Cred_ME, 0)) + ',' +
-	   '"Sobregiro_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Sobregiro_ME, 0)) + ',' +
-	   '"Cuota_Mes_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Cuota_Mes_ME, 0)) + ',' +
-	   '"Moneda_Lim_Cre": "' + LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_Cre, ''))) + '",' +
-	   '"Limite_Credito": ' + CONVERT(VARCHAR, ISNULL(hc.Limite_Credito, 0)) + ',' +
-	   '"Disponible_Cta_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Cta_MN, 0)) + ',' +
-	   '"Disponible_Cta_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Cta_ME, 0)) + ',' +
-	   '"Disponible_Ret_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Ret_MN, 0)) + ',' +
-	   '"Disponible_Ret_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Ret_ME, 0)) + ',' +
-	   '"PTS_Saldo_Ant": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Saldo_Ant, 0) AS BIGINT)) + ',' +
-	   '"PTS_Ganados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Ganados, 0) AS BIGINT)) + ',' +
-	   '"PTS_Usuados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Usuados, 0) AS BIGINT)) + ',' +
-	   '"PTS_Saldo_Actual": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Saldo_Actual, 0) AS BIGINT)) + ',' +
-	   '"Moneda_Lim_EF": "' + LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_EF, ''))) + '",' +
-	   '"EF_Limite": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Limite, 0)) + ',' +
-	   '"EF_Saldo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Saldo_MN, 0)) + ',' +
-	   '"EF_Debitos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Debitos_MN, 0)) + ',' +
-	   '"EF_Creditos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Creditos_MN, 0)) + ',' +
-	   '"EF_Saldo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Saldo_ME, 0)) + ',' +
-	   '"EF_Debitos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Debitos_ME, 0)) + ',' +
-	   '"EF_Creditos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Creditos_ME, 0)) + ',' +
-	   '"EF_Disponible_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Disponible_MN, 0)) + ',' +
-	   '"EF_Disponible_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Disponible_ME, 0)) + ',' +
-	   '"Tasa_Int_Anual_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Tasa_Int_Anual_MN, 0)) + ',' +
-	   '"Tasa_Int_Anual_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Tasa_Int_Anual_ME, 0)) + ',' +
-	   '"Direccion_1": "' + LTRIM(RTRIM(ISNULL(hc.Direccion_1, ''))) + '",' +
-	   '"Direccion_2": "' + LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))) + '",' +
-	   '"Direccion_3": "' + LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))) + '",' +
-	   '"Apdo_Postal": "' + LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))) + '",' +
-	   '"Ciudad": "' + LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))) + '",' +
-	   '"Mensaje_1": "' + LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX),map.Mensaje), ''))) + '",' +
-	   '"Mensaje_2": "' + LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))) + '",' +
-	   '"Mensaje_3": "' + LTRIM(RTRIM(ISNULL(hc.Mensaje_3, ''))) + '",' +
-	   '"Mensaje_4": "' + LTRIM(RTRIM(ISNULL(hc.Mensaje_4, ''))) + '",' +
-	   '"Mensaje_5": "' + LTRIM(RTRIM(ISNULL(hc.Mensaje_5, ''))) + '",' +
-	   '"Tarjeta_Imprimir": "' + LTRIM(RTRIM(ISNULL(hc.Tarjeta_Imprimir, ''))) + '",' +
-	   '"Costo_Anual_Tot_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Costo_Anual_Tot_MN, 0)) + ',' +
-	   '"Costo_Anual_Tot_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Costo_Anual_Tot_ME, 0)) + ',' +
-	   '"Plazo_Canc_Deuda_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Plazo_Canc_Deuda_MN, 0)) + ',' +
-	   '"Plazo_Canc_Deuda_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Plazo_Canc_Deuda_ME, 0)) + ',' +
-	   '"Interes_Pago_Min_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Pago_Min_MN, 0)) + ',' +
-	   '"Interes_Pago_Min_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Pago_Min_ME, 0)) + ',' +
-	   '"Correo": "' + LTRIM(RTRIM(ISNULL(hc.Correo, ''))) + '",' +
-	   '"Limite_CreditoMN": ' + CONVERT(VARCHAR, ISNULL(hc.Limite_CreditoMN, 0)) + ',' +
-	   '"Interes_Corriente_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Corriente_MN, 0)) + ',' +
-	   '"Interes_Corriente_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Corriente_ME, 0)) + ',' +
-	   '"Estado": ' + @Estado + '},'
-	FROM HEstadoCuenta_BandejaEnvioTC hc
-	LEFT JOIN EC_CuentasArregloPagos ecap
-	   ON hc.NoCuentaClaro = ecap.NumeroCuenta
-	   AND ecap.FechaCorte = @FechaCorte
-	LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map
-	   ON map.idMensaje = ecap.idMensaje
-	--LEFT JOIN P_Producto produc
-	--	ON  rtrim(ltrim(produc.codProducto))=rtrim(ltrim(hc.Tipo_Tarjeta))
-	WHERE hc.Fecha_Corte = @FechaCorte
-	AND hc.No_Cuenta = @No_Cuenta
+  pipelines:
+    - name: pipeline-api-procesador
+      inputRefs:
+        - application-logs
+      filterRefs:
+        - detect-java-multiline
+      outputRefs:
+        - syslog-api-procesador
 
-	SELECT @Json=@Json+'"Detalle":['
-
-	--Detalle
-		SELECT  @JsonDetalle = '{"Fecha_Consumo":"'+
-				CONVERT(VARCHAR(10),D.Fecha_Consumo, 103)  +'", "Tipo_Reg":'+
-				RTRIM(LTRIM(CONVERT(VARCHAR,D.Tipo_Reg)))+', "Descripcion_Mov":"'+
-				RTRIM(LTRIM(D.Descripcion_Mov))+'", "DebitosMN":'+
-				CONVERT(VARCHAR,D.DebitosMN)+', "CreditosMN":'+
-				CONVERT(VARCHAR,D.CreditosMN)+', "DebitosME":'+
-				CONVERT(VARCHAR,D.DebitosME)+', "CreditosME":'+
-				CONVERT(VARCHAR,D.CreditosME)+'},'			
-		  FROM (
-			
-			--Movimientos
-			SELECT
-			   LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
-			   ,a.EC_DetalleNo_Tarjeta No_Tarjeta
-			   ,LTrim(RTrim(a.No_Autorizacion)) No_Autorizacion
-			   ,a.Fecha_Corte
-			   ,a.Fecha_Consumo
-			   ,1 Tipo_Reg
-			   ,LTrim(RTrim(a.Descripcion_Mov)) Descripcion_Mov
-			   ,CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END As DebitosMN
-			   ,CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END As CreditosMN
-			   ,CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END As DebitosME
-			   ,CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END As CreditosME	
-			 			   
-			From
-				dbo.EC_Detalle_Envio_Estado_Correo a
-			INNER JOIN dbo.TiposMovimientos b
-				ON b.CodMovimiento = a.Codigo_Mov
-			WHERE a.Fecha_Corte = @FechaCorte
-			AND a.EC_DetalleNo_Cuenta = @No_Cuenta
-			
-		--Subtotales
-		UNION ALL
-
-			Select
-				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
-			   ,a.EC_DetalleNo_Tarjeta No_Tarjeta
-			   ,'' No_Autorizacion
-			   ,a.Fecha_Corte
-			   ,a.Fecha_Corte Fecha_Consumo
-			   ,2 Tipo_Reg
-			   ,'Subtotal ' + LTrim(RTrim(a.Nombre_TH_P)) + ' ' + '******' +
-				a.Tarjeta_Imprimir Descripcion_Mov
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosMN
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosMN
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosME
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosME
-			  
-			From
-				dbo.EC_Detalle_Envio_Estado_Correo a
-			INNER JOIN dbo.TiposMovimientos b
-				ON b.CodMovimiento = a.Codigo_Mov
-			WHERE a.Fecha_Corte = @FechaCorte
-				AND a.EC_DetalleNo_Cuenta = @No_Cuenta
-			Group By
-				a.Codigo_Emisor
-			   ,a.EC_DetalleNo_Cuenta
-			   ,a.EC_DetalleNo_Tarjeta
-			   ,a.Fecha_Corte
-			   ,a.Nombre_TH_P
-			   ,Tarjeta_Imprimir 
-
-		UNION ALL
-		 
-		--Totales
-			Select
-				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
-			   ,'90000000000000000' No_Tarjeta
-			   ,'' No_Autorizacion
-			   ,a.Fecha_Corte
-			   ,a.Fecha_Corte Fecha_Consumo
-			   ,3 Tipo_Reg
-			   ,'Total Titular + Adicional' Descripcion_Mov
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosMN
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosMN
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosME
-			   ,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosME			
-			From
-				dbo.EC_Detalle_Envio_Estado_Correo a
-			INNER JOIN dbo.TiposMovimientos b
-				ON b.CodMovimiento = a.Codigo_Mov
-			WHERE a.Fecha_Corte = @FechaCorte
-			AND a.EC_DetalleNo_Cuenta = @No_Cuenta
-			Group By
-			   a.EC_DetalleNo_Cuenta
-			   ,a.Fecha_Corte
-			 
-		  )D
-		ORDER BY D.No_Cuenta, D.No_Tarjeta, D.Fecha_Consumo, D.Tipo_Reg;
-
-		
-		IF(@JsonDetalle IS NULL)
-		BEGIN
-			set @JsonDetalle = ',';
-		END
-		
-		select @Json = @Json  + @JsonDetalle;
-
-
-		SELECT @Json=LEFT(@Json, LEN(@Json)-1)+'], "Financiamientos":['
-
-			--Financiamientos
-
-			SELECT @JsonFinanciamientos = '{' +
-			   '"Tipo": "' + Tipo + '",' +
-			   '"Fecha": "' + ISNULL(CONVERT(varchar(10), Fecha, 103), '') + '",' +
-			   '"Monto": ' + ISNULL(CONVERT(varchar(20), Monto), '0') + ',' +
-			   '"Moneda": "' + RTRIM(ISNULL(Moneda, '')) + '",' +
-			   '"Cuota": ' + ISNULL(CONVERT(varchar(20), Cuota), '0') + ',' +
-			   '"Plazo": ' + ISNULL(CONVERT(varchar(20), Plazo), '0') + ',' +
-			   '"CuotaAplicada": ' + ISNULL(CONVERT(varchar(20), CuotaAplicada), '0') + ',' +
-			   '"Tasa": "' + RTRIM(ISNULL(Tasa, '0%')) + '",' +
-			   '"Saldo": ' + ISNULL(CONVERT(varchar(20), Saldo), '0') +
-			   '},' 
-			FROM
-			(
-			   SELECT
-				   'Intrafinanciamientos' Tipo,
-				   f.FechaOtorgamiento Fecha,
-				   f.ImporteTotalPlan Monto,
-				   f.MonedaMovimiento Moneda,
-				   f.Importe Cuota,
-				   f.CantidadCuotasPlan Plazo,
-				   f.NoCuotaLiquidada CuotaAplicada,
-				   CASE
-					   WHEN f.PlanExtraTasa = 0 THEN '0%'
-					   ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
-				   END Tasa,
-				   f.PlanCuotaCapitalPend Saldo
-			   FROM Financiamientos_BandejaEnvioTC f
-			   WHERE
-				   f.NumeroCuenta = @No_Cuenta AND
-				   f.FechaCierre = @FechaCorte AND
-				   f.PlanCuotaCapitalPend > 0 AND
-				   f.EsIntra = 1
-			   UNION ALL
-			   SELECT
-				   'Extrafinanciamientos' Tipo,
-				   f.FechaOtorgamiento Fecha,
-				   f.ImporteTotalPlan Monto,
-				   f.MonedaMovimiento Moneda,
-				   f.Importe Cuota,
-				   f.CantidadCuotasPlan Plazo,
-				   f.NoCuotaLiquidada CuotaAplicada,
-				   CASE
-					   WHEN f.PlanExtraTasa = 0 THEN '0%'
-					   ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
-				   END Tasa,
-				   f.PlanCuotaCapitalPend Saldo
-			   FROM Financiamientos_BandejaEnvioTC f
-			   WHERE
-				   f.NumeroCuenta = @No_Cuenta AND
-				   f.FechaCierre = @FechaCorte AND
-				   f.PlanCuotaCapitalPend > 0 AND
-				   f.EsExtra = 1
-			) AS Data
-
-
-			
-
-		IF(@JsonFinanciamientos IS NULL)
-		BEGIN
-			set @JsonFinanciamientos = ',';
-		END
-		
-		select @Json = @Json  + @JsonFinanciamientos;
-
-		SELECT @Json = LEFT(@Json, LEN(@Json)-1) + ']}';
-
-		SELECT @Json AS 'JsonEstadoCuenta'
-	  
-END
+    - name: pipeline-worker-procesador
+      inputRefs:
+        - application-logs
+      filterRefs:
+        - detect-java-multiline
+      outputRefs:
+        - syslog-worker-procesador
