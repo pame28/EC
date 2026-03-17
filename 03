@@ -1,39 +1,53 @@
-Mira este dockerfile de ejemplo:
-Creo que nuestro error es que no lo estamos llamando bien, mira ese ejemplo de como se instala el ibm .. asi se tiene que hacer con las librerias, ya te voy a enviar los nombres:
-
+# =========================
+# BUILD STAGE
+# =========================
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# instalar unixODBC, libltdl y utilidades necesarias en build
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      unixodbc unixodbc-dev libltdl7 dpkg ca-certificates wget && \
-    rm -rf /var/lib/apt/lists/*
+# Copiar proyecto
+COPY *.csproj ./
+COPY nuget.config ./
 
-# copiar .deb al contexto (si los tienes). Asegúrate de incluir los .deb de IBM i Access en el contexto.
-COPY ibm-iaccess-1.1.0.28-1.0.amd64.deb /tmp/
+# Certificado corporativo
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates || true
 
-# instalar los .deb y resolver dependencias (si existen)
-RUN if [ -n "$(ls -A /tmp/*.deb 2>/dev/null || true)" ]; then \
-      dpkg -i /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb || true && \
-      apt-get update && \
-      DEBIAN_FRONTEND=noninteractive apt-get -y --fix-broken install; \
-    fi && \
-    rm -rf /var/lib/apt/lists/* /tmp/ibm-iaccess-1.1.0.28-1.0.amd64.deb
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
 
-# declarar LD_LIBRARY_PATH para el linter
-ARG LD_LIBRARY_PATH
-ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64:${LD_LIBRARY_PATH}
+RUN dotnet restore
 
-# copiar resto del código y publicar
+# =========================
+# INSTALAR ODBC + IBM (OFFLINE BIEN HECHO 🔥)
+# =========================
+COPY odbc-libraries/*.deb /tmp/odbc/
+
+RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
+    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
+    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
+    dpkg -i /tmp/odbc/libodbc2*.deb || true && \
+    dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
+    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
+    dpkg -i /tmp/odbc/odbcinst*.deb || true && \
+    dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
+    dpkg -i /tmp/odbc/wget*.deb || true && \
+    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
+    apt-get update && \
+    apt-get -y --fix-broken install
+
+ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64
+
+# Copiar código
 COPY . .
 RUN dotnet publish -c Release -o /app/publish
 
-# snapshot de librerías y utilidades ODBC necesarias para runtime
+# =========================
+# SNAPSHOT ODBC (ROBUSTO)
+# =========================
 RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
-    cp -a /usr/lib/x86_64-linux-gnu/libodbc* /odbc-snapshot/lib/ 2>/dev/null || true && \
-    cp -a /usr/lib/x86_64-linux-gnu/libodbcinst* /odbc-snapshot/lib/ 2>/dev/null || true && \
-    cp -a /usr/lib/x86_64-linux-gnu/libltdl.so.7* /odbc-snapshot/lib/ 2>/dev/null || true && \
+    find / -name "libodbc.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
+    find / -name "libodbcinst.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
+    find / -name "libltdl.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
     cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
     cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
     cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
@@ -45,127 +59,40 @@ RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-# copiar app publicada
+# App
 COPY --from=build /app/publish .
 
-# copiar snapshot ODBC desde build
+# ODBC
 COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
 COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
 COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
 COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
 
-# asegurar permisos legibles por el usuario no-root de OpenShift
+# Permisos OpenShift
 RUN chmod -R a+r /opt/odbc || true && \
     chmod -R a+rx /opt/odbc/bin || true && \
     chmod -R a+r /opt/ibm || true
 
-# crear odbcinst.ini en el directorio que usaremos como ODBCSYSINI
+# =========================
+# 🔥 CONFIGURACIÓN CORRECTA DEL DRIVER
+# =========================
 RUN mkdir -p /opt/odbc && \
-    if [ -f /opt/odbc/etc/odbcinst.ini ]; then \
-      cp /opt/odbc/etc/odbcinst.ini /opt/odbc/odbcinst.ini; \
-    else \
-      printf '%s\n' '[iSeries Access ODBC Driver]' \
-        'Description=IBM i Access for Linux ODBC Driver' \
-        'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
-        'FileUsage=1' > /opt/odbc/odbcinst.ini; \
-    fi
+    printf '%s\n' \
+    '[IBM i Access ODBC Driver]' \
+    'Description=IBM i Access for Linux ODBC Driver' \
+    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
+    'FileUsage=1' \
+    > /opt/odbc/odbcinst.ini
 
-# actualizar cache de librerías para que ldconfig conozca las nuevas rutas
+# Registrar driver (CLAVE 🔥)
+RUN /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true
+
+# Cache librerías
 RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
 
-# Rutas para el loader y configuración ODBC
-ENV LD_LIBRARY_PATH=/opt/odbc/lib64:/opt/ibm/iaccess/lib64:$LD_LIBRARY_PATH
+# 🔥 VARIABLES CORRECTAS (ARREGLADO)
+ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64
 ENV ODBCSYSINI=/opt/odbc
 ENV ODBCINI=/opt/odbc/odbc.ini
 
-# registro opcional del driver con odbcinst si está disponible
-RUN if [ -x /opt/odbc/bin/odbcinst ]; then \
-      /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true; \
-    fi
-
-ENTRYPOINT ["dotnet", "reposicion_pin.dll"]
-
-Nombres: 
-ca-certificates_20240203_all.deb
-dpkg_1.22.6ubuntu6.5_amd64.deb
-ibm-iaccess-1.1.0.28-1.0.amd64.deb
-libltdl7_2.4.7-7build1_amd64.deb
-libodbc2_2.3.11-2+deb12u1_amd64.deb
-libodbcinst2_2.3.11-2+deb12u1_amd64.deb
-odbcinst_2.3.11-2+deb12u1_amd64.deb
-unixodbc_2.3.12-1ubuntu0.24.04.1_amd64.deb
-unixodbc-dev_2.3.12-1ubuntu0.24.04.1_amd64.deb
-wget_1.21.4-1ubuntu4.1_amd64.deb
-
-
-
-
-
-Y este es el error que estoy teniendo
-
-17-03-2026 16:40:47.830 [1] [Information] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
-17-03-2026 16:40:47.872 [1] [Information] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
-17-03-2026 16:40:47.873 [1] [Information] Microsoft.Hosting.Lifetime - Hosting environment: Production
-17-03-2026 16:40:47.873 [1] [Information] Microsoft.Hosting.Lifetime - Content root path: /app
-17-03-2026 16:40:56.334 [6] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 GET http://api-crypto-as400-des-procesadortc-bp.apps.ocp4bppu.hn.bi-central.local/api/auth/token - null null
-17-03-2026 16:40:56.383 [6] [Warning] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
-17-03-2026 16:40:56.397 [6] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'Criptografia.Controllers.AuthController.GetToken (Criptografia)'
-17-03-2026 16:40:56.445 [6] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "GetToken", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] GetToken() on controller Criptografia.Controllers.AuthController (Criptografia).
-17-03-2026 16:40:56.449 [6] [Information] Criptografia.Controllers.AuthController - Solicitud recibida para generaciÃ³n de token.
-17-03-2026 16:40:56.450 [6] [Information] Criptografia.Services.AccessTokenService - Iniciando generaciÃ³n de token de autorizaciÃ³n.
-17-03-2026 16:40:56.453 [6] [Information] Criptografia.Repositories.AccessTokenRepository - Iniciando consulta de credenciales en AS400.
-17-03-2026 16:40:56.493 [6] [Error] Criptografia.Repositories.AccessTokenRepository - Error de ODBC al consultar AS400.
-System.Data.Odbc.OdbcException (0x80131937): ERROR [01000] [unixODBC][Driver Manager]Can't open lib 'IBM i Access ODBC Driver' : file not found
-   at System.Data.Odbc.OdbcConnection.HandleError(OdbcHandle hrHandle, SQLRETURN retcode)
-   at System.Data.Odbc.OdbcConnectionHandle..ctor(OdbcConnection connection, OdbcConnectionString constr, OdbcEnvironmentHandle environmentHandle)
-   at System.Data.Odbc.OdbcConnectionOpen..ctor(OdbcConnection outerConnection, OdbcConnectionString connectionOptions)
-   at System.Data.Odbc.OdbcConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningObject)
-   at System.Data.ProviderBase.DbConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionFactory.CreateNonPooledConnection(DbConnection owningConnection, DbConnectionPoolGroup poolGroup, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal& connection)
-   at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionInternal.OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
-   at System.Data.Odbc.OdbcConnection.Open()
-   at System.Data.Common.DbConnection.OpenAsync(CancellationToken cancellationToken)
---- End of stack trace from previous location ---
-   at Criptografia.Repositories.AccessTokenRepository.GetTokenAsync() in /src/Repositories/AccessTokenRepository.cs:line 34
-17-03-2026 16:40:56.511 [6] [Error] Criptografia.Services.AccessTokenService - Error generando el token de autorizaciÃ³n.
-System.Data.Odbc.OdbcException (0x80131937): ERROR [01000] [unixODBC][Driver Manager]Can't open lib 'IBM i Access ODBC Driver' : file not found
-   at System.Data.Odbc.OdbcConnection.HandleError(OdbcHandle hrHandle, SQLRETURN retcode)
-   at System.Data.Odbc.OdbcConnectionHandle..ctor(OdbcConnection connection, OdbcConnectionString constr, OdbcEnvironmentHandle environmentHandle)
-   at System.Data.Odbc.OdbcConnectionOpen..ctor(OdbcConnection outerConnection, OdbcConnectionString connectionOptions)
-   at System.Data.Odbc.OdbcConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningObject)
-   at System.Data.ProviderBase.DbConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionFactory.CreateNonPooledConnection(DbConnection owningConnection, DbConnectionPoolGroup poolGroup, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal& connection)
-   at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionInternal.OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
-   at System.Data.Odbc.OdbcConnection.Open()
-   at System.Data.Common.DbConnection.OpenAsync(CancellationToken cancellationToken)
---- End of stack trace from previous location ---
-   at Criptografia.Repositories.AccessTokenRepository.GetTokenAsync() in /src/Repositories/AccessTokenRepository.cs:line 34
-   at Criptografia.Services.AccessTokenService.GenerateAuthorizationAsync() in /src/Services/AccessTokenService.cs:line 31
-17-03-2026 16:40:56.512 [6] [Error] Criptografia.Controllers.AuthController - Error en endpoint /api/auth/token
-System.Data.Odbc.OdbcException (0x80131937): ERROR [01000] [unixODBC][Driver Manager]Can't open lib 'IBM i Access ODBC Driver' : file not found
-   at System.Data.Odbc.OdbcConnection.HandleError(OdbcHandle hrHandle, SQLRETURN retcode)
-   at System.Data.Odbc.OdbcConnectionHandle..ctor(OdbcConnection connection, OdbcConnectionString constr, OdbcEnvironmentHandle environmentHandle)
-   at System.Data.Odbc.OdbcConnectionOpen..ctor(OdbcConnection outerConnection, OdbcConnectionString connectionOptions)
-   at System.Data.Odbc.OdbcConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningObject)
-   at System.Data.ProviderBase.DbConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionFactory.CreateNonPooledConnection(DbConnection owningConnection, DbConnectionPoolGroup poolGroup, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource`1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal& connection)
-   at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
-   at System.Data.ProviderBase.DbConnectionInternal.OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
-   at System.Data.Odbc.OdbcConnection.Open()
-   at System.Data.Common.DbConnection.OpenAsync(CancellationToken cancellationToken)
---- End of stack trace from previous location ---
-   at Criptografia.Repositories.AccessTokenRepository.GetTokenAsync() in /src/Repositories/AccessTokenRepository.cs:line 34
-   at Criptografia.Services.AccessTokenService.GenerateAuthorizationAsync() in /src/Services/AccessTokenService.cs:line 31
-   at Criptografia.Controllers.AuthController.GetToken() in /src/Controllers/AuthController.cs:line 28
-17-03-2026 16:40:56.520 [6] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type '<>f__AnonymousType1`1[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
-17-03-2026 16:40:56.561 [6] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action Criptografia.Controllers.AuthController.GetToken (Criptografia) in 109.4003ms
-17-03-2026 16:40:56.561 [6] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'Criptografia.Controllers.AuthController.GetToken (Criptografia)'
-17-03-2026 16:40:56.566 [6] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 GET http://api-crypto-as400-des-procesadortc-bp.apps.ocp4bppu.hn.bi-central.local/api/auth/token - 500 null application/json; charset=utf-8 236.4352ms
+ENTRYPOINT ["dotnet", "Criptografia.dll"]
