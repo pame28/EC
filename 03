@@ -1,98 +1,109 @@
-# =========================
-# BUILD STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+Mira, para ser honesta estoy bastante desorientada, y no se muy bien de lo que trata esto, pero tengo que sacarlo.
 
-# Copiar proyecto
-COPY *.csproj ./
-COPY nuget.config ./
+este es el plan de trabajo que me dieron:
 
-# Certificado corporativo
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates || true
+Base de datos
+Diseñar y crear de TablaParametros 
+Crear Procedimiento almacenado para extracción de datos JSON
+Crear Procedimiento almacenado para reporte
+Crear Objetos para proceso de EC
+Validar integridad de datos y relaciones
+Desarrollo .NET
+Configuración de entorno de Desarrollo
+Análisis y diseño técnico, estructura del proyecto (patron Repository)
+Configuración de conexiones y valores globales (apsettings.json)
+Construcción de modelos y clases utilitarias 
+Clase DatabaseConnection para la base de datos
+Clase SqlExecutor para ejecutar los procedimientos almacenados con SqlCommand
+Consumir procedimiento almacenado con información de los estados de cuenta
+Encriptar parametros de la base de datos con AES-GCM 256
+Parametrización de hilos
+Crear campo parametro hilo en la tabla de parametros
+Crear clase ParalelismoConfigurable para leer y aplicar el parámetro
+Implementar procesamiento paralelo con Parallel.ForEach o Task.Run
+Controlar número de hilos con MaxDegreeOfParallelism
+Implementar lógica de ajuste dinámico
+Pruebas y Validaciones
+Calcular tarjetas procesadas por segundo
+Validar comportamiento con distintos valores de hilos
+Consola JSON
+Transformar información obtenida en estructrura y contenido del JSON EC
+Validar datos para verificar la estructura y contenido del JSON
+Implementar ILogger de todos los eventos éxito/error que pasen en la aplicación
+Lógica para guardar archivos JSON generados en una carpeta del servidor
+Lógica para gestionar reintentos y reprocesar tarjetas fallidas
+Configurar manejo de excepciones hilos y recuperación por lote
+Documentar funcionalidades y flujo de ejecución 
+SFTP
+Pruebas y Validaciones
+Pruebas unitarias de la consola JSON xUnit + Moq
+Validar la estructura de los archivos generados JSON
+Desarrollo Agent SQL Server
+Configurar SQL Server Agent Job para ejecutar app vía CmdExec
+Crear lógica para los pasos del job Estados Cuenta
+Llamar Consola JSON
+Montar Consola JSON
+Correo de confirmación al área de Tarjetas EC JSON CC: PBS
+Pruebas y Validaciones
+Validar ejecución desde SQL Server Agent
+Documentar estrategia, pruebas y recomendaciones de ajuste
+Reportes
+Diseño y creación del reporte
+Pruebas y validacion
+Validar subida correcta al SFTP y permisos de escritura 
+Validar reintentos ante errores simulados 
+Validar reportería y métricas generadas 
 
-ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
-ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
 
-RUN dotnet restore
+Este es el requerimiento:
 
-# =========================
-# INSTALAR ODBC + IBM (OFFLINE BIEN HECHO 🔥)
-# =========================
-COPY odbc-libraries/*.deb /tmp/odbc/
+1	Crear un proceso de generación de estados de cuenta de los bines migrados al core de TDC, para que tome como origen de la información las tablas Encabezado: HESTDCTA Detalle: DESTDCTA Financiamientos: DETFINCT del Core de TDC													
+2	El proceso deberá consultar la tabla de control de carga de datos a los archivos del CORE de TC para poder identificar que la información se encuentra disponible para ser tomada y posteriormente procesada 													
+3	No deberá ejecutar el proceso de parseo, ni postparseo ya que la información en el CORE ya vendrá calculada													
+4	"Banpais  debe crear un proceso de envio de estado de cuenta y XML para los bines migrados,  en el campo ""mensaje_5"" de la tabla ""HestadoCuenta"" se recibirá la forma de envió de estado de cuenta fisico, correo electronico o ambos.
+1=fisico
+2=correo
+3=ambos"													
+5	"Para los archivos generados para CM se debera:
+- Incluir en el nombre del XML la fecha y hora (hhmmss) de generación del archivo (Encabezado_20251007161310)
+ 
+- Generar un txt de resumen que contenga la cantidad de cuentas incluidas en cada juego de archivos, lo que permitirá al proveedor corporación CM saber que el proceso de generación de XML finalizó.
+ "													
+6	"Para la generación de estado de cuenta para PBS se debera tener dos procesos independientes, se ejecutara primero el proceso de PRISMA y colocara los archivos JSON en el FTP de PBS. El segundo proceso se ejecutará una vez que se encuentre en el FTP de PBS un archivo JSON de confirmación que la generación de estado de cuenta de PRISMA finalizo correctamente, en caso que presento error por parte de PBS se deberá esperar hasta que sea solventado para comenzar con la ejecución del segundo proceso. 
+"													
+														
+Prototipo														
+Prototipo														
+														
+														
+														
+Análisis Técnico 														
+Aprobado		"De parte de PBS esta pendiente la estructura del archivo JSON a generar
 
-RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
-    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
-    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
-    dpkg -i /tmp/odbc/libodbc2*.deb || true && \
-    dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
-    dpkg -i /tmp/odbc/odbcinst*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
-    dpkg -i /tmp/odbc/wget*.deb || true && \
-    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
-    apt-get update && \
-    apt-get -y --fix-broken install
+Se desarrollará proceso de generación de estados de cuenta para los bines migrados al CORE de TDC, utilizando como fuente de información las tablas HESTDCTA (encabezado), DESTDCTA (detalle) y DETFINCT (financiamientos) del CORE. Este proceso validará previamente la disponibilidad de los datos consultando la tabla de control TCATV3DAT/TCCTRARC. El proceso considerará el campo “mensaje_5” de la tabla HestadoCuenta donde se indicará la modalidad de envío: 1 para físico, 2 para correo electrónico y 3 para ambos. Para los archivos XML, se incluirá en el nombre la fecha y hora de generación (formato hhmmss), por ejemplo: Encabezado_20251007161310, y se generará un archivo TXT de resumen que indique la cantidad de cuentas incluidas en cada lote, permitiendo al proveedor CM confirmar la finalización del proceso. Para la generación de estados de cuenta destinados a PBS, se implementarán el siguiente flujo de procesos: el primero generará los archivos JSON de PRISMA y los colocará en el SFTP de PBS; el segundo se ejecutará únicamente cuando se detecte en el SFTP un archivo JSON de confirmación que indique que la generación de los EC PRISMA finalizó correctamente. En caso de errores por parte de PBS, se esperará a que sean solventados antes de ejecutar nuevamente.		"												
+														
+														
+														
+														
 
-ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64
 
-# Copiar código
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
 
-# =========================
-# SNAPSHOT ODBC (ROBUSTO)
-# =========================
-RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
-    find / -name "libodbc.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libodbcinst.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libltdl.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
-    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
 
-# =========================
-# RUNTIME STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
-WORKDIR /app
+Mira, todo lo que te estoy enviando ya existe. Actualmente se usa un dtsx para generar el json y enviarlo (Yo haré unicamente el Json) pero estoy pensando en migrar todo el dtsx y hacer una consola mejor,
+que creo que es a aparte de la que ya me piden. Hay 3 tablas maestras: 
+SELECT * FROM  HEstadoCuenta --Encabezado
+SELECT * FROM DEstadoCuenta --Detalle
+SELECT * FROM Financiamientos
 
-# App
-COPY --from=build /app/publish .
+En la de encabezado es donde hay un campo llamado mensaje_5 que este me va a indicar si tengo que usar el proceso de JSON o el de XML o ambos, segun entiendo yo
 
-# ODBC
-COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
-COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
-COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
-COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
+1=fisico (XML)
+2=correo (JSON)
+3=ambos (JSON y XML)
 
-# Permisos OpenShift
-RUN chmod -R a+r /opt/odbc || true && \
-    chmod -R a+rx /opt/odbc/bin || true && \
-    chmod -R a+r /opt/ibm || true
+Te recuerdo que, yo solo voy a trabajar con JSON por el momento.
 
-# =========================
-# 🔥 CONFIGURACIÓN CORRECTA DEL DRIVER
-# =========================
-RUN mkdir -p /opt/odbc && \
-    printf '%s\n' \
-    '[IBM i Access ODBC Driver]' \
-    'Description=IBM i Access for Linux ODBC Driver' \
-    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
-    'FileUsage=1' \
-    > /opt/odbc/odbcinst.ini
+Ayudame a poner mis ideas en orden, que es lo que se tiene que hacer, por donde comenzar, son dos consolas? o es una sola... 
 
-# Registrar driver (CLAVE 🔥)
-RUN /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true
 
-# Cache librerías
-RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
 
-# 🔥 VARIABLES CORRECTAS (ARREGLADO)
-ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64
-ENV ODBCSYSINI=/opt/odbc
-ENV ODBCINI=/opt/odbc/odbc.ini
-
-ENTRYPOINT ["dotnet", "Criptografia.dll"]
