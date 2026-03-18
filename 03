@@ -1,6 +1,3 @@
-Ok mira, tengo este error: El nombre del tipo o del espacio de nombres 'ConfigurationBuilder' no se encontró (¿falta una directiva using o una referencia de ensamblado?)
-
-Si le doy propiedades al appsetting.. me aparece algo como Acción de Compilación, debo seleccionar algo?
-
-
-Otra cosa, tu me propones continuar con el DTO, ese alcance lo tiene el primer segmento de dtsx que te envié? Sino es asi .. mejor espera a que te envie el segundo segmento
+Install-Package Microsoft.Extensions.Configuration
+Install-Package Microsoft.Extensions.Configuration.FileExtensions
+Install-Package Microsoft.Extensions.Configuration.Json
