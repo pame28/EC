@@ -1,313 +1,118 @@
-Ok mira, yo te iré diciendo que veo de tres en tres pasos para avanzar, según lo que veo en el DTSX, voy a tratar de brindarte todo con lujo de detalle, ok?
-
-
-Mira, el primer paso según el dtsx se llama Prepara data al corte, este es un Contenedor de Secuencias 
-Dentro de ese contenedor hay 3 pasos:
-
-
-
-Paso 01. Limpia e inserta bandejas temporales (Tarea Ejecutar SQL)
-Buscar este procedimiento: usp_LlenaBandejasEstadoCuenta (ACTUAL-VIEJO)
-
-
-USE [BPTarjetas]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_LlenaBandejasEstadoCuenta]    Script Date: 11/3/2026 00:33:16 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE  [dbo].[usp_LlenaBandejasEstadoCuenta]
-
+CREATE PROCEDURE dbo.usp_LlenarBandejaEstadoCuenta
+(
+    @Tipo VARCHAR(20)
+)
 AS
 BEGIN
-
-DECLARE @FechaCorte as date = (Select FechaCorte from Param_IS_ECTC Where Estado='1'),
-		@Reproceso INT= (SELECT COUNT(1) FROM BandejaECTC WHERE Estado=2);
-
-	--IF(@Reproceso<1)
-	--BEGIN
-	--Limpiar badejas
-		Truncate Table [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]
-		Truncate Table [BPTarjetas].[dbo].[DEstadoCuenta_BandejaEnvioTC] 
-		Truncate Table [BPTarjetas].[dbo].[Financiamientos_BandejaEnvioTC]
-
-	--llenar bandejas
-
-		Insert into  [BPTarjetas].[dbo].[HEstadoCuenta_BandejaEnvioTC]
-		Select * from [BPTarjetas].[dbo].HEstadoCuenta Where Fecha_Corte=@FechaCorte --And No_Tarjeta='1000000003294902'
-	
-		Insert into [BPTarjetas].[dbo].[DEstadoCuenta_BandejaEnvioTC]
-		Select * from [BPTarjetas].[dbo].[DEstadoCuenta] Where Fecha_Corte=@FechaCorte --And EC_DetalleNo_Tarjeta='1000000003294902'
-	
-		Insert into [BPTarjetas].[dbo].[Financiamientos_BandejaEnvioTC]
-		SELECT * FROM [BPTarjetas].[dbo].[Financiamientos] WHERE FechaCierre=@FechaCorte --And NumeroCuenta='5000001656764'
-	--END
-END
-
-
-
-Este fue el que yo creé: 
-
-
-USE [EstadosCuentaJSONProcesador]
-GO
-
-/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejas]    Script Date: 19/3/2026 07:02:27 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[usp_LlenarBandejas]
--- =============================================
--- Author:		Pamela N. Suazo
--- Create date: 11/03/2026
--- Description:	Limpia y llena las bandejas de información de Estados de Cuenta por fecha de carga (cada corte)
--- =============================================
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @FechaCorte DATE = (SELECT TOP(1) FechaCorte FROM ParametrosCorte WHERE Estado='1');
-    DECLARE @Reproceso INT = (SELECT COUNT(1) FROM BandejaEstadoCuenta WHERE Estado='2');
-
-    BEGIN TRY
-        BEGIN TRANSACTION;
-
-        -- Limpiar bandejas principales
-        IF OBJECT_ID('dbo.BandejaEncabezado', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaEncabezado;
-        IF OBJECT_ID('dbo.BandejaDetalle', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaDetalle;
-        IF OBJECT_ID('dbo.BandejaFinanciamientos', 'U') IS NOT NULL TRUNCATE TABLE dbo.BandejaFinanciamientos;
-
-        -- Llenar bandeja encabezado
-        INSERT INTO dbo.BandejaEncabezado
-        SELECT *
-        FROM dbo.EstadoCuentaEncabezado
-        WHERE FechaCorte = @FechaCorte;
-
-        -- Llenar bandeja detalle
-        INSERT INTO dbo.BandejaDetalle
-        SELECT *
-        FROM dbo.EstadoCuentaDetalle
-        WHERE FechaCorte = @FechaCorte;
-
-        -- Llenar bandeja financiamientos
-        INSERT INTO dbo.BandejaFinanciamientos
-        SELECT *
-        FROM dbo.EstadoCuentaFinanciamientos
-        WHERE FechaCierre = @FechaCorte;
-
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK TRANSACTION;
-
-        DECLARE @ErrorMsg NVARCHAR(4000) = ERROR_MESSAGE();
-        DECLARE @ErrorNum INT = ERROR_NUMBER();
-
-        RAISERROR('Error %d: %s', 16, 1, @ErrorNum, @ErrorMsg);
-    END CATCH
-END
-GO
-
-
-------------------------------------------------------------------------------------
-
-
-
-Paso 02. Trunca bandeja ECTC  (Tarea Ejecutar SQL)
-TRUNCATE TABLE BandejaECTC;
-CREATE TABLE [dbo].[BandejaECTC](
-	[Fecha_Corte] [varchar](15) NULL,
-	[No_Tarjeta] [varchar](50) NULL,
-	[No_Cuenta] [varchar](50) NULL,
-	[Correo] [varchar](max) NULL,
-	[Estado] [varchar](15) NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-
-Quiero destacar que, en en este paso hay una sección que se llama asignación de parámetros 
-
-User::TipoLlenarBandeja
-Input
-String
-Tipo
-20
-
-
-
-Para esto lo que me pareció más correcto fue crear un SP: 
-
-USE [EstadosCuentaJSONProcesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_LimpiarBandejaEstadoCuenta]    Script Date: 19/3/2026 07:03:52 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[usp_LimpiarBandejaEstadoCuenta]
-AS
-BEGIN
-
 SET NOCOUNT ON;
 
-TRUNCATE TABLE dbo.BandejaEstadoCuenta;
-
+IF(@Tipo = 'Limpiar')
+BEGIN
+    TRUNCATE TABLE dbo.BandejaEstadoCuenta;
+    RETURN;
 END
 
-
-De un solo te muestro la tabla:
-
-
-CREATE TABLE [dbo].[BandejaEstadoCuenta](
-	[FechaCorte] [varchar](15) NULL,
-	[NoTarjeta] [varchar](50) NULL,
-	[NoCuenta] [varchar](50) NULL,
-	[Correo] [varchar](max) NULL,
-	[Estado] [varchar](15) NULL
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-
-
-
-----------------------------------------------------------------------------------
-Paso 03. Llenar bandeja (Tarea Ejecutar SQL)
-Buscar este procedimiento: usp_LlenarBandejaECTC
-
-USE [BPTarjetas]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTC]    Script Date: 11/3/2026 00:35:33 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTC](@Tipo varchar(20))
-
-AS
-BEGIN
-Declare @@Cantidad int;
-
-select  @@Cantidad= count(*) from BandejaECTC;
-
-
-	IF(@Tipo='Llenar')
-		BEGIN
-		IF(@@Cantidad<1)
-			begin
-			--Se inserta en la bandeja los registros a procesar en el bucle, para ser usados para generar EC
-			insert into BandejaECTC(Fecha_Corte, No_Tarjeta, No_Cuenta,Correo,Estado)
-			select  convert(varchar(10) ,a.Fecha_Corte ,120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, Estado=2  
-			FROM   HEstadoCuenta_BandejaEnvioTC  AS a   INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = (select Fechacorte from Param_IS_ECTC where Estado=1)  
-			where  (a.Correo <> '') and (a.Correo not in (select Correo from dbo.CorreosNoValidos where Estado=1))  
-			and  (EXISTS (SELECT 1 FROM  dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte)     
-			Or a.Pago_Contado_MN != 0     Or a.Pago_Contado_ME != 0) order by Correo
-			end
-		END
-
-	IF(@Tipo='Limpiar')
-		BEGIN
-			--Se limpia la tabla para que pueda almacenar el siguiente corte
-			truncate table BandejaECTC;
-
-		END
-
-END
-
-
-
-Quiero destacar que, en en este paso hay una sección que se llama asignación de parámetros 
-
-User::TipoLlenarBandeja
-Input
-String
-Tipo
-20
-
-
-El procedimiento que yo creé fue este: 
-
-
-USE [EstadosCuentaJSONProcesador]
-GO
-
-/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaEstadoCuenta]    Script Date: 19/3/2026 07:01:35 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuenta]
-AS
+IF(@Tipo = 'Llenar')
 BEGIN
 
-SET NOCOUNT ON;
+    DECLARE @Cantidad INT;
+    DECLARE @FechaCorte DATE;
 
-DECLARE @Cantidad INT
-DECLARE @FechaCorte DATE
+    SELECT @Cantidad = COUNT(*) 
+    FROM dbo.BandejaEstadoCuenta;
 
-SELECT @Cantidad = COUNT(*)
-FROM dbo.BandejaEstadoCuenta
+    SELECT @FechaCorte = FechaCorte
+    FROM dbo.ParametrosCorte
+    WHERE Estado = 1;
 
-SELECT @FechaCorte = FechaCorte
-FROM [dbo].[ParametrosCorte]
-WHERE Estado = 1
-
-
-IF (@Cantidad < 1)
-BEGIN
-
-    INSERT INTO dbo.BandejaEstadoCuenta
-    (
-        FechaCorte,
-        NoTarjeta,
-        NoCuenta,
-        Correo,
-        Estado
-    )
-
-    SELECT
-        h.FechaCorte,
-        TRIM(h.NoTarjeta),
-        TRIM(h.NoCuenta),
-        TRIM(h.Correo),
-        2
-    FROM dbo.BandejaEncabezado h
-
-    INNER JOIN dbo.FechaCarga fc
-        ON h.Origen = fc.Origen
-
-    WHERE
-        h.FechaCorte = @FechaCorte
-
-        AND h.Correo <> ''
-
-        AND h.Correo NOT IN
+    IF (@Cantidad < 1)
+    BEGIN
+        INSERT INTO dbo.BandejaEstadoCuenta
         (
-            SELECT Correo
-            FROM dbo.CorreosNoValidos
-            WHERE Estado = 1
+            FechaCorte,
+            NoTarjeta,
+            NoCuenta,
+            Correo,
+            Estado
         )
-
-        AND
-        (
-            EXISTS
+        SELECT
+            h.FechaCorte,
+            TRIM(h.NoTarjeta),
+            TRIM(h.NoCuenta),
+            TRIM(h.Correo),
+            2
+        FROM dbo.BandejaEncabezado h
+        INNER JOIN dbo.FechaCarga fc
+            ON h.Origen = fc.Origen
+        WHERE
+            h.FechaCorte = @FechaCorte
+            AND h.Correo <> ''
+            AND h.Correo NOT IN
             (
-                SELECT 1
-                FROM dbo.BandejaDetalle d
-                WHERE d.ECDetalleNoCuenta = h.NoCuenta
-                AND d.FechaCorte = h.FechaCorte
+                SELECT Correo
+                FROM dbo.CorreosNoValidos
+                WHERE Estado = 1
             )
-            OR h.PagoContadoMN <> 0
-            OR h.PagoContadoME <> 0
-        )
-
+            AND
+            (
+                EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.BandejaDetalle d
+                    WHERE d.ECDetalleNoCuenta = h.NoCuenta
+                    AND d.FechaCorte = h.FechaCorte
+                )
+                OR h.PagoContadoMN <> 0
+                OR h.PagoContadoME <> 0
+            );
+    END
 END
 
 END
-GO
 
 
 
 
-Ya con esta info considero que podemos realizar los primeros 3 pasos
+
+
+
+
+
+
+
+
+public class PreparaDataService
+{
+    private readonly SqlExecutor _sql;
+
+    public PreparaDataService(SqlExecutor sql)
+    {
+        _sql = sql;
+    }
+
+    public void Ejecutar()
+    {
+        Console.WriteLine("Paso 1: Llenando bandejas...");
+        _sql.Execute("EXEC dbo.usp_LlenarBandejas");
+
+        Console.WriteLine("Paso 2: Limpiando bandeja de proceso...");
+        _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Limpiar'");
+
+        Console.WriteLine("Paso 3: Llenando bandeja de proceso...");
+        _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Llenar'");
+    }
+}
+
+
+
+
+
+
+
+
+
+var sql = new SqlExecutor(connectionString);
+
+var prepara = new PreparaDataService(sql);
+
+prepara.Ejecutar();
