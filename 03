@@ -1,5 +1,24 @@
-Fijate que obtuve este error:
 
-Microsoft.Data.SqlClient.SqlException: 'Error 1088: Cannot find the object "BandejaEncabezado" because it does not exist or you do not have permissions.'
+USE [EstadosCuentaJSONProcesador]
 
-Pero, si existe la tabla, e intenté ingresar a la BD con ese usuario que coloqué en la cadena de conexión y si tiene persmisos 
+GO
+--Crear Login
+CREATE LOGIN [app_estadosCuenta] WITH PASSWORD = 'Pfarramt_70000';
+GO
+
+--Crear Usuario
+CREATE USER [app_estadosCuenta] FOR LOGIN [app_estadosCuenta] WITH DEFAULT_SCHEMA=[dbo]
+GO
+
+--Asignar roles
+ALTER ROLE db_datareader ADD MEMBER [app_estadosCuenta];
+GO
+ALTER ROLE db_datawriter ADD MEMBER [app_estadosCuenta];
+GO
+
+--Permiso para ejecutar Stored Procedures
+GRANT EXECUTE ON SCHEMA::dbo TO [app_estadosCuenta];
+
+
+
+Lo que si noto, es que si entro con ese usuario y quiero modificar el SP no puedo
