@@ -1,5 +1,7 @@
 USE [EstadosCuentaJSONProcesador];
 GO
 
-GRANT VIEW DEFINITION ON SCHEMA::dbo TO [app_estadosCuenta];
+-- Permisos de lectura y escritura para todas las tablas actuales y futuras en el esquema dbo
+ALTER AUTHORIZATION ON SCHEMA::dbo TO [app_estadosCuenta];
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON SCHEMA::dbo TO [app_estadosCuenta];
 GO
