@@ -1,24 +1,8 @@
+Msg 2812, Level 16, State 62, Line 1
+Could not find stored procedure 'dbo.usp_LlenarBandejas'.
 
-USE [EstadosCuentaJSONProcesador]
-
-GO
---Crear Login
-CREATE LOGIN [app_estadosCuenta] WITH PASSWORD = 'Pfarramt_70000';
-GO
-
---Crear Usuario
-CREATE USER [app_estadosCuenta] FOR LOGIN [app_estadosCuenta] WITH DEFAULT_SCHEMA=[dbo]
-GO
-
---Asignar roles
-ALTER ROLE db_datareader ADD MEMBER [app_estadosCuenta];
-GO
-ALTER ROLE db_datawriter ADD MEMBER [app_estadosCuenta];
-GO
-
---Permiso para ejecutar Stored Procedures
-GRANT EXECUTE ON SCHEMA::dbo TO [app_estadosCuenta];
+Completion time: 2026-03-19T07:53:07.5753211-06:00
 
 
 
-Lo que si noto, es que si entro con ese usuario y quiero modificar el SP no puedo
+Lo ejecuté con mi usuaurio y funcionó perfectamente, lo hice con el de app_estadosCuenta y me muestra ese msj, creo que es de permisos, ayudame porfa 
