@@ -1,115 +1,44 @@
-CREATE PROCEDURE dbo.usp_LlenarBandejaEstadoCuenta
-(
-    @Tipo VARCHAR(20)
-)
-AS
-BEGIN
-SET NOCOUNT ON;
-
-IF(@Tipo = 'Limpiar')
-BEGIN
-    TRUNCATE TABLE dbo.BandejaEstadoCuenta;
-    RETURN;
-END
-
-IF(@Tipo = 'Llenar')
-BEGIN
-
-    DECLARE @Cantidad INT;
-    DECLARE @FechaCorte DATE;
-
-    SELECT @Cantidad = COUNT(*) 
-    FROM dbo.BandejaEstadoCuenta;
-
-    SELECT @FechaCorte = FechaCorte
-    FROM dbo.ParametrosCorte
-    WHERE Estado = 1;
-
-    IF (@Cantidad < 1)
-    BEGIN
-        INSERT INTO dbo.BandejaEstadoCuenta
-        (
-            FechaCorte,
-            NoTarjeta,
-            NoCuenta,
-            Correo,
-            Estado
-        )
-        SELECT
-            h.FechaCorte,
-            TRIM(h.NoTarjeta),
-            TRIM(h.NoCuenta),
-            TRIM(h.Correo),
-            2
-        FROM dbo.BandejaEncabezado h
-        INNER JOIN dbo.FechaCarga fc
-            ON h.Origen = fc.Origen
-        WHERE
-            h.FechaCorte = @FechaCorte
-            AND h.Correo <> ''
-            AND h.Correo NOT IN
-            (
-                SELECT Correo
-                FROM dbo.CorreosNoValidos
-                WHERE Estado = 1
-            )
-            AND
-            (
-                EXISTS
-                (
-                    SELECT 1
-                    FROM dbo.BandejaDetalle d
-                    WHERE d.ECDetalleNoCuenta = h.NoCuenta
-                    AND d.FechaCorte = h.FechaCorte
-                )
-                OR h.PagoContadoMN <> 0
-                OR h.PagoContadoME <> 0
-            );
-    END
-END
-
-END
+"SqlExecutor" no contiene una definición para "Execute" ni un método de extensión accesible "Execute" que acepte un primer argumento del tipo "SqlExecutor" (¿falta alguna directiva using o una referencia de ensamblado?)
 
 
+using Microsoft.Data.SqlClient;
 
 
-
-
-
-
-
-
-
-
-public class PreparaDataService
+namespace EstadosCuentaTC.Data
 {
-    private readonly SqlExecutor _sql;
-
-    public PreparaDataService(SqlExecutor sql)
+    public class SqlExecutor
     {
-        _sql = sql;
-    }
+        private readonly string _connectionString;
 
-    public void Ejecutar()
-    {
-        Console.WriteLine("Paso 1: Llenando bandejas...");
-        _sql.Execute("EXEC dbo.usp_LlenarBandejas");
+        public SqlExecutor(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
 
-        Console.WriteLine("Paso 2: Limpiando bandeja de proceso...");
-        _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Limpiar'");
-
-        Console.WriteLine("Paso 3: Llenando bandeja de proceso...");
-        _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Llenar'");
+        public SqlConnection GetConnection()
+        {
+            var conn = new SqlConnection(_connectionString);
+            conn.Open();
+            return conn;
+        }
     }
 }
 
 
 
 
+Otra cosa.. asi está bien mi program.cs:
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json");
+var config = builder.Build();
+var connectionString = config.GetConnectionString("DefaultConnection");
 
-
-
+var sqlExecutor = new SqlExecutor(connectionString);
 
 var sql = new SqlExecutor(connectionString);
 
