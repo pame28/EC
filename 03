@@ -1,3 +1,66 @@
-Install-Package Microsoft.Extensions.Configuration
-Install-Package Microsoft.Extensions.Configuration.FileExtensions
-Install-Package Microsoft.Extensions.Configuration.Json
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Models;
+using Microsoft.Data.SqlClient;
+
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class BandejaDetalleRepository
+    {
+        private readonly SqlExecutor _sql;
+        private readonly HashSet<string> _correosNoValidos;
+
+        public BandejaDetalleRepository(SqlExecutor sql, HashSet<string> correosNoValidos)
+        {
+            _sql = sql;
+            _correosNoValidos = correosNoValidos;
+        }
+
+        public List<BandejaDetalle> ObtenerCuentas(DateTime fechaCorte)
+        {
+            var cuentas = new List<BandejaDetalle>();
+            using var conn = _sql.GetConnection();
+            var cmd = new SqlCommand(@"
+                SELECT *
+                FROM BandejaDetalle
+                WHERE FechaCorte = @FechaCorte
+                  AND Correo <> ''
+            ", conn);
+
+            cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var correo = reader["Correo"].ToString().Trim().ToLower();
+                if (_correosNoValidos.Contains(correo)) continue;
+
+                cuentas.Add(new BandejaDetalle
+                {
+                    IdRow = (int)reader["idRow"],
+                    FechaCorte = (DateTime)reader["FechaCorte"],
+                    ECDetalleNoCuenta = reader["ECDetalleNoCuenta"].ToString(),
+                    ECDetalleNoTarjeta = reader["ECDetalleNoTarjeta"].ToString(),
+                    NombreTHP = reader["NombreTHP"].ToString(),
+                    NoCuentaClaro = reader["NoCuentaClaro"].ToString(),
+                    Correo = correo
+                    // ... agregar los demás campos según necesidad
+                });
+            }
+
+            return cuentas;
+        }
+    }
+}
+
+
+
+
+
+Tengo un error aqui:
+
+Microsoft.Data.SqlClient.SqlException: 'Invalid column name 'Correo'.'
+
+
+
+Esto estaba contemplado en el primer fragmento de código que te pasé?
