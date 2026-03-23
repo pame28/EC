@@ -1,149 +1,19 @@
-Fijate que para el envio de correo ya lo he hecho antes utilizanod un servidor que la empresa dispone para eso.. mira este ejemplo: 
-using reposicion_pin.Infrastructure.Data;
-using reposicion_pin.Models;
-using reposicion_pin.Repository.Interface;
-using System.Net.Mail;
-using System.Net.Mime;
-using System.Reflection;
+CREATE TABLE dbo.ConfiguracionEmail(
+    Id INT IDENTITY PRIMARY KEY,
+    Tipo VARCHAR(50), -- 🔥 CLAVE
+    SmtpServer VARCHAR(100),
+    MailFrom VARCHAR(100),
+    MailSubject VARCHAR(200),
+    CorreoDestino VARCHAR(200),
+    Estado CHAR(1)
+);
 
 
-namespace reposicion_pin.Repository
-{
-    public class EnvioEmailRepository : IEnvioEmailRepository
-    {
-        private readonly AppDbContext _dbContext;
-        private readonly ILogger<EnvioEmailRepository> _logger;
-        private readonly IWebHostEnvironment _env;
-        private readonly ParamAmbienteModel? _paramAmbiente;
+INSERT INTO ConfiguracionEmail
+(Tipo, SmtpServer, MailFrom, MailSubject, CorreoDestino, Estado)
+VALUES
+('ERROR', 'PRD-CAS1', 'EstadoCuentaTC@banpais.hn', 'Error proceso EC', 'pamelas@banpais.hn', '1'),
 
-        private readonly string _serverEmail;
-        private readonly string _mailFrom;
-        private readonly string _mailSubject;
-        private readonly string _plantillaHTML;
+('REPORTE', 'PRD-CAS1', 'EstadoCuentaTC@banpais.hn', 'Reporte EC generado', 'tarjetas@banpais.hn', '1'),
 
-        public EnvioEmailRepository(
-            AppDbContext dbContext,
-            ILogger<EnvioEmailRepository> logger,
-            IWebHostEnvironment env)
-        {
-            _dbContext = dbContext;
-            _logger = logger;
-            _env = env;
-
-            var configEmail = _dbContext
-                .usp_ObtenerConfigEmail
-                .AsEnumerable()
-                .FirstOrDefault();
-
-            if (configEmail == null)
-                throw new Exception("No se encontró configuración de ConfigEmail.");
-
-            _serverEmail = configEmail.ServerEmail;
-            _mailFrom = configEmail.MailFrom;
-            _mailSubject = configEmail.MailSubject;
-            _plantillaHTML = configEmail.PlantillaHTML;
-
-            _paramAmbiente = _dbContext.ParamAmbiente
-                .Where(p => p.Estado == 1)
-                .OrderBy(p => p.IdRow)
-                .FirstOrDefault();
-        }
-
-        public async Task<(int Codigo, string Mensaje, string MailFrom, string MailSubject)> EnviarCorreoAsync(
-     string correoDestino,
-     string cuerpoBase,
-     string pin,
-     string referencia,
-     CancellationToken cancellationToken)
-        {
-            try
-            {
-                string correoFinal = _paramAmbiente?.Correo ?? correoDestino;
-
-                string cuerpoFinal = cuerpoBase.Replace("@PIN", pin);
-                string htmlFinal = _plantillaHTML.Replace("@ContenidoEmail", cuerpoFinal);
-
-                using var smtp = new SmtpClient(_serverEmail)
-                {
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = true
-                };
-
-                using var mail = new MailMessage
-                {
-                    From = new MailAddress(_mailFrom),
-                    Subject = _mailSubject,
-                    IsBodyHtml = true
-                };
-
-                mail.To.Add(correoFinal);
-
-                // Crear vista HTML
-                var htmlView = AlternateView.CreateAlternateViewFromString(
-                    htmlFinal,
-                    null,
-                    MediaTypeNames.Text.Html);
-
-                // Logo
-                //var logoPath = Path.Combine(_env.ContentRootPath, "Assets", "logoBanpais.png");
-                //var logo = new LinkedResource(logoPath, MediaTypeNames.Image.Png)
-                //{
-                //    ContentId = "logoBanpais",
-                //    TransferEncoding = TransferEncoding.Base64
-                //};
-
-                var assembly = Assembly.GetExecutingAssembly();
-
-                var logoStream = assembly.GetManifestResourceStream("reposicion_pin.Assets.logoBanpais.png");
-                var logo = new LinkedResource(logoStream!, MediaTypeNames.Image.Png)
-                {
-                    ContentId = "logoBanpais",
-                    TransferEncoding = TransferEncoding.Base64
-                };
-
-
-                // Footer
-                //var footerPath = Path.Combine(_env.ContentRootPath, "Assets", "footerBanpais.png");
-                //var footer = new LinkedResource(footerPath, MediaTypeNames.Image.Png)
-                //{
-                //    ContentId = "footerBanpais",
-                //    TransferEncoding = TransferEncoding.Base64
-                //};
-
-
-
-                var footerStream = assembly.GetManifestResourceStream("reposicion_pin.Assets.footerBanpais.png");
-                var footer = new LinkedResource(footerStream!, MediaTypeNames.Image.Png)
-                {
-                    ContentId = "footerBanpais",
-                    TransferEncoding = TransferEncoding.Base64
-                };
-
-                htmlView.LinkedResources.Add(logo);
-                htmlView.LinkedResources.Add(footer);
-
-                mail.AlternateViews.Add(htmlView);
-
-                await smtp.SendMailAsync(mail, cancellationToken);
-
-                _logger.LogInformation(
-                    "Correo enviado Ref:{Referencia} Destino:{Destino}",
-                    referencia, correoFinal);
-
-                return (0, "Correo enviado correctamente.", _mailFrom, _mailSubject);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Error enviando correo Ref:{Referencia} Destino:{Destino}",
-                    referencia, correoDestino);
-
-                return (8, ex.Message, _mailFrom, _mailSubject);
-            }
-        }
-    }
-}
-
-
-
-Entonces espero que lo consumamos asi, me comprendes?
+('NOTIFICACION', 'PRD-CAS1', 'EstadoCuentaTC@banpais.hn', 'Estado de cuenta disponible', '', '1');
