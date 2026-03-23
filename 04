@@ -1,0 +1,31 @@
+CREATE PROCEDURE dbo.usp_LimpiarHistoricoCorreos
+    @Tipo VARCHAR(20)
+AS
+BEGIN
+
+    IF(@Tipo = 'COMPLETA')
+        TRUNCATE TABLE dbo.HistoricoCorreos;
+
+    IF(@Tipo = 'NOVALIDOS')
+        DELETE FROM dbo.HistoricoCorreos
+        WHERE Correo IN (
+            SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1
+        )
+        AND Estado = 0;
+
+END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
