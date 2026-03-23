@@ -1,7 +1,210 @@
-USE [EstadosCuentaJSONProcesador];
-GO
+Ok mira, ya podemos pasar al segundo container, que este tiene:
 
--- Permisos de lectura y escritura para todas las tablas actuales y futuras en el esquema dbo
-ALTER AUTHORIZATION ON SCHEMA::dbo TO [app_estadosCuenta];
-GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON SCHEMA::dbo TO [app_estadosCuenta];
+Se llama Correos No Validos, este consta de cuatro pasos, el cuarto es en caso de error.
+
+Paso 01. Limpiar tabla reporte no validos (Tarea ejecutar SQL)
+Llama a este SP usp_LimpiarTablaHistoricoReporteEC
+
+USE [BPTarjetas]
 GO
+/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricoReporteEC]    Script Date: 23/3/2026 08:30:02 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[usp_LimpiarTablaHistoricoReporteEC](@Tipo varchar(20))
+
+AS
+BEGIN
+	if(@Tipo='COMPLETA')
+	BEGIN
+		--Limpia todo el historico de reporte
+		TRUNCATE TABLE BPTarjetas.dbo.HistoricoCorreosECTC;
+	END
+		if(@Tipo='NOVALIDOS')
+	BEGIN
+		--Limpia solo los no validos
+		delete from BPTarjetas.dbo.HistoricoCorreosECTC where CorreoCliente in (select Correo From CorreosNoValidos where Estado=1) and Estado=0;
+
+	END
+END
+
+
+Y tiene asignación de parámetros
+
+User::TipoLimpiarReporte Input String Tipo 20
+
+
+Paso 02. Query correos No Validos (Tarea Ejecutar SQL)
+
+select QueryCNV from EstadoCuentaHTML where IdRows=1;
+
+
+conjunto de resultado Nombre del resultado 0 Nombre de Variablr User::QueryCNV
+
+
+
+El select devuelve algo como:
+
+SELECT CONVERT(VARCHAR(10), a.Fecha_Corte, 120) Fecha_Corte,
+LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, 
+LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, 
+LTRIM(RTRIM(a.Correo)) Correo, 
+LTRIM(RTRIM(a.Nombre_TH_Tit)) AS Nombre, 
+a.NoCuentaClaro AS NoCuentaVASA
+FROM HEstadoCuenta_BandejaEnvioTC AS a
+INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen 
+AND a.Fecha_Corte = ( SELECT Fechacorte FROM Param_IS_ECTC WHERE Estado = 1 ) 
+WHERE (a.Correo <> '') AND ( a.Correo IN 
+( SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1 ) ) AND ( EXISTS
+( SELECT 1 FROM dbo.EC_Detalle_Envio_Estado_Correo AS Det
+WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte )
+OR a.Pago_Contado_MN != 0 OR a.Pago_Contado_ME != 0 ) ORDER BY a.Correo
+
+
+
+Pero, yo considero que lo mejor es crear un SP 
+
+Este fue el que creé
+
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ConsultarCorreosInvalidosEstadoCuenta]    Script Date: 23/3/2026 09:00:52 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_ConsultarCorreosInvalidosEstadoCuenta]
+AS
+BEGIN
+
+SET NOCOUNT ON;
+
+DECLARE @FechaCorte DATE
+
+SELECT @FechaCorte = FechaCorte
+FROM dbo.ParametrosCorte
+WHERE Estado = 1
+
+
+SELECT
+    h.FechaCorte,
+    TRIM(h.NoTarjeta) AS NoTarjeta,
+    TRIM(h.NoCuenta) AS NoCuenta,
+    TRIM(h.Correo) AS Correo
+
+FROM dbo.BandejaEncabezado h
+
+INNER JOIN dbo.FechaCarga fc
+    ON h.Origen = fc.Origen
+
+WHERE
+
+    h.FechaCorte = @FechaCorte
+
+    AND h.Correo <> ''
+
+    AND h.Correo IN
+    (
+        SELECT Correo
+        FROM dbo.CorreosNoValidos
+        WHERE Estado = 1
+    )
+
+    AND
+    (
+        EXISTS
+        (
+            SELECT 1
+            FROM dbo.BandejaDetalle d
+            WHERE d.ECDetalleNoCuenta = h.NoCuenta
+            AND d.FechaCorte = h.FechaCorte
+        )
+
+        OR h.PagoContadoMN <> 0
+        OR h.PagoContadoME <> 0
+    )
+
+ORDER BY h.Correo
+
+END
+
+
+
+
+Para de esa forma llamar directamente el usp, que piensas?
+
+
+
+
+
+
+Paso 03. Insert no Validos con estatus no enviados (Tarea de flujo de datos)
+
+Paso 03.1. OLE DB Source
+
+Modo de acceso a datos: Comando SQL de variable 
+
+Nombre de variable User::QueryCNV 
+
+
+Valor de variable:
+
+SELECT CONVERT(VARCHAR(10), a.Fecha_Corte, 120) Fecha_Corte, LTRIM(RTRIM(a.No_Tarjeta)) No_Tarjeta, LTRIM(RTRIM(a.No_Cuenta)) No_Cuenta, LTRIM(RTRIM(a.Correo)) Correo, LTRIM(RTRIM(a.Nombre_TH_Tit)) AS Nombre, a.NoCuentaClaro AS NoCuentaVASA FROM HEstadoCuenta_BandejaEnvioTC AS a INNER JOIN dbo.FechaCarga AS fc ON a.Origen = fc.Origen AND a.Fecha_Corte = ( SELECT Fechacorte FROM Param_IS_ECTC WHERE Estado = 1 ) WHERE (a.Correo <> '') AND ( a.Correo IN ( SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1 ) ) AND ( EXISTS ( SELECT 1 FROM dbo.EC_Detalle_Envio_Estado_Correo AS Det WHERE Det.EC_DetalleNo_Cuenta = a.No_Cuenta AND Det.Fecha_Corte = a.Fecha_Corte ) OR a.Pago_Contado_MN != 0 OR a.Pago_Contado_ME != 0 ) ORDER BY a.Correo
+
+Salida de error 
+OLEDB Source Output
+
+Fecha_Corte    Error de componente 				Error de componente 			Conversion
+No_Tarjeta    Error de componente 				Error de componente 			Conversion
+No_Cuenta    Error de componente 				Error de componente 			Conversion
+Correo    Error de componente 				Error de componente 			Conversion
+Nombre    Error de componente 				Error de componente 			Conversion
+NoCuentaVASA    Error de componente 				Error de componente 			Conversion
+
+
+Paso 03.2. Derived Column
+
+Estado		<add as new column>		1		entero de cuatro bytes con signo [DT_I4]								
+
+
+Configurar Salida de errores: 
+
+Derived COlumn Output 
+Estado    Error de Componente     Error de Componente    Computation
+
+
+Paso 03.3. OLEDB Destino
+
+
+Modo de acceso a datos_: Carga rapida de tabla o vista
+
+Nombre de la tabla: HistoricoCorreosECTC
+
+
+Salida de Error: OLEDB Destination Input                           Error de componente                             Insert
+
+
+
+
+
+
+
+Paso 04 Este tiene una linea roja que dice Error : Error insert no enviados (Tarea Enviar Correo)
+
+STMPConnection: SMTP
+From EstadoCuentaTC@banpais.hn
+To: pamelas@banpais.hn
+Subject: Error en tarea Insert No Enviados
+MessageSourceType: Variable
+MessageSource: User::Error
+Priority: Normal
+
+
+
+
+Expresiones:
+
+
+ToLine: 
+@[User::CorreoError]
