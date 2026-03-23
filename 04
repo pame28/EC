@@ -1,65 +1,149 @@
-Oki mira, mi SP quedó asi:
-
-USE [EstadosCuentaJSONProcesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricoCorreosEC]    Script Date: 23/3/2026 10:37:29 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[usp_LimpiarTablaHistoricoCorreosEC]
-    @Tipo VARCHAR(20)
-AS
-BEGIN
-
-    IF(@Tipo = 'COMPLETA')
-        TRUNCATE TABLE [dbo].[HistoricoCorreosEC];
-
-    IF(@Tipo = 'NOVALIDOS')
-        DELETE FROM [dbo].[HistoricoCorreosEC]
-        WHERE CorreoCliente IN (
-            SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1
-        )
-        AND Estado = 0;
-
-END
+Fijate que para el envio de correo ya lo he hecho antes utilizanod un servidor que la empresa dispone para eso.. mira este ejemplo: 
+using reposicion_pin.Infrastructure.Data;
+using reposicion_pin.Models;
+using reposicion_pin.Repository.Interface;
+using System.Net.Mail;
+using System.Net.Mime;
+using System.Reflection;
 
 
+namespace reposicion_pin.Repository
+{
+    public class EnvioEmailRepository : IEnvioEmailRepository
+    {
+        private readonly AppDbContext _dbContext;
+        private readonly ILogger<EnvioEmailRepository> _logger;
+        private readonly IWebHostEnvironment _env;
+        private readonly ParamAmbienteModel? _paramAmbiente;
+
+        private readonly string _serverEmail;
+        private readonly string _mailFrom;
+        private readonly string _mailSubject;
+        private readonly string _plantillaHTML;
+
+        public EnvioEmailRepository(
+            AppDbContext dbContext,
+            ILogger<EnvioEmailRepository> logger,
+            IWebHostEnvironment env)
+        {
+            _dbContext = dbContext;
+            _logger = logger;
+            _env = env;
+
+            var configEmail = _dbContext
+                .usp_ObtenerConfigEmail
+                .AsEnumerable()
+                .FirstOrDefault();
+
+            if (configEmail == null)
+                throw new Exception("No se encontró configuración de ConfigEmail.");
+
+            _serverEmail = configEmail.ServerEmail;
+            _mailFrom = configEmail.MailFrom;
+            _mailSubject = configEmail.MailSubject;
+            _plantillaHTML = configEmail.PlantillaHTML;
+
+            _paramAmbiente = _dbContext.ParamAmbiente
+                .Where(p => p.Estado == 1)
+                .OrderBy(p => p.IdRow)
+                .FirstOrDefault();
+        }
+
+        public async Task<(int Codigo, string Mensaje, string MailFrom, string MailSubject)> EnviarCorreoAsync(
+     string correoDestino,
+     string cuerpoBase,
+     string pin,
+     string referencia,
+     CancellationToken cancellationToken)
+        {
+            try
+            {
+                string correoFinal = _paramAmbiente?.Correo ?? correoDestino;
+
+                string cuerpoFinal = cuerpoBase.Replace("@PIN", pin);
+                string htmlFinal = _plantillaHTML.Replace("@ContenidoEmail", cuerpoFinal);
+
+                using var smtp = new SmtpClient(_serverEmail)
+                {
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = true
+                };
+
+                using var mail = new MailMessage
+                {
+                    From = new MailAddress(_mailFrom),
+                    Subject = _mailSubject,
+                    IsBodyHtml = true
+                };
+
+                mail.To.Add(correoFinal);
+
+                // Crear vista HTML
+                var htmlView = AlternateView.CreateAlternateViewFromString(
+                    htmlFinal,
+                    null,
+                    MediaTypeNames.Text.Html);
+
+                // Logo
+                //var logoPath = Path.Combine(_env.ContentRootPath, "Assets", "logoBanpais.png");
+                //var logo = new LinkedResource(logoPath, MediaTypeNames.Image.Png)
+                //{
+                //    ContentId = "logoBanpais",
+                //    TransferEncoding = TransferEncoding.Base64
+                //};
+
+                var assembly = Assembly.GetExecutingAssembly();
+
+                var logoStream = assembly.GetManifestResourceStream("reposicion_pin.Assets.logoBanpais.png");
+                var logo = new LinkedResource(logoStream!, MediaTypeNames.Image.Png)
+                {
+                    ContentId = "logoBanpais",
+                    TransferEncoding = TransferEncoding.Base64
+                };
+
+
+                // Footer
+                //var footerPath = Path.Combine(_env.ContentRootPath, "Assets", "footerBanpais.png");
+                //var footer = new LinkedResource(footerPath, MediaTypeNames.Image.Png)
+                //{
+                //    ContentId = "footerBanpais",
+                //    TransferEncoding = TransferEncoding.Base64
+                //};
 
 
 
+                var footerStream = assembly.GetManifestResourceStream("reposicion_pin.Assets.footerBanpais.png");
+                var footer = new LinkedResource(footerStream!, MediaTypeNames.Image.Png)
+                {
+                    ContentId = "footerBanpais",
+                    TransferEncoding = TransferEncoding.Base64
+                };
+
+                htmlView.LinkedResources.Add(logo);
+                htmlView.LinkedResources.Add(footer);
+
+                mail.AlternateViews.Add(htmlView);
+
+                await smtp.SendMailAsync(mail, cancellationToken);
+
+                _logger.LogInformation(
+                    "Correo enviado Ref:{Referencia} Destino:{Destino}",
+                    referencia, correoFinal);
+
+                return (0, "Correo enviado correctamente.", _mailFrom, _mailSubject);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error enviando correo Ref:{Referencia} Destino:{Destino}",
+                    referencia, correoDestino);
+
+                return (8, ex.Message, _mailFrom, _mailSubject);
+            }
+        }
+    }
+}
 
 
 
-
-Y mi tabla asi:
-
-USE [EstadosCuentaJSONProcesador]
-GO
-
-/****** Object:  Table [dbo].[HistoricoCorreosECTC]    Script Date: 23/3/2026 10:23:48 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE TABLE [dbo].[HistoricoCorreosEC](
-	[IdRow] [int] IDENTITY(1,1) NOT NULL,
-	[FechaCorte] [date] NOT NULL,
-	[NoCuenta] [varchar](25) NOT NULL,
-	[NoCuentaVASA] [varchar](25) NOT NULL,
-	[Nombre] [varchar](255) NOT NULL,
-	[CorreoCliente] [varchar](255) NOT NULL,
-	[Estado] [char](2) NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[IdRow] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-
-
-
-
-Ya sabiendo esto, ayudame a birndarme de nuevo los archovos de repository, service y program actualizado, por favor
+Entonces espero que lo consumamos asi, me comprendes?
