@@ -1,14 +1,23 @@
-CREATE PROCEDURE dbo.usp_LimpiarHistoricoCorreos
+Oki mira, mi SP quedó asi:
+
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LimpiarTablaHistoricoCorreosEC]    Script Date: 23/3/2026 10:37:29 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_LimpiarTablaHistoricoCorreosEC]
     @Tipo VARCHAR(20)
 AS
 BEGIN
 
     IF(@Tipo = 'COMPLETA')
-        TRUNCATE TABLE dbo.HistoricoCorreos;
+        TRUNCATE TABLE [dbo].[HistoricoCorreosEC];
 
     IF(@Tipo = 'NOVALIDOS')
-        DELETE FROM dbo.HistoricoCorreos
-        WHERE Correo IN (
+        DELETE FROM [dbo].[HistoricoCorreosEC]
+        WHERE CorreoCliente IN (
             SELECT Correo FROM dbo.CorreosNoValidos WHERE Estado = 1
         )
         AND Estado = 0;
@@ -23,9 +32,34 @@ END
 
 
 
+Y mi tabla asi:
+
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[HistoricoCorreosECTC]    Script Date: 23/3/2026 10:23:48 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[HistoricoCorreosEC](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NOT NULL,
+	[NoCuenta] [varchar](25) NOT NULL,
+	[NoCuentaVASA] [varchar](25) NOT NULL,
+	[Nombre] [varchar](255) NOT NULL,
+	[CorreoCliente] [varchar](255) NOT NULL,
+	[Estado] [char](2) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
 
 
 
 
-
-
+Ya sabiendo esto, ayudame a birndarme de nuevo los archovos de repository, service y program actualizado, por favor
