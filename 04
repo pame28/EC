@@ -1,17 +1,108 @@
-Mira, no se porque se me estan duplicando las lineas cuando hago el join
+Ok mira, ya está la Fase #1: Prepara Data del Corte
+
+El Program.cs quedó asi :
+
+using EstadosCuentaTC.Data;
 
 
- --9324
-SELECT a.* FROM EstadoCuentaFinanciamientos a
-INNER JOIN EstadoCuentaEncabezado b ON  b.NoCuenta = a.NumeroCuenta 
- where a.FechaCierre ='2026-03-10 00:00:00.000';
+namespace EstadosCuentaTC.Services
+{
+    public class PreparaDataService
+    {
+        private readonly SqlExecutor _sql;
+
+        public PreparaDataService(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public void Ejecutar()
+        {
+            Console.WriteLine("Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento");
+            _sql.Execute("EXEC dbo.usp_LlenarBandejas");
+
+            Console.WriteLine("Paso 2: Limpiando bandeja Estado Cuenta");
+            _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Limpiar'");
+
+            Console.WriteLine("Paso 3: Llenando bandeja Estado Cuenta");
+            _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Llenar'");
+        }
+    }
+}
+
+
+Y el Executer quedó asi:
+using Microsoft.Data.SqlClient;
+
+namespace EstadosCuentaTC.Data
+{
+    public class SqlExecutor
+    {
+        private readonly string _connectionString;
+
+        public SqlExecutor(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public SqlConnection GetConnection()
+        {
+            var conn = new SqlConnection(_connectionString);
+            conn.Open();
+            return conn;
+        }
+
+
+        public void Execute(string sql)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+
+            cmd.CommandType = System.Data.CommandType.Text;
+
+            cmd.ExecuteNonQuery();
+        }
+
+
+        public void Execute(string sql, Dictionary<string, object> parameters)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+
+            cmd.CommandType = System.Data.CommandType.Text;
+
+            foreach (var param in parameters)
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+            }
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+}
 
 
 
- --9292
- SELECT a.* FROM EstadoCuentaFinanciamientos a
- where a.FechaCierre ='2026-03-10 00:00:00.000';
+Ahorita estamos trabajando la Fase #2: Correos No Válidos
+
+Creamos:
+
+ConfigEmailDto
+CorreoNoValidoDto
+ConfigRepository
+CorreosRepository
+EmailRepository
+CorreosService
+
+Tambien creamos una tabla para guardar los datos para el envio de email
+SELECT TOP (1000) [Id]
+      ,[Tipo]
+      ,[SmtpServer]
+      ,[MailFrom]
+      ,[MailSubject]
+      ,[CorreoDestino]
+      ,[Estado]
+  FROM [EstadosCuentaJSONProcesador].[dbo].[ParametrosEmail]
 
 
-
-Y lo peor es que solo hay un registro de cada lado, no entiendo
+Pero no hicimos bien el Program.cs recuerda que es una continuación de lo que ya existe... porque son como pasos a seguir, comprendes?
