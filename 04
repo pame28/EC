@@ -1,53 +1,63 @@
+using EstadosCuentaTC.Data;
 using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace EstadosCuentaTC.Services
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// 🔹 Logger
+var loggerFactory = LoggerFactory.Create(builder =>
 {
-    public class CorreosService
-    {
-        private readonly CorreosRepository _repo;
-        private readonly EmailRepository _email;
-        private readonly ILogger<CorreosService> _logger;
+    builder.AddConsole();
+});
 
-        public CorreosService(
-            CorreosRepository repo,
-            EmailRepository email,
-            ILogger<CorreosService> logger)
-        {
-            _repo = repo;
-            _email = email;
-            _logger = logger;
-        }
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
 
-        public async Task EjecutarAsync()
-        {
-            try
-            {
-                _logger.LogInformation("Inicio Correos No Válidos");
+// 🔹 Infraestructura
+var sql = new SqlExecutor(connectionString);
 
-                _repo.LimpiarHistorico("NOVALIDOS");
+// 🔹 FASE 1
+var prepara = new PreparaDataService(sql);
 
-                var lista = _repo.ObtenerCorreosNoValidos();
+// 🔹 Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
 
-                _logger.LogInformation("Cantidad: {count}", lista.Count);
+// 🔹 FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
 
-                if (lista.Any())
-                    _repo.InsertarHistorico(lista);
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
 
-                _logger.LogInformation("Fin Correos No Válidos");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error proceso");
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
 
-                await _email.EnviarAsync("ERROR", ex.Message);
-            }
-        }
-    }
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.EjecutarAsync();
+
+    Console.WriteLine("\n========== FIN PROCESO ==========");
 }
-
-
-Mira, este es el service que habiamos creado, cual seria la actualización en el prpgram?
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
