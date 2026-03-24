@@ -1,108 +1,45 @@
-Ok mira, ya está la Fase #1: Prepara Data del Corte
-
-El Program.cs quedó asi :
-
 using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
 
-namespace EstadosCuentaTC.Services
+var config = builder.Build();
+var connectionString = config.GetConnectionString("DefaultConnection");
+
+// 🔹 Infraestructura base
+var sql = new SqlExecutor(connectionString);
+
+// 🔹 FASE 1: PREPARA DATA
+var prepara = new PreparaDataService(sql);
+
+// 🔹 FASE 2: CORREOS NO VALIDOS
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo);
+var correosService = new CorreosService(sql, correosRepo, emailRepo);
+
+try
 {
-    public class PreparaDataService
-    {
-        private readonly SqlExecutor _sql;
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
 
-        public PreparaDataService(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
 
-        public void Ejecutar()
-        {
-            Console.WriteLine("Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento");
-            _sql.Execute("EXEC dbo.usp_LlenarBandejas");
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    correosService.Ejecutar();
 
-            Console.WriteLine("Paso 2: Limpiando bandeja Estado Cuenta");
-            _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Limpiar'");
-
-            Console.WriteLine("Paso 3: Llenando bandeja Estado Cuenta");
-            _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Llenar'");
-        }
-    }
+    Console.WriteLine("\n========== FIN PROCESO ==========");
 }
-
-
-Y el Executer quedó asi:
-using Microsoft.Data.SqlClient;
-
-namespace EstadosCuentaTC.Data
+catch (Exception ex)
 {
-    public class SqlExecutor
-    {
-        private readonly string _connectionString;
-
-        public SqlExecutor(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        public SqlConnection GetConnection()
-        {
-            var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            return conn;
-        }
-
-
-        public void Execute(string sql)
-        {
-            using var conn = GetConnection();
-            using var cmd = new SqlCommand(sql, conn);
-
-            cmd.CommandType = System.Data.CommandType.Text;
-
-            cmd.ExecuteNonQuery();
-        }
-
-
-        public void Execute(string sql, Dictionary<string, object> parameters)
-        {
-            using var conn = GetConnection();
-            using var cmd = new SqlCommand(sql, conn);
-
-            cmd.CommandType = System.Data.CommandType.Text;
-
-            foreach (var param in parameters)
-            {
-                cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-            }
-
-            cmd.ExecuteNonQuery();
-        }
-    }
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
 }
-
-
-
-Ahorita estamos trabajando la Fase #2: Correos No Válidos
-
-Creamos:
-
-ConfigEmailDto
-CorreoNoValidoDto
-ConfigRepository
-CorreosRepository
-EmailRepository
-CorreosService
-
-Tambien creamos una tabla para guardar los datos para el envio de email
-SELECT TOP (1000) [Id]
-      ,[Tipo]
-      ,[SmtpServer]
-      ,[MailFrom]
-      ,[MailSubject]
-      ,[CorreoDestino]
-      ,[Estado]
-  FROM [EstadosCuentaJSONProcesador].[dbo].[ParametrosEmail]
-
-
-Pero no hicimos bien el Program.cs recuerda que es una continuación de lo que ya existe... porque son como pasos a seguir, comprendes?
