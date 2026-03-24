@@ -1,45 +1,17 @@
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Repositories;
-using EstadosCuentaTC.Services;
-using Microsoft.Extensions.Configuration;
-
-var builder = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: false);
-
-var config = builder.Build();
-var connectionString = config.GetConnectionString("DefaultConnection");
-
-// 🔹 Infraestructura base
-var sql = new SqlExecutor(connectionString);
-
-// 🔹 FASE 1: PREPARA DATA
-var prepara = new PreparaDataService(sql);
-
-// 🔹 FASE 2: CORREOS NO VALIDOS
-var configRepo = new ConfigRepository(sql);
-var correosRepo = new CorreosRepository(sql);
-var emailRepo = new EmailRepository(configRepo);
-var correosService = new CorreosService(sql, correosRepo, emailRepo);
-
-try
-{
-    Console.WriteLine("========== INICIO PROCESO ==========\n");
-
-    // =========================
-    // FASE 1
-    // =========================
-    Console.WriteLine("FASE 1: PREPARA DATA");
-    prepara.Ejecutar();
-
-    // =========================
-    // FASE 2
-    // =========================
-    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
-    correosService.Ejecutar();
-
-    Console.WriteLine("\n========== FIN PROCESO ==========");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
-}
+No se ha dado ningún argumento que corresponda al parámetro requerido "logger" de "EmailRepository.EmailRepository(ConfigRepository, ILogger<EmailRepository>)"
+Argumento 1: no se puede convertir de 'EstadosCuentaTC.Data.SqlExecutor' a 'EstadosCuentaTC.Repositories.CorreosRepository'
+Argumento 2: no se puede convertir de 'EstadosCuentaTC.Repositories.CorreosRepository' a 'EstadosCuentaTC.Repositories.EmailRepository'
+Argumento 3: no se puede convertir de 'EstadosCuentaTC.Repositories.EmailRepository' a 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.CorreosService>'
+"CorreosService" no contiene una definición para "Ejecutar" ni un método de extensión accesible "Ejecutar" que acepte un primer argumento del tipo "CorreosService" (¿falta alguna directiva using o una referencia de ensamblado?)
+Posible argumento de referencia nulo para el parámetro "connectionString" en "SqlExecutor.SqlExecutor(string connectionString)".
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible asignación de referencia nula.
+Posible tipo de valor devuelto de referencia nulo.
