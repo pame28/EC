@@ -1,63 +1,128 @@
+Argumento 2: no se puede convertir de 'Microsoft.Data.SqlClient.SqlParameter' a 'System.Collections.Generic.Dictionary<string, object>'
+
 using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Repositories;
-using EstadosCuentaTC.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-var builder = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: false);
-
-var config = builder.Build();
-
-var connectionString = config.GetConnectionString("DefaultConnection")
-    ?? throw new Exception("ConnectionString no configurado");
-
-// 🔹 Logger
-var loggerFactory = LoggerFactory.Create(builder =>
+namespace EstadosCuentaTC.Repositories
 {
-    builder.AddConsole();
-});
+    public class CorreosRepository
+    {
+        private readonly SqlExecutor _sql;
 
-var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
-var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+        public CorreosRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
 
-// 🔹 Infraestructura
-var sql = new SqlExecutor(connectionString);
+        public void LimpiarHistorico(string tipo)
+        {
+            _sql.Execute("usp_LimpiarTablaHistoricoCorreosEC",
+                new SqlParameter("@Tipo", tipo));
+        }
 
-// 🔹 FASE 1
-var prepara = new PreparaDataService(sql);
+        public List<CorreoNoValidoDto> ObtenerCorreosNoValidos()
+        {
+            var lista = new List<CorreoNoValidoDto>();
 
-// 🔹 Repos
-var configRepo = new ConfigRepository(sql);
-var correosRepo = new CorreosRepository(sql);
-var emailRepo = new EmailRepository(configRepo, loggerEmail);
+            using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("usp_ConsultarCorreosInvalidosEstadoCuenta", conn);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
-// 🔹 FASE 2
-var correosService = new CorreosService(
-    correosRepo,
-    emailRepo,
-    loggerCorreos
-);
+            using var reader = cmd.ExecuteReader();
 
-try
-{
-    Console.WriteLine("========== INICIO PROCESO ==========\n");
+            while (reader.Read())
+            {
+                lista.Add(new CorreoNoValidoDto
+                {
+                    FechaCorte = (DateTime)reader["FechaCorte"],
+                    NoCuenta = reader["NoCuenta"].ToString(),
+                    NoCuentaVASA = reader["NoCuentaVASA"].ToString(),
+                    Nombre = reader["Nombre"].ToString(),
+                    Correo = reader["Correo"].ToString()
+                });
+            }
 
-    // =========================
-    // FASE 1
-    // =========================
-    Console.WriteLine("FASE 1: PREPARA DATA");
-    prepara.Ejecutar();
+            return lista;
+        }
 
-    // =========================
-    // FASE 2
-    // =========================
-    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
-    await correosService.EjecutarAsync();
+        public void InsertarHistorico(List<CorreoNoValidoDto> lista)
+        {
+            using var conn = _sql.GetConnection();
 
-    Console.WriteLine("\n========== FIN PROCESO ==========");
+            foreach (var item in lista)
+            {
+                using var cmd = new SqlCommand(@"
+                    INSERT INTO HistoricoCorreosEC
+                    (FechaCorte, NoCuenta, NoCuentaVASA, Nombre, CorreoCliente, Estado)
+                    VALUES (@FechaCorte, @NoCuenta, @NoCuentaVASA, @Nombre, @Correo, 0)
+                ", conn);
+
+                cmd.Parameters.AddWithValue("@FechaCorte", item.FechaCorte);
+                cmd.Parameters.AddWithValue("@NoCuenta", item.NoCuenta);
+                cmd.Parameters.AddWithValue("@NoCuentaVASA", item.NoCuentaVASA ?? "");
+                cmd.Parameters.AddWithValue("@Nombre", item.Nombre ?? "");
+                cmd.Parameters.AddWithValue("@Correo", item.Correo ?? "");
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+    }
 }
-catch (Exception ex)
+
+
+
+
+using Microsoft.Data.SqlClient;
+
+namespace EstadosCuentaTC.Data
 {
-    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+    public class SqlExecutor
+    {
+        private readonly string _connectionString;
+
+        public SqlExecutor(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public SqlConnection GetConnection()
+        {
+            var conn = new SqlConnection(_connectionString);
+            conn.Open();
+            return conn;
+        }
+
+
+        public void Execute(string sql)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+
+            cmd.CommandType = System.Data.CommandType.Text;
+
+            cmd.ExecuteNonQuery();
+        }
+
+
+        public void Execute(string sql, Dictionary<string, object> parameters)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+
+            cmd.CommandType = System.Data.CommandType.Text;
+
+            foreach (var param in parameters)
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+            }
+
+            cmd.ExecuteNonQuery();
+        }
+    }
 }
+
+
