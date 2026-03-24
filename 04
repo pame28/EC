@@ -1,128 +1,14 @@
-Argumento 2: no se puede convertir de 'Microsoft.Data.SqlClient.SqlParameter' a 'System.Collections.Generic.Dictionary<string, object>'
-
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EstadosCuentaTC.Repositories
+public void ExecuteStoredProcedure(string spName, Dictionary<string, object> parameters)
 {
-    public class CorreosRepository
+    using var conn = GetConnection();
+    using var cmd = new SqlCommand(spName, conn);
+
+    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+    foreach (var param in parameters)
     {
-        private readonly SqlExecutor _sql;
-
-        public CorreosRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
-
-        public void LimpiarHistorico(string tipo)
-        {
-            _sql.Execute("usp_LimpiarTablaHistoricoCorreosEC",
-                new SqlParameter("@Tipo", tipo));
-        }
-
-        public List<CorreoNoValidoDto> ObtenerCorreosNoValidos()
-        {
-            var lista = new List<CorreoNoValidoDto>();
-
-            using var conn = _sql.GetConnection();
-            using var cmd = new SqlCommand("usp_ConsultarCorreosInvalidosEstadoCuenta", conn);
-            cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add(new CorreoNoValidoDto
-                {
-                    FechaCorte = (DateTime)reader["FechaCorte"],
-                    NoCuenta = reader["NoCuenta"].ToString(),
-                    NoCuentaVASA = reader["NoCuentaVASA"].ToString(),
-                    Nombre = reader["Nombre"].ToString(),
-                    Correo = reader["Correo"].ToString()
-                });
-            }
-
-            return lista;
-        }
-
-        public void InsertarHistorico(List<CorreoNoValidoDto> lista)
-        {
-            using var conn = _sql.GetConnection();
-
-            foreach (var item in lista)
-            {
-                using var cmd = new SqlCommand(@"
-                    INSERT INTO HistoricoCorreosEC
-                    (FechaCorte, NoCuenta, NoCuentaVASA, Nombre, CorreoCliente, Estado)
-                    VALUES (@FechaCorte, @NoCuenta, @NoCuentaVASA, @Nombre, @Correo, 0)
-                ", conn);
-
-                cmd.Parameters.AddWithValue("@FechaCorte", item.FechaCorte);
-                cmd.Parameters.AddWithValue("@NoCuenta", item.NoCuenta);
-                cmd.Parameters.AddWithValue("@NoCuentaVASA", item.NoCuentaVASA ?? "");
-                cmd.Parameters.AddWithValue("@Nombre", item.Nombre ?? "");
-                cmd.Parameters.AddWithValue("@Correo", item.Correo ?? "");
-
-                cmd.ExecuteNonQuery();
-            }
-        }
+        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
     }
+
+    cmd.ExecuteNonQuery();
 }
-
-
-
-
-using Microsoft.Data.SqlClient;
-
-namespace EstadosCuentaTC.Data
-{
-    public class SqlExecutor
-    {
-        private readonly string _connectionString;
-
-        public SqlExecutor(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        public SqlConnection GetConnection()
-        {
-            var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            return conn;
-        }
-
-
-        public void Execute(string sql)
-        {
-            using var conn = GetConnection();
-            using var cmd = new SqlCommand(sql, conn);
-
-            cmd.CommandType = System.Data.CommandType.Text;
-
-            cmd.ExecuteNonQuery();
-        }
-
-
-        public void Execute(string sql, Dictionary<string, object> parameters)
-        {
-            using var conn = GetConnection();
-            using var cmd = new SqlCommand(sql, conn);
-
-            cmd.CommandType = System.Data.CommandType.Text;
-
-            foreach (var param in parameters)
-            {
-                cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-            }
-
-            cmd.ExecuteNonQuery();
-        }
-    }
-}
-
-
