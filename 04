@@ -1,22 +1,134 @@
-========== INICIO PROCESO ==========
+Ok mira ya ahorita vamos por la fase 4: Parámetros
 
-FASE 1: PREPARA DATA
-Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento
-Paso 2: Limpiando bandeja Estado Cuenta
-Paso 3: Llenando bandeja Estado Cuenta
+Esta fase cuenta con 6 pasos que te los voy desglosando a continuación:
 
-FASE 2: CORREOS NO VALIDOS
-info: EstadosCuentaTC.Services.CorreosService[0]
-      Inicio Correos No Válidos
-fail: EstadosCuentaTC.Services.CorreosService[0]
-      Error proceso
-      System.IndexOutOfRangeException: NoCuentaVASA
-         at Microsoft.Data.ProviderBase.FieldNameLookup.GetOrdinal(String fieldName)
-         at Microsoft.Data.SqlClient.SqlDataReader.GetOrdinal(String name)
-         at Microsoft.Data.SqlClient.SqlDataReader.get_Item(String name)
-         at EstadosCuentaTC.Repositories.CorreosRepository.ObtenerCorreosNoValidos() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\CorreosRepository.cs:line 41
-         at EstadosCuentaTC.Services.CorreosService.EjecutarAsync() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\CorreosService.cs:line 33
-info: EstadosCuentaTC.Repositories.EmailRepository[0]
-      Correo tipo ERROR enviado a pamelas@banpais.hn
+Paso 01. Obtener Correo Error (Tarea Ejecutar SQL): 
 
-========== FIN PROCESO ==========
+select Correo from Param_CorreosEC where Tipo='T' and Estado=1;
+
+Este es basicamente la direccion de correo donde van a enviar los correos para informar que hubo un error en la generación
+
+Que si no recuerdad nosotros tenemos esta tabla parametrizada:
+
+
+SELECT * FROM ParametrosEmail
+
+Id	Tipo	SmtpServer	MailFrom	MailSubject	CorreoDestino	Estado
+1	ERROR	PRD-CAS1	EstadoCuentaTC@banpais.hn	Error proceso EC	pamelas@banpais.hn	1
+2	REPORTE	PRD-CAS1	EstadoCuentaTC@banpais.hn	Reporte EC generado	pamelas@banpais.hn	1
+3	NOTIFICACION	PRD-CAS1	EstadoCuentaTC@banpais.hn	Estado de cuenta disponible	pamelas@banpais.hn	1
+
+
+
+
+Paso 02. Obtener queries(Tarea Ejecutar SQL):
+
+Este llama un SP: usp_ObtenerQuery
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ObtenerQuery]    Script Date: 25/3/2026 11:00:34 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+
+
+
+ALTER PROCEDURE [dbo].[usp_ObtenerQuery]
+
+AS
+BEGIN
+DECLARE @FechaCorte DATE;
+SELECT @FechaCorte=FechaCorte FROM Param_IS_ECTC WHERE Estado=1;
+
+--		SELECT Query, CantQuery,RutaArchivoJson, RutaArchivoHistoricoJson, @FechaCorte AS FechaCorte
+		SELECT 
+		Query, 
+		--CantQuery,
+		'SELECT (select COUNT(*) from BandejaECTC B where B.Estado=2) as "Registros"' CantQuery, 
+		RutaArchivoJson, 
+		RutaArchivoHistoricoJson, 
+		@FechaCorte AS FechaCorte, 
+		Llave, 
+		'LOTE' TipoGeneracion, 
+		100000 CantidadEjecucion, 
+		20 CantidadLotes, 
+		'SELECT CEILING (((select COUNT(*) from BandejaECTCJson B where B.Estado=2)*1.0)/20) as "RegistrosPorLote"' QueryRegistrosPorLote
+		FROM EstadoCuentaHTML WHERE IdRows=1;
+
+END
+
+
+Ok, aqui se llaman 4 tablas diferentes ... Te voy a mostrar su estructura:
+
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[EstadoCuentaHTML]    Script Date: 25/3/2026 11:03:13 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[EstadoCuentaHTML](
+	[IdRows] [int] NOT NULL,
+	[E_EstadoCuenta] [text] NULL,
+	[D_EstadoCuentaH] [text] NULL,
+	[D_EstadoCuentaM] [text] NULL,
+	[D_EstadoCuentaF] [text] NULL,
+	[F_EstadoCuentaH] [text] NULL,
+	[F_EstadoCuentaM] [text] NULL,
+	[F_EstadoCuentaF] [text] NULL,
+	[M_EstadoCuenta] [text] NULL,
+	[Query] [varchar](max) NULL,
+	[Ambiente] [varchar](5) NULL,
+	[QueryCNV] [text] NULL,
+	[CantQuery] [text] NULL,
+	[DireccionRPT] [varchar](max) NULL,
+	[RutaArchivoJson] [varchar](50) NULL,
+	[RutaArchivoHistoricoJson] [varchar](50) NULL,
+	[Llave] [varchar](100) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+-------------------
+
+
+
+USE [BPTarjetas]
+GO
+
+/****** Object:  Table [dbo].[Param_IS_ECTC]    Script Date: 25/3/2026 11:03:58 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Param_IS_ECTC](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NULL,
+	[Destinatario] [varchar](30) NULL,
+	[Remitente] [varchar](30) NULL,
+	[Estado] [char](1) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+
+-----------------------------
+
+
+
