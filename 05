@@ -1,104 +1,23 @@
-# =========================
-# BUILD STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+$ curl -v https://apicreditcardservicede.banpais.hn/gateway/key-byte
+* Host apicreditcardservicede.banpais.hn:443 was resolved.
+* IPv6: (none)
+* IPv4: 10.100.204.103
+*   Trying 10.100.204.103:443...
+* Connected to apicreditcardservicede.banpais.hn (10.100.204.103) port 443
+* ALPN: curl offers h2,http/1.1
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+* TLSv1.3 (OUT), TLS alert, unknown CA (560):
+* SSL certificate problem: unable to get local issuer certificate
+* Closing connection
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
 
-# Copiar proyecto
-COPY *.csproj ./
-COPY nuget.config ./
-
-# (Opcional) Certificado para restore si usas proxy
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates || true
-
-ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
-
-RUN dotnet restore
-
-# =========================
-# INSTALAR ODBC + IBM
-# =========================
-COPY odbc-libraries/*.deb /tmp/odbc/
-
-RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
-    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
-    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
-    dpkg -i /tmp/odbc/libodbc2*.deb || true && \
-    dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
-    dpkg -i /tmp/odbc/odbcinst*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
-    dpkg -i /tmp/odbc/wget*.deb || true && \
-    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
-    apt-get update && \
-    apt-get -y --fix-broken install
-
-ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64
-
-# Copiar código
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
-
-# =========================
-# SNAPSHOT ODBC
-# =========================
-RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
-    find / -name "libodbc.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libodbcinst.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libltdl.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
-    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
-
-# =========================
-# RUNTIME STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
-WORKDIR /app
-
-# 🔥 Instalar herramientas de debug SSL
-RUN apt-get update && apt-get install -y curl openssl
-
-# 🔥 Certificados en runtime (CLAVE)
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates
-
-# App
-COPY --from=build /app/publish .
-
-# ODBC
-COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
-COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
-COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
-COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
-
-# Permisos OpenShift
-RUN chmod -R a+r /opt/odbc || true && \
-    chmod -R a+rx /opt/odbc/bin || true && \
-    chmod -R a+r /opt/ibm || true
-
-# =========================
-# CONFIGURACIÓN DEL DRIVER
-# =========================
-RUN mkdir -p /opt/odbc && \
-    printf '%s\n' \
-    '[IBM i Access ODBC Driver]' \
-    'Description=IBM i Access for Linux ODBC Driver' \
-    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
-    'FileUsage=1' \
-    > /opt/odbc/odbcinst.ini
-
-# Registrar driver
-RUN /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true
-
-# Cache librerías
-RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
-
-# VARIABLES
-ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64
-ENV ODBCSYSINI=/opt/odbc
-ENV ODBCINI=/opt/odbc/odbc.ini
-
-ENTRYPOINT ["dotnet", "Criptografia.dll"]
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+$ ^C
