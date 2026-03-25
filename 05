@@ -1,100 +1,34 @@
-Fijate que tengo algo bien similar en el DockerFile, hazme saber si eso deberia funcionar o no :c 
-
-# =========================
-# BUILD STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
-
-# Copiar proyecto
-COPY *.csproj ./
-COPY nuget.config ./
-
-# Certificado corporativo
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates || true
-
-ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
-ENV DOTNET_SYSTEM_NET_HTTP_SSL_CERTIFICATE_PATH=/usr/local/share/ca-certificates/proxy-root.crt
-
-RUN dotnet restore
-
-# =========================
-# INSTALAR ODBC + IBM
-# =========================
-COPY odbc-libraries/*.deb /tmp/odbc/
-
-RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
-    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
-    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
-    dpkg -i /tmp/odbc/libodbc2*.deb || true && \
-    dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
-    dpkg -i /tmp/odbc/odbcinst*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
-    dpkg -i /tmp/odbc/wget*.deb || true && \
-    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
-    apt-get update && \
-    apt-get -y --fix-broken install
-
-ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64
-
-# Copiar código
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
-
-# =========================
-# SNAPSHOT ODBC (ROBUSTO)
-# =========================
-RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
-    find / -name "libodbc.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libodbcinst.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libltdl.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
-    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
-
-# =========================
-# RUNTIME STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
-WORKDIR /app
-
-# App
-COPY --from=build /app/publish .
-
-# ODBC
-COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
-COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
-COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
-COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
-
-# Permisos OpenShift
-RUN chmod -R a+r /opt/odbc || true && \
-    chmod -R a+rx /opt/odbc/bin || true && \
-    chmod -R a+r /opt/ibm || true
-
-# =========================
-#  CONFIGURACIÓN  DEL DRIVER
-# =========================
-RUN mkdir -p /opt/odbc && \
-    printf '%s\n' \
-    '[IBM i Access ODBC Driver]' \
-    'Description=IBM i Access for Linux ODBC Driver' \
-    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
-    'FileUsage=1' \
-    > /opt/odbc/odbcinst.ini
-
-# Registrar driver
-RUN /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true
-
-# Cache librerías
-RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
-
-#  VARIABLES
-ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64
-ENV ODBCSYSINI=/opt/odbc
-ENV ODBCINI=/opt/odbc/odbc.ini
-
-ENTRYPOINT ["dotnet", "Criptografia.dll"]
+ ls /usr/local/share/ca-certificates/
+proxy-root.crt
+$ ls /etc/ssl/certs | grep proxy
+proxy-root.pem
+$ ls /etc/ssl/cert | head -20 
+ls: cannot access '/etc/ssl/cert': No such file or directory
+$ ls /etc/ssl/certs | head -20
+002c0b4f.0
+0179095f.0
+02265526.0
+062cdee6.0
+064e0aa9.0
+06dc52d5.0
+08063a00.0
+09789157.0
+0a775a30.0
+0b1b94ef.0
+0b9bc432.0
+0bf05006.0
+0f5dc4f3.0
+0f6fa695.0
+1001acf7.0
+106f3e4d.0
+14bc7599.0
+18856ac4.0
+1cef98f5.0
+1d3472b9.0
+$ curl -v https://apicreditcardservicede.banpais.hn
+sh: 5: curl: not found
+$ curl -v https://apicreditcardservicede.banpais.hn/gateway/key-byte
+sh: 6: curl: not found
+$ wget https://apicreditcardservicede.banpais.hn
+sh: 7: wget: not found
+$ ^C
