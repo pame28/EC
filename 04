@@ -754,5 +754,7 @@ END
 
 
 
+Este SP usa tablas que, actualmente ya están migradas 
+
 Para este SP no tengo nada creado aun, mira, hay algo bien importante con este SP y es que... El Json que se crea, se debe crear exactamente como lo crea actualmente. 
 Podemos innovar en cuanto a como generarlo, pero no a su estructura, ni siquiera en los nombres de encabezado, en eso no se puede cambiar, no se quizas podemos usar FOR Json o algo por estilo
