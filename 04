@@ -6,6 +6,11 @@ Paso 01. Obtener Correo Error (Tarea Ejecutar SQL):
 
 select Correo from Param_CorreosEC where Tipo='T' and Estado=1;
 
+Y en el segmento de conjunto de r4esultados tiene:
+
+Nombre de Resultado      Nombre de variable
+0							User::CorreoError
+
 Este es basicamente la direccion de correo donde van a enviar los correos para informar que hubo un error en la generación
 
 Que si no recuerdad nosotros tenemos esta tabla parametrizada:
@@ -24,6 +29,23 @@ Id	Tipo	SmtpServer	MailFrom	MailSubject	CorreoDestino	Estado
 Paso 02. Obtener queries(Tarea Ejecutar SQL):
 
 Este llama un SP: usp_ObtenerQuery
+
+
+Y en el segmento de conjunto de resultados tiene:
+
+Nombre de Resultado      Nombre de variable
+0							User::QueryObtenerEquivalente
+1							User::QueryCant
+2							User::RutaJson
+3							User::FechaCorte
+4							User::RutaHistoricoJson
+5							User::Llave
+6							User::TipoGeneracion
+7							User::CantidadEjecucion
+8							User::CantidadLotes
+9							User::QueryRegistrosPorLote
+
+
 
 USE [BPTarjetas]
 GO
@@ -132,3 +154,605 @@ GO
 
 
 
+
+CREATE TABLE [dbo].[BandejaECTC](
+	[Fecha_Corte] [varchar](15) NULL,
+	[No_Tarjeta] [varchar](50) NULL,
+	[No_Cuenta] [varchar](50) NULL,
+	[Correo] [varchar](max) NULL,
+	[Estado] [varchar](15) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+
+
+
+----------------------------
+
+
+
+
+CREATE TABLE [dbo].[BandejaECTCJson](
+	[Fecha_Corte] [varchar](15) NULL,
+	[No_Tarjeta] [varchar](50) NULL,
+	[No_Cuenta] [varchar](50) NULL,
+	[Correo] [varchar](150) NULL,
+	[Estado] [varchar](15) NULL,
+	[Json] [varchar](max) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+
+
+
+
+
+Ahora te voy a mostrar las que yo creé, que son como sus equivalentes:
+
+Esta equivale a la tabla BandejaECTC:
+
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[BandejaEstadoCuenta]    Script Date: 25/3/2026 11:42:10 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[BandejaEstadoCuenta](
+	[FechaCorte] [date] NULL,
+	[NoTarjeta] [varchar](50) NULL,
+	[NoCuenta] [varchar](50) NULL,
+	[Correo] [varchar](max) NULL,
+	[Estado] [varchar](15) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+
+
+Esta equivale a la tabla Param_IS_ECTC:
+
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[ParametrosCorte]    Script Date: 25/3/2026 11:43:25 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ParametrosCorte](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NULL,
+	[Destinatario] [varchar](30) NULL,
+	[Remitente] [varchar](30) NULL,
+	[Estado] [char](1) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+
+
+Esta equivale a la tabla EstadoCuentaHTML:
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[ParametrosGeneracionEC]    Script Date: 25/3/2026 11:44:10 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ParametrosGeneracionEC](
+	[Id] [int] NOT NULL,
+	[PlantillaEncabezado] [text] NULL,
+	[PlantillaDetalleHeader] [text] NULL,
+	[PlantillaDetalleMovimiento] [text] NULL,
+	[PlantillaDetalleFooter] [text] NULL,
+	[PlantillaFinanciamientoHeader] [text] NULL,
+	[PlantillaFinanciamientoMovimiento] [text] NULL,
+	[PlantillaFinanciamientoFooter] [text] NULL,
+	[PlantillaMensaje] [text] NULL,
+	[QueryPrincipal] [varchar](max) NULL,
+	[Ambiente] [varchar](10) NULL,
+	[QueryCorreosInvalidos] [text] NULL,
+	[QueryConteo] [text] NULL,
+	[DireccionReporte] [varchar](max) NULL,
+	[RutaArchivoJson] [varchar](200) NULL,
+	[RutaArchivoHistoricoJson] [varchar](200) NULL,
+	[LlaveProceso] [varchar](100) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+
+
+La equivalente de la tabla BandejaECTCJson es:
+
+
+CREATE TABLE [dbo].[BandejaEstadoCuentaJson](
+	[FechaCorte] date NULL,
+	[NoTarjeta] [varchar](50) NULL,
+	[NoCuenta] [varchar](50) NULL,
+	[Correo] [varchar](150) NULL,
+	[Estado] [varchar](15) NULL,
+	[Json] [varchar](max) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+
+
+
+Paso 03. Cantidad de Registros (Tarea ejecutar SQL):
+
+User::QueryCant
+
+
+
+Paso 04. Obtener ambiente (Tarea Ejecutar SQL):
+
+select Ambiente from EstadoCuentaHTML where IdRows=1;
+
+Esto devuelve la consulta... no se que tan necesario sea .. o para qué
+Ambiente
+true
+
+
+Paso 05. Crea Contador (Tarea Script):
+
+ReadOnlyVariables   User::FechaCorte,User::RutaJson
+
+
+
+Cuando le doy Editar Script me manda a esto:
+
+   #region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
+
+
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.IO;
+#endregion
+
+namespace ST_6355b1a679f1437385b27e37da69a18f
+{
+	/// <summary>
+	/// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+	/// or parent of this class.
+	/// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+		#region Help:  Using Integration Services variables and parameters in a script
+		/* To use a variable in this script, first ensure that the variable has been added to 
+         * either the list contained in the ReadOnlyVariables property or the list contained in 
+         * the ReadWriteVariables property of this script task, according to whether or not your
+         * code needs to write to the variable.  To add the variable, save this script, close this instance of
+         * Visual Studio, and update the ReadOnlyVariables and 
+         * ReadWriteVariables properties in the Script Transformation Editor window.
+         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
+         * 
+         * Example of reading from a variable:
+         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
+         * 
+         * Example of writing to a variable:
+         *  Dts.Variables["User::myStringVariable"].Value = "new value";
+         * 
+         * Example of reading from a package parameter:
+         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
+         *  
+         * Example of reading from a project parameter:
+         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
+         * 
+         * Example of reading from a sensitive project parameter:
+         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
+         * */
+
+		#endregion
+
+		#region Help:  Firing Integration Services events from a script
+		/* This script task can fire events for logging purposes.
+         * 
+         * Example of firing an error event:
+         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
+         * 
+         * Example of firing an information event:
+         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
+         * 
+         * Example of firing a warning event:
+         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
+         * */
+		#endregion
+
+		#region Help:  Using Integration Services connection managers in a script
+		/* Some types of connection managers can be used in this script task.  See the topic 
+         * "Working with Connection Managers Programatically" for details.
+         * 
+         * Example of using an ADO.Net connection manager:
+         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
+         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
+         *  //Use the connection in some code here, then release the connection
+         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
+         *
+         * Example of using a File connection manager
+         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
+         *  string filePath = (string)rawConnection;
+         *  //Use the connection in some code here, then release the connection
+         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
+         * */
+		#endregion
+
+
+		/// <summary>
+		/// This method is called when this script task executes in the control flow.
+		/// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+		/// To open Help, press F1.
+		/// </summary>
+		public void Main()
+		{
+			// TODO: Add your code here
+			string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString();
+			RutaJson = RutaJson + Convert.ToDateTime( Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
+
+			if (Directory.Exists(@"" + RutaJson + "\\"))
+			{
+				Directory.Delete(@"" + RutaJson + "\\",true);
+			}
+
+			Directory.CreateDirectory(@"" + RutaJson + "\\");
+
+			string path = @"" + RutaJson + "\\" + "Contador.txt";
+			File.WriteAllText(path, "");
+
+			Dts.TaskResult = (int)ScriptResults.Success;
+		}
+
+		#region ScriptResults declaration
+		/// <summary>
+		/// This enum provides a convenient shorthand within the scope of this class for setting the
+		/// result of the script.
+		/// 
+		/// This code was generated automatically.
+		/// </summary>
+		enum ScriptResults
+		{
+			Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+			Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+		};
+		#endregion
+
+	}
+}
+
+
+
+
+
+Paso 06. Cantidad de registros Json (Tarea Ejecutar SQL):
+
+Este ejecuta un SP usp_LlenarBandejaECTCJson
+
+
+
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTCJson]    Script Date: 25/3/2026 14:16:04 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson]
+
+AS
+BEGIN 
+
+	begin
+		CREATE TABLE #DatosEC (
+			[Fecha_Corte] [varchar](15),
+			[No_Tarjeta] [varchar](50),
+			[No_Cuenta] [varchar](50),
+			[Correo] [varchar](150),
+			[Estado] [varchar](15),
+			[Json] [varchar](max)
+		);
+
+		--select * from [dbo].[BandejaECTCJson];
+		Truncate Table  [dbo].[BandejaECTCJson];
+		with tcEstados as (
+			select et.NumeroTarjeta No_Tarjeta, CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) estado from ETarjetas et 
+			where CONVERT(varchar(10), et.FechaCarga, 103) + et.NumeroTarjeta  in (
+				select CONVERT(varchar(10), max(etfc.FechaCarga), 103) + etfc.NumeroTarjeta  tar from ETarjetas etfc
+				where etfc.NumeroTarjeta in (select No_Tarjeta from [dbo].[BandejaECTC])
+				group by etfc.NumeroTarjeta
+			)
+		)
+		insert into #DatosEC
+		SELECT 
+			hc.Fecha_Corte,
+			hc.No_Tarjeta,
+			hc.no_cuenta,
+			hc.correo,
+			'2',
+			'"'+hc.No_Tarjeta+'":{' +
+			'"Encabezado": {'
+				+ '"Origen": "' + LTRIM(RTRIM(ISNULL(hc.Origen, '')))
+				+ '","Emisor": "' + LTRIM(RTRIM(ISNULL(hc.Emisor, '')))
+				+ '","No_Cuenta": "' + LTRIM(RTRIM(ISNULL(hc.No_Cuenta, '')))
+				+ '","Nombre_TH_Tit": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Emisor_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Emisor_Madre, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Cuenta_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Cuenta_Madre, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Nombre_Empresa": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Nombre_Empresa, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Tipo_Tarjeta": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Tipo_Tarjeta, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","No_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.No_Tarjeta, '')))
+				+ '","Fecha_Pago": "' + CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Pago, ''),103)
+				+ '","Fecha_Corte": "' + CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Corte, ''),103)
+				+ '","Pago_Contado_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Contado_MN, 0))
+				+ ',"Pago_Minimo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Minimo_MN, 0))
+				+ ',"Saldo_Vencido_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Vencido_MN, 0))
+				+ ',"Saldo_Anterior_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Anterior_MN, 0))
+				+ ',"Saldo_Final_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Final_MN, 0))
+				+ ',"Compras_Deb_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Compras_Deb_MN, 0))
+				+ ',"Pagos_Cred_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Pagos_Cred_MN, 0))
+				+ ',"Sobregiro_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Sobregiro_MN, 0))
+				+ ',"Cuota_Mes_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Cuota_Mes_MN, 0))
+				+ ',"Pago_Contado_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Contado_ME, 0))
+				+ ',"Pago_Minimo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pago_Minimo_ME, 0))
+				+ ',"Saldo_Vencido_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Vencido_ME, 0))
+				+ ',"Saldo_Anterior_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Anterior_ME, 0))
+				+ ',"Saldo_Final_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Saldo_Final_ME, 0))
+				+ ',"Saldo_Consumo_MN": ' + CONVERT(VARCHAR, ISNULL((hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN), 0))
+				+ ',"Saldo_Consumo_ME": ' + CONVERT(VARCHAR, ISNULL((hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME), 0))
+				+ ',"Compras_Deb_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Compras_Deb_ME, 0))
+				+ ',"Pagos_Cred_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Pagos_Cred_ME, 0))
+				+ ',"Sobregiro_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Sobregiro_ME, 0))
+				+ ',"Cuota_Mes_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Cuota_Mes_ME, 0))
+				+ ',"Moneda_Lim_Cre": "' + LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_Cre, '')))
+				+ '","Limite_Credito": ' + CONVERT(VARCHAR, ISNULL(hc.Limite_Credito, 0))
+				+ ',"Disponible_Cta_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Cta_MN, 0))
+				+ ',"Disponible_Cta_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Cta_ME, 0))
+				+ ',"Disponible_Ret_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Ret_MN, 0))
+				+ ',"Disponible_Ret_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Disponible_Ret_ME, 0))
+				+ ',"PTS_Saldo_Ant": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Saldo_Ant, 0) AS BIGINT))
+				+ ',"PTS_Ganados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Ganados, 0) AS BIGINT))
+				+ ',"PTS_Usuados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Usuados, 0) AS BIGINT))
+				+ ',"PTS_Saldo_Actual": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTS_Saldo_Actual, 0) AS BIGINT))
+				+ ',"Moneda_Lim_EF": "' + LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_EF, '')))
+				+ '","EF_Limite": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Limite, 0))
+				+ ',"EF_Saldo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Saldo_MN, 0))
+				+ ',"EF_Debitos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Debitos_MN, 0))
+				+ ',"EF_Creditos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Creditos_MN, 0))
+				+ ',"EF_Saldo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Saldo_ME, 0))
+				+ ',"EF_Debitos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Debitos_ME, 0))
+				+ ',"EF_Creditos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Creditos_ME, 0))
+				+ ',"EF_Disponible_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Disponible_MN, 0))
+				+ ',"EF_Disponible_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EF_Disponible_ME, 0))
+				+ ',"Tasa_Int_Anual_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Tasa_Int_Anual_MN, 0))
+				+ ',"Tasa_Int_Anual_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Tasa_Int_Anual_ME, 0))
+				+ ',"Direccion_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion_1, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Direccion_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Direccion_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Apdo_Postal": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Ciudad": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX),map.Mensaje), ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_3, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_4": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_4, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Mensaje_5": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje_5, ''))),'''',' '),'"',' '),'\',' ')
+				+ '","Tarjeta_Imprimir": "' + LTRIM(RTRIM(ISNULL(hc.Tarjeta_Imprimir, '')))
+				+ '","Costo_Anual_Tot_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Costo_Anual_Tot_MN, 0))
+				+ ',"Costo_Anual_Tot_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Costo_Anual_Tot_ME, 0))
+				+ ',"Plazo_Canc_Deuda_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Plazo_Canc_Deuda_MN, 0))
+				+ ',"Plazo_Canc_Deuda_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Plazo_Canc_Deuda_ME, 0))
+				+ ',"Interes_Pago_Min_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Pago_Min_MN, 0))
+				+ ',"Interes_Pago_Min_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Pago_Min_ME, 0))
+				+ ',"Correo": "' + LTRIM(RTRIM(ISNULL(hc.Correo, '')))
+				+ '","Limite_CreditoMN": ' + CONVERT(VARCHAR, ISNULL(hc.Limite_CreditoMN, 0))
+				+ ',"Interes_Corriente_MN": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Corriente_MN, 0))
+				+ ',"Interes_Corriente_ME": ' + CONVERT(VARCHAR, ISNULL(hc.Interes_Corriente_ME, 0))
+				+ ',"Estado": ' + ( select tce.estado from tcEstados tce where tce.No_Tarjeta = hc.No_Tarjeta ) +
+			'},"Detalle":['
+			+ ISNULL((
+			SELECT STUFF(
+			(SELECT ',' + detalle AS [text()]
+			FROM (
+			(
+			SELECT TOP 100000
+				'{"Fecha_Consumo":"' + CONVERT(VARCHAR(10),D.Fecha_Consumo, 103)
+				+ '","Tipo_Reg":' + LTRIM(RTRIM(CONVERT(CHAR,D.Tipo_Reg))) 
+				+ ',"Descripcion_Mov":"' + REPLACE(REPLACE(REPLACE(RTRIM(LTRIM(D.Descripcion_Mov)),'''',' '),'"',' '),'\',' ')
+				+ '","DebitosMN":' + CONVERT(VARCHAR,D.DebitosMN) 
+				+ ',"CreditosMN":' + CONVERT(VARCHAR,D.CreditosMN) 
+				+ ',"DebitosME":' + CONVERT(VARCHAR,D.DebitosME) 
+				+ ',"CreditosME":' + CONVERT(VARCHAR,D.CreditosME)
+				+'}' as detalle		
+			FROM (
+			--Movimientos
+			SELECT
+				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
+				,a.EC_DetalleNo_Tarjeta No_Tarjeta
+				,LTrim(RTrim(a.No_Autorizacion)) No_Autorizacion
+				,a.Fecha_Corte
+				,a.Fecha_Consumo
+				,1 Tipo_Reg
+				,LTrim(RTrim(a.Descripcion_Mov)) Descripcion_Mov
+				,CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END As DebitosMN
+				,CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END As CreditosMN
+				,CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END As DebitosME
+				,CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END As CreditosME	
+			From
+				dbo.EC_Detalle_Envio_Estado_Correo a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.Codigo_Mov
+			WHERE a.Fecha_Corte = hc.Fecha_Corte
+				AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+			--Subtotales
+			UNION ALL
+			Select
+				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
+				,a.EC_DetalleNo_Tarjeta No_Tarjeta
+				,'' No_Autorizacion
+				,a.Fecha_Corte
+				,a.Fecha_Corte Fecha_Consumo
+				,2 Tipo_Reg
+				,'Subtotal ' + LTrim(RTrim(a.Nombre_TH_P)) + ' ' + '******' +
+				a.Tarjeta_Imprimir Descripcion_Mov
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosME
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosME	  
+			From
+				dbo.EC_Detalle_Envio_Estado_Correo a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.Codigo_Mov
+			WHERE a.Fecha_Corte = hc.Fecha_Corte
+				AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+			Group By
+				a.Codigo_Emisor
+				,a.EC_DetalleNo_Cuenta
+				,a.EC_DetalleNo_Tarjeta
+				,a.Fecha_Corte
+				,a.Nombre_TH_P
+				,Tarjeta_Imprimir 
+			UNION ALL
+			--Totales
+			Select
+				LTrim(RTrim(a.EC_DetalleNo_Cuenta)) No_Cuenta
+				,'90000000000000000' No_Tarjeta
+				,'' No_Autorizacion
+				,a.Fecha_Corte
+				,a.Fecha_Corte Fecha_Consumo
+				,3 Tipo_Reg
+				,'Total Titular + Adicional' Descripcion_Mov
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosMN
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) DebitosME
+				,SUM(CASE WHEN a.Moneda_Mov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.Monto_Mov ELSE 0 END) CreditosME			
+			From
+				dbo.EC_Detalle_Envio_Estado_Correo a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.Codigo_Mov
+			WHERE a.Fecha_Corte = hc.Fecha_Corte
+				AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+			Group By
+				a.EC_DetalleNo_Cuenta
+				,a.Fecha_Corte	 
+			) As D
+			ORDER BY D.No_Cuenta, D.No_Tarjeta, D.Fecha_Consumo, D.Tipo_Reg
+			)
+			) XT
+			FOR XML PATH('')), 1, 1, '')
+			),'')
+			+'],"Financiamientos":['
+			+ ISNULL((
+			SELECT STUFF(
+			(SELECT ',' + financiamiento AS [text()]
+			FROM (
+			(
+			SELECT 
+				'{"Tipo": "' +  Tipo 
+				+ '","Fecha": "' + REPLACE(REPLACE(REPLACE(ISNULL(CONVERT(varchar(10), Fecha, 103), ''),'''',' '),'"',' '),'\',' ')
+				+ '","Monto": ' + ISNULL(CONVERT(varchar(20), Monto), '0') 
+				+ ',"Moneda": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Moneda, '')),'''',' '),'"',' '),'\',' ')
+				+ '","Cuota": ' + ISNULL(CONVERT(varchar(20), Cuota), '0') 
+				+ ',"Plazo": ' + ISNULL(CONVERT(varchar(20), Plazo), '0') 
+				+ ',"CuotaAplicada": ' + ISNULL(CONVERT(varchar(20), CuotaAplicada), '0') 
+				+ ',"Tasa": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Tasa, '0%')),'''',' '),'"',' '),'\',' ')
+				+ '","Saldo": ' + ISNULL(CONVERT(varchar(20), Saldo), '0') +
+				'}' as financiamiento
+				FROM
+				(
+				SELECT
+					'Intrafinanciamientos' Tipo,
+					f.FechaOtorgamiento Fecha,
+					f.ImporteTotalPlan Monto,
+					f.MonedaMovimiento Moneda,
+					f.Importe Cuota,
+					f.CantidadCuotasPlan Plazo,
+					f.NoCuotaLiquidada CuotaAplicada,
+					CASE
+					WHEN f.PlanExtraTasa = 0 THEN '0%'
+					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
+					END Tasa,
+					f.PlanCuotaCapitalPend Saldo
+				FROM 
+					Financiamientos_BandejaEnvioTC f
+				WHERE
+					f.NumeroCuenta = hc.No_Cuenta AND
+					f.FechaCierre = hc.Fecha_Corte AND
+					f.PlanCuotaCapitalPend > 0 AND
+					f.EsIntra = 1
+				UNION ALL
+				SELECT
+					'Extrafinanciamientos' Tipo,
+					f.FechaOtorgamiento Fecha,
+					f.ImporteTotalPlan Monto,
+					f.MonedaMovimiento Moneda,
+					f.Importe Cuota,
+					f.CantidadCuotasPlan Plazo,
+					f.NoCuotaLiquidada CuotaAplicada,
+					CASE
+					WHEN f.PlanExtraTasa = 0 THEN '0%'
+					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
+					END Tasa,
+					f.PlanCuotaCapitalPend Saldo
+				FROM 
+					Financiamientos_BandejaEnvioTC f
+				WHERE
+					f.NumeroCuenta = hc.No_Cuenta AND
+					f.FechaCierre = hc.Fecha_Corte AND
+					f.PlanCuotaCapitalPend > 0 AND
+					f.EsExtra = 1
+				) AS F
+			)
+			) XT
+			FOR XML PATH('')), 1, 1, '')
+			),'')
+			+']}' as JsonString
+		FROM 
+		(
+		select * from HEstadoCuenta_BandejaEnvioTC hci 
+		)hc
+		LEFT JOIN EC_CuentasArregloPagos ecap ON hc.NoCuentaClaro = ecap.NumeroCuenta AND ecap.FechaCorte = hc.Fecha_Corte
+		LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map ON map.idMensaje = ecap.idMensaje
+		WHERE hc.Fecha_Corte = (select FechaCorte from Param_IS_ECTC where estado='1')
+		AND hc.No_Tarjeta in (select No_Tarjeta from tcEstados);
+
+		insert into [dbo].[BandejaECTCJson]
+		select * from #DatosEC;
+	end
+
+	
+	select   count(*) as cantidad from BandejaECTCJson;
+
+END
+
+
+
+Para este SP no tengo nada creado aun, mira, hay algo bien importante con este SP y es que... El Json que se crea, se debe crear exactamente como lo crea actualmente. 
+Podemos innovar en cuanto a como generarlo, pero no a su estructura, ni siquiera en los nombres de encabezado, en eso no se puede cambiar, no se quizas podemos usar FOR Json o algo por estilo
