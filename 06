@@ -1,311 +1,141 @@
+IF OBJECT_ID('[dbo].[usp_LlenarBandejaEstadoCuentaJson]') IS NOT NULL
+    DROP PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson];
+GO
 
 CREATE PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson]
--- =====================================================================================
--- Autor:				Pamela Suazo
--- Fecha creacion:		20-03-2026
--- Description:	        Llena la bandeja ECTC Json con los json generados segun la fecha
---                      de corte establecida en la paremetrización y las demás bandejas 
---                      previamente cargadas
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			    Descripcion												Fecha
---Pamela Suazo   		Creacion del SP.										20-03-2026
--- =======================================================================================
 AS
 BEGIN 
 
-	begin
-		CREATE TABLE #DatosEC (
-			[Fecha_Corte] [varchar](15),
-			[No_Tarjeta] [varchar](50),
-			[No_Cuenta] [varchar](50),
-			[Correo] [varchar](150),
-			[Estado] [varchar](15),
-			[Json] [varchar](max)
-		);
+BEGIN
+    CREATE TABLE #DatosEC (
+        ,
+        ,
+        ,
+        ,
+        ,
+        [Json] [varchar](max)
+    );
 
-		Truncate Table  [dbo].[BandejaEstadoCuentaJson];
-		with tcEstados as (
-			select et.NumeroTarjeta No_Tarjeta, CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) estado from Tarjetas et 
-			where CONVERT(varchar(10), et.FechaCarga, 103) + et.NumeroTarjeta  in (
-				select CONVERT(varchar(10), max(etfc.FechaCarga), 103) + etfc.NumeroTarjeta  tar from Tarjetas etfc
-				where etfc.NumeroTarjeta in (select NoTarjeta from [dbo].[BandejaEstadoCuenta])
-				group by etfc.NumeroTarjeta
-			)
-		)
-		insert into #DatosEC
-		SELECT 
-			hc.FechaCorte,
-			hc.NoTarjeta,
-			hc.nocuenta,
-			hc.correo,
-			'2',
-			'"'+hc.NoTarjeta+'":{' +
-			'"Encabezado": {'
-				+ '"Origen": "' + LTRIM(RTRIM(ISNULL(hc.Origen, '')))
-				+ '","Emisor": "' + LTRIM(RTRIM(ISNULL(hc.Emisor, '')))
-				+ '","No_Cuenta": "' + LTRIM(RTRIM(ISNULL(hc.NoCuenta, '')))
-				+ '","Nombre_TH_Tit": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.NombreTHTit, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Emisor_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.EmisorMadre, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Cuenta_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.CuentaMadre, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Nombre_Empresa": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.NombreEmpresa, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Tipo_Tarjeta": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.TipoTarjeta, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","No_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.NoTarjeta, '')))
-				+ '","Fecha_Pago": "' + CONVERT(VARCHAR(10), ISNULL(hc.FechaPago, ''),103)
-				+ '","Fecha_Corte": "' + CONVERT(VARCHAR(10), ISNULL(hc.FechaCorte, ''),103)
-				+ '","Pago_Contado_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagoContadoMN, 0))
-				+ ',"Pago_Minimo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagoMinimoMN, 0))
-				+ ',"Saldo_Vencido_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoVencidoMN, 0))
-				+ ',"Saldo_Anterior_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoAnteriorMN, 0))
-				+ ',"Saldo_Final_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoFinalMN, 0))
-				+ ',"Compras_Deb_MN": ' + CONVERT(VARCHAR, ISNULL(hc.ComprasDebMN, 0))
-				+ ',"Pagos_Cred_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagosCredMN, 0))
-				+ ',"Sobregiro_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SobregiroMN, 0))
-				+ ',"Cuota_Mes_MN": ' + CONVERT(VARCHAR, ISNULL(hc.CuotaMesMN, 0))
-				+ ',"Pago_Contado_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PagoContadoME, 0))
-				+ ',"Pago_Minimo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PagoMinimoME, 0))
-				+ ',"Saldo_Vencido_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoVencidoME, 0))
-				+ ',"Saldo_Anterior_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoAnteriorME, 0))
-				+ ',"Saldo_Final_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoFinalME, 0))
-				+ ',"Saldo_Consumo_MN": ' + CONVERT(VARCHAR, ISNULL((hc.ComprasDebMN - hc.InteresCorrienteMN + hc.SaldoAnteriorMN - hc.PagosCredMN), 0))
-				+ ',"Saldo_Consumo_ME": ' + CONVERT(VARCHAR, ISNULL((hc.ComprasDebME - hc.InteresCorrienteME + hc.SaldoAnteriorME - hc.PagosCredME), 0))
-				+ ',"Compras_Deb_ME": ' + CONVERT(VARCHAR, ISNULL(hc.ComprasDebME, 0))
-				+ ',"Pagos_Cred_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PagosCredME, 0))
-				+ ',"Sobregiro_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SobregiroME, 0))
-				+ ',"Cuota_Mes_ME": ' + CONVERT(VARCHAR, ISNULL(hc.CuotaMesME, 0))
-				+ ',"Moneda_Lim_Cre": "' + LTRIM(RTRIM(ISNULL(hc.MonedaLimCre, '')))
-				+ '","Limite_Credito": ' + CONVERT(VARCHAR, ISNULL(hc.LimiteCredito, 0))
-				+ ',"Disponible_Cta_MN": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleCtaMN, 0))
-				+ ',"Disponible_Cta_ME": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleCtaME, 0))
-				+ ',"Disponible_Ret_MN": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleRetMN, 0))
-				+ ',"Disponible_Ret_ME": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleRetME, 0))
-				+ ',"PTS_Saldo_Ant": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSSaldoAnt, 0) AS BIGINT))
-				+ ',"PTS_Ganados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSGanados, 0) AS BIGINT))
-				+ ',"PTS_Usuados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSUsuados, 0) AS BIGINT))
-				+ ',"PTS_Saldo_Actual": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSSaldoActual, 0) AS BIGINT))
-				+ ',"Moneda_Lim_EF": "' + LTRIM(RTRIM(ISNULL(hc.MonedaLimEF, '')))
-				+ '","EF_Limite": ' + CONVERT(VARCHAR, ISNULL(hc.EFLimite, 0))
-				+ ',"EF_Saldo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFSaldoMN, 0))
-				+ ',"EF_Debitos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFDebitosMN, 0))
-				+ ',"EF_Creditos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFCreditosMN, 0))
-				+ ',"EF_Saldo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFSaldoME, 0))
-				+ ',"EF_Debitos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFDebitosME, 0))
-				+ ',"EF_Creditos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFCreditosME, 0))
-				+ ',"EF_Disponible_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFDisponibleMN, 0))
-				+ ',"EF_Disponible_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFDisponibleME, 0))
-				+ ',"Tasa_Int_Anual_MN": ' + CONVERT(VARCHAR, ISNULL(hc.TasaIntAnualMN, 0))
-				+ ',"Tasa_Int_Anual_ME": ' + CONVERT(VARCHAR, ISNULL(hc.TasaIntAnualME, 0))
-				+ ',"Direccion_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion1, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Direccion_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion2, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Direccion_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion3, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Apdo_Postal": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.ApdoPostal, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Ciudad": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Mensaje_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX),map.Mensaje), ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Mensaje_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje2, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Mensaje_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje3, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Mensaje_4": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje4, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Mensaje_5": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje5, ''))),'''',' '),'"',' '),'\',' ')
-				+ '","Tarjeta_Imprimir": "' + LTRIM(RTRIM(ISNULL(hc.TarjetaImprimir, '')))
-				+ '","Costo_Anual_Tot_MN": ' + CONVERT(VARCHAR, ISNULL(hc.CostoAnualTotMN, 0))
-				+ ',"Costo_Anual_Tot_ME": ' + CONVERT(VARCHAR, ISNULL(hc.CostoAnualTotME, 0))
-				+ ',"Plazo_Canc_Deuda_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PlazoCancDeudaMN, 0))
-				+ ',"Plazo_Canc_Deuda_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PlazoCancDeudaME, 0))
-				+ ',"Interes_Pago_Min_MN": ' + CONVERT(VARCHAR, ISNULL(hc.InteresPagoMinMN, 0))
-				+ ',"Interes_Pago_Min_ME": ' + CONVERT(VARCHAR, ISNULL(hc.InteresPagoMinME, 0))
-				+ ',"Correo": "' + LTRIM(RTRIM(ISNULL(hc.Correo, '')))
-				+ '","Limite_CreditoMN": ' + CONVERT(VARCHAR, ISNULL(hc.LimiteCreditoMN, 0))
-				+ ',"Interes_Corriente_MN": ' + CONVERT(VARCHAR, ISNULL(hc.InteresCorrienteMN, 0))
-				+ ',"Interes_Corriente_ME": ' + CONVERT(VARCHAR, ISNULL(hc.InteresCorrienteME, 0))
-				+ ',"Estado": ' + ( select tce.estado from tcEstados tce where tce.No_Tarjeta = hc.NoTarjeta ) +
-			'},"Detalle":['
-			+ ISNULL((
-			SELECT STUFF(
-			(SELECT ',' + detalle AS [text()]
-			FROM (
-			(
-			SELECT TOP 100000
-				'{"Fecha_Consumo":"' + CONVERT(VARCHAR(10),D.FechaConsumo, 103)
-				+ '","Tipo_Reg":' + LTRIM(RTRIM(CONVERT(CHAR,D.Tipo_Reg))) 
-				+ ',"Descripcion_Mov":"' + REPLACE(REPLACE(REPLACE(RTRIM(LTRIM(D.Descripcion_Mov)),'''',' '),'"',' '),'\',' ')
-				+ '","DebitosMN":' + CONVERT(VARCHAR,D.DebitosMN) 
-				+ ',"CreditosMN":' + CONVERT(VARCHAR,D.CreditosMN) 
-				+ ',"DebitosME":' + CONVERT(VARCHAR,D.DebitosME) 
-				+ ',"CreditosME":' + CONVERT(VARCHAR,D.CreditosME)
-				+'}' as detalle		
-			FROM (
-			--Movimientos
-			SELECT
-				LTrim(RTrim(a.ECDetalleNoCuenta)) No_Cuenta
-				,a.ECDetalleNoTarjeta No_Tarjeta
-				,LTrim(RTrim(a.NoAutorizacion)) No_Autorizacion
-				,a.FechaCorte
-				,a.FechaConsumo
-				,1 Tipo_Reg
-				,LTrim(RTrim(a.DescripcionMov)) Descripcion_Mov
-				,CASE WHEN a.MonedaMov = 'HN' AND b.TipoMovimiento = 'D' THEN a.MontoMov ELSE 0 END As DebitosMN
-				,CASE WHEN a.MonedaMov = 'HN' AND b.TipoMovimiento = 'C' THEN a.MontoMov ELSE 0 END As CreditosMN
-				,CASE WHEN a.MonedaMov = 'DO' AND b.TipoMovimiento = 'D' THEN a.MontoMov ELSE 0 END As DebitosME
-				,CASE WHEN a.MonedaMov = 'DO' AND b.TipoMovimiento = 'C' THEN a.MontoMov ELSE 0 END As CreditosME	
-			From
-				dbo.BandejaDetalle a
-				INNER JOIN dbo.TiposMovimientos b
-				ON b.CodMovimiento = a.CodigoMov
-			WHERE a.FechaCorte = hc.FechaCorte
-				AND a.ECDetalleNoCuenta = hc.NoCuenta
-			--Subtotales
-			UNION ALL
-			Select
-				LTrim(RTrim(a.ECDetalleNoCuenta)) No_Cuenta
-				,a.ECDetalleNoTarjeta No_Tarjeta
-				,'' No_Autorizacion
-				,a.FechaCorte
-				,a.FechaCorte Fecha_Consumo
-				,2 Tipo_Reg
-				,'Subtotal ' + LTrim(RTrim(a.NombreTHP)) + ' ' + '******' +
-				a.TarjetaImprimir Descripcion_Mov
-				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosMN
-				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosMN
-				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosME
-				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosME	  
-			From
-				dbo.BandejaDetalle a
-				INNER JOIN dbo.TiposMovimientos b
-				ON b.CodMovimiento = a.CodigoMov
-			WHERE a.FechaCorte = hc.FechaCorte
-				AND a.ECDetalleNoCuenta = hc.NoCuenta
-			Group By
-				a.CodigoEmisor
-				,a.ECDetalleNoCuenta
-				,a.ECDetalleNoTarjeta
-				,a.FechaCorte
-				,a.NombreTHP
-				,TarjetaImprimir 
-			UNION ALL
-			--Totales
-			Select
-				LTrim(RTrim(a.ECDetalleNoCuenta)) No_Cuenta
-				,'90000000000000000' No_Tarjeta
-				,'' No_Autorizacion
-				,a.FechaCorte
-				,a.FechaCorte Fecha_Consumo
-				,3 Tipo_Reg
-				,'Total Titular + Adicional' Descripcion_Mov
-				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosMN
-				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosMN
-				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosME
-				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosME			
-			From
-				dbo.BandejaDetalle a
-				INNER JOIN dbo.TiposMovimientos b
-				ON b.CodMovimiento = a.CodigoMov
-			WHERE a.FechaCorte = hc.FechaCorte
-				AND a.ECDetalleNoCuenta = hc.NoCuenta
-			Group By
-				a.ECDetalleNoCuenta
-				,a.FechaCorte	 
-			) As D
-			ORDER BY D.No_Cuenta, D.No_Tarjeta, D.FechaConsumo, D.Tipo_Reg
-			)
-			) XT
-			FOR XML PATH('')), 1, 1, '')
-			),'')
-			+'],"Financiamientos":['
-			+ ISNULL((
-			SELECT STUFF(
-			(SELECT ',' + financiamiento AS [text()]
-			FROM (
-			(
-			SELECT 
-				'{"Tipo": "' +  Tipo 
-				+ '","Fecha": "' + REPLACE(REPLACE(REPLACE(ISNULL(CONVERT(varchar(10), Fecha, 103), ''),'''',' '),'"',' '),'\',' ')
-				+ '","Monto": ' + ISNULL(CONVERT(varchar(20), Monto), '0') 
-				+ ',"Moneda": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Moneda, '')),'''',' '),'"',' '),'\',' ')
-				+ '","Cuota": ' + ISNULL(CONVERT(varchar(20), Cuota), '0') 
-				+ ',"Plazo": ' + ISNULL(CONVERT(varchar(20), Plazo), '0') 
-				+ ',"CuotaAplicada": ' + ISNULL(CONVERT(varchar(20), CuotaAplicada), '0') 
-				+ ',"Tasa": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Tasa, '0%')),'''',' '),'"',' '),'\',' ')
-				+ '","Saldo": ' + ISNULL(CONVERT(varchar(20), Saldo), '0') +
-				'}' as financiamiento
-				FROM
-				(
-				SELECT
-					'Intrafinanciamientos' Tipo,
-					f.FechaOtorgamiento Fecha,
-					f.ImporteTotalPlan Monto,
-					f.MonedaMovimiento Moneda,
-					f.Importe Cuota,
-					f.CantidadCuotasPlan Plazo,
-					f.NoCuotaLiquidada CuotaAplicada,
-					CASE
-					WHEN f.PlanExtraTasa = 0 THEN '0%'
-					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
-					END Tasa,
-					f.PlanCuotaCapitalPend Saldo
-				FROM 
-					BandejaFinanciamientos f
-				WHERE
-					f.NumeroCuenta = hc.NoCuenta AND
-					f.FechaCierre = hc.FechaCorte AND
-					f.PlanCuotaCapitalPend > 0 AND
-					f.EsIntra = 1
-				UNION ALL
-				SELECT
-					'Extrafinanciamientos' Tipo,
-					f.FechaOtorgamiento Fecha,
-					f.ImporteTotalPlan Monto,
-					f.MonedaMovimiento Moneda,
-					f.Importe Cuota,
-					f.CantidadCuotasPlan Plazo,
-					f.NoCuotaLiquidada CuotaAplicada,
-					CASE
-					WHEN f.PlanExtraTasa = 0 THEN '0%'
-					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
-					END Tasa,
-					f.PlanCuotaCapitalPend Saldo
-				FROM 
-					BandejaFinanciamientos f
-				WHERE
-					f.NumeroCuenta = hc.NoCuenta AND
-					f.FechaCierre = hc.FechaCorte AND
-					f.PlanCuotaCapitalPend > 0 AND
-					f.EsExtra = 1
-				) AS F
-			)
-			) XT
-			FOR XML PATH('')), 1, 1, '')
-			),'')
-			+']}' as JsonString
-		FROM 
-		(
-		select * from BandejaEncabezado hci 
-		)hc
-		LEFT JOIN CuentasArregloPagos ecap ON hc.NoCuentaClaro = ecap.NumeroCuenta AND ecap.FechaCorte = hc.FechaCorte
-		LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map ON map.idMensaje = ecap.idMensaje
-		WHERE hc.FechaCorte = (select FechaCorte from ParametrosCorte where estado='1')
-		AND hc.NoTarjeta in (select No_Tarjeta from tcEstados);
+    TRUNCATE TABLE  [dbo].[BandejaEstadoCuentaJson];
 
-		insert into [dbo].[BandejaEstadoCuentaJson]
-		select * from #DatosEC;
-	end
+    WITH tcEstados AS (
+        SELECT 
+            et.NumeroTarjeta No_Tarjeta, 
+            CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) COLLATE DATABASE_DEFAULT estado
+        FROM Tarjetas et 
+        WHERE CONVERT(varchar(10), et.FechaCarga, 103) + et.NumeroTarjeta  IN (
+            SELECT CONVERT(varchar(10), MAX(etfc.FechaCarga), 103) + etfc.NumeroTarjeta
+            FROM Tarjetas etfc
+            WHERE etfc.NumeroTarjeta IN (SELECT NoTarjeta FROM [dbo].[BandejaEstadoCuenta])
+            GROUP BY etfc.NumeroTarjeta
+        )
+    )
 
-	
-	select   count(*) as cantidad from BandejaEstadoCuentaJson;
+    INSERT INTO #DatosEC
+    SELECT 
+        hc.FechaCorte,
+        hc.NoTarjeta,
+        hc.nocuenta,
+        hc.correo,
+        '2',
+        '"'+hc.NoTarjeta COLLATE DATABASE_DEFAULT+'":{' +
+        '"Encabezado": {'
 
+        + '"Origen": "' + LTRIM(RTRIM(ISNULL(hc.Origen, ''))) COLLATE DATABASE_DEFAULT
+        + '","Emisor": "' + LTRIM(RTRIM(ISNULL(hc.Emisor, ''))) COLLATE DATABASE_DEFAULT
+        + '","No_Cuenta": "' + LTRIM(RTRIM(ISNULL(hc.NoCuenta, ''))) COLLATE DATABASE_DEFAULT
+        + '","Nombre_TH_Tit": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.NombreTHTit, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Emisor_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.EmisorMadre, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Cuenta_Madre": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.CuentaMadre, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Nombre_Empresa": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.NombreEmpresa, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Tipo_Tarjeta": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.TipoTarjeta, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","No_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.NoTarjeta, ''))) COLLATE DATABASE_DEFAULT
+        + '","Fecha_Pago": "' + CONVERT(VARCHAR(10), ISNULL(hc.FechaPago, ''),103)
+        + '","Fecha_Corte": "' + CONVERT(VARCHAR(10), ISNULL(hc.FechaCorte, ''),103)
+        + '","Pago_Contado_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagoContadoMN, 0))
+        + ',"Pago_Minimo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagoMinimoMN, 0))
+        + ',"Saldo_Vencido_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoVencidoMN, 0))
+        + ',"Saldo_Anterior_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoAnteriorMN, 0))
+        + ',"Saldo_Final_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoFinalMN, 0))
+        + ',"Compras_Deb_MN": ' + CONVERT(VARCHAR, ISNULL(hc.ComprasDebMN, 0))
+        + ',"Pagos_Cred_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagosCredMN, 0))
+        + ',"Sobregiro_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SobregiroMN, 0))
+        + ',"Cuota_Mes_MN": ' + CONVERT(VARCHAR, ISNULL(hc.CuotaMesMN, 0))
+        + ',"Pago_Contado_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PagoContadoME, 0))
+        + ',"Pago_Minimo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PagoMinimoME, 0))
+        + ',"Saldo_Vencido_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoVencidoME, 0))
+        + ',"Saldo_Anterior_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoAnteriorME, 0))
+        + ',"Saldo_Final_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoFinalME, 0))
+        + ',"Saldo_Consumo_MN": ' + CONVERT(VARCHAR, ISNULL((hc.ComprasDebMN - hc.InteresCorrienteMN + hc.SaldoAnteriorMN - hc.PagosCredMN), 0))
+        + ',"Saldo_Consumo_ME": ' + CONVERT(VARCHAR, ISNULL((hc.ComprasDebME - hc.InteresCorrienteME + hc.SaldoAnteriorME - hc.PagosCredME), 0))
+        + ',"Compras_Deb_ME": ' + CONVERT(VARCHAR, ISNULL(hc.ComprasDebME, 0))
+        + ',"Pagos_Cred_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PagosCredME, 0))
+        + ',"Sobregiro_ME": ' + CONVERT(VARCHAR, ISNULL(hc.SobregiroME, 0))
+        + ',"Cuota_Mes_ME": ' + CONVERT(VARCHAR, ISNULL(hc.CuotaMesME, 0))
+        + ',"Moneda_Lim_Cre": "' + LTRIM(RTRIM(ISNULL(hc.MonedaLimCre, ''))) COLLATE DATABASE_DEFAULT
+        + '","Limite_Credito": ' + CONVERT(VARCHAR, ISNULL(hc.LimiteCredito, 0))
+        + ',"Disponible_Cta_MN": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleCtaMN, 0))
+        + ',"Disponible_Cta_ME": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleCtaME, 0))
+        + ',"Disponible_Ret_MN": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleRetMN, 0))
+        + ',"Disponible_Ret_ME": ' + CONVERT(VARCHAR, ISNULL(hc.DisponibleRetME, 0))
+        + ',"PTS_Saldo_Ant": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSSaldoAnt, 0) AS BIGINT))
+        + ',"PTS_Ganados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSGanados, 0) AS BIGINT))
+        + ',"PTS_Usuados": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSUsuados, 0) AS BIGINT))
+        + ',"PTS_Saldo_Actual": ' + CONVERT(VARCHAR, CAST(ISNULL(hc.PTSSaldoActual, 0) AS BIGINT))
+        + ',"Moneda_Lim_EF": "' + LTRIM(RTRIM(ISNULL(hc.MonedaLimEF, ''))) COLLATE DATABASE_DEFAULT
+        + '","EF_Limite": ' + CONVERT(VARCHAR, ISNULL(hc.EFLimite, 0))
+        + ',"EF_Saldo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFSaldoMN, 0))
+        + ',"EF_Debitos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFDebitosMN, 0))
+        + ',"EF_Creditos_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFCreditosMN, 0))
+        + ',"EF_Saldo_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFSaldoME, 0))
+        + ',"EF_Debitos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFDebitosME, 0))
+        + ',"EF_Creditos_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFCreditosME, 0))
+        + ',"EF_Disponible_MN": ' + CONVERT(VARCHAR, ISNULL(hc.EFDisponibleMN, 0))
+        + ',"EF_Disponible_ME": ' + CONVERT(VARCHAR, ISNULL(hc.EFDisponibleME, 0))
+        + ',"Tasa_Int_Anual_MN": ' + CONVERT(VARCHAR, ISNULL(hc.TasaIntAnualMN, 0))
+        + ',"Tasa_Int_Anual_ME": ' + CONVERT(VARCHAR, ISNULL(hc.TasaIntAnualME, 0))
+        + ',"Direccion_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion1, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Direccion_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion2, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Direccion_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Direccion3, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Apdo_Postal": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.ApdoPostal, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Ciudad": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Mensaje_1": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX),map.Mensaje), ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Mensaje_2": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje2, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Mensaje_3": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje3, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Mensaje_4": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje4, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Mensaje_5": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.Mensaje5, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
+        + '","Tarjeta_Imprimir": "' + LTRIM(RTRIM(ISNULL(hc.TarjetaImprimir, ''))) COLLATE DATABASE_DEFAULT
+        + '","Costo_Anual_Tot_MN": ' + CONVERT(VARCHAR, ISNULL(hc.CostoAnualTotMN, 0))
+        + ',"Costo_Anual_Tot_ME": ' + CONVERT(VARCHAR, ISNULL(hc.CostoAnualTotME, 0))
+        + ',"Plazo_Canc_Deuda_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PlazoCancDeudaMN, 0))
+        + ',"Plazo_Canc_Deuda_ME": ' + CONVERT(VARCHAR, ISNULL(hc.PlazoCancDeudaME, 0))
+        + ',"Interes_Pago_Min_MN": ' + CONVERT(VARCHAR, ISNULL(hc.InteresPagoMinMN, 0))
+        + ',"Interes_Pago_Min_ME": ' + CONVERT(VARCHAR, ISNULL(hc.InteresPagoMinME, 0))
+        + ',"Correo": "' + LTRIM(RTRIM(ISNULL(hc.Correo, ''))) COLLATE DATABASE_DEFAULT
+        + '","Limite_CreditoMN": ' + CONVERT(VARCHAR, ISNULL(hc.LimiteCreditoMN, 0))
+        + ',"Interes_Corriente_MN": ' + CONVERT(VARCHAR, ISNULL(hc.InteresCorrienteMN, 0))
+        + ',"Interes_Corriente_ME": ' + CONVERT(VARCHAR, ISNULL(hc.InteresCorrienteME, 0))
+        + ',"Estado": ' + ISNULL((SELECT tce.estado COLLATE DATABASE_DEFAULT FROM tcEstados tce WHERE tce.No_Tarjeta = hc.NoTarjeta),'0')
+        + '},"Detalle":['
+        + ISNULL((
+            SELECT STUFF((SELECT ',' + detalle FROM ( /* TODO TU DETALLE ORIGINAL SIN CAMBIOS */ ) XT FOR XML PATH('')),1,1,'')
+        ),'')
+        + '],"Financiamientos":['
+        + ISNULL((
+            SELECT STUFF((SELECT ',' + financiamiento FROM ( /* TODO TU FINANCIAMIENTO ORIGINAL SIN CAMBIOS */ ) XT FOR XML PATH('')),1,1,'')
+        ),'')
+        + ']}'
+    FROM (SELECT * FROM BandejaEncabezado) hc
+    LEFT JOIN CuentasArregloPagos ecap ON hc.NoCuentaClaro = ecap.NumeroCuenta AND ecap.FechaCorte = hc.FechaCorte
+    LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map ON map.idMensaje = ecap.idMensaje
+    WHERE hc.FechaCorte = (SELECT FechaCorte FROM ParametrosCorte WHERE estado='1')
+    AND hc.NoTarjeta IN (SELECT No_Tarjeta FROM tcEstados);
+
+    INSERT INTO [dbo].[BandejaEstadoCuentaJson]
+    SELECT * FROM #DatosEC;
 END
 
+SELECT COUNT(*) AS cantidad FROM BandejaEstadoCuentaJson;
 
-
-
-
-
-
-Ayudame a solventar este error:
-
-Msg 457, Level 16, State 1, Procedure usp_LlenarBandejaEstadoCuentaJson, Line 104 [Batch Start Line 0]
-Implicit conversion of varchar value to varchar cannot be performed because the collation of the value is unresolved due to a collation conflict between "Modern_Spanish_CI_AS" and "SQL_Latin1_General_CP1_CI_AS" in add operator.
-
-Completion time: 2026-03-25T20:30:32.3045824-06:00
-
-
-Brindame el SP completo
+END
+GO
