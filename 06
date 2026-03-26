@@ -1,0 +1,253 @@
+namespace EstadosCuentaTC.Dtos
+{
+    public class ParametrosProcesoDto
+    {
+        public string QueryPrincipal { get; set; }
+        public string QueryCant { get; set; }
+        public string RutaJson { get; set; }
+        public string RutaHistoricoJson { get; set; }
+        public DateTime FechaCorte { get; set; }
+        public string LlaveProceso { get; set; }
+        public string TipoGeneracion { get; set; }
+        public int CantidadEjecucion { get; set; }
+        public int CantidadLotes { get; set; }
+        public string QueryRegistrosPorLote { get; set; }
+    }
+}
+
+
+
+
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class ParametrosRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public ParametrosRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public string ObtenerCorreoError()
+        {
+            using var conn = _sql.GetConnection();
+
+            var cmd = new SqlCommand(@"
+                SELECT CorreoDestino 
+                FROM ParametrosEmail 
+                WHERE Tipo = 'ERROR' AND Estado = 1", conn);
+
+            return cmd.ExecuteScalar()?.ToString() ?? "";
+        }
+
+        public ParametrosProcesoDto ObtenerParametros()
+        {
+            using var conn = _sql.GetConnection();
+
+            var cmd = new SqlCommand(@"
+                SELECT 
+                    p.QueryPrincipal,
+                    p.QueryConteo,
+                    p.RutaArchivoJson,
+                    p.RutaArchivoHistoricoJson,
+                    c.FechaCorte,
+                    p.LlaveProceso
+                FROM ParametrosGeneracionEC p
+                CROSS JOIN ParametrosCorte c
+                WHERE c.Estado = '1'
+            ", conn);
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                throw new Exception("No hay parámetros");
+
+            return new ParametrosProcesoDto
+            {
+                QueryPrincipal = reader["QueryPrincipal"].ToString(),
+                QueryCant = reader["QueryConteo"].ToString(),
+                RutaJson = reader["RutaArchivoJson"].ToString(),
+                RutaHistoricoJson = reader["RutaArchivoHistoricoJson"].ToString(),
+                FechaCorte = (DateTime)reader["FechaCorte"],
+                LlaveProceso = reader["LlaveProceso"].ToString(),
+                TipoGeneracion = "LOTE",
+                CantidadEjecucion = 100000,
+                CantidadLotes = 20,
+                QueryRegistrosPorLote = ""
+            };
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+using EstadosCuentaTC.Data;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class JsonRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public JsonRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public int GenerarJson()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_LlenarBandejaEstadoCuentaJson", conn);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+            var result = cmd.ExecuteScalar();
+
+            return Convert.ToInt32(result);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+
+namespace EstadosCuentaTC.Services
+{
+    public class ParametrosService
+    {
+        private readonly ParametrosRepository _paramRepo;
+        private readonly JsonRepository _jsonRepo;
+        private readonly ILogger<ParametrosService> _logger;
+
+        public ParametrosService(
+            ParametrosRepository paramRepo,
+            JsonRepository jsonRepo,
+            ILogger<ParametrosService> logger)
+        {
+            _paramRepo = paramRepo;
+            _jsonRepo = jsonRepo;
+            _logger = logger;
+        }
+
+        public void Ejecutar()
+        {
+            try
+            {
+                _logger.LogInformation("FASE 4 - INICIO");
+
+                // Paso 1
+                var correoError = _paramRepo.ObtenerCorreoError();
+
+                // Paso 2
+                var parametros = _paramRepo.ObtenerParametros();
+
+                // Paso 3 - contador registros
+                _logger.LogInformation("Query Cantidad: {query}", parametros.QueryCant);
+
+                // Paso 5 - crear carpeta y contador
+                var ruta = parametros.RutaJson + parametros.FechaCorte.ToString("yyyy-MM-dd");
+
+                if (Directory.Exists(ruta))
+                    Directory.Delete(ruta, true);
+
+                Directory.CreateDirectory(ruta);
+
+                File.WriteAllText(Path.Combine(ruta, "Contador.txt"), "");
+
+                // Paso 6 - generar JSON
+                var cantidad = _jsonRepo.GenerarJson();
+
+                _logger.LogInformation("Registros generados: {count}", cantidad);
+
+                _logger.LogInformation("FASE 4 - FIN");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en fase 4");
+                throw;
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+var services = new ServiceCollection();
+
+// 🔹 Logging
+services.AddLogging(config =>
+{
+    config.AddConsole();
+});
+
+// 🔹 Connection
+var connectionString = "TU_CONNECTION_STRING";
+
+services.AddSingleton(new SqlExecutor(connectionString));
+
+// 🔹 Repositories
+services.AddTransient<CorreosRepository>();
+services.AddTransient<EmailRepository>();
+services.AddTransient<ParametrosRepository>();
+services.AddTransient<JsonRepository>();
+
+// 🔹 Services
+services.AddTransient<PreparaDataService>();
+services.AddTransient<CorreosService>();
+services.AddTransient<ParametrosService>();
+
+var provider = services.BuildServiceProvider();
+
+// 🔹 EJECUCIÓN POR FASES
+
+// FASE 1
+var fase1 = provider.GetRequiredService<PreparaDataService>();
+fase1.Ejecutar();
+
+// FASE 2
+var fase2 = provider.GetRequiredService<CorreosService>();
+await fase2.EjecutarAsync();
+
+// FASE 4
+var fase4 = provider.GetRequiredService<ParametrosService>();
+fase4.Ejecutar();
