@@ -1,13 +1,4 @@
-(20 rows affected)
-Msg 241, Level 16, State 1, Procedure dbo.usp_LlenarBandejaEstadoCuentaJson, Line 282 [Batch Start Line 11]
-Conversion failed when converting date and/or time from character string.
-
-Completion time: 2026-03-25T21:09:07.7310889-06:00
-
-
-
-
-CREATE PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson]
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson]
 AS
 BEGIN 
 
@@ -55,8 +46,8 @@ BEGIN
         + '","Nombre_Empresa": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.NombreEmpresa, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
         + '","Tipo_Tarjeta": "' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(hc.TipoTarjeta, ''))),'''',' '),'"',' '),'\',' ') COLLATE DATABASE_DEFAULT
         + '","No_Tarjeta": "' + LTRIM(RTRIM(ISNULL(hc.NoTarjeta, ''))) COLLATE DATABASE_DEFAULT
-        + '","Fecha_Pago": "' + CONVERT(VARCHAR(10), ISNULL(hc.FechaPago, ''),103)
-        + '","Fecha_Corte": "' + CONVERT(VARCHAR(10), ISNULL(hc.FechaCorte, ''),103)
+        + '","Fecha_Pago": "' + ISNULL(CONVERT(VARCHAR(10), hc.FechaPago, 103),'')
+        + '","Fecha_Corte": "' + ISNULL(CONVERT(VARCHAR(10), hc.FechaCorte, 103),'')
         + '","Pago_Contado_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagoContadoMN, 0))
         + ',"Pago_Minimo_MN": ' + CONVERT(VARCHAR, ISNULL(hc.PagoMinimoMN, 0))
         + ',"Saldo_Vencido_MN": ' + CONVERT(VARCHAR, ISNULL(hc.SaldoVencidoMN, 0))
@@ -299,5 +290,11 @@ END
 
 
 
+(48 rows affected)
+Msg 241, Level 16, State 1, Procedure dbo.usp_LlenarBandejaEstadoCuentaJson, Line 282 [Batch Start Line 11]
+Conversion failed when converting date and/or time from character string.
 
-Realmente no se insertaron en BandejaEstadoCuentaJson
+Completion time: 2026-03-25T22:02:21.9527675-06:00
+
+
+Sigo teniendo el mismo error, a pesar del cambio
