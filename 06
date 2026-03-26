@@ -1,20 +1,25 @@
-IF OBJECT_ID('[dbo].[usp_LlenarBandejaEstadoCuentaJson]') IS NOT NULL
-    DROP PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson];
-GO
+(20 rows affected)
+Msg 241, Level 16, State 1, Procedure dbo.usp_LlenarBandejaEstadoCuentaJson, Line 282 [Batch Start Line 11]
+Conversion failed when converting date and/or time from character string.
+
+Completion time: 2026-03-25T21:09:07.7310889-06:00
+
+
+
 
 CREATE PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson]
 AS
 BEGIN 
 
 BEGIN
-    CREATE TABLE #DatosEC (
-        ,
-        ,
-        ,
-        ,
-        ,
-        [Json] [varchar](max)
-    );
+   		CREATE TABLE #DatosEC (
+			[Fecha_Corte] [varchar](15),
+			[No_Tarjeta] [varchar](50),
+			[No_Cuenta] [varchar](50),
+			[Correo] [varchar](150),
+			[Estado] [varchar](15),
+			[Json] [varchar](max)
+		);
 
     TRUNCATE TABLE  [dbo].[BandejaEstadoCuentaJson];
 
@@ -117,15 +122,167 @@ BEGIN
         + ',"Interes_Corriente_ME": ' + CONVERT(VARCHAR, ISNULL(hc.InteresCorrienteME, 0))
         + ',"Estado": ' + ISNULL((SELECT tce.estado COLLATE DATABASE_DEFAULT FROM tcEstados tce WHERE tce.No_Tarjeta = hc.NoTarjeta),'0')
         + '},"Detalle":['
-        + ISNULL((
-            SELECT STUFF((SELECT ',' + detalle FROM ( /* TODO TU DETALLE ORIGINAL SIN CAMBIOS */ ) XT FOR XML PATH('')),1,1,'')
-        ),'')
-        + '],"Financiamientos":['
-        + ISNULL((
-            SELECT STUFF((SELECT ',' + financiamiento FROM ( /* TODO TU FINANCIAMIENTO ORIGINAL SIN CAMBIOS */ ) XT FOR XML PATH('')),1,1,'')
-        ),'')
-        + ']}'
-    FROM (SELECT * FROM BandejaEncabezado) hc
+  + ISNULL((
+			SELECT STUFF(
+			(SELECT ',' + detalle AS [text()]
+			FROM (
+			(
+			SELECT TOP 100000
+				'{"Fecha_Consumo":"' + CONVERT(VARCHAR(10),D.FechaConsumo, 103)
+				+ '","Tipo_Reg":' + LTRIM(RTRIM(CONVERT(CHAR,D.Tipo_Reg))) 
+				+ ',"Descripcion_Mov":"' + REPLACE(REPLACE(REPLACE(RTRIM(LTRIM(D.Descripcion_Mov)),'''',' '),'"',' '),'\',' ')
+				+ '","DebitosMN":' + CONVERT(VARCHAR,D.DebitosMN) 
+				+ ',"CreditosMN":' + CONVERT(VARCHAR,D.CreditosMN) 
+				+ ',"DebitosME":' + CONVERT(VARCHAR,D.DebitosME) 
+				+ ',"CreditosME":' + CONVERT(VARCHAR,D.CreditosME)
+				+'}' as detalle		
+			FROM (
+			--Movimientos
+			SELECT
+				LTrim(RTrim(a.ECDetalleNoCuenta)) No_Cuenta
+				,a.ECDetalleNoTarjeta No_Tarjeta
+				,LTrim(RTrim(a.NoAutorizacion)) No_Autorizacion
+				,a.FechaCorte
+				,a.FechaConsumo
+				,1 Tipo_Reg
+				,LTrim(RTrim(a.DescripcionMov)) Descripcion_Mov
+				,CASE WHEN a.MonedaMov = 'HN' AND b.TipoMovimiento = 'D' THEN a.MontoMov ELSE 0 END As DebitosMN
+				,CASE WHEN a.MonedaMov = 'HN' AND b.TipoMovimiento = 'C' THEN a.MontoMov ELSE 0 END As CreditosMN
+				,CASE WHEN a.MonedaMov = 'DO' AND b.TipoMovimiento = 'D' THEN a.MontoMov ELSE 0 END As DebitosME
+				,CASE WHEN a.MonedaMov = 'DO' AND b.TipoMovimiento = 'C' THEN a.MontoMov ELSE 0 END As CreditosME	
+			From
+				dbo.BandejaDetalle a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.CodigoMov
+			WHERE a.FechaCorte = hc.FechaCorte
+				AND a.ECDetalleNoCuenta = hc.NoCuenta
+			--Subtotales
+			UNION ALL
+			Select
+				LTrim(RTrim(a.ECDetalleNoCuenta)) No_Cuenta
+				,a.ECDetalleNoTarjeta No_Tarjeta
+				,'' No_Autorizacion
+				,a.FechaCorte
+				,a.FechaCorte Fecha_Consumo
+				,2 Tipo_Reg
+				,'Subtotal ' + LTrim(RTrim(a.NombreTHP)) + ' ' + '******' +
+				a.TarjetaImprimir Descripcion_Mov
+				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosMN
+				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosMN
+				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosME
+				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosME	  
+			From
+				dbo.BandejaDetalle a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.CodigoMov
+			WHERE a.FechaCorte = hc.FechaCorte
+				AND a.ECDetalleNoCuenta = hc.NoCuenta
+			Group By
+				a.CodigoEmisor
+				,a.ECDetalleNoCuenta
+				,a.ECDetalleNoTarjeta
+				,a.FechaCorte
+				,a.NombreTHP
+				,TarjetaImprimir 
+			UNION ALL
+			--Totales
+			Select
+				LTrim(RTrim(a.ECDetalleNoCuenta)) No_Cuenta
+				,'90000000000000000' No_Tarjeta
+				,'' No_Autorizacion
+				,a.FechaCorte
+				,a.FechaCorte Fecha_Consumo
+				,3 Tipo_Reg
+				,'Total Titular + Adicional' Descripcion_Mov
+				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosMN
+				,SUM(CASE WHEN a.MonedaMov = 'HN' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosMN
+				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'D' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) DebitosME
+				,SUM(CASE WHEN a.MonedaMov = 'DO' And b.TipoMovimiento = 'C' And LTrim(RTrim(b.ClaseMovimiento)) <> 'MP' THEN a.MontoMov ELSE 0 END) CreditosME			
+			From
+				dbo.BandejaDetalle a
+				INNER JOIN dbo.TiposMovimientos b
+				ON b.CodMovimiento = a.CodigoMov
+			WHERE a.FechaCorte = hc.FechaCorte
+				AND a.ECDetalleNoCuenta = hc.NoCuenta
+			Group By
+				a.ECDetalleNoCuenta
+				,a.FechaCorte	 
+			) As D
+			ORDER BY D.No_Cuenta, D.No_Tarjeta, D.FechaConsumo, D.Tipo_Reg
+			)
+			) XT
+			FOR XML PATH('')), 1, 1, '')
+			),'')
+			+'],"Financiamientos":['
+			+ ISNULL((
+			SELECT STUFF(
+			(SELECT ',' + financiamiento AS [text()]
+			FROM (
+			(
+			SELECT 
+				'{"Tipo": "' +  Tipo 
+				+ '","Fecha": "' + REPLACE(REPLACE(REPLACE(ISNULL(CONVERT(varchar(10), Fecha, 103), ''),'''',' '),'"',' '),'\',' ')
+				+ '","Monto": ' + ISNULL(CONVERT(varchar(20), Monto), '0') 
+				+ ',"Moneda": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Moneda, '')),'''',' '),'"',' '),'\',' ')
+				+ '","Cuota": ' + ISNULL(CONVERT(varchar(20), Cuota), '0') 
+				+ ',"Plazo": ' + ISNULL(CONVERT(varchar(20), Plazo), '0') 
+				+ ',"CuotaAplicada": ' + ISNULL(CONVERT(varchar(20), CuotaAplicada), '0') 
+				+ ',"Tasa": "' + REPLACE(REPLACE(REPLACE(RTRIM(ISNULL(Tasa, '0%')),'''',' '),'"',' '),'\',' ')
+				+ '","Saldo": ' + ISNULL(CONVERT(varchar(20), Saldo), '0') +
+				'}' as financiamiento
+				FROM
+				(
+				SELECT
+					'Intrafinanciamientos' Tipo,
+					f.FechaOtorgamiento Fecha,
+					f.ImporteTotalPlan Monto,
+					f.MonedaMovimiento Moneda,
+					f.Importe Cuota,
+					f.CantidadCuotasPlan Plazo,
+					f.NoCuotaLiquidada CuotaAplicada,
+					CASE
+					WHEN f.PlanExtraTasa = 0 THEN '0%'
+					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
+					END Tasa,
+					f.PlanCuotaCapitalPend Saldo
+				FROM 
+					BandejaFinanciamientos f
+				WHERE
+					f.NumeroCuenta = hc.NoCuenta AND
+					f.FechaCierre = hc.FechaCorte AND
+					f.PlanCuotaCapitalPend > 0 AND
+					f.EsIntra = 1
+				UNION ALL
+				SELECT
+					'Extrafinanciamientos' Tipo,
+					f.FechaOtorgamiento Fecha,
+					f.ImporteTotalPlan Monto,
+					f.MonedaMovimiento Moneda,
+					f.Importe Cuota,
+					f.CantidadCuotasPlan Plazo,
+					f.NoCuotaLiquidada CuotaAplicada,
+					CASE
+					WHEN f.PlanExtraTasa = 0 THEN '0%'
+					ELSE RTRIM(CAST(CAST(f.PlanExtraTasa AS NUMERIC(10,2)) AS CHAR(10))) + '%'
+					END Tasa,
+					f.PlanCuotaCapitalPend Saldo
+				FROM 
+					BandejaFinanciamientos f
+				WHERE
+					f.NumeroCuenta = hc.NoCuenta AND
+					f.FechaCierre = hc.FechaCorte AND
+					f.PlanCuotaCapitalPend > 0 AND
+					f.EsExtra = 1
+				) AS F
+			)
+			) XT
+			FOR XML PATH('')), 1, 1, '')
+			),'')
+			+']}' as JsonString
+		FROM 
+		(
+		select * from BandejaEncabezado hci 
+		)hc
     LEFT JOIN CuentasArregloPagos ecap ON hc.NoCuentaClaro = ecap.NumeroCuenta AND ecap.FechaCorte = hc.FechaCorte
     LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map ON map.idMensaje = ecap.idMensaje
     WHERE hc.FechaCorte = (SELECT FechaCorte FROM ParametrosCorte WHERE estado='1')
@@ -138,4 +295,9 @@ END
 SELECT COUNT(*) AS cantidad FROM BandejaEstadoCuentaJson;
 
 END
-GO
+
+
+
+
+
+Realmente no se insertaron en BandejaEstadoCuentaJson
