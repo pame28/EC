@@ -1,0 +1,255 @@
+Ok mira, no se si recuerdas lo que hemos estado trabajando en la migración de Generación de estados de cuenta JSON. Actualmente se maneja en un DTSX
+Pero ahora .. todo queremos hacerlo mediante una consola:
+
+Ya hicimos 3 fases a la perfección: 
+Fase 01. Prepara la Data
+Fase 02. Correos No Validos
+Fase 03. Parámetros 
+
+Te voy a mostrar lo que llevamos actualmente en la consola:
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// 🔹 Logger
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
+
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+
+// 🔹 Infraestructura
+var sql = new SqlExecutor(connectionString);
+
+// 🔹 FASE 1
+var prepara = new PreparaDataService(sql);
+
+// 🔹 Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+
+// 🔹 FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
+
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
+
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
+
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
+
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.EjecutarAsync();
+
+    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
+    ParametrosECService.Ejecutar();
+
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
+
+
+
+
+
+
+--------------
+
+SERVICES
+
+-------------
+
+using EstadosCuentaTC.Data;
+
+
+namespace EstadosCuentaTC.Services
+{
+    public class PreparaDataService
+    {
+        private readonly SqlExecutor _sql;
+
+        public PreparaDataService(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public void Ejecutar()
+        {
+            Console.WriteLine("Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento");
+            _sql.Execute("EXEC dbo.usp_LlenarBandejas");
+
+            Console.WriteLine("Paso 2: Limpiando bandeja Estado Cuenta");
+            _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Limpiar'");
+
+            Console.WriteLine("Paso 3: Llenando bandeja Estado Cuenta");
+            _sql.Execute("EXEC dbo.usp_LlenarBandejaEstadoCuenta @Tipo='Llenar'");
+        }
+    }
+}
+
+
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class CorreosService
+    {
+        private readonly CorreosRepository _repo;
+        private readonly EmailRepository _email;
+        private readonly ILogger<CorreosService> _logger;
+
+        public CorreosService(
+            CorreosRepository repo,
+            EmailRepository email,
+            ILogger<CorreosService> logger)
+        {
+            _repo = repo;
+            _email = email;
+            _logger = logger;
+        }
+
+        public async Task EjecutarAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Inicio Correos No Válidos");
+
+                _repo.LimpiarHistorico("NOVALIDOS");
+
+                var lista = _repo.ObtenerCorreosNoValidos();
+
+                _logger.LogInformation("Cantidad de Correo No Válidos: {count}", lista.Count);
+
+                if (lista.Any())
+                    _repo.InsertarHistorico(lista);
+
+                _logger.LogInformation("Fin Correos No Válidos");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error proceso");
+
+                await _email.EnviarAsync("ERROR", ex.Message);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class ParametrosGeneracionECService
+    {
+        private readonly ParametrosGeneracionECRepository _paramRepo;
+        private readonly JsonRepository _jsonRepo;
+        private readonly ILogger<ParametrosGeneracionECService> _logger;
+
+        public ParametrosGeneracionECService(
+            ParametrosGeneracionECRepository paramRepo,
+            JsonRepository jsonRepo,
+            ILogger<ParametrosGeneracionECService> logger)
+        {
+            _paramRepo = paramRepo;
+            _jsonRepo = jsonRepo;
+            _logger = logger;
+        }
+
+        public void Ejecutar()
+        {
+            try
+            {
+                _logger.LogInformation("FASE 4 - INICIO");
+
+                // Paso 1
+                var correoError = _paramRepo.ObtenerCorreoError();
+
+                // Paso 2
+                var parametros = _paramRepo.ObtenerParametros();
+
+                // Paso 3 - contador registros
+                _logger.LogInformation("Query Cantidad: {query}", parametros.QueryConteo);
+
+                // Paso 5 - crear carpeta y contador
+                var ruta = parametros.RutaJson + parametros.FechaCorte.ToString("yyyy-MM-dd");
+
+                if (Directory.Exists(ruta))
+                    Directory.Delete(ruta, true);
+
+                Directory.CreateDirectory(ruta);
+
+                File.WriteAllText(Path.Combine(ruta, "Contador.txt"), "");
+
+                // Paso 6 - generar JSON
+                var cantidad = _jsonRepo.GenerarJson();
+
+                _logger.LogInformation("Registros generados: {count}", cantidad);
+
+                _logger.LogInformation("FASE 4 - FIN");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en fase 4");
+                throw;
+            }
+        }
+    }
+}
+
+
+
+Esto que te envio es solo para tu conocimiento...
+La dinamica que hemos estado llevando es ... yo te envio el paso a paso del dtsx y lo vamos migrando.
+
+Quiero saber si entendiste? en el siguiente msj te enviare la fase 04
