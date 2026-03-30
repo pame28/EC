@@ -1,49 +1,6 @@
-========== INICIO PROCESO ==========
+USE HistoricoVASATC;
+GO
 
-FASE 1: PREPARA DATA
-Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento
-Paso 2: Limpiando bandeja Estado Cuenta
-Paso 3: Llenando bandeja Estado Cuenta
+CREATE USER app_estadosCuenta FOR LOGIN app_estadosCuenta;
 
-FASE 2: CORREOS NO VALIDOS
-info: EstadosCuentaTC.Services.CorreosService[0]
-      Inicio Correos No Válidos
-fail: EstadosCuentaTC.Services.CorreosService[0]
-      Error proceso
-      System.IndexOutOfRangeException: FechaCorte
-         at Microsoft.Data.ProviderBase.FieldNameLookup.GetOrdinal(String fieldName)
-         at Microsoft.Data.SqlClient.SqlDataReader.GetOrdinal(String name)
-         at Microsoft.Data.SqlClient.SqlDataReader.get_Item(String name)
-         at EstadosCuentaTC.Repositories.CorreosRepository.ObtenerCorreosNoValidos() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\CorreosRepository.cs:line 41
-         at EstadosCuentaTC.Services.CorreosService.EjecutarAsync() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\CorreosService.cs:line 33
-info: EstadosCuentaTC.Repositories.EmailRepository[0]
-      Correo tipo ERROR enviado a pamelas@banpais.hn
-
-FASE 3: OBTENER PARÁMETROS
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      FASE 4 - INICIO
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Query Cantidad: select COUNT(*)  from BandejaECTC B where B.Estado=2
-fail: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Error en fase 4
-      Microsoft.Data.SqlClient.SqlException (0x80131904): The server principal "app_estadosCuenta" is not able to access the database "HistoricoVASATC" under the current security context.
-         at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-         at Microsoft.Data.SqlClient.Connection.SqlConnectionInternal.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-         at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-         at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-         at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
-         at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
-         at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
-         at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean isRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
-         at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& executeTask, Boolean& usedCache, Boolean asyncWrite, Boolean isRetry, String method)
-         at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
-         at Microsoft.Data.SqlClient.SqlCommand.ExecuteScalar()
-         at EstadosCuentaTC.Repositories.JsonRepository.GenerarJson() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\JsonRepository.cs:line 25
-         at EstadosCuentaTC.Services.ParametrosGeneracionECService.Ejecutar() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\ParametrosGeneracionECService.cs:line 51
-      ClientConnectionId:bcef5f24-5bb1-4357-ac4e-c051e9f19fd8
-      Error Number:916,State:2,Class:14
-ERROR GENERAL: The server principal "app_estadosCuenta" is not able to access the database "HistoricoVASATC" under the current security context.
-
-C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\EstadosCuentaTC.exe (proceso 23156) se cerró con el código 0 (0x0).
-Para cerrar automáticamente la consola cuando se detiene la depuración, habilite Herramientas ->Opciones ->Depuración ->Cerrar la consola automáticamente al detenerse la depuración.
-Presione cualquier tecla para cerrar esta ventana. . .
+ALTER ROLE db_datareader ADD MEMBER app_estadosCuenta;
