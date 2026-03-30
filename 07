@@ -9,7 +9,7 @@ FASE 2: CORREOS NO VALIDOS
 info: EstadosCuentaTC.Services.CorreosService[0]
       Inicio Correos No Válidos
 info: EstadosCuentaTC.Services.CorreosService[0]
-      Cantidad: 389
+      Cantidad de Correo No Válidos: 389
 
 FASE 3: OBTENER PARÁMETROS
 info: EstadosCuentaTC.Services.CorreosService[0]
@@ -17,7 +17,7 @@ info: EstadosCuentaTC.Services.CorreosService[0]
 info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
       FASE 4 - INICIO
 info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Query Cantidad: select COUNT(*)  from BandejaECTC B where B.Estado=2
+      Query Cantidad: select COUNT(*)  from dbo.BandejaEstadoCuenta B where B.Estado=2
 fail: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
       Error en fase 4
       Microsoft.Data.SqlClient.SqlException (0x80131904): Se agotó el tiempo de espera de ejecución. El período de tiempo de espera transcurrió antes de la finalización de la operación o el servidor no responde.
@@ -35,10 +35,10 @@ fail: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
          at Microsoft.Data.SqlClient.SqlCommand.ExecuteScalar()
          at EstadosCuentaTC.Repositories.JsonRepository.GenerarJson() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\JsonRepository.cs:line 25
          at EstadosCuentaTC.Services.ParametrosGeneracionECService.Ejecutar() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\ParametrosGeneracionECService.cs:line 51
-      ClientConnectionId:f9c4bb63-f761-4e9a-84ca-941e42e52657
+      ClientConnectionId:f045889d-5eef-4b43-8323-78eaccec2840
       Error Number:-2,State:0,Class:11
 ERROR GENERAL: Se agotó el tiempo de espera de ejecución. El período de tiempo de espera transcurrió antes de la finalización de la operación o el servidor no responde.
 
-C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\EstadosCuentaTC.exe (proceso 36760) se cerró con el código 0 (0x0).
+C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\EstadosCuentaTC.exe (proceso 34428) se cerró con el código 0 (0x0).
 Para cerrar automáticamente la consola cuando se detiene la depuración, habilite Herramientas ->Opciones ->Depuración ->Cerrar la consola automáticamente al detenerse la depuración.
 Presione cualquier tecla para cerrar esta ventana. . .
