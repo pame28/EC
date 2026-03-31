@@ -1,4 +1,218 @@
-Msg 4104, Level 16, State 1, Procedure usp_LlenarBandejaECTCJson5, Line 49 [Batch Start Line 0]
-The multi-part identifier "tce.Estado" could not be bound.
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson_FINAL]
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-Completion time: 2026-03-30T22:57:36.2511768-06:00
+    TRUNCATE TABLE dbo.BandejaEstadoCuentaJson;
+
+    ;WITH tcEstados AS (
+        SELECT 
+            et.NumeroTarjeta AS No_Tarjeta,
+            CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) AS Estado
+        FROM Tarjetas et
+        INNER JOIN (
+            SELECT NumeroTarjeta, MAX(FechaCarga) FechaCarga
+            FROM Tarjetas
+            GROUP BY NumeroTarjeta
+        ) ult 
+            ON ult.NumeroTarjeta = et.NumeroTarjeta 
+           AND ult.FechaCarga = et.FechaCarga
+    )
+
+    INSERT INTO dbo.BandejaEstadoCuentaJson
+    (
+        Fecha_Corte,
+        No_Tarjeta,
+        No_Cuenta,
+        Correo,
+        Estado,
+        Json
+    )
+    SELECT 
+        hc.Fecha_Corte,
+        hc.No_Tarjeta,
+        hc.No_Cuenta,
+        hc.Correo,
+        '2',
+
+        -- JSON PRINCIPAL
+        (
+            SELECT 
+                -- ================= ENCABEZADO =================
+                hc.Origen,
+                hc.Emisor,
+                hc.No_Cuenta,
+                hc.Nombre_TH_Tit,
+                hc.Emisor_Madre,
+                hc.Cuenta_Madre,
+                hc.Nombre_Empresa,
+                hc.Tipo_Tarjeta,
+                hc.No_Tarjeta,
+                hc.Fecha_Pago,
+                hc.Fecha_Corte,
+
+                hc.Pago_Contado_MN,
+                hc.Pago_Minimo_MN,
+                hc.Saldo_Vencido_MN,
+                hc.Saldo_Anterior_MN,
+                hc.Saldo_Final_MN,
+                hc.Compras_Deb_MN,
+                hc.Pagos_Cred_MN,
+
+                hc.Compras_Deb_ME,
+                hc.Pagos_Cred_ME,
+
+                hc.Limite_Credito,
+                hc.Disponible_Cta_MN,
+                hc.Disponible_Cta_ME,
+
+                hc.Correo,
+
+                tce.Estado,
+
+                -- ================= DETALLE =================
+                (
+                    SELECT 
+                        D.Fecha_Consumo,
+                        D.Tipo_Reg,
+                        D.Descripcion_Mov,
+                        D.DebitosMN,
+                        D.CreditosMN,
+                        D.DebitosME,
+                        D.CreditosME
+                    FROM (
+                        -- MOVIMIENTOS
+                        SELECT
+                            a.Fecha_Consumo,
+                            1 AS Tipo_Reg,
+                            a.Descripcion_Mov,
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosME,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosME
+                        FROM BandejaDetalle a
+                        INNER JOIN TiposMovimientos b 
+                            ON b.CodMovimiento = a.Codigo_Mov
+                        WHERE 
+                            a.Fecha_Corte = hc.Fecha_Corte
+                            AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+
+                        UNION ALL
+
+                        -- SUBTOTALES
+                        SELECT
+                            hc.Fecha_Corte,
+                            2,
+                            'Subtotal',
+                            SUM(CASE WHEN a.Moneda_Mov='HN' THEN a.Monto_Mov ELSE 0 END),
+                            0,
+                            SUM(CASE WHEN a.Moneda_Mov='DO' THEN a.Monto_Mov ELSE 0 END),
+                            0
+                        FROM BandejaDetalle a
+                        WHERE 
+                            a.Fecha_Corte = hc.Fecha_Corte
+                            AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+
+                        UNION ALL
+
+                        -- TOTAL
+                        SELECT
+                            hc.Fecha_Corte,
+                            3,
+                            'Total',
+                            SUM(a.Monto_Mov),
+                            0,
+                            0,
+                            0
+                        FROM BandejaDetalle a
+                        WHERE 
+                            a.Fecha_Corte = hc.Fecha_Corte
+                            AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+
+                    ) D
+                    FOR JSON PATH
+                ) AS Detalle,
+
+                -- ================= FINANCIAMIENTOS =================
+                (
+                    SELECT
+                        Tipo,
+                        Fecha,
+                        Monto,
+                        Moneda,
+                        Cuota,
+                        Plazo,
+                        CuotaAplicada,
+                        Tasa,
+                        Saldo
+                    FROM (
+                        -- INTRA
+                        SELECT
+                            'Intrafinanciamientos' Tipo,
+                            f.FechaOtorgamiento Fecha,
+                            f.ImporteTotalPlan Monto,
+                            f.MonedaMovimiento Moneda,
+                            f.Importe Cuota,
+                            f.CantidadCuotasPlan Plazo,
+                            f.NoCuotaLiquidada CuotaAplicada,
+                            CAST(f.PlanExtraTasa AS VARCHAR) + '%' Tasa,
+                            f.PlanCuotaCapitalPend Saldo
+                        FROM BandejaFinanciamientos f
+                        WHERE 
+                            f.NumeroCuenta = hc.No_Cuenta
+                            AND f.FechaCierre = hc.Fecha_Corte
+                            AND f.PlanCuotaCapitalPend > 0
+                            AND f.EsIntra = 1
+
+                        UNION ALL
+
+                        -- EXTRA
+                        SELECT
+                            'Extrafinanciamientos',
+                            f.FechaOtorgamiento,
+                            f.ImporteTotalPlan,
+                            f.MonedaMovimiento,
+                            f.Importe,
+                            f.CantidadCuotasPlan,
+                            f.NoCuotaLiquidada,
+                            CAST(f.PlanExtraTasa AS VARCHAR) + '%',
+                            f.PlanCuotaCapitalPend
+                        FROM BandejaFinanciamientos f
+                        WHERE 
+                            f.NumeroCuenta = hc.No_Cuenta
+                            AND f.FechaCierre = hc.Fecha_Corte
+                            AND f.PlanCuotaCapitalPend > 0
+                            AND f.EsExtra = 1
+                    ) F
+                    FOR JSON PATH
+                ) AS Financiamientos
+
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        )
+
+    FROM BandejaEncabezado hc
+    INNER JOIN tcEstados tce 
+        ON tce.No_Tarjeta = hc.No_Tarjeta
+
+    -- 🔴 FILTROS CRÍTICOS (LOS QUE TE ESTABAN FALLANDO)
+    WHERE 
+        hc.Fecha_Corte = (SELECT FechaCorte FROM ParametrosCorte WHERE Estado='1')
+
+        AND EXISTS (
+            SELECT 1 
+            FROM BandejaDetalle d 
+            WHERE d.EC_DetalleNo_Cuenta = hc.No_Cuenta
+              AND d.Fecha_Corte = hc.Fecha_Corte
+        )
+
+        AND EXISTS (
+            SELECT 1 
+            FROM BandejaFinanciamientos f
+            WHERE f.NumeroCuenta = hc.No_Cuenta
+              AND f.FechaCierre = hc.Fecha_Corte
+        );
+
+    SELECT COUNT(*) AS cantidad 
+    FROM dbo.BandejaEstadoCuentaJson;
+
+END
