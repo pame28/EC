@@ -4,15 +4,6 @@ Paso 01. Revisión por Tipo de Generación(Tarea Script):
 
 Si le doy Editar Script obtengo esto:
 
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
-
 #region Namespaces
 using System;
 using System.Data;
@@ -22,19 +13,11 @@ using System.Windows.Forms;
 
 namespace ST_d3f9d4066c5f4b1983851fee25e55b92
 {
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
+
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
 
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
 			// TODO: Add your code here
@@ -43,12 +26,7 @@ namespace ST_d3f9d4066c5f4b1983851fee25e55b92
 		}
 
         #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
+
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -91,10 +69,7 @@ using System.Web.Script.Serialization;
 
 namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
 {
-	/// <summary>
-	/// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-	/// or parent of this class.
-	/// </summary>
+
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
@@ -517,12 +492,7 @@ namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
 		}
 
 		#region ScriptResults declaration
-		/// <summary>
-		/// This enum provides a convenient shorthand within the scope of this class for setting the
-		/// result of the script.
-		/// 
-		/// This code was generated automatically.
-		/// </summary>
+		
 		enum ScriptResults
 		{
 			Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -1115,11 +1085,7 @@ Dentro del contendor tenemos los siguientes pasos:
     1. Obtener cantidad de registros por lote (Tarea SQL): User::QueryRegistrosPorLote
     2. Inicializar Valores (Tarea Script): Si le doy Editar Script obtengo esto:
     #region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
+
 #endregion
 
 
@@ -1134,78 +1100,11 @@ using System.Text;
 
 namespace ST_d56e35846f184a0880b0bcfee48c5f1a
 {
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
+   
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
-        #region Help:  Using Integration Services variables and parameters in a script
-        /* To use a variable in this script, first ensure that the variable has been added to 
-         * either the list contained in the ReadOnlyVariables property or the list contained in 
-         * the ReadWriteVariables property of this script task, according to whether or not your
-         * code needs to write to the variable.  To add the variable, save this script, close this instance of
-         * Visual Studio, and update the ReadOnlyVariables and 
-         * ReadWriteVariables properties in the Script Transformation Editor window.
-         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-         * 
-         * Example of reading from a variable:
-         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
-         * 
-         * Example of writing to a variable:
-         *  Dts.Variables["User::myStringVariable"].Value = "new value";
-         * 
-         * Example of reading from a package parameter:
-         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
-         *  
-         * Example of reading from a project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
-         * 
-         * Example of reading from a sensitive project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
-         * */
-
-        #endregion
-
-        #region Help:  Firing Integration Services events from a script
-        /* This script task can fire events for logging purposes.
-         * 
-         * Example of firing an error event:
-         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
-         * 
-         * Example of firing an information event:
-         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
-         * 
-         * Example of firing a warning event:
-         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
-         * */
-        #endregion
-
-        #region Help:  Using Integration Services connection managers in a script
-        /* Some types of connection managers can be used in this script task.  See the topic 
-         * "Working with Connection Managers Programatically" for details.
-         * 
-         * Example of using an ADO.Net connection manager:
-         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
-         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
-         *
-         * Example of using a File connection manager
-         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
-         *  string filePath = (string)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
-         * */
-        #endregion
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
+      
 		public void Main()
 		{
             // TODO: Add your code here
@@ -1229,12 +1128,7 @@ namespace ST_d56e35846f184a0880b0bcfee48c5f1a
 		}
 
         #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
+      
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -1250,16 +1144,6 @@ namespace ST_d56e35846f184a0880b0bcfee48c5f1a
 3. Hay un contenedor llamado Generación EC por Lote: Dentro solo hay un paso:
       3.1: Genera EC Lote(Tarea Script): 
 
-
-      #region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
-
 #region Namespaces
 using System;
 using System.Data;
@@ -1274,79 +1158,10 @@ using System.Text;
 
 namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
 {
-	/// <summary>
-	/// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-	/// or parent of this class.
-	/// </summary>
+
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
-		#region Help:  Using Integration Services variables and parameters in a script
-		/* To use a variable in this script, first ensure that the variable has been added to 
-         * either the list contained in the ReadOnlyVariables property or the list contained in 
-         * the ReadWriteVariables property of this script task, according to whether or not your
-         * code needs to write to the variable.  To add the variable, save this script, close this instance of
-         * Visual Studio, and update the ReadOnlyVariables and 
-         * ReadWriteVariables properties in the Script Transformation Editor window.
-         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-         * 
-         * Example of reading from a variable:
-         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
-         * 
-         * Example of writing to a variable:
-         *  Dts.Variables["User::myStringVariable"].Value = "new value";
-         * 
-         * Example of reading from a package parameter:
-         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
-         *  
-         * Example of reading from a project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
-         * 
-         * Example of reading from a sensitive project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
-         * */
-
-		#endregion
-
-		#region Help:  Firing Integration Services events from a script
-		/* This script task can fire events for logging purposes.
-         * 
-         * Example of firing an error event:
-         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
-         * 
-         * Example of firing an information event:
-         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
-         * 
-         * Example of firing a warning event:
-         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
-         * */
-		#endregion
-
-		#region Help:  Using Integration Services connection managers in a script
-		/* Some types of connection managers can be used in this script task.  See the topic 
-         * "Working with Connection Managers Programatically" for details.
-         * 
-         * Example of using an ADO.Net connection manager:
-         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
-         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
-         *
-         * Example of using a File connection manager
-         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
-         *  string filePath = (string)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
-         * */
-		#endregion
-
-
-		/// <summary>
-		/// This method is called when this script task executes in the control flow.
-		/// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-		/// To open Help, press F1.
-		/// </summary>
-		/// 
 		public void Main2()
 		{
 			int CantidadLotes = Convert.ToInt32(Dts.Variables["User::CantidadLotes"].Value.ToString());
@@ -1417,12 +1232,6 @@ namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
 		}
 
 		#region ScriptResults declaration
-		/// <summary>
-		/// This enum provides a convenient shorthand within the scope of this class for setting the
-		/// result of the script.
-		/// 
-		/// This code was generated automatically.
-		/// </summary>
 		enum ScriptResults
 		{
 			Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -1474,153 +1283,81 @@ namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
         //Encabezado
 
         public string Origen { get; set; }
-
         public string Emisor { get; set; }
-
         public string No_Cuenta { get; set; }
-
         public string Nombre_TH_Tit { get; set; }
-
         public string Emisor_Madre { get; set; }
-
         public string Cuenta_Madre { get; set; }
-
         public string Nombre_Empresa { get; set; }
-
         public string Tipo_Tarjeta { get; set; }
         //public string Descripcion_Tipo_Tarjeta { get; set; }
-
         public string No_Tarjeta { get; set; }
-
         public string Fecha_Pago { get; set; }
-
         public string Fecha_Corte { get; set; }
-
         public decimal Pago_Contado_MN { get; set; }
-
         public decimal Pago_Minimo_MN { get; set; }
-
         public decimal Saldo_Vencido_MN { get; set; }
-
         public decimal Saldo_Anterior_MN { get; set; }
-
         public decimal Saldo_Final_MN { get; set; }
-
         public decimal Compras_Deb_MN { get; set; }
-
         public decimal Pagos_Cred_MN { get; set; }
-
         public decimal Sobregiro_MN { get; set; }
-
         public decimal Cuota_Mes_MN { get; set; }
-
         public decimal Pago_Contado_ME { get; set; }
-
         public decimal Pago_Minimo_ME { get; set; }
-
         public decimal Saldo_Vencido_ME { get; set; }
-
         public decimal Saldo_Anterior_ME { get; set; }
-
         public decimal Saldo_Final_ME { get; set; }
         public decimal Saldo_Consumo_MN { get; set; }
         public decimal Saldo_Consumo_ME { get; set; }
         public decimal Compras_Deb_ME { get; set; }
-
         public decimal Pagos_Cred_ME { get; set; }
-
         public decimal Sobregiro_ME { get; set; }
-
         public decimal Cuota_Mes_ME { get; set; }
-
         public string Moneda_Lim_Cre { get; set; }
-
         public decimal Limite_Credito { get; set; }
-
         public decimal Disponible_Cta_MN { get; set; }
-
         public decimal Disponible_Cta_ME { get; set; }
-
         public decimal Disponible_Ret_MN { get; set; }
-
         public decimal Disponible_Ret_ME { get; set; }
-
         public decimal PTS_Saldo_Ant { get; set; }
-
         public decimal PTS_Ganados { get; set; }
-
         public decimal PTS_Usuados { get; set; }
-
         public decimal PTS_Saldo_Actual { get; set; }
-
         public string Moneda_Lim_EF { get; set; }
-
         public decimal EF_Limite { get; set; }
-
         public decimal EF_Saldo_MN { get; set; }
-
         public decimal EF_Debitos_MN { get; set; }
-
         public decimal EF_Creditos_MN { get; set; }
-
         public decimal EF_Saldo_ME { get; set; }
-
         public decimal EF_Debitos_ME { get; set; }
-
         public decimal EF_Creditos_ME { get; set; }
-
         public decimal EF_Disponible_MN { get; set; }
-
         public decimal EF_Disponible_ME { get; set; }
-
         public decimal Tasa_Int_Anual_MN { get; set; }
-
         public decimal Tasa_Int_Anual_ME { get; set; }
-
         public string Direccion_1 { get; set; }
-
         public string Direccion_2 { get; set; }
-
         public string Direccion_3 { get; set; }
-
         public string Apdo_Postal { get; set; }
-
         public string Cidudad { get; set; }
-
         public string Mensaje_1 { get; set; }
-
         public string Mensaje_2 { get; set; }
-
         public string Mensaje_3 { get; set; }
-
         public string Mensaje_4 { get; set; }
-
         public string Mensaje_5 { get; set; }
-
         public string Tarjeta_Imprimir { get; set; }
-
         public decimal Costo_Anual_Tot_MN { get; set; }
-
         public decimal Costo_Anual_Tot_ME { get; set; }
-
         public int? Plazo_Canc_Deuda_MN { get; set; }
-
         public int? Plazo_Canc_Deuda_ME { get; set; }
-
         public decimal Interes_Pago_Min_MN { get; set; }
-
         public decimal Interes_Pago_Min_ME { get; set; }
-
         public string Correo { get; set; }
-
         public string FechaCarga { get; set; }
-
         public decimal Limite_CreditoMN { get; set; }
-
         public decimal Interes_Corriente_MN { get; set; }
-
         public decimal Interes_Corriente_ME { get; set; }
-
         public int? Estado { get; set; }
     }
 }
@@ -2015,7 +1752,6 @@ namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
                 return false;
             }
         }
-
         private string BuscarCuentaVASA(Object CM, string Cuenta)
         {
             SqlConnection conn = (System.Data.SqlClient.SqlConnection)CM;
@@ -2040,7 +1776,6 @@ namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
                     CuentaVASA = sqlDataReader["CuentaVASA"].ToString();
                 }
             }
-
             //Eliminar data reader
             sqlDataReader.Dispose();
 
@@ -2094,18 +1829,7 @@ namespace ST_ffd89e0a44b34a35984b2a3ee7c75ff2
 }
 
 
-
-
 4. Finalización de Json (Tarea Script)
-
-  #region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
 
 #region Namespaces
 using System;
@@ -2119,26 +1843,11 @@ using System.Text;
 
 namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
 {
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
-
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
-            // TODO: Add your code here
-
-
             try
             {
                 string FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
@@ -2154,7 +1863,6 @@ namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
                 //ZipJson(@"" + RutaJson, @"" + RutaJson + ".zip", NombreJson.Replace("json", "zip"));
 
                 //ZipJson(@"" + RutaJson, @"" + RutaJson + ".zip", "\\Zip_" + NombreJson);
-
                 Dts.TaskResult = (int)ScriptResults.Success;
             }
             catch (Exception ex)
@@ -2167,38 +1875,19 @@ namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
             System.IO.Compression.ZipFile.CreateFromDirectory(sourceDirectoryName, destinationDirectoryName);
             File.Move(destinationDirectoryName, sourceDirectoryName + "\\" + renameValue);
         }
-
         #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
             Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
         };
         #endregion
-
 	}
 }
 
-
-
-
 PASO 03. Luego, ambas subdivisiones continuan en lo mismo: 
 
-Elimina Contador (Tarea Script): #region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
-
+Elimina Contador (Tarea Script):
 #region Namespaces
 using System;
 using System.Data;
@@ -2209,78 +1898,9 @@ using System.IO;
 
 namespace ST_3a6c2b47a3ba458aa574102805da6e4e
 {
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
-        #region Help:  Using Integration Services variables and parameters in a script
-        /* To use a variable in this script, first ensure that the variable has been added to 
-         * either the list contained in the ReadOnlyVariables property or the list contained in 
-         * the ReadWriteVariables property of this script task, according to whether or not your
-         * code needs to write to the variable.  To add the variable, save this script, close this instance of
-         * Visual Studio, and update the ReadOnlyVariables and 
-         * ReadWriteVariables properties in the Script Transformation Editor window.
-         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-         * 
-         * Example of reading from a variable:
-         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
-         * 
-         * Example of writing to a variable:
-         *  Dts.Variables["User::myStringVariable"].Value = "new value";
-         * 
-         * Example of reading from a package parameter:
-         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
-         *  
-         * Example of reading from a project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
-         * 
-         * Example of reading from a sensitive project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
-         * */
-
-        #endregion
-
-        #region Help:  Firing Integration Services events from a script
-        /* This script task can fire events for logging purposes.
-         * 
-         * Example of firing an error event:
-         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
-         * 
-         * Example of firing an information event:
-         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
-         * 
-         * Example of firing a warning event:
-         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
-         * */
-        #endregion
-
-        #region Help:  Using Integration Services connection managers in a script
-        /* Some types of connection managers can be used in this script task.  See the topic 
-         * "Working with Connection Managers Programatically" for details.
-         * 
-         * Example of using an ADO.Net connection manager:
-         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
-         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
-         *
-         * Example of using a File connection manager
-         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
-         *  string filePath = (string)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
-         * */
-        #endregion
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
             // TODO: Add your code here
@@ -2288,8 +1908,6 @@ namespace ST_3a6c2b47a3ba458aa574102805da6e4e
              RutaJson = RutaJson+ Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
             string path = @"" + RutaJson  + "\\" + "Contador.txt";
             string path2 = @"" + RutaJson  + "\\" + "Detalle_procesados.txt";
-
-
 			string cantidadproc = File.ReadAllText(path).ToString();
             File.Delete(path);
             File.AppendAllText(path2, "Cantidad de registros generados: " + cantidadproc);
@@ -2298,33 +1916,16 @@ namespace ST_3a6c2b47a3ba458aa574102805da6e4e
 		}
 
         #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
             Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
         };
         #endregion
-
 	}
 }
 
-
-
 Paso 04: Encripta Data (Tarea Script): 
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
-
 
 #region Namespaces
 using System;
@@ -2339,78 +1940,11 @@ using ST_3ba5fe2c14ce475cbf9d979b3056e0ab.src;
 
 namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
 {
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
+
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
-        #region Help:  Using Integration Services variables and parameters in a script
-        /* To use a variable in this script, first ensure that the variable has been added to 
-         * either the list contained in the ReadOnlyVariables property or the list contained in 
-         * the ReadWriteVariables property of this script task, according to whether or not your
-         * code needs to write to the variable.  To add the variable, save this script, close this instance of
-         * Visual Studio, and update the ReadOnlyVariables and 
-         * ReadWriteVariables properties in the Script Transformation Editor window.
-         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-         * 
-         * Example of reading from a variable:
-         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
-         * 
-         * Example of writing to a variable:
-         *  Dts.Variables["User::myStringVariable"].Value = "new value";
-         * 
-         * Example of reading from a package parameter:
-         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
-         *  
-         * Example of reading from a project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
-         * 
-         * Example of reading from a sensitive project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
-         * */
 
-        #endregion
-
-        #region Help:  Firing Integration Services events from a script
-        /* This script task can fire events for logging purposes.
-         * 
-         * Example of firing an error event:
-         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
-         * 
-         * Example of firing an information event:
-         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
-         * 
-         * Example of firing a warning event:
-         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
-         * */
-        #endregion
-
-        #region Help:  Using Integration Services connection managers in a script
-        /* Some types of connection managers can be used in this script task.  See the topic 
-         * "Working with Connection Managers Programatically" for details.
-         * 
-         * Example of using an ADO.Net connection manager:
-         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
-         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
-         *
-         * Example of using a File connection manager
-         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
-         *  string filePath = (string)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
-         * */
-        #endregion
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
             string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
@@ -2470,12 +2004,6 @@ namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
         }
 
         #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -2487,12 +2015,7 @@ namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
 }
 
 
-
-
-
 Paso 05. Copiar JSON a historico (Tarea Sistema de Archivos):
-
-
 IsDestinationPathVaribale: True
 DestinationVariable: User::RutaHistoricoJson
 OverwriteDestination: True
@@ -2500,20 +2023,7 @@ SourceVariable: User:: RutaJson
 
 Operación: Copiar Directorio
 
-
-
-
-
-
 Paso 06. Elimina Archivos (Tarea Script):
-
-#region Help:  Introduction to the script task
-/* The Script Task allows you to perform virtually any operation that can be accomplished in
- * a .Net application within the context of an Integration Services control flow. 
- * 
- * Expand the other regions which have "Help" prefixes for examples of specific ways to use
- * Integration Services features within this script task. */
-#endregion
 
 
 #region Namespaces
@@ -2527,78 +2037,10 @@ using System.IO;
 
 namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
 {
-    /// <summary>
-    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
-    /// or parent of this class.
-    /// </summary>
+
 	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
 	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
 	{
-        #region Help:  Using Integration Services variables and parameters in a script
-        /* To use a variable in this script, first ensure that the variable has been added to 
-         * either the list contained in the ReadOnlyVariables property or the list contained in 
-         * the ReadWriteVariables property of this script task, according to whether or not your
-         * code needs to write to the variable.  To add the variable, save this script, close this instance of
-         * Visual Studio, and update the ReadOnlyVariables and 
-         * ReadWriteVariables properties in the Script Transformation Editor window.
-         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
-         * 
-         * Example of reading from a variable:
-         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
-         * 
-         * Example of writing to a variable:
-         *  Dts.Variables["User::myStringVariable"].Value = "new value";
-         * 
-         * Example of reading from a package parameter:
-         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
-         *  
-         * Example of reading from a project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
-         * 
-         * Example of reading from a sensitive project parameter:
-         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
-         * */
-
-        #endregion
-
-        #region Help:  Firing Integration Services events from a script
-        /* This script task can fire events for logging purposes.
-         * 
-         * Example of firing an error event:
-         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
-         * 
-         * Example of firing an information event:
-         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
-         * 
-         * Example of firing a warning event:
-         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
-         * */
-        #endregion
-
-        #region Help:  Using Integration Services connection managers in a script
-        /* Some types of connection managers can be used in this script task.  See the topic 
-         * "Working with Connection Managers Programatically" for details.
-         * 
-         * Example of using an ADO.Net connection manager:
-         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
-         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
-         *
-         * Example of using a File connection manager
-         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
-         *  string filePath = (string)rawConnection;
-         *  //Use the connection in some code here, then release the connection
-         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
-         * */
-        #endregion
-
-
-		/// <summary>
-        /// This method is called when this script task executes in the control flow.
-        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-        /// To open Help, press F1.
-        /// </summary>
 		public void Main()
 		{
 			string sourceDirectory = @"" + Dts.Variables["RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["FechaCorte"].Value).ToString("yyyy-MM-dd");
@@ -2656,12 +2098,6 @@ namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
 		}
 
         #region ScriptResults declaration
-        /// <summary>
-        /// This enum provides a convenient shorthand within the scope of this class for setting the
-        /// result of the script.
-        /// 
-        /// This code was generated automatically.
-        /// </summary>
         enum ScriptResults
         {
             Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
@@ -2671,7 +2107,5 @@ namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
 
 	}
 }
-
-
 
 Y ahi termina esta fase
