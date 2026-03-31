@@ -1,86 +1,11 @@
-ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson_Final]
-AS
-BEGIN
-    SET NOCOUNT ON;
+Fijate que hay que quitarte la etiqueta al numero de tarejta, porque la estructura es asi:
 
-    DECLARE @FechaCorte VARCHAR(10);
-
-    SELECT @FechaCorte = FechaCorte
-    FROM ParametrosCorte
-    WHERE Estado = '1';
-
-    TRUNCATE TABLE BandejaEstadoCuentaJson;
-
-    INSERT INTO BandejaEstadoCuentaJson
-    (
-        Fecha_Corte,
-        No_Tarjeta,
-        No_Cuenta,
-        Correo,
-        Estado,
-        Json
-    )
-    SELECT
-        hc.Fecha_Corte,
-        hc.No_Tarjeta,
-        hc.No_Cuenta,
-        hc.Correo,
-        '2',
-
-        JSON_QUERY(
-        (
-            SELECT
-
-                -- 🔥 ESTRUCTURA PRINCIPAL POR TARJETA
-                hc.No_Tarjeta,
-
-                -- ================= ENCABEZADO =================
-                JSON_QUERY((
-                    SELECT 
-                        hc.No_Cuenta,
-                        hc.Nombre_TH_Tit,
-                        hc.Emisor,
-                        hc.Fecha_Corte
-                    FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
-                )) AS Encabezado,
-
-                -- ================= DETALLE =================
-                ISNULL(JSON_QUERY((
-                    SELECT 
-                        d.Fecha_Consumo,
-                        d.Descripcion_Mov,
-                        d.DebitosMN,
-                        d.CreditosMN
-                    FROM BandejaDetalle d
-                    WHERE 
-                        d.EC_DetalleNo_Cuenta = hc.No_Cuenta
-                        AND d.Fecha_Corte = hc.Fecha_Corte
-                    FOR JSON PATH
-                )), '[]') AS Detalle,
-
-                -- ================= FINANCIAMIENTOS =================
-                ISNULL(JSON_QUERY((
-                    SELECT
-                        f.FechaOtorgamiento,
-                        f.ImporteTotalPlan,
-                        f.MonedaMovimiento,
-                        f.CantidadCuotasPlan,
-                        f.NoCuotaLiquidada,
-                        f.PlanCuotaCapitalPend
-                    FROM BandejaFinanciamientos f
-                    WHERE 
-                        f.NumeroCuenta = hc.No_Cuenta
-                        AND f.FechaCierre = hc.Fecha_Corte
-                        AND f.PlanCuotaCapitalPend > 0
-                    FOR JSON PATH
-                )), '[]') AS Financiamientos
-
-            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
-        ))
-
-    FROM BandejaEncabezado hc
-
-    WHERE hc.Fecha_Corte = @FechaCorte;
-
-END
-GO
+"1000000002926722": {
+    "Encabezado": {
+        
+    },
+    "Detalle": [
+       
+    ],
+    "Financiamientos": []
+}
