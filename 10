@@ -35,29 +35,15 @@ BEGIN
 
         (
             SELECT
-                -- =======================
                 -- ENCABEZADO
-                -- =======================
                 (
                     SELECT 
-                        hc.Origen,
-                        hc.Emisor,
-                        hc.No_Cuenta,
-                        hc.Nombre_TH_Tit,
-                        hc.No_Tarjeta,
-                        hc.Fecha_Pago,
-                        hc.Fecha_Corte,
-                        hc.Saldo_Final_MN,
-                        hc.Saldo_Final_ME,
-                        hc.Limite_Credito,
-                        hc.Correo,
+                        hc.*,
                         tce.Estado
                     FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                 ) AS Encabezado,
 
-                -- =======================
-                -- DETALLE
-                -- =======================
+                -- DETALLE (MISMO FILTRO ORIGINAL)
                 (
                     SELECT 
                         d.Fecha_Consumo,
@@ -72,20 +58,20 @@ BEGIN
                             a.Fecha_Consumo,
                             1 Tipo_Reg,
                             a.Descripcion_Mov,
-                            CASE WHEN a.Moneda_Mov = 'HN' THEN a.Monto_Mov ELSE 0 END DebitosMN,
-                            0 CreditosMN,
-                            CASE WHEN a.Moneda_Mov = 'DO' THEN a.Monto_Mov ELSE 0 END DebitosME,
-                            0 CreditosME
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento='D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento='C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento='D' THEN a.Monto_Mov ELSE 0 END DebitosME,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento='C' THEN a.Monto_Mov ELSE 0 END CreditosME
                         FROM BandejaDetalle a
+                        INNER JOIN TiposMovimientos b
+                            ON b.CodMovimiento = a.Codigo_Mov
                         WHERE a.EC_DetalleNo_Cuenta = hc.No_Cuenta
                           AND a.Fecha_Corte = hc.Fecha_Corte
                     ) d
                     FOR JSON PATH
                 ) AS Detalle,
 
-                -- =======================
-                -- FINANCIAMIENTOS
-                -- =======================
+                -- FINANCIAMIENTOS (FILTROS RESTAURADOS)
                 (
                     SELECT 
                         f.Tipo,
@@ -94,35 +80,45 @@ BEGIN
                         f.Moneda,
                         f.Cuota,
                         f.Plazo,
+                        f.CuotaAplicada,
+                        f.Tasa,
                         f.Saldo
                     FROM (
                         SELECT
-                            'Intrafinanciamiento' Tipo,
-                            FechaOtorgamiento Fecha,
-                            ImporteTotalPlan Monto,
-                            MonedaMovimiento Moneda,
-                            Importe Cuota,
-                            CantidadCuotasPlan Plazo,
-                            PlanCuotaCapitalPend Saldo
-                        FROM BandejaFinanciamientos
-                        WHERE NumeroCuenta = hc.No_Cuenta
-                          AND FechaCierre = hc.Fecha_Corte
-                          AND EsIntra = 1
+                            'Intrafinanciamientos' Tipo,
+                            f.FechaOtorgamiento Fecha,
+                            f.ImporteTotalPlan Monto,
+                            f.MonedaMovimiento Moneda,
+                            f.Importe Cuota,
+                            f.CantidadCuotasPlan Plazo,
+                            f.NoCuotaLiquidada CuotaAplicada,
+                            CASE WHEN f.PlanExtraTasa = 0 THEN '0%' 
+                                 ELSE CAST(f.PlanExtraTasa AS VARCHAR) + '%' END Tasa,
+                            f.PlanCuotaCapitalPend Saldo
+                        FROM BandejaFinanciamientos f
+                        WHERE f.NumeroCuenta = hc.No_Cuenta
+                          AND f.FechaCierre = hc.Fecha_Corte
+                          AND f.PlanCuotaCapitalPend > 0
+                          AND f.EsIntra = 1
 
                         UNION ALL
 
                         SELECT
-                            'Extrafinanciamiento',
-                            FechaOtorgamiento,
-                            ImporteTotalPlan,
-                            MonedaMovimiento,
-                            Importe,
-                            CantidadCuotasPlan,
-                            PlanCuotaCapitalPend
-                        FROM BandejaFinanciamientos
-                        WHERE NumeroCuenta = hc.No_Cuenta
-                          AND FechaCierre = hc.Fecha_Corte
-                          AND EsExtra = 1
+                            'Extrafinanciamientos',
+                            f.FechaOtorgamiento,
+                            f.ImporteTotalPlan,
+                            f.MonedaMovimiento,
+                            f.Importe,
+                            f.CantidadCuotasPlan,
+                            f.NoCuotaLiquidada,
+                            CASE WHEN f.PlanExtraTasa = 0 THEN '0%' 
+                                 ELSE CAST(f.PlanExtraTasa AS VARCHAR) + '%' END,
+                            f.PlanCuotaCapitalPend
+                        FROM BandejaFinanciamientos f
+                        WHERE f.NumeroCuenta = hc.No_Cuenta
+                          AND f.FechaCierre = hc.Fecha_Corte
+                          AND f.PlanCuotaCapitalPend > 0
+                          AND f.EsExtra = 1
                     ) f
                     FOR JSON PATH
                 ) AS Financiamientos
@@ -140,21 +136,3 @@ BEGIN
     FROM BandejaEstadoCuentaJson;
 
 END
-
-
-
-
-
-
-
-
-
-
-CREATE INDEX IX_BandejaDetalle_CuentaFecha 
-ON BandejaDetalle (EC_DetalleNo_Cuenta, Fecha_Corte);
-
-CREATE INDEX IX_BandejaFinanciamientos_CuentaFecha 
-ON BandejaFinanciamientos (NumeroCuenta, FechaCierre);
-
-CREATE INDEX IX_BandejaEncabezado_Fecha 
-ON BandejaEncabezado (Fecha_Corte);
