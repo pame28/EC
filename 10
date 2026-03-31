@@ -1,22 +1,606 @@
-ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson_FINAL]
+
+Ok mira tengo ahora problemas con la estructura del JSON
+
+Te voy a mostrar dos ejemplos de como deberia verse:
+
+EJEMPLO 01:
+
+"1000000002926722": {
+    "Encabezado": {
+        "Origen": "VASA",
+        "Emisor": "404041",
+        "No_Cuenta": "5000001674571",
+        "Nombre_TH_Tit": "JORGE JOSE FLORES MOSCOSO",
+        "Emisor_Madre": "404041",
+        "Cuenta_Madre": "",
+        "Nombre_Empresa": "",
+        "Tipo_Tarjeta": "VI1702",
+        "No_Tarjeta": "1000000002926722",
+        "Fecha_Pago": "02/06/2025",
+        "Fecha_Corte": "06/05/2025",
+        "Pago_Contado_MN": 24076.63,
+        "Pago_Minimo_MN": 1500.00,
+        "Saldo_Vencido_MN": 0.00,
+        "Saldo_Anterior_MN": 22771.16,
+        "Saldo_Final_MN": 24076.63,
+        "Compras_Deb_MN": 24076.63,
+        "Pagos_Cred_MN": 22771.16,
+        "Sobregiro_MN": 0.00,
+        "Cuota_Mes_MN": 1500.00,
+        "Pago_Contado_ME": 22.99,
+        "Pago_Minimo_ME": 10.00,
+        "Saldo_Vencido_ME": 0.00,
+        "Saldo_Anterior_ME": 23.90,
+        "Saldo_Final_ME": 22.99,
+        "Saldo_Consumo_MN": 24076.63,
+        "Saldo_Consumo_ME": 22.99,
+        "Compras_Deb_ME": 22.99,
+        "Pagos_Cred_ME": 23.90,
+        "Sobregiro_ME": 0.00,
+        "Cuota_Mes_ME": 10.00,
+        "Moneda_Lim_Cre": "$",
+        "Limite_Credito": 1400.00,
+        "Disponible_Cta_MN": 11616.57,
+        "Disponible_Cta_ME": 448.16,
+        "Disponible_Ret_MN": 11616.57,
+        "Disponible_Ret_ME": 448.16,
+        "PTS_Saldo_Ant": 0,
+        "PTS_Ganados": 0,
+        "PTS_Usuados": 0,
+        "PTS_Saldo_Actual": 0,
+        "Moneda_Lim_EF": "$",
+        "EF_Limite": 1386.00,
+        "EF_Saldo_MN": 0.00,
+        "EF_Debitos_MN": 0.00,
+        "EF_Creditos_MN": 0.00,
+        "EF_Saldo_ME": 0.00,
+        "EF_Debitos_ME": 0.00,
+        "EF_Creditos_ME": 0.00,
+        "EF_Disponible_MN": 54432.00,
+        "EF_Disponible_ME": 2099.94,
+        "Tasa_Int_Anual_MN": 50.07,
+        "Tasa_Int_Anual_ME": 50.07,
+        "Direccion_1": "ENVIAR SOLO POR CORREO ELECTRONICO",
+        "Direccion_2": "ADORES COMERCIALES  ALDEA EL BORBOTON DE",
+        "Direccion_3": "SVIO CARRETERA CA 5 HACIA RIO LINDO CONT",
+        "Apdo_Postal": "",
+        "Ciudad": "SAN PEDRO SULA",
+        "Mensaje_1": "",
+        "Mensaje_2": "",
+        "Mensaje_3": "",
+        "Mensaje_4": "",
+        "Mensaje_5": "",
+        "Tarjeta_Imprimir": "6922",
+        "Costo_Anual_Tot_MN": 0.00,
+        "Costo_Anual_Tot_ME": 0.00,
+        "Plazo_Canc_Deuda_MN": 83,
+        "Plazo_Canc_Deuda_ME": 0,
+        "Interes_Pago_Min_MN": 1762.51,
+        "Interes_Pago_Min_ME": 1.47,
+        "Correo": "JORGE_FLORES07@HOTMAIL.COM",
+        "Limite_CreditoMN": 36289.12,
+        "Interes_Corriente_MN": 0.00,
+        "Interes_Corriente_ME": 0.00,
+        "Estado": 20
+    },
+    "Detalle": [
+        {
+            "Fecha_Consumo": "07/04/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "CARGO POR ADELANTO",
+            "DebitosMN": 24.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 0.00,
+            "CreditosME": 0.00
+        },
+
+        {
+            "Fecha_Consumo": "06/05/2025",
+            "Tipo_Reg": 3,
+            "Descripcion_Mov": "Total Titular + Adicional",
+            "DebitosMN": 24076.63,
+            "CreditosMN": 22771.16,
+            "DebitosME": 22.99,
+            "CreditosME": 23.90
+        }
+    ],
+    "Financiamientos": []
+}
+
+
+
+
+
+
+
+EJEMPLO 02:
+
+"1000000003192490": {
+    "Encabezado": {
+        "Origen": "VASA",
+        "Emisor": "491044",
+        "No_Cuenta": "5000001705281",
+        "Nombre_TH_Tit": "TERI IDALMI ZAPATA FIGUEROA",
+        "Emisor_Madre": "491044",
+        "Cuenta_Madre": "",
+        "Nombre_Empresa": "",
+        "Tipo_Tarjeta": "VI0404",
+        "No_Tarjeta": "1000000003192490",
+        "Fecha_Pago": "02/06/2025",
+        "Fecha_Corte": "06/05/2025",
+        "Pago_Contado_MN": 82880.07,
+        "Pago_Minimo_MN": 5600.00,
+        "Saldo_Vencido_MN": 0.00,
+        "Saldo_Anterior_MN": 85405.00,
+        "Saldo_Final_MN": 82880.07,
+        "Compras_Deb_MN": 3375.07,
+        "Pagos_Cred_MN": 5900.00,
+        "Sobregiro_MN": 0.00,
+        "Cuota_Mes_MN": 5600.00,
+        "Pago_Contado_ME": 139.47,
+        "Pago_Minimo_ME": 124.00,
+        "Saldo_Vencido_ME": 0.00,
+        "Saldo_Anterior_ME": 134.98,
+        "Saldo_Final_ME": 139.47,
+        "Saldo_Consumo_MN": 79505.00,
+        "Saldo_Consumo_ME": 135.96,
+        "Compras_Deb_ME": 138.49,
+        "Pagos_Cred_ME": 134.00,
+        "Sobregiro_ME": 0.00,
+        "Cuota_Mes_ME": 124.00,
+        "Moneda_Lim_Cre": "$",
+        "Limite_Credito": 10300.00,
+        "Disponible_Cta_MN": 145991.27,
+        "Disponible_Cta_ME": 5632.21,
+        "Disponible_Ret_MN": 145991.27,
+        "Disponible_Ret_ME": 5632.21,
+        "PTS_Saldo_Ant": 18195,
+        "PTS_Ganados": 26,
+        "PTS_Usuados": 0,
+        "PTS_Saldo_Actual": 18221,
+        "Moneda_Lim_EF": "$",
+        "EF_Limite": 10197.00,
+        "EF_Saldo_MN": 0.00,
+        "EF_Debitos_MN": 0.00,
+        "EF_Creditos_MN": 0.00,
+        "EF_Saldo_ME": 1330.89,
+        "EF_Debitos_ME": 120.99,
+        "EF_Creditos_ME": 0.00,
+        "EF_Disponible_MN": 0.00,
+        "EF_Disponible_ME": 0.00,
+        "Tasa_Int_Anual_MN": 50.07,
+        "Tasa_Int_Anual_ME": 50.07,
+        "Direccion_1": "ENVIAR SOLO POR CORREO ELECTRONICO",
+        "Direccion_2": "L BLOQUERA Y GOLOSI  NAS LA LUZ COLONIA",
+        "Direccion_3": "DAVID COROZAL CLL PPA L EN GOLOSINAS LA",
+        "Apdo_Postal": "",
+        "Ciudad": "LA CEIBA",
+        "Mensaje_1": "",
+        "Mensaje_2": "",
+        "Mensaje_3": "",
+        "Mensaje_4": "",
+        "Mensaje_5": "",
+        "Tarjeta_Imprimir": "3327",
+        "Costo_Anual_Tot_MN": 0.00,
+        "Costo_Anual_Tot_ME": 0.00,
+        "Plazo_Canc_Deuda_MN": 109,
+        "Plazo_Canc_Deuda_ME": 6,
+        "Interes_Pago_Min_MN": 3427.92,
+        "Interes_Pago_Min_ME": 0.78,
+        "Correo": "ZAPATA252001@YAHOO.COM",
+        "Limite_CreditoMN": 266984.24,
+        "Interes_Corriente_MN": 3375.07,
+        "Interes_Corriente_ME": 3.51,
+        "Estado": 20
+    },
+    "Detalle": [
+        {
+            "Fecha_Consumo": "26/04/2023",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "TRANSMUNDO          25/36",
+            "DebitosMN": 0.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 71.22,
+            "CreditosME": 0.00
+        },
+        {
+            "Fecha_Consumo": "03/05/2023",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "TRANSMUNDO          25/36",
+            "DebitosMN": 0.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 49.77,
+            "CreditosME": 0.00
+        },
+        {
+            "Fecha_Consumo": "24/04/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ABONO A SU CUENTA",
+            "DebitosMN": 0.00,
+            "CreditosMN": 5900.00,
+            "DebitosME": 0.00,
+            "CreditosME": 0.00
+        },
+        {
+            "Fecha_Consumo": "24/04/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ABONO A SU CUENTA",
+            "DebitosMN": 0.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 0.00,
+            "CreditosME": 121.00
+        },
+        {
+            "Fecha_Consumo": "29/04/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "NETFLIX.COM",
+            "DebitosMN": 0.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 13.99,
+            "CreditosME": 0.00
+        },
+        {
+            "Fecha_Consumo": "30/04/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ABONO A SU CUENTA",
+            "DebitosMN": 0.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 0.00,
+            "CreditosME": 13.00
+        },
+        {
+            "Fecha_Consumo": "06/05/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "INTERES POR FINANCIAMIENTO",
+            "DebitosMN": 3375.07,
+            "CreditosMN": 0.00,
+            "DebitosME": 0.00,
+            "CreditosME": 0.00
+        },
+        {
+            "Fecha_Consumo": "06/05/2025",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "INTERES POR FINANCIAMIENTO",
+            "DebitosMN": 0.00,
+            "CreditosMN": 0.00,
+            "DebitosME": 3.51,
+            "CreditosME": 0.00
+        },
+        {
+            "Fecha_Consumo": "06/05/2025",
+            "Tipo_Reg": 2,
+            "Descripcion_Mov": "Subtotal TERI IDALMI ******3327",
+            "DebitosMN": 3375.07,
+            "CreditosMN": 5900.00,
+            "DebitosME": 138.49,
+            "CreditosME": 134.00
+        },
+        {
+            "Fecha_Consumo": "06/05/2025",
+            "Tipo_Reg": 3,
+            "Descripcion_Mov": "Total Titular + Adicional",
+            "DebitosMN": 3375.07,
+            "CreditosMN": 5900.00,
+            "DebitosME": 138.49,
+            "CreditosME": 134.00
+        }
+    ],
+    "Financiamientos": [
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "03/05/2023",
+            "Monto": 1791.64,
+            "Moneda": "DO",
+            "Cuota": 49.77,
+            "Plazo": 36,
+            "CuotaAplicada": 25,
+            "Tasa": "0%",
+            "Saldo": 547.39
+        },
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "26/04/2023",
+            "Monto": 2564.00,
+            "Moneda": "DO",
+            "Cuota": 71.22,
+            "Plazo": 36,
+            "CuotaAplicada": 25,
+            "Tasa": "0%",
+            "Saldo": 783.50
+        }
+    ]
+}
+
+
+
+
+
+
+Y ASI ... Es como actualmente se mira el JSON que hemos trabajado:
+
+{
+    "Origen": "VASA",
+    "Emisor": "491044  ",
+    "No_Cuenta": "5000001833379",
+    "Nombre_TH_Tit": "GABRIELA JUDITH MURILLO LUKE            ",
+    "Emisor_Madre": "491044  ",
+    "Cuenta_Madre": "          ",
+    "Nombre_Empresa": "                              ",
+    "Tipo_Tarjeta": "VI0404    ",
+    "No_Tarjeta": "1000000004053867",
+    "Fecha_Pago": "2026-04-06T00:00:00",
+    "Fecha_Corte": "2026-03-10T00:00:00",
+    "Pago_Contado_MN": 8770.5500,
+    "Pago_Minimo_MN": 4700.0000,
+    "Saldo_Vencido_MN": 0.0000,
+    "Saldo_Anterior_MN": 25625.5500,
+    "Saldo_Final_MN": 8770.5500,
+    "Compras_Deb_MN": 8775.0000,
+    "Pagos_Cred_MN": 25630.0000,
+    "Compras_Deb_ME": 42.5000,
+    "Pagos_Cred_ME": 84.5000,
+    "Limite_Credito": 5800.0000,
+    "Disponible_Cta_MN": 93896.9800,
+    "Disponible_Cta_ME": 3524.9000,
+    "Correo": "GABBYMLUKE@GMAIL.COM",
+    "Estado": "20",
+    "Detalle": [
+        {
+            "Fecha_Consumo": "2026-03-10T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "SUPERMERCADO LA COLONIA 2",
+            "DebitosMN": 61.0300,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-03-02T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "DETODO                   ",
+            "DebitosMN": 177.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-03-01T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "FARMACIA SIMAN TEG 43    ",
+            "DebitosMN": 63.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-02-27T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "TIENDA MACDEL EXPRESS EL ",
+            "DebitosMN": 2341.8400,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-02-25T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "PRONTO UNITEC 2          ",
+            "DebitosMN": 83.5300,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-02-24T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "PRONTO UNITEC 2          ",
+            "DebitosMN": 39.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-02-21T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "UNO EXPRESS              ",
+            "DebitosMN": 1451.4700,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-02-19T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ESPRESSO AMERICANO UNITEC",
+            "DebitosMN": 47.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2025-07-03T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "eBay O*16-13230-425 09\/12",
+            "DebitosMN": 0.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 42.5000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2025-04-23T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "CONSUMO EN CUOTAS - 11\/24",
+            "DebitosMN": 3233.6300,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2025-03-10T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "EVERYTHING DECOR    13\/18",
+            "DebitosMN": 1277.5000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-03-03T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ABONO A SU CUENTA             ",
+            "DebitosMN": 0.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 42.0000
+        },
+        {
+            "Fecha_Consumo": "2026-03-03T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ABONO A SU CUENTA             ",
+            "DebitosMN": 0.0000,
+            "CreditosMN": 25630.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-02-25T00:00:00",
+            "Tipo_Reg": 1,
+            "Descripcion_Mov": "ABONO A SU CUENTA             ",
+            "DebitosMN": 0.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 42.5000
+        },
+        {
+            "Fecha_Consumo": "2026-03-10T00:00:00",
+            "Tipo_Reg": 2,
+            "Descripcion_Mov": "Subtotal",
+            "DebitosMN": 34405.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 127.0000,
+            "CreditosME": 0.0000
+        },
+        {
+            "Fecha_Consumo": "2026-03-10T00:00:00",
+            "Tipo_Reg": 3,
+            "Descripcion_Mov": "Total",
+            "DebitosMN": 34532.0000,
+            "CreditosMN": 0.0000,
+            "DebitosME": 0.0000,
+            "CreditosME": 0.0000
+        }
+    ],
+    "Financiamientos": [
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "2025-07-03",
+            "Monto": 509.99,
+            "Moneda": "DO",
+            "Cuota": 42.50,
+            "Plazo": 12,
+            "CuotaAplicada": 9,
+            "Tasa": "0.0000%",
+            "Saldo": 127.49
+        },
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "2025-07-03",
+            "Monto": 509.99,
+            "Moneda": "DO",
+            "Cuota": 42.50,
+            "Plazo": 12,
+            "CuotaAplicada": 9,
+            "Tasa": "0.0000%",
+            "Saldo": 127.49
+        },
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "2025-03-10",
+            "Monto": 22995.00,
+            "Moneda": "HN",
+            "Cuota": 1277.50,
+            "Plazo": 18,
+            "CuotaAplicada": 13,
+            "Tasa": "0.0000%",
+            "Saldo": 6387.50
+        },
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "2025-03-10",
+            "Monto": 22995.00,
+            "Moneda": "HN",
+            "Cuota": 1277.50,
+            "Plazo": 18,
+            "CuotaAplicada": 13,
+            "Tasa": "0.0000%",
+            "Saldo": 6387.50
+        },
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "2025-04-23",
+            "Monto": 77607.04,
+            "Moneda": "HN",
+            "Cuota": 3233.63,
+            "Plazo": 24,
+            "CuotaAplicada": 11,
+            "Tasa": "0.0000%",
+            "Saldo": 42037.11
+        },
+        {
+            "Tipo": "Intrafinanciamientos",
+            "Fecha": "2025-04-23",
+            "Monto": 77607.04,
+            "Moneda": "HN",
+            "Cuota": 3233.63,
+            "Plazo": 24,
+            "CuotaAplicada": 11,
+            "Tasa": "0.0000%",
+            "Saldo": 42037.11
+        }
+    ]
+}
+
+
+
+
+
+Necesito que los compares, porque debe tener la misma estructura, exacta exacta ... 
+
+Te dejo como estpa mi SP actualmente: 
+
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaECTCJson6]    Script Date: 30/3/2026 23:13:33 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson6]
 AS
 BEGIN
     SET NOCOUNT ON;
+	  DECLARE @FechaCorte VARCHAR(10);
+
+    SELECT @FechaCorte = FechaCorte
+    FROM ParametrosCorte
+    WHERE Estado = '1';
 
     TRUNCATE TABLE dbo.BandejaEstadoCuentaJson;
 
-    ;WITH tcEstados AS (
+     ;WITH tcEstados AS (
         SELECT 
             et.NumeroTarjeta AS No_Tarjeta,
             CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) AS Estado
         FROM Tarjetas et
-        INNER JOIN (
-            SELECT NumeroTarjeta, MAX(FechaCarga) FechaCarga
-            FROM Tarjetas
-            GROUP BY NumeroTarjeta
-        ) ult 
-            ON ult.NumeroTarjeta = et.NumeroTarjeta 
-           AND ult.FechaCarga = et.FechaCarga
+        WHERE CONVERT(VARCHAR(10), et.FechaCarga, 103) + et.NumeroTarjeta IN (
+            SELECT 
+                CONVERT(VARCHAR(10), MAX(etfc.FechaCarga), 103) + etfc.NumeroTarjeta
+            FROM Tarjetas etfc
+            WHERE etfc.NumeroTarjeta IN (
+                SELECT No_Tarjeta FROM BandejaEstadoCuenta
+            )
+            GROUP BY etfc.NumeroTarjeta
+        )
     )
 
     INSERT INTO dbo.BandejaEstadoCuentaJson
@@ -191,28 +775,14 @@ BEGIN
         )
 
     FROM BandejaEncabezado hc
-    INNER JOIN tcEstados tce 
-        ON tce.No_Tarjeta = hc.No_Tarjeta
+	INNER JOIN tcEstados tce ON tce.No_Tarjeta = hc.No_Tarjeta
+    WHERE hc.Fecha_Corte = @FechaCorte;
+      --AND hc.No_Tarjeta IN (SELECT No_Tarjeta FROM tcEstados);
 
-    -- 🔴 FILTROS CRÍTICOS (LOS QUE TE ESTABAN FALLANDO)
-    WHERE 
-        hc.Fecha_Corte = (SELECT FechaCorte FROM ParametrosCorte WHERE Estado='1')
-
-        AND EXISTS (
-            SELECT 1 
-            FROM BandejaDetalle d 
-            WHERE d.EC_DetalleNo_Cuenta = hc.No_Cuenta
-              AND d.Fecha_Corte = hc.Fecha_Corte
-        )
-
-        AND EXISTS (
-            SELECT 1 
-            FROM BandejaFinanciamientos f
-            WHERE f.NumeroCuenta = hc.No_Cuenta
-              AND f.FechaCierre = hc.Fecha_Corte
-        );
-
-    SELECT COUNT(*) AS cantidad 
-    FROM dbo.BandejaEstadoCuentaJson;
+    -- =========================================
+    -- RESULTADO FINAL
+    -- =========================================
+    SELECT COUNT(*) AS cantidad
+    FROM BandejaEstadoCuentaJson;
 
 END
