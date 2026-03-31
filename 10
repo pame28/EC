@@ -1,28 +1,33 @@
-ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson_OPT]
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaECTCJson_OPT_FINAL]
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @FechaCorte VARCHAR(10)
+    DECLARE @FechaCorte VARCHAR(10);
 
-    SELECT @FechaCorte = FechaCorte 
-    FROM ParametrosCorte 
+    SELECT @FechaCorte = FechaCorte
+    FROM ParametrosCorte
     WHERE Estado = '1';
 
     TRUNCATE TABLE BandejaEstadoCuentaJson;
 
+    -- =========================================
+    -- 🔥 tcEstados ORIGINAL (NO TOCAR LOGICA)
+    -- =========================================
     ;WITH tcEstados AS (
         SELECT 
             et.NumeroTarjeta AS No_Tarjeta,
             CONVERT(VARCHAR, ISNULL(et.EstadoTarjeta, 0)) AS Estado
         FROM Tarjetas et
-        INNER JOIN (
-            SELECT NumeroTarjeta, MAX(FechaCarga) FechaCarga
-            FROM Tarjetas
-            GROUP BY NumeroTarjeta
-        ) ult 
-            ON ult.NumeroTarjeta = et.NumeroTarjeta 
-           AND ult.FechaCarga = et.FechaCarga
+        WHERE CONVERT(VARCHAR(10), et.FechaCarga, 103) + et.NumeroTarjeta IN (
+            SELECT 
+                CONVERT(VARCHAR(10), MAX(etfc.FechaCarga), 103) + etfc.NumeroTarjeta
+            FROM Tarjetas etfc
+            WHERE etfc.NumeroTarjeta IN (
+                SELECT No_Tarjeta FROM BandejaEstadoCuenta
+            )
+            GROUP BY etfc.NumeroTarjeta
+        )
     )
 
     INSERT INTO BandejaEstadoCuentaJson
@@ -35,7 +40,9 @@ BEGIN
 
         (
             SELECT
-                -- ENCABEZADO
+                -- =========================================
+                -- ENCABEZADO (COMPLETO)
+                -- =========================================
                 (
                     SELECT 
                         hc.*,
@@ -43,7 +50,9 @@ BEGIN
                     FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                 ) AS Encabezado,
 
-                -- DETALLE (MISMO FILTRO ORIGINAL)
+                -- =========================================
+                -- DETALLE (MISMA LOGICA)
+                -- =========================================
                 (
                     SELECT 
                         d.Fecha_Consumo,
@@ -54,24 +63,64 @@ BEGIN
                         d.DebitosME,
                         d.CreditosME
                     FROM (
+                        -- MOVIMIENTOS
                         SELECT
                             a.Fecha_Consumo,
                             1 Tipo_Reg,
                             a.Descripcion_Mov,
-                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento='D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
-                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento='C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
-                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento='D' THEN a.Monto_Mov ELSE 0 END DebitosME,
-                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento='C' THEN a.Monto_Mov ELSE 0 END CreditosME
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosME,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosME
                         FROM BandejaDetalle a
                         INNER JOIN TiposMovimientos b
                             ON b.CodMovimiento = a.Codigo_Mov
                         WHERE a.EC_DetalleNo_Cuenta = hc.No_Cuenta
                           AND a.Fecha_Corte = hc.Fecha_Corte
+
+                        UNION ALL
+
+                        -- SUBTOTALES
+                        SELECT
+                            a.Fecha_Corte,
+                            2,
+                            'Subtotal',
+                            SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
+                            SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END),
+                            SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
+                            SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END)
+                        FROM BandejaDetalle a
+                        INNER JOIN TiposMovimientos b
+                            ON b.CodMovimiento = a.Codigo_Mov
+                        WHERE a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+                          AND a.Fecha_Corte = hc.Fecha_Corte
+                        GROUP BY a.Fecha_Corte
+
+                        UNION ALL
+
+                        -- TOTAL
+                        SELECT
+                            a.Fecha_Corte,
+                            3,
+                            'Total Titular + Adicional',
+                            SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
+                            SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END),
+                            SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
+                            SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END)
+                        FROM BandejaDetalle a
+                        INNER JOIN TiposMovimientos b
+                            ON b.CodMovimiento = a.Codigo_Mov
+                        WHERE a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+                          AND a.Fecha_Corte = hc.Fecha_Corte
+                        GROUP BY a.Fecha_Corte
+
                     ) d
                     FOR JSON PATH
                 ) AS Detalle,
 
-                -- FINANCIAMIENTOS (FILTROS RESTAURADOS)
+                -- =========================================
+                -- FINANCIAMIENTOS (COMPLETO)
+                -- =========================================
                 (
                     SELECT 
                         f.Tipo,
@@ -127,12 +176,15 @@ BEGIN
         ) AS Json
 
     FROM BandejaEncabezado hc
-    INNER JOIN tcEstados tce 
-        ON tce.No_Tarjeta = hc.No_Tarjeta
 
-    WHERE hc.Fecha_Corte = @FechaCorte;
+    -- 🔥 FILTRO REAL (NO SIMPLIFICADO)
+    WHERE hc.Fecha_Corte = @FechaCorte
+      AND hc.No_Tarjeta IN (SELECT No_Tarjeta FROM tcEstados);
 
-    SELECT COUNT(*) AS cantidad 
+    -- =========================================
+    -- RESULTADO FINAL
+    -- =========================================
+    SELECT COUNT(*) AS cantidad
     FROM BandejaEstadoCuentaJson;
 
 END
