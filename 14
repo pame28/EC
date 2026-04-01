@@ -1,29 +1,44 @@
-public void InsertarHistorico(
-    DateTime fechaCorte,
-    string tarjeta,
-    string cuenta,
-    string correo,
-    string nombre = "",
-    string cuentaVasa = "",
-    int? lote = null
+CREATE PROCEDURE dbo.usp_InsertarHistoricoECJson
+(
+    @FechaCorte DATE,
+    @NoTarjeta CHAR(16),
+    @NoCuenta VARCHAR(25),
+    @NoCuentaVASA VARCHAR(25),
+    @Nombre VARCHAR(255),
+    @Correo VARCHAR(255),
+    @Origen VARCHAR(4) = NULL,
+    @Lote INT = NULL,
+    @Procesado CHAR(2)
 )
-{
-    using var conn = _sql.GetConnection();
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-    using var cmd = new SqlCommand("usp_InsertarHistoricoECJson", conn)
-    {
-        CommandType = CommandType.StoredProcedure
-    };
-
-    cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte);
-    cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta ?? "");
-    cmd.Parameters.AddWithValue("@NoCuenta", cuenta ?? "");
-    cmd.Parameters.AddWithValue("@NoCuentaVASA", cuentaVasa ?? "");
-    cmd.Parameters.AddWithValue("@Nombre", nombre ?? "");
-    cmd.Parameters.AddWithValue("@Correo", correo ?? "");
-    cmd.Parameters.AddWithValue("@Origen", DBNull.Value);
-    cmd.Parameters.AddWithValue("@Lote", lote ?? (object)DBNull.Value);
-    cmd.Parameters.AddWithValue("@Procesado", "SI");
-
-    cmd.ExecuteNonQuery();
-}
+    INSERT INTO dbo.HistoricoMaestroEstadosCuentaJSON
+    (
+        FechaCorte,
+        NoTarjeta,
+        NoCuenta,
+        NoCuentaVASA,
+        Nombre,
+        Correo,
+        Origen,
+        Lote,
+        Procesado,
+        FechaEjecucion
+    )
+    VALUES
+    (
+        @FechaCorte,
+        @NoTarjeta,
+        @NoCuenta,
+        ISNULL(@NoCuentaVASA, ''),
+        ISNULL(@Nombre, ''),
+        ISNULL(@Correo, ''),
+        @Origen,
+        @Lote,
+        @Procesado,
+        GETDATE()
+    );
+END
+GO
