@@ -1,26 +1,29 @@
-Sabes tengo varias consultas .. y es ...que estoy pensando en futuro
+public void InsertarHistorico(
+    DateTime fechaCorte,
+    string tarjeta,
+    string cuenta,
+    string correo,
+    string nombre = "",
+    string cuentaVasa = "",
+    int? lote = null
+)
+{
+    using var conn = _sql.GetConnection();
 
-1. Yo tengo que implementar la parametrización de hilos, lotes.. Asi como lo enviaste me lo va a permitir?
+    using var cmd = new SqlCommand("usp_InsertarHistoricoECJson", conn)
+    {
+        CommandType = CommandType.StoredProcedure
+    };
 
-Y la otra cosa es que me gustaria que crearamos un SP para el insert que me muestras 
+    cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte);
+    cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta ?? "");
+    cmd.Parameters.AddWithValue("@NoCuenta", cuenta ?? "");
+    cmd.Parameters.AddWithValue("@NoCuentaVASA", cuentaVasa ?? "");
+    cmd.Parameters.AddWithValue("@Nombre", nombre ?? "");
+    cmd.Parameters.AddWithValue("@Correo", correo ?? "");
+    cmd.Parameters.AddWithValue("@Origen", DBNull.Value);
+    cmd.Parameters.AddWithValue("@Lote", lote ?? (object)DBNull.Value);
+    cmd.Parameters.AddWithValue("@Procesado", "SI");
 
-En sí esta es la tabla donde se tiene que hacer el insert:
-
-CREATE TABLE [dbo].[HistoricoMaestroEstadosCuentaJSON](
-	[IdRow] [int] IDENTITY(1,1) NOT NULL,
-	[FechaCorte] [date] NOT NULL,
-	[NoTarjeta] [char](16) NULL,
-	[NoCuenta] [varchar](25) NOT NULL,
-	[NoCuentaVASA] [varchar](25) NOT NULL,
-	[Nombre] [varchar](255) NOT NULL,
-	[Correo] [varchar](255) NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[Lote] [int] NULL,
-	[Procesado] [char](2) NOT NULL,
-	[FechaEjecucion] [datetime] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[IdRow] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
+    cmd.ExecuteNonQuery();
+}
