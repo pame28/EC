@@ -1,134 +1,132 @@
-ALTER PROCEDURE [dbo].[usp_ProcesarLoteEstadosCuenta]
-AS
-BEGIN
-    SET NOCOUNT ON;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-    DECLARE @TamanoLote INT;
-    DECLARE @Lote INT = 1;
-
-    -- Obtener tamaño lote
-    SELECT TOP 1 @TamanoLote = RegistrosPorLote
-    FROM ParametrosGeneracionEC;
-
-    IF @TamanoLote IS NULL OR @TamanoLote <= 0
-        SET @TamanoLote = 100;
-
-    WHILE (1 = 1)
-    BEGIN
-        BEGIN TRY
-            BEGIN TRAN;
-
-            -- 🔥 Tomar lote SIN OFFSET
-            SELECT TOP (@TamanoLote) *
-            INTO #Lote
-            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
-            WHERE Estado = 2
-            ORDER BY No_Tarjeta;
-
-            IF NOT EXISTS (SELECT 1 FROM #Lote)
-            BEGIN
-                ROLLBACK;
-                BREAK;
-            END
-
-            DECLARE @NoTarjeta VARCHAR(16);
-            DECLARE @Json NVARCHAR(MAX);
-
-            DECLARE cursor_lote CURSOR FOR
-            SELECT No_Tarjeta FROM #Lote;
-
-            OPEN cursor_lote;
-            FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
-
-            WHILE @@FETCH_STATUS = 0
-            BEGIN
-                DECLARE @TablaJson TABLE (JsonEstadoCuenta NVARCHAR(MAX));
-
-                INSERT INTO @TablaJson
-                EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
-
-                SELECT TOP 1 @Json = JsonEstadoCuenta FROM @TablaJson;
-
-                IF @Json IS NULL
-                    SET @Json = '{}';
-
-                -- 👉 AQUÍ puedes devolver directo si quieres stream (opcional)
-
-                FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
-            END
-
-            CLOSE cursor_lote;
-            DEALLOCATE cursor_lote;
-
-            -- 🔥 Marcar procesados
-            UPDATE b
-            SET Estado = 1
-            FROM BandejaEstadoCuenta b
-            INNER JOIN #Lote l
-                ON b.No_Tarjeta = l.No_Tarjeta
-                AND b.No_Cuenta = l.No_Cuenta;
-
-            -- 🔥 Histórico
-            INSERT INTO HistoricoMaestroEstadosCuentaJSON
-            (
-                FechaCorte,
-                NoTarjeta,
-                NoCuenta,
-                NoCuentaVASA,
-                Nombre,
-                Correo,
-                Origen,
-                Lote,
-                Procesado,
-                FechaEjecucion
-            )
-            SELECT 
-                Fecha_Corte,
-                No_Tarjeta,
-                No_Cuenta,
-                No_Cuenta_VASA,
-                Nombre,
-                Correo,
-                Origen,
-                @Lote,
-                1,
-                GETDATE()
-            FROM #Lote;
-
-            COMMIT;
-
-            DROP TABLE #Lote;
-
-            PRINT CONCAT('Lote procesado: ', @Lote);
-
-            SET @Lote = @Lote + 1;
-
-        END TRY
-        BEGIN CATCH
-            ROLLBACK;
-            THROW;
-        END CATCH
-    END
-END
-
-
-
-
-
-
-
-
-
-
-public void ProcesarLotes()
+namespace EstadosCuentaTC.Services
 {
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
+    public class GeneracionLoteService
     {
-        CommandType = CommandType.StoredProcedure,
-        CommandTimeout = 0 // 🔥 clave
-    };
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionLoteService> _logger;
 
-    cmd.ExecuteNonQuery();
+        public GeneracionLoteService(EstadoCuentaRepository repo,
+            ILogger<GeneracionLoteService> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
+
+        public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize)
+        {
+            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+            Directory.CreateDirectory(ruta);
+
+            var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
+
+            File.WriteAllText(archivoJson, "{");
+
+            bool primeraVez = true;
+
+            while (true)
+            {
+                var lote = _repo.ProcesarLote(loteSize);
+
+                if (lote.Count == 0)
+                    break;
+
+                foreach (var item in lote)
+                {
+                    var linea = $"\"{item.tarjeta}\":{item.json}";
+
+                    if (!primeraVez)
+                        File.AppendAllText(archivoJson, ",");
+
+                    File.AppendAllText(archivoJson, linea);
+
+                    primeraVez = false;
+                }
+
+                _logger.LogInformation("Lote procesado: {count}", lote.Count);
+            }
+
+            File.AppendAllText(archivoJson, "}");
+
+            _logger.LogInformation("Fin generación por lote");
+        }
+    }
+
 }
+
+
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionLoteService
+    {
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionLoteService> _logger;
+
+        public GeneracionLoteService(EstadoCuentaRepository repo,
+            ILogger<GeneracionLoteService> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
+
+        public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize)
+        {
+            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+            Directory.CreateDirectory(ruta);
+
+            var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
+
+            File.WriteAllText(archivoJson, "{");
+
+            bool primeraVez = true;
+
+            while (true)
+            {
+                var lote = _repo.ProcesarLote(loteSize);
+
+                if (lote.Count == 0)
+                    break;
+
+                foreach (var item in lote)
+                {
+                    var linea = $"\"{item.tarjeta}\":{item.json}";
+
+                    if (!primeraVez)
+                        File.AppendAllText(archivoJson, ",");
+
+                    File.AppendAllText(archivoJson, linea);
+
+                    primeraVez = false;
+                }
+
+                _logger.LogInformation("Lote procesado: {count}", lote.Count);
+            }
+
+            File.AppendAllText(archivoJson, "}");
+
+            _logger.LogInformation("Fin generación por lote");
+        }
+    }
+
+}
+
+
+
+
+No se puede asignar void a una variable con tipo implícito
+Ninguna sobrecarga para el método 'ProcesarLote' toma 1 argumentos
+
