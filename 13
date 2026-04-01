@@ -1,3 +1,316 @@
-'GeneracionIndividualService' no contiene un constructor que tome 3 argumentos
-No se ha dado ningún argumento que corresponda al parámetro requerido "logger" de "GeneracionEstadoCuentaService.GeneracionEstadoCuentaService(GeneracionIndividualService, JsonRepository, ILogger<GeneracionEstadoCuentaService>)"
-El nombre 'parametros' no existe en el contexto actual
+Mira, asi me quedaron estos archivos:
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+//  Logger
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
+
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+//  Infraestructura
+var sql = new SqlExecutor(connectionString);
+
+//  FASE 1
+var prepara = new PreparaDataService(sql);
+
+// Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
+
+//  FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
+// FASE 3
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
+
+
+//  FASE 4 (Servicios de generación)
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    loggerGeneracion
+);
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
+
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
+
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.InsertarCorreosNoValidosAsync();
+
+    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
+    var parametros = ParametrosECService.ObtenerParametros();
+
+
+    Console.WriteLine("\nFASE 4: GENERACIÓN ESTADOS DE CUENTA");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
+
+
+
+
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+
+namespace EstadosCuentaTC.Services
+{
+    public class ParametrosGeneracionECService
+    {
+        private readonly ParametrosGeneracionECRepository _paramRepo;
+        private readonly JsonRepository _jsonRepo;
+        private readonly ILogger<ParametrosGeneracionECService> _logger;
+
+        public ParametrosGeneracionECService(
+            ParametrosGeneracionECRepository paramRepo,
+            JsonRepository jsonRepo,
+            ILogger<ParametrosGeneracionECService> logger)
+        {
+            _paramRepo = paramRepo;
+            _jsonRepo = jsonRepo;
+            _logger = logger;
+        }
+
+        public ParametrosGeneracionECDto ObtenerParametros()
+        {
+            try
+            {
+                _logger.LogInformation("FASE 4 - INICIO");
+
+                // Paso 1 - obtener parámetros desde SP
+                var parametros = _paramRepo.ObtenerParametros();
+
+                _logger.LogInformation(
+                    "Fecha Corte: {fecha}, Total Registros Estados de Cuenta: {count}",
+                    parametros.FechaCorteProcesar,
+                    parametros.CantidadEstadosCuenta
+                );
+
+              
+                _logger.LogInformation("FASE 4 - FIN");
+                  return parametros;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en fase 4");
+                throw;
+            }
+        }
+    }
+}
+
+
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionIndividualService
+    {
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionIndividualService> _logger;
+
+        public GeneracionIndividualService(
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionIndividualService> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
+
+        public void Ejecutar(string rutaBase, DateTime fechaCorte)
+        {
+            try
+            {
+                _logger.LogInformation("Inicio Generación Individual");
+
+                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+                var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
+                var contadorPath = Path.Combine(ruta, "Contador.txt");
+
+                if (!File.Exists(contadorPath))
+                    File.WriteAllText(contadorPath, "");
+
+                while (true)
+                {
+                    var tarjeta = _repo.ObtenerPendiente();
+
+                    if (tarjeta == null)
+                        break;
+
+                    var cantidad = _repo.ObtenerCantidadPendiente();
+
+                    var json = _repo.ObtenerJson(tarjeta.NoTarjeta, tarjeta.FechaCorte);
+
+                    if (string.IsNullOrWhiteSpace(json))
+                        json = "{}";
+
+                    var tarjetaKey = $"\"{tarjeta.NoTarjeta}\":";
+
+                    var contadorTexto = File.ReadAllText(contadorPath);
+                    bool esInicio = string.IsNullOrEmpty(contadorTexto);
+                    bool esFinal = cantidad == 1;
+
+                    if (esInicio)
+                    {
+                        File.AppendAllText(archivoJson, "{");
+                        File.WriteAllText(contadorPath, "1");
+                    }
+                    else
+                    {
+                        int contador = int.Parse(contadorTexto) + 1;
+                        File.WriteAllText(contadorPath, contador.ToString());
+                    }
+
+                    if (esFinal)
+                    {
+                        File.AppendAllText(archivoJson, $"{tarjetaKey}{json}");
+                        File.AppendAllText(archivoJson, "}");
+                    }
+                    else
+                    {
+                        File.AppendAllText(archivoJson, $"{tarjetaKey}{json},");
+                    }
+
+                    _repo.MarcarProcesado(tarjeta.NoTarjeta, tarjeta.NoCuenta);
+
+                    _repo.InsertarHistorico(
+                       DateTime.Parse( tarjeta.FechaCorte),
+                        tarjeta.NoTarjeta,
+                        tarjeta.NoCuenta,
+                        tarjeta.NoCuentaVASA,
+                        tarjeta.Nombre,
+                        tarjeta.Correo,
+                        tarjeta.Origen
+                    );
+
+                    _logger.LogInformation("Procesado: {tarjeta}", tarjeta.NoTarjeta);
+                }
+
+                _logger.LogInformation("Fin Generación Individual");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en Generación Individual");
+                throw;
+            }
+        }
+    }
+}
+
+
+
+
+
+
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionEstadoCuentaService
+    {
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly JsonRepository _jsonRepo;
+
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            JsonRepository jsonRepo,
+            ILogger<GeneracionEstadoCuentaService> logger)
+        {
+            _individualService = individualService;
+            _logger = logger;
+            _jsonRepo = jsonRepo;
+        }
+
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+
+            // Paso 3 - generar JSON
+            var cantidadGenerada = _jsonRepo.GenerarJson();
+
+            _logger.LogInformation(
+                "Registros generados: {count}",
+                cantidadGenerada
+            );
+
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo INDIVIDUAL");
+                _individualService.Ejecutar(parametros.RutaArchivoJson, parametros.FechaCorteProcesar);
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo LOTE (pendiente)");
+                throw new NotImplementedException("LOTE aún no implementado");
+            }
+            else
+            {
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+        }
+    }
+}
+
+
