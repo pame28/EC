@@ -11,16 +11,22 @@ namespace EstadosCuentaTC.Services
     {
         private readonly GeneracionIndividualService _individualService;
         private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly JsonRepository _jsonRepo;
+        private readonly EstadoCuentaRepository _repo;
 
         public GeneracionEstadoCuentaService(
             GeneracionIndividualService individualService,
             JsonRepository jsonRepo,
-            ILogger<GeneracionEstadoCuentaService> logger)
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionEstadoCuentaService> logger,
+            ILoggerFactory loggerFactory)
         {
             _individualService = individualService;
             _logger = logger;
             _jsonRepo = jsonRepo;
+            _repo = repo;
+            _loggerFactory = loggerFactory;
         }
 
         public void Ejecutar(ParametrosGeneracionECDto parametros)
@@ -45,7 +51,8 @@ namespace EstadosCuentaTC.Services
             {
                 _logger.LogInformation("Modo LOTE");
 
-                var loteService = new GeneracionLoteService(_repo, _logger);
+                var loteLogger = _loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+                var loteService = new GeneracionLoteService(_repo, loteLogger);
 
                 loteService.Ejecutar(
                     parametros.RutaArchivoJson,
@@ -63,12 +70,8 @@ namespace EstadosCuentaTC.Services
 
 
 
-Estoy teniendo dos errores:
 
-El nombre '_repo' no existe en el contexto actual
+
+No se ha dado ningún argumento que corresponda al parámetro requerido "logger" de "GeneracionEstadoCuentaService.GeneracionEstadoCuentaService(GeneracionIndividualService, JsonRepository, EstadoCuentaRepository, ILogger<GeneracionEstadoCuentaService>, ILoggerFactory)"
 Argumento 2: no se puede convertir de 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.GeneracionEstadoCuentaService>' a 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.GeneracionLoteService>'
-
-
-
-Por cierto, el 100 en los parametros e referia a la cantidad de Registros por Lote, verdad?
 
