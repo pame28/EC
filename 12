@@ -1,0 +1,319 @@
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaEstadoCuentaJson]    Script Date: 31/3/2026 18:17:52 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuentaJson]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @FechaCorte VARCHAR(10);
+
+    SELECT @FechaCorte = FechaCorte
+    FROM ParametrosCorte
+    WHERE Estado = '1';
+
+    TRUNCATE TABLE dbo.BandejaEstadoCuentaJson;
+
+    ;WITH tcEstados AS (
+        SELECT 
+            et.NumeroTarjeta AS No_Tarjeta,
+            CAST( ISNULL(et.EstadoTarjeta, 0)AS INT) AS Estado
+        FROM Tarjetas et
+        WHERE CONVERT(VARCHAR(10), et.FechaCarga, 103) + et.NumeroTarjeta IN (
+            SELECT 
+                CONVERT(VARCHAR(10), MAX(etfc.FechaCarga), 103) + etfc.NumeroTarjeta
+            FROM Tarjetas etfc
+            WHERE etfc.NumeroTarjeta IN (
+                SELECT No_Tarjeta FROM BandejaEstadoCuenta
+            )
+            GROUP BY etfc.NumeroTarjeta
+        )
+    )
+
+    INSERT INTO dbo.BandejaEstadoCuentaJson
+    (
+        Fecha_Corte,
+        No_Tarjeta,
+        No_Cuenta,
+        Correo,
+        Estado,
+        Json
+    )
+    SELECT 
+        hc.Fecha_Corte,
+        hc.No_Tarjeta,
+        hc.No_Cuenta,
+        hc.Correo,
+        '2',
+		'"'+hc.No_Tarjeta+'":' +
+        -- ================= JSON FINAL =================
+        JSON_QUERY((
+               SELECT
+                -- ================= ENCABEZADO =================
+                JSON_QUERY((
+                    SELECT
+    LTRIM(RTRIM(hc.Origen))                               AS Origen,
+    LTRIM(RTRIM(hc.Emisor))                               AS Emisor,
+    LTRIM(RTRIM(hc.No_Cuenta))                            AS No_Cuenta,
+    LTRIM(RTRIM(hc.Nombre_TH_Tit))                        AS Nombre_TH_Tit,
+    LTRIM(RTRIM(hc.Emisor_Madre))                         AS Emisor_Madre,
+    NULLIF(LTRIM(RTRIM(hc.Cuenta_Madre)), '""')             AS Cuenta_Madre,
+    NULLIF(LTRIM(RTRIM(hc.Nombre_Empresa)), '""')           AS Nombre_Empresa,
+    LTRIM(RTRIM(hc.Tipo_Tarjeta))                         AS Tipo_Tarjeta,
+    LTRIM(RTRIM(hc.No_Tarjeta))                           AS No_Tarjeta,
+
+    
+	 CONVERT(VARCHAR(10), ISNULL(hc.Fecha_Pago, ''),103) AS Fecha_Pago,
+	FORMAT(hc.Fecha_Pago, 'dd/MM/yyyy') AS Fecha_Corte,
+
+
+    CAST(hc.Pago_Contado_MN AS DECIMAL(18,2))             AS Pago_Contado_MN,
+    CAST(hc.Pago_Minimo_MN AS DECIMAL(18,2))              AS Pago_Minimo_MN,
+    CAST(hc.Saldo_Vencido_MN AS DECIMAL(18,2))            AS Saldo_Vencido_MN,
+    CAST(hc.Saldo_Anterior_MN AS DECIMAL(18,2))           AS Saldo_Anterior_MN,
+    CAST(hc.Saldo_Final_MN AS DECIMAL(18,2))               AS Saldo_Final_MN,
+
+    CAST(hc.Compras_Deb_MN AS DECIMAL(18,2))              AS Compras_Deb_MN,
+    CAST(hc.Pagos_Cred_MN AS DECIMAL(18,2))               AS Pagos_Cred_MN,
+    CAST(hc.Pagos_Cred_ME AS DECIMAL(18,2))               AS Pagos_Cred_ME,
+
+    CAST(hc.Sobregiro_MN AS DECIMAL(18,2))                AS Sobregiro_MN,
+    CAST(hc.Cuota_Mes_MN AS DECIMAL(18,2))                AS Cuota_Mes_MN,
+
+    CAST(hc.Pago_Contado_ME AS DECIMAL(18,2))             AS Pago_Contado_ME,
+    CAST(hc.Pago_Minimo_ME AS DECIMAL(18,2))              AS Pago_Minimo_ME,
+
+    CAST(hc.Saldo_Vencido_ME AS DECIMAL(18,2))            AS Saldo_Vencido_ME,
+    CAST(hc.Saldo_Anterior_ME AS DECIMAL(18,2))           AS Saldo_Anterior_ME,
+    CAST(hc.Saldo_Final_ME AS DECIMAL(18,2))              AS Saldo_Final_ME,
+
+    CAST(
+        hc.Compras_Deb_MN 
+        - hc.Interes_Corriente_MN 
+        + hc.Saldo_Anterior_MN 
+        - hc.Pagos_Cred_MN
+        AS DECIMAL(18,2)
+    ) AS Saldo_Consumo_MN,
+
+    CAST(
+        hc.Compras_Deb_ME 
+        - hc.Interes_Corriente_ME 
+        + hc.Saldo_Anterior_ME 
+        - hc.Pagos_Cred_ME
+        AS DECIMAL(18,2)
+    ) AS Saldo_Consumo_ME,
+
+    CAST(hc.Compras_Deb_ME AS DECIMAL(18,2))              AS Compras_Deb_ME,
+    CAST(hc.Sobregiro_ME AS DECIMAL(18,2))                AS Sobregiro_ME,
+    CAST(hc.Cuota_Mes_ME AS DECIMAL(18,2))                AS Cuota_Mes_ME,
+
+    LTRIM(RTRIM(hc.Moneda_Lim_Cre))                        AS Moneda_Lim_Cre,
+    CAST(hc.Limite_Credito AS DECIMAL(18,2))              AS Limite_Credito,
+
+    CAST(hc.Disponible_Cta_MN AS DECIMAL(18,2))           AS Disponible_Cta_MN,
+    CAST(hc.Disponible_Cta_ME AS DECIMAL(18,2))           AS Disponible_Cta_ME,
+
+    CAST(hc.Disponible_Ret_MN AS DECIMAL(18,2))           AS Disponible_Ret_MN,
+    CAST(hc.Disponible_Ret_ME AS DECIMAL(18,2))           AS Disponible_Ret_ME,
+
+    CAST(hc.PTS_Saldo_Ant AS INT)                          AS PTS_Saldo_Ant,
+    CAST(hc.PTS_Ganados AS INT)                            AS PTS_Ganados,
+    CAST(hc.PTS_Usuados AS INT)                            AS PTS_Usuados,
+    CAST(hc.PTS_Saldo_Actual AS INT)                       AS PTS_Saldo_Actual,
+
+    LTRIM(RTRIM(hc.Moneda_Lim_EF))                         AS Moneda_Lim_EF,
+    CAST(hc.EF_Limite AS DECIMAL(18,2))                    AS EF_Limite,
+    CAST(hc.EF_Saldo_MN AS DECIMAL(18,2))                 AS EF_Saldo_MN,
+    CAST(hc.EF_Debitos_MN AS DECIMAL(18,2))               AS EF_Debitos_MN,
+    CAST(hc.EF_Creditos_MN AS DECIMAL(18,2))              AS EF_Creditos_MN,
+    CAST(hc.EF_Saldo_ME AS DECIMAL(18,2))                 AS EF_Saldo_ME,
+    CAST(hc.EF_Debitos_ME AS DECIMAL(18,2))               AS EF_Debitos_ME,
+    CAST(hc.EF_Creditos_ME AS DECIMAL(18,2))              AS EF_Creditos_ME,
+    CAST(hc.EF_Disponible_MN AS DECIMAL(18,2))            AS EF_Disponible_MN,
+    CAST(hc.EF_Disponible_ME AS DECIMAL(18,2))            AS EF_Disponible_ME,
+
+    CAST(hc.Tasa_Int_Anual_MN AS DECIMAL(18,2))            AS Tasa_Int_Anual_MN,
+    CAST(hc.Tasa_Int_Anual_ME AS DECIMAL(18,2))            AS Tasa_Int_Anual_ME,
+
+    LTRIM(RTRIM(hc.Direccion_1))                           AS Direccion_1,
+    LTRIM(RTRIM(hc.Direccion_2))                           AS Direccion_2,
+    LTRIM(RTRIM(hc.Direccion_3))                           AS Direccion_3,
+    NULLIF(LTRIM(RTRIM(hc.Apdo_Postal)), '""')               AS Apdo_Postal,
+    LTRIM(RTRIM(hc.Cidudad))                               AS Ciudad,
+
+    NULLIF(LTRIM(RTRIM(hc.Mensaje_1)), '""')                 AS Mensaje_1,
+    NULLIF(LTRIM(RTRIM(hc.Mensaje_2)), '""')                 AS Mensaje_2,
+    NULLIF(LTRIM(RTRIM(hc.Mensaje_3)), '""')                 AS Mensaje_3,
+    NULLIF(LTRIM(RTRIM(hc.Mensaje_4)), '""')                 AS Mensaje_4,
+    NULLIF(LTRIM(RTRIM(hc.Mensaje_5)), '""')                 AS Mensaje_5,
+
+    LTRIM(RTRIM(hc.Tarjeta_Imprimir))                      AS Tarjeta_Imprimir,
+
+    CAST(hc.Costo_Anual_Tot_MN AS DECIMAL(18,2))           AS Costo_Anual_Tot_MN,
+    CAST(hc.Costo_Anual_Tot_ME AS DECIMAL(18,2))           AS Costo_Anual_Tot_ME,
+
+    CAST(hc.Plazo_Canc_Deuda_MN AS INT)                    AS Plazo_Canc_Deuda_MN,
+    CAST(hc.Plazo_Canc_Deuda_ME AS INT)                    AS Plazo_Canc_Deuda_ME,
+
+    CAST(hc.Interes_Pago_Min_MN AS DECIMAL(18,2))          AS Interes_Pago_Min_MN,
+    CAST(hc.Interes_Pago_Min_ME AS DECIMAL(18,2))          AS Interes_Pago_Min_ME,
+
+    LTRIM(RTRIM(hc.Correo))                                AS Correo,
+
+    CAST(hc.Limite_CreditoMN AS DECIMAL(18,2))             AS Limite_CreditoMN,
+    CAST(hc.Interes_Corriente_MN AS DECIMAL(18,2))         AS Interes_Corriente_MN,
+    CAST(hc.Interes_Corriente_ME AS DECIMAL(18,2))         AS Interes_Corriente_ME,
+
+    CAST(tce.Estado AS INT)                                AS Estado
+
+                    FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+                )) AS Encabezado,
+
+                -- ================= DETALLE =================
+                 ISNULL(JSON_QUERY((
+                    SELECT 
+                        d.Fecha_Consumo,
+                        d.Tipo_Reg,
+                        d.Descripcion_Mov,
+                        d.DebitosMN,
+                        d.CreditosMN,
+                        d.DebitosME,
+                        d.CreditosME
+                    FROM (
+                        SELECT
+                            a.Fecha_Consumo,
+                            1 AS Tipo_Reg,
+                            a.Descripcion_Mov,
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
+                            CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosME,
+                            CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosME
+                        FROM BandejaDetalle a
+                        INNER JOIN TiposMovimientos b 
+                            ON b.CodMovimiento = a.Codigo_Mov
+                        WHERE 
+                            a.Fecha_Corte = hc.Fecha_Corte
+                            AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+
+                        UNION ALL
+
+                        SELECT
+                            hc.Fecha_Corte,
+                            2,
+                            'Subtotal',
+                            SUM(CASE WHEN a.Moneda_Mov='HN' THEN a.Monto_Mov ELSE 0 END),
+                            0,
+                            SUM(CASE WHEN a.Moneda_Mov='DO' THEN a.Monto_Mov ELSE 0 END),
+                            0
+                        FROM BandejaDetalle a
+                        WHERE 
+                            a.Fecha_Corte = hc.Fecha_Corte
+                            AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+                        GROUP BY a.Fecha_Corte
+
+                        UNION ALL
+
+                        SELECT
+                            hc.Fecha_Corte,
+                            3,
+                            'Total',
+                            SUM(a.Monto_Mov),
+                            0,
+                            0,
+                            0
+                        FROM BandejaDetalle a
+                        WHERE 
+                            a.Fecha_Corte = hc.Fecha_Corte
+                            AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
+                        GROUP BY a.Fecha_Corte
+
+                    ) d
+                    FOR JSON PATH
+                  )), '[]') AS Detalle,
+
+                -- ================= FINANCIAMIENTOS =================
+                ISNULL(JSON_QUERY((
+                    SELECT
+                        f.Tipo,
+                        f.Fecha,
+                        f.Monto,
+                        f.Moneda,
+                        f.Cuota,
+                        f.Plazo,
+                        f.CuotaAplicada,
+                        f.Tasa,
+                        f.Saldo
+                    FROM (
+                        -- INTRA
+                        SELECT
+                            'Intrafinanciamientos' AS Tipo,
+                            f.FechaOtorgamiento AS Fecha,
+                            f.ImporteTotalPlan AS Monto,
+                            f.MonedaMovimiento AS Moneda,
+                            f.Importe AS Cuota,
+                            f.CantidadCuotasPlan AS Plazo,
+                            f.NoCuotaLiquidada AS CuotaAplicada,
+                            CAST(f.PlanExtraTasa AS VARCHAR) + '%' AS Tasa,
+                            f.PlanCuotaCapitalPend AS Saldo
+                        FROM BandejaFinanciamientos f
+                        WHERE 
+                            f.NumeroCuenta = hc.No_Cuenta
+                            AND f.FechaCierre = hc.Fecha_Corte
+                            AND f.PlanCuotaCapitalPend > 0
+                            AND f.EsIntra = 1
+
+                        UNION ALL
+
+                        -- EXTRA
+                        SELECT
+                            'Extrafinanciamientos',
+                            f.FechaOtorgamiento,
+                            f.ImporteTotalPlan,
+                            f.MonedaMovimiento,
+                            f.Importe,
+                            f.CantidadCuotasPlan,
+                            f.NoCuotaLiquidada,
+                            CAST(f.PlanExtraTasa AS VARCHAR) + '%',
+                            f.PlanCuotaCapitalPend
+                        FROM BandejaFinanciamientos f
+                        WHERE 
+                            f.NumeroCuenta = hc.No_Cuenta
+                            AND f.FechaCierre = hc.Fecha_Corte
+                            AND f.PlanCuotaCapitalPend > 0
+                            AND f.EsExtra = 1
+
+                    ) f
+                    FOR JSON PATH
+                 )), '[]') AS Financiamientos
+
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        ))
+
+    FROM BandejaEncabezado hc
+    INNER JOIN tcEstados tce 
+        ON tce.No_Tarjeta = hc.No_Tarjeta
+
+    WHERE hc.Fecha_Corte = @FechaCorte;
+
+    -- RESULTADO
+    SELECT COUNT(*) AS cantidad
+    FROM BandejaEstadoCuentaJson;
+
+END
+
+
+
+
+Mira que estoy teniendo problemas con este Sp porque la fecha me la devuelve asi: 
+
+  "Fecha_Pago": "06\/04\/2026",
+        "Fecha_Corte": "06\/04\/2026",
+
+
+
+        Y eso no puede ser posible
