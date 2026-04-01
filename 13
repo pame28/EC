@@ -1,69 +1,115 @@
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ProcesarLoteEstadosCuenta]    Script Date: 1/4/2026 15:12:48 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_ProcesarLoteEstadosCuenta]
+    @Cantidad INT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-namespace EstadosCuentaTC.Repositories
-{
-    public class EstadoCuentaRepository
-    {
-        private readonly SqlExecutor _sql;
+    DECLARE @Resultados TABLE (
+        NoTarjeta VARCHAR(16),
+        JsonEstadoCuenta VARCHAR(MAX)
+    );
 
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
+    DECLARE @Lote INT;
 
+    BEGIN TRY
+        BEGIN TRAN;
 
-        public (string tarjeta, string json)? ProcesarSiguiente()
-        {
-            using var conn = _sql.GetConnection();
+        --  Obtener número de lote secuencial
+        SELECT @Lote = NEXT VALUE FOR dbo.Seq_LoteEstadoCuenta;
 
-            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
+        --  Tomar registros del lote
+        ;WITH CTE AS (
+            SELECT TOP (@Cantidad) *
+            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
+            WHERE Estado = 2
+        )
+        SELECT * INTO #Lote FROM CTE;
 
-            using var reader = cmd.ExecuteReader();
+        IF NOT EXISTS (SELECT 1 FROM #Lote)
+        BEGIN
+            ROLLBACK;
+            RETURN;
+        END
 
-            if (!reader.Read())
-                return null;
+        DECLARE @NoTarjeta VARCHAR(16);
 
-            return (
-                reader["NoTarjeta"]?.ToString(),
-                reader["JsonEstadoCuenta"]?.ToString()
-            );
-        }
+        DECLARE cursor_lote CURSOR FOR
+        SELECT No_Tarjeta FROM #Lote;
 
+        OPEN cursor_lote;
+        FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
 
-        public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
-        {
-            var lista = new List<(string, string)>();
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            DECLARE @Json TABLE (JsonEstadoCuenta VARCHAR(MAX));
 
-            using var conn = _sql.GetConnection();
+            INSERT INTO @Json
+            EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
 
-            using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
+            INSERT INTO @Resultados
+            SELECT 
+                @NoTarjeta,
+                ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
 
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+            FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+        END
 
-            using var reader = cmd.ExecuteReader();
+        CLOSE cursor_lote;
+        DEALLOCATE cursor_lote;
 
-            while (reader.Read())
-            {
-                lista.Add((
-                    reader["NoTarjeta"].ToString(),
-                    reader["JsonEstadoCuenta"].ToString()
-                ));
-            }
+        --  UPDATE masivo
+        UPDATE b
+        SET Estado = 1
+        FROM BandejaEstadoCuenta b
+        INNER JOIN #Lote l
+            ON b.No_Tarjeta = l.No_Tarjeta
+            AND b.No_Cuenta = l.No_Cuenta;
 
-            return lista;
-        }
+        --  HISTÓRICO con LOTE SECUENCIAL
+        INSERT INTO HistoricoMaestroEstadosCuentaJSON
+        (
+            FechaCorte,
+            NoTarjeta,
+            NoCuenta,
+            NoCuentaVASA,
+            Nombre,
+            Correo,
+            Origen,
+            Lote,
+            Procesado,
+            FechaEjecucion
+        )
+        SELECT 
+            Fecha_Corte,
+            No_Tarjeta,
+            No_Cuenta,
+            No_Cuenta_VASA,
+            Nombre,
+            Correo,
+            Origen,
+            @Lote,
+            1,
+            GETDATE()
+        FROM #Lote;
 
-    }
-}
+        COMMIT;
+
+        --  Resultado
+        SELECT 
+            NoTarjeta,
+            JsonEstadoCuenta
+        FROM @Resultados;
+
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END
