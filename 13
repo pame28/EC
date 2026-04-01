@@ -1,212 +1,82 @@
-namespace EstadosCuentaTC.Dtos
-{
-    public class TarjetaPendienteDto
-    {
-        public string FechaCorte { get; set; }
-        public string NoTarjeta { get; set; }
-        public string NoCuenta { get; set; }
-        public string Correo { get; set; }
-    }
-}
+Yo considero de que el if (parametros.TipoGeneracion == "INDIVIDUAL")
 
-
-
-
-
-
+Va en el Program.cs 
 using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System.Data;
-
-namespace EstadosCuentaTC.Repositories
-{
-    public class EstadoCuentaRepository
-    {
-        private readonly SqlExecutor _sql;
-
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
-
-        // 🔹 Obtener 1 registro pendiente
-        public TarjetaPendienteDto ObtenerPendiente()
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ObtenerTarjeta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return null;
-
-            return new TarjetaPendienteDto
-            {
-                FechaCorte = reader["Fecha_Corte"]?.ToString(),
-                NoTarjeta = reader["No_Tarjeta"]?.ToString(),
-                NoCuenta = reader["No_Cuenta"]?.ToString(),
-                Correo = reader["Correo"]?.ToString()
-            };
-        }
-
-        // 🔹 Obtener JSON directo (OPTIMIZADO)
-        public string ObtenerJson(string tarjeta, string fechaCorte)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-            cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte);
-
-            var result = cmd.ExecuteScalar();
-
-            return result?.ToString() ?? "{}";
-        }
-
-        // 🔹 Actualizar estado
-        public void MarcarProcesado(string tarjeta, string cuenta)
-        {
-            _sql.Execute($@"
-                UPDATE BandejaEstadoCuenta
-                SET Estado = 1
-                WHERE No_Tarjeta = '{tarjeta}'
-                AND No_Cuenta = '{cuenta}'
-            ");
-        }
-
-        // 🔹 Insertar histórico
-        public void InsertarHistorico(string cuenta, string tarjeta, string fechaCorte, string correo)
-        {
-            _sql.Execute($@"
-                INSERT INTO HistoricoCorreosECTC
-                (FechaCorte, NoCuenta, NoCuentaVASA, Nombre, CorreoCliente, Estado)
-                VALUES
-                ('{fechaCorte}', '{cuenta}', '', '', '{correo}', '1')
-            ");
-        }
-
-        // 🔹 Cantidad restante
-        public int ObtenerCantidadPendiente()
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ObtenerCantidadEstadosCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            return Convert.ToInt32(cmd.ExecuteScalar());
-        }
-    }
-}
-
-
-
-
-
-
-
-
 using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace EstadosCuentaTC.Services
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// 🔹 Logger
+var loggerFactory = LoggerFactory.Create(builder =>
 {
-    public class GeneracionIndividualService
-    {
-        private readonly EstadoCuentaRepository _repo;
-        private readonly ILogger<GeneracionIndividualService> _logger;
+    builder.AddConsole();
+});
 
-        public GeneracionIndividualService(
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionIndividualService> logger)
-        {
-            _repo = repo;
-            _logger = logger;
-        }
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
 
-        public void Ejecutar(string rutaBase, DateTime fechaCorte)
-        {
-            try
-            {
-                _logger.LogInformation("Inicio Generación Individual");
+// 🔹 Infraestructura
+var sql = new SqlExecutor(connectionString);
 
-                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-                var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
-                var contadorPath = Path.Combine(ruta, "Contador.txt");
+// 🔹 FASE 1
+var prepara = new PreparaDataService(sql);
 
-                if (!File.Exists(contadorPath))
-                    File.WriteAllText(contadorPath, "");
+// 🔹 Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
 
-                while (true)
-                {
-                    var tarjeta = _repo.ObtenerPendiente();
+// 🔹 FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
 
-                    if (tarjeta == null)
-                        break;
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
 
-                    var cantidad = _repo.ObtenerCantidadPendiente();
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
 
-                    var json = _repo.ObtenerJson(tarjeta.NoTarjeta, tarjeta.FechaCorte);
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
 
-                    if (string.IsNullOrWhiteSpace(json))
-                        json = "{}";
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.InsertarCorreosNoValidosAsync();
 
-                    var tarjetaKey = $"\"{tarjeta.NoTarjeta}\":";
+    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
+    ParametrosECService.ObtenerParametros();
 
-                    var contadorTexto = File.ReadAllText(contadorPath);
-                    bool esInicio = string.IsNullOrEmpty(contadorTexto);
-                    bool esFinal = cantidad == 1;
-
-                    if (esInicio)
-                    {
-                        File.AppendAllText(archivoJson, "{");
-                        File.WriteAllText(contadorPath, "1");
-                    }
-                    else
-                    {
-                        int contador = int.Parse(contadorTexto) + 1;
-                        File.WriteAllText(contadorPath, contador.ToString());
-                    }
-
-                    if (esFinal)
-                    {
-                        File.AppendAllText(archivoJson, $"{tarjetaKey}{json}");
-                        File.AppendAllText(archivoJson, "}");
-                    }
-                    else
-                    {
-                        File.AppendAllText(archivoJson, $"{tarjetaKey}{json},");
-                    }
-
-                    _repo.MarcarProcesado(tarjeta.NoTarjeta, tarjeta.NoCuenta);
-
-                    _repo.InsertarHistorico(
-                        tarjeta.NoCuenta,
-                        tarjeta.NoTarjeta,
-                        tarjeta.FechaCorte,
-                        tarjeta.Correo
-                    );
-
-                    _logger.LogInformation("Procesado: {tarjeta}", tarjeta.NoTarjeta);
-                }
-
-                _logger.LogInformation("Fin Generación Individual");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en Generación Individual");
-                throw;
-            }
-        }
-    }
+    Console.WriteLine("\n========== FIN PROCESO ==========");
 }
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
+
+
+
+
+Pero la verdad no estoy segura, qué es lo correcto?
