@@ -1,13 +1,1 @@
-Deberia crearla solo, no?
-
-      Inicio Generación Individual
-fail: EstadosCuentaTC.Services.GeneracionIndividualService[0]
-      Error en Generación Individual
-      System.IO.DirectoryNotFoundException: Could not find a part of the path 'C:\Procesos\EstadosCuenta\Generados\2026-03-10\Contador.txt'.
-         at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
-         at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
-         at System.IO.File.OpenHandle(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize)
-         at System.IO.File.WriteToFile(String path, FileMode mode, ReadOnlySpan`1 contents, Encoding encoding)
-         at System.IO.File.WriteAllText(String path, String contents, Encoding encoding)
-         at EstadosCuentaTC.Services.GeneracionIndividualService.Ejecutar(String rutaBase, DateTime fechaCorte) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\GeneracionIndividualService.cs:line 33
-ERROR GENERAL: Could not find a part of the path 'C:\Procesos\EstadosCuenta\Generados\2026-03-10\Contador.txt'.
+Ya se genera perfecto la Individual, quiero que veamos lo de los hilos, porque para procesarar 14,000 registros tardó 1 hora con 40 min
