@@ -1,8 +1,3 @@
-DROP SEQUENCE dbo.Seq_LoteEstadoCuenta;
-
-
-
-
 USE [EstadosCuentaJSONProcesador]
 GO
 
@@ -12,7 +7,6 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[usp_ProcesarLoteEstadosCuenta]
-    @Cantidad INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -22,103 +16,118 @@ BEGIN
         JsonEstadoCuenta NVARCHAR(MAX)
     );
 
-    -- 🔥 LOTE LOCAL (SE REINICIA EN CADA EJECUCIÓN)
     DECLARE @Lote INT = 1;
+    DECLARE @TamanoLote INT;
+
+    -- 🔥 Obtener tamaño de lote desde parámetros
+    SELECT TOP 1 @TamanoLote = RegistrosPorLote
+    FROM ParametrosGeneracionEC;
+
+    IF @TamanoLote IS NULL OR @TamanoLote <= 0
+        SET @TamanoLote = 100; -- valor por defecto
+
+    DECLARE @Offset INT = 0;
 
     BEGIN TRY
         BEGIN TRAN;
 
-        -- Obtener registros
-        ;WITH CTE AS (
-            SELECT TOP (@Cantidad) *
-            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
-            WHERE Estado = 2
-            ORDER BY No_Tarjeta
-        )
-        SELECT * INTO #Lote FROM CTE;
-
-        IF NOT EXISTS (SELECT 1 FROM #Lote)
+        WHILE (1 = 1)
         BEGIN
-            ROLLBACK;
-            RETURN;
-        END
+            -- 🔥 Obtener lote actual
+            ;WITH CTE AS (
+                SELECT *
+                FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
+                WHERE Estado = 2
+                ORDER BY No_Tarjeta
+                OFFSET @Offset ROWS
+                FETCH NEXT @TamanoLote ROWS ONLY
+            )
+            SELECT * INTO #Lote FROM CTE;
 
-        DECLARE @NoTarjeta VARCHAR(16);
-        DECLARE @Json NVARCHAR(MAX);
+            IF NOT EXISTS (SELECT 1 FROM #Lote)
+                BREAK;
 
-        DECLARE cursor_lote CURSOR FOR
-        SELECT No_Tarjeta FROM #Lote;
+            DECLARE @NoTarjeta VARCHAR(16);
+            DECLARE @Json NVARCHAR(MAX);
 
-        OPEN cursor_lote;
-        FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+            DECLARE cursor_lote CURSOR FOR
+            SELECT No_Tarjeta FROM #Lote;
 
-        WHILE @@FETCH_STATUS = 0
-        BEGIN
-            -- Limpiar variable
-            SET @Json = NULL;
-
-            -- Capturar JSON correctamente
-            DECLARE @TablaJson TABLE (
-                JsonEstadoCuenta NVARCHAR(MAX)
-            );
-
-            INSERT INTO @TablaJson
-            EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
-
-            SELECT @Json = JsonEstadoCuenta
-            FROM @TablaJson;
-
-            IF @Json IS NULL
-                SET @Json = '{}';
-
-            -- Guardar resultado
-            INSERT INTO @Resultados (NoTarjeta, JsonEstadoCuenta)
-            VALUES (@NoTarjeta, @Json);
-
+            OPEN cursor_lote;
             FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+
+            WHILE @@FETCH_STATUS = 0
+            BEGIN
+                SET @Json = NULL;
+
+                -- 🔥 Capturar JSON correctamente
+                DECLARE @TablaJson TABLE (
+                    JsonEstadoCuenta NVARCHAR(MAX)
+                );
+
+                INSERT INTO @TablaJson
+                EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
+
+                SELECT @Json = JsonEstadoCuenta
+                FROM @TablaJson;
+
+                IF @Json IS NULL
+                    SET @Json = '{}';
+
+                INSERT INTO @Resultados (NoTarjeta, JsonEstadoCuenta)
+                VALUES (@NoTarjeta, @Json);
+
+                FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+            END
+
+            CLOSE cursor_lote;
+            DEALLOCATE cursor_lote;
+
+            -- 🔥 Marcar como procesado
+            UPDATE b
+            SET Estado = 1
+            FROM BandejaEstadoCuenta b
+            INNER JOIN #Lote l
+                ON b.No_Tarjeta = l.No_Tarjeta
+                AND b.No_Cuenta = l.No_Cuenta;
+
+            -- 🔥 Insertar histórico con lote correcto
+            INSERT INTO HistoricoMaestroEstadosCuentaJSON
+            (
+                FechaCorte,
+                NoTarjeta,
+                NoCuenta,
+                NoCuentaVASA,
+                Nombre,
+                Correo,
+                Origen,
+                Lote,
+                Procesado,
+                FechaEjecucion
+            )
+            SELECT 
+                Fecha_Corte,
+                No_Tarjeta,
+                No_Cuenta,
+                No_Cuenta_VASA,
+                Nombre,
+                Correo,
+                Origen,
+                @Lote,
+                1,
+                GETDATE()
+            FROM #Lote;
+
+            -- 🔥 Avanzar al siguiente lote
+            SET @Offset = @Offset + @TamanoLote;
+            SET @Lote = @Lote + 1;
+
+            DROP TABLE #Lote;
         END
-
-        CLOSE cursor_lote;
-        DEALLOCATE cursor_lote;
-
-        -- Marcar como procesado
-        UPDATE b
-        SET Estado = 1
-        FROM BandejaEstadoCuenta b
-        INNER JOIN #Lote l
-            ON b.No_Tarjeta = l.No_Tarjeta
-            AND b.No_Cuenta = l.No_Cuenta;
-
-        -- 🔥 HISTÓRICO CON LOTE LOCAL (REINICIA EN 1)
-        INSERT INTO HistoricoMaestroEstadosCuentaJSON
-        (
-            FechaCorte,
-            NoTarjeta,
-            NoCuenta,
-            NoCuentaVASA,
-            Nombre,
-            Correo,
-            Origen,
-            Lote,
-            Procesado,
-            FechaEjecucion
-        )
-        SELECT 
-            Fecha_Corte,
-            No_Tarjeta,
-            No_Cuenta,
-            No_Cuenta_VASA,
-            Nombre,
-            Correo,
-            Origen,
-            @Lote,
-            1,
-            GETDATE()
-        FROM #Lote;
 
         COMMIT;
 
-        -- Resultado final
+        -- 🔥 Resultado final
         SELECT 
             NoTarjeta,
             JsonEstadoCuenta
