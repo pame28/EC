@@ -1,1 +1,101 @@
-Ya se genera perfecto la Individual, quiero que veamos lo de los hilos, porque para procesarar 14,000 registros tardó 1 hora con 40 min
+CREATE OR ALTER PROCEDURE dbo.usp_ProcesarSiguienteEstadoCuenta
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE 
+        @NoTarjeta VARCHAR(16),
+        @NoCuenta VARCHAR(25),
+        @NoCuentaVASA VARCHAR(25),
+        @Nombre VARCHAR(255),
+        @Correo VARCHAR(255),
+        @Origen VARCHAR(4),
+        @FechaCorte DATE,
+        @Json VARCHAR(MAX);
+
+    BEGIN TRY
+
+        BEGIN TRAN;
+
+        -- 🔐 1. Tomar un registro sin que otro hilo lo tome
+        SELECT TOP 1
+            @NoTarjeta = No_Tarjeta,
+            @NoCuenta = No_Cuenta,
+            @NoCuentaVASA = No_Cuenta_VASA,
+            @Nombre = Nombre,
+            @Correo = Correo,
+            @Origen = Origen,
+            @FechaCorte = Fecha_Corte
+        FROM dbo.BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
+        WHERE Procesado = 'NO'
+        ORDER BY IdRow;
+
+        -- 🚫 Si no hay más registros
+        IF @NoTarjeta IS NULL
+        BEGIN
+            ROLLBACK TRAN;
+            RETURN;
+        END
+
+        -- 🔹 2. Generar JSON reutilizando tu SP actual
+        DECLARE @TablaJson TABLE (JsonEstadoCuenta VARCHAR(MAX));
+
+        INSERT INTO @TablaJson
+        EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
+
+        SELECT TOP 1 @Json = JsonEstadoCuenta FROM @TablaJson;
+
+        IF @Json IS NULL OR LTRIM(RTRIM(@Json)) = ''
+            SET @Json = '{}';
+
+        -- 🔹 3. UPDATE (marcar como procesado)
+        UPDATE dbo.BandejaEstadoCuenta
+        SET Procesado = 'SI',
+            FechaEjecucion = GETDATE()
+        WHERE No_Tarjeta = @NoTarjeta
+        AND No_Cuenta = @NoCuenta;
+
+        -- 🔹 4. INSERT histórico
+        INSERT INTO dbo.HistoricoMaestroEstadosCuentaJSON
+        (
+            FechaCorte,
+            NoTarjeta,
+            NoCuenta,
+            NoCuentaVASA,
+            Nombre,
+            Correo,
+            Origen,
+            Lote,
+            Procesado,
+            FechaEjecucion
+        )
+        VALUES
+        (
+            @FechaCorte,
+            @NoTarjeta,
+            @NoCuenta,
+            @NoCuentaVASA,
+            @Nombre,
+            @Correo,
+            @Origen,
+            NULL,
+            'SI',
+            GETDATE()
+        );
+
+        COMMIT TRAN;
+
+        -- 🔹 5. DEVOLVER RESULTADO
+        SELECT 
+            @NoTarjeta AS NoTarjeta,
+            @Json AS JsonEstadoCuenta;
+
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRAN;
+
+        DECLARE @Error NVARCHAR(MAX) = ERROR_MESSAGE();
+        RAISERROR(@Error, 16, 1);
+    END CATCH
+END
+GO
