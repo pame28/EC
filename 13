@@ -1,80 +1,199 @@
-CREATE INDEX IX_BandejaEstadoCuenta_Procesado
-ON dbo.BandejaEstadoCuenta (Procesado)
+CREATE PROCEDURE dbo.usp_ProcesarLoteEstadosCuenta
+    @Cantidad INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Resultados TABLE (
+        NoTarjeta VARCHAR(16),
+        JsonEstadoCuenta VARCHAR(MAX)
+    );
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- 🔹 Tomar lote con bloqueo
+        ;WITH CTE AS (
+            SELECT TOP (@Cantidad) *
+            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
+            WHERE Estado = 2
+        )
+        SELECT * INTO #Lote FROM CTE;
+
+        IF NOT EXISTS (SELECT 1 FROM #Lote)
+        BEGIN
+            ROLLBACK;
+            RETURN;
+        END
+
+        DECLARE @NoTarjeta VARCHAR(16);
+
+        DECLARE cursor_lote CURSOR FOR
+        SELECT No_Tarjeta FROM #Lote;
+
+        OPEN cursor_lote;
+        FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            DECLARE @Json TABLE (JsonEstadoCuenta VARCHAR(MAX));
+
+            INSERT INTO @Json
+            EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
+
+            INSERT INTO @Resultados
+            SELECT @NoTarjeta, ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
+
+            FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+        END
+
+        CLOSE cursor_lote;
+        DEALLOCATE cursor_lote;
+
+        -- 🔹 UPDATE masivo
+        UPDATE b
+        SET Estado = 1
+        FROM BandejaEstadoCuenta b
+        INNER JOIN #Lote l
+            ON b.No_Tarjeta = l.No_Tarjeta
+            AND b.No_Cuenta = l.No_Cuenta;
+
+        -- 🔹 Histórico
+        INSERT INTO HistoricoMaestroEstadosCuentaJSON (...)
+        SELECT 
+            Fecha_Corte,
+            No_Tarjeta,
+            No_Cuenta,
+            No_Cuenta_VASA,
+            Nombre,
+            Correo,
+            Origen,
+            NULL,
+            1,
+            GETDATE()
+        FROM #Lote;
+
+        COMMIT;
+
+        SELECT * FROM @Resultados;
+
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END
 
 
 
-public (string tarjeta, string json)? ProcesarSiguiente()
+
+
+
+
+
+
+
+public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
 {
+    var lista = new List<(string, string)>();
+
     using var conn = _sql.GetConnection();
 
-    using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
+    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
     {
         CommandType = CommandType.StoredProcedure
     };
 
+    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+
     using var reader = cmd.ExecuteReader();
 
-    if (!reader.Read())
-        return null;
+    while (reader.Read())
+    {
+        lista.Add((
+            reader["NoTarjeta"].ToString(),
+            reader["JsonEstadoCuenta"].ToString()
+        ));
+    }
 
-    return (
-        reader["NoTarjeta"]?.ToString(),
-        reader["JsonEstadoCuenta"]?.ToString()
+    return lista;
+}
+
+
+
+
+
+
+
+
+
+
+public class GeneracionLoteService
+{
+    private readonly EstadoCuentaRepository _repo;
+    private readonly ILogger<GeneracionLoteService> _logger;
+
+    public GeneracionLoteService(EstadoCuentaRepository repo,
+        ILogger<GeneracionLoteService> logger)
+    {
+        _repo = repo;
+        _logger = logger;
+    }
+
+    public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize)
+    {
+        var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+        Directory.CreateDirectory(ruta);
+
+        var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
+
+        File.WriteAllText(archivoJson, "{");
+
+        bool primeraVez = true;
+
+        while (true)
+        {
+            var lote = _repo.ProcesarLote(loteSize);
+
+            if (lote.Count == 0)
+                break;
+
+            foreach (var item in lote)
+            {
+                var linea = $"\"{item.tarjeta}\":{item.json}";
+
+                if (!primeraVez)
+                    File.AppendAllText(archivoJson, ",");
+
+                File.AppendAllText(archivoJson, linea);
+
+                primeraVez = false;
+            }
+
+            _logger.LogInformation("Lote procesado: {count}", lote.Count);
+        }
+
+        File.AppendAllText(archivoJson, "}");
+
+        _logger.LogInformation("Fin generación por lote");
+    }
+}
+
+
+
+
+
+
+
+else if (parametros.TipoGeneracion == "LOTE")
+{
+    _logger.LogInformation("Modo LOTE");
+
+    var loteService = new GeneracionLoteService(_repo, _logger);
+
+    loteService.Ejecutar(
+        parametros.RutaArchivoJson,
+        parametros.FechaCorteProcesar,
+        100 // configurable
     );
 }
-
-
-
-
-
-
-
-
-
-while (true)
-{
-    var resultado = _repo.ProcesarSiguiente();
-
-    if (resultado == null)
-        break;
-
-    var (tarjeta, json) = resultado.Value;
-
-    if (string.IsNullOrWhiteSpace(json))
-        json = "{}";
-
-    var tarjetaKey = $"\"{tarjeta}\":";
-
-    var contadorTexto = File.ReadAllText(contadorPath);
-    int contador = int.Parse(contadorTexto);
-
-    if (contador == 0)
-    {
-        File.AppendAllText(archivoJson, "{");
-    }
-    else
-    {
-        File.AppendAllText(archivoJson, ",");
-    }
-
-    contador++;
-    File.WriteAllText(contadorPath, contador.ToString());
-
-    File.AppendAllText(archivoJson, $"{tarjetaKey}{json}");
-
-    _logger.LogInformation("Procesado: {tarjeta}", tarjeta);
-}
-
-// cerrar JSON
-File.AppendAllText(archivoJson, "}");
-
-
-
-
-
-
-
-
-
-
-
