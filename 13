@@ -1,199 +1,74 @@
-CREATE PROCEDURE dbo.usp_ProcesarLoteEstadosCuenta
-    @Cantidad INT
-AS
-BEGIN
-    SET NOCOUNT ON;
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-    DECLARE @Resultados TABLE (
-        NoTarjeta VARCHAR(16),
-        JsonEstadoCuenta VARCHAR(MAX)
-    );
-
-    BEGIN TRY
-        BEGIN TRAN;
-
-        -- 🔹 Tomar lote con bloqueo
-        ;WITH CTE AS (
-            SELECT TOP (@Cantidad) *
-            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
-            WHERE Estado = 2
-        )
-        SELECT * INTO #Lote FROM CTE;
-
-        IF NOT EXISTS (SELECT 1 FROM #Lote)
-        BEGIN
-            ROLLBACK;
-            RETURN;
-        END
-
-        DECLARE @NoTarjeta VARCHAR(16);
-
-        DECLARE cursor_lote CURSOR FOR
-        SELECT No_Tarjeta FROM #Lote;
-
-        OPEN cursor_lote;
-        FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
-
-        WHILE @@FETCH_STATUS = 0
-        BEGIN
-            DECLARE @Json TABLE (JsonEstadoCuenta VARCHAR(MAX));
-
-            INSERT INTO @Json
-            EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
-
-            INSERT INTO @Resultados
-            SELECT @NoTarjeta, ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
-
-            FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
-        END
-
-        CLOSE cursor_lote;
-        DEALLOCATE cursor_lote;
-
-        -- 🔹 UPDATE masivo
-        UPDATE b
-        SET Estado = 1
-        FROM BandejaEstadoCuenta b
-        INNER JOIN #Lote l
-            ON b.No_Tarjeta = l.No_Tarjeta
-            AND b.No_Cuenta = l.No_Cuenta;
-
-        -- 🔹 Histórico
-        INSERT INTO HistoricoMaestroEstadosCuentaJSON (...)
-        SELECT 
-            Fecha_Corte,
-            No_Tarjeta,
-            No_Cuenta,
-            No_Cuenta_VASA,
-            Nombre,
-            Correo,
-            Origen,
-            NULL,
-            1,
-            GETDATE()
-        FROM #Lote;
-
-        COMMIT;
-
-        SELECT * FROM @Resultados;
-
-    END TRY
-    BEGIN CATCH
-        ROLLBACK;
-        THROW;
-    END CATCH
-END
-
-
-
-
-
-
-
-
-
-
-public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
+namespace EstadosCuentaTC.Services
 {
-    var lista = new List<(string, string)>();
-
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
+    public class GeneracionEstadoCuentaService
     {
-        CommandType = CommandType.StoredProcedure
-    };
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly JsonRepository _jsonRepo;
 
-    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-    using var reader = cmd.ExecuteReader();
-
-    while (reader.Read())
-    {
-        lista.Add((
-            reader["NoTarjeta"].ToString(),
-            reader["JsonEstadoCuenta"].ToString()
-        ));
-    }
-
-    return lista;
-}
-
-
-
-
-
-
-
-
-
-
-public class GeneracionLoteService
-{
-    private readonly EstadoCuentaRepository _repo;
-    private readonly ILogger<GeneracionLoteService> _logger;
-
-    public GeneracionLoteService(EstadoCuentaRepository repo,
-        ILogger<GeneracionLoteService> logger)
-    {
-        _repo = repo;
-        _logger = logger;
-    }
-
-    public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize)
-    {
-        var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-        Directory.CreateDirectory(ruta);
-
-        var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
-
-        File.WriteAllText(archivoJson, "{");
-
-        bool primeraVez = true;
-
-        while (true)
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            JsonRepository jsonRepo,
+            ILogger<GeneracionEstadoCuentaService> logger)
         {
-            var lote = _repo.ProcesarLote(loteSize);
-
-            if (lote.Count == 0)
-                break;
-
-            foreach (var item in lote)
-            {
-                var linea = $"\"{item.tarjeta}\":{item.json}";
-
-                if (!primeraVez)
-                    File.AppendAllText(archivoJson, ",");
-
-                File.AppendAllText(archivoJson, linea);
-
-                primeraVez = false;
-            }
-
-            _logger.LogInformation("Lote procesado: {count}", lote.Count);
+            _individualService = individualService;
+            _logger = logger;
+            _jsonRepo = jsonRepo;
         }
 
-        File.AppendAllText(archivoJson, "}");
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
 
-        _logger.LogInformation("Fin generación por lote");
+            // Paso 3 - generar JSON
+            var cantidadGenerada = _jsonRepo.GenerarJson();
+
+            _logger.LogInformation(
+                "Registros generados: {count}",
+                cantidadGenerada
+            );
+
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo INDIVIDUAL");
+                _individualService.Ejecutar(parametros.RutaArchivoJson, parametros.FechaCorteProcesar);
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo LOTE");
+
+                var loteService = new GeneracionLoteService(_repo, _logger);
+
+                loteService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.FechaCorteProcesar,
+                    parametros.RegistrosPorLote
+                );
+            }
+            else
+            {
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+        }
     }
 }
 
 
 
+Estoy teniendo dos errores:
+
+El nombre '_repo' no existe en el contexto actual
+Argumento 2: no se puede convertir de 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.GeneracionEstadoCuentaService>' a 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.GeneracionLoteService>'
 
 
 
+Por cierto, el 100 en los parametros e referia a la cantidad de Registros por Lote, verdad?
 
-else if (parametros.TipoGeneracion == "LOTE")
-{
-    _logger.LogInformation("Modo LOTE");
-
-    var loteService = new GeneracionLoteService(_repo, _logger);
-
-    loteService.Ejecutar(
-        parametros.RutaArchivoJson,
-        parametros.FechaCorteProcesar,
-        100 // configurable
-    );
-}
