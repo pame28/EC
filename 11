@@ -5,11 +5,19 @@ En un lado si le doy Doble clic abro el Editor de restricciones de Procedencia
 
 Expresión:      @[User::TipoGeneracion] == "LOTE"
 
+En la fase anterior se ha obtenido el TipoGeneracion por medio de la parametrización de una tabla en SQL 
+
+ TipoGeneracion = reader["TipoGeneracion"]?.ToString()   en el archivo ParametrosGeneracionECRepository
+
 
 Esta subdivisión tiene un contenedor llamado Contenedor de Secuencias:
 
 Dentro del contendor tenemos los siguientes pasos:
     1. Obtener cantidad de registros por lote (Tarea SQL): User::QueryRegistrosPorLote
+
+Esta recuerda que es  RegistrosPorLote = reader.GetInt32(reader.GetOrdinal("RegistrosPorLote")),
+
+
     2. Inicializar Valores (Tarea Script): Si le doy Editar Script obtengo esto:
     #region Help:  Introduction to the script task
 
@@ -811,6 +819,12 @@ namespace ST_bb6058e6f39b4a5982b2f4c43f588e0d
         #endregion
 	}
 }
+
+
+-------------------------------
+
+LUEGO YA SEA INDIVIDUAL O LOTE SE SIGUEN LOS SIGUIENTES PASOS:
+
 
 PASO 03. Luego, ambas subdivisiones continuan en lo mismo: 
 
