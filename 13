@@ -1,6 +1,71 @@
-Yo considero de que el if (parametros.TipoGeneracion == "INDIVIDUAL")
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionEstadoCuentaService
+    {
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
 
-Va en el Program.cs 
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            ILogger<GeneracionEstadoCuentaService> logger)
+        {
+            _individualService = individualService;
+            _logger = logger;
+        }
+
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo INDIVIDUAL");
+                _individualService.Ejecutar(parametros);
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo LOTE (pendiente)");
+                throw new NotImplementedException("LOTE aún no implementado");
+            }
+            else
+            {
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+public ParametrosGeneracionECDto ObtenerParametros()
+{
+    var parametros = _paramRepo.ObtenerParametros();
+
+    _logger.LogInformation(
+        "Fecha Corte: {fecha}, Total Registros: {count}",
+        parametros.FechaCorteProcesar,
+        parametros.CantidadEstadosCuenta
+    );
+
+    return parametros;
+}
+
+
+
+
+
+
+
+
+
 using EstadosCuentaTC.Data;
 using EstadosCuentaTC.Repositories;
 using EstadosCuentaTC.Services;
@@ -21,9 +86,12 @@ var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddConsole();
 });
 
+// 🔹 Loggers específicos
 var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
 var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
 var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
 
 // 🔹 Infraestructura
 var sql = new SqlExecutor(connectionString);
@@ -31,7 +99,7 @@ var sql = new SqlExecutor(connectionString);
 // 🔹 FASE 1
 var prepara = new PreparaDataService(sql);
 
-// 🔹 Repos
+// 🔹 Repositorios
 var configRepo = new ConfigRepository(sql);
 var correosRepo = new CorreosRepository(sql);
 var emailRepo = new EmailRepository(configRepo, loggerEmail);
@@ -45,10 +113,24 @@ var correosService = new CorreosService(
     loggerCorreos
 );
 
-var ParametrosECService = new ParametrosGeneracionECService(
-    paramRepo, 
-    jsonRepo, 
-    loggerParam);
+// 🔹 FASE 3
+var parametrosService = new ParametrosGeneracionECService(
+    paramRepo,
+    jsonRepo,
+    loggerParam
+);
+
+// 🔹 FASE 4 (Servicios de generación)
+var individualService = new GeneracionIndividualService(
+    jsonRepo,
+    paramRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    loggerGeneracion
+);
 
 try
 {
@@ -66,8 +148,17 @@ try
     Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
     await correosService.InsertarCorreosNoValidosAsync();
 
+    // =========================
+    // FASE 3
+    // =========================
     Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
-    ParametrosECService.ObtenerParametros();
+    var parametros = parametrosService.ObtenerParametros();
+
+    // =========================
+    // FASE 4
+    // =========================
+    Console.WriteLine("\nFASE 4: GENERACIÓN ESTADOS DE CUENTA");
+    generacionService.Ejecutar(parametros);
 
     Console.WriteLine("\n========== FIN PROCESO ==========");
 }
@@ -75,8 +166,3 @@ catch (Exception ex)
 {
     Console.WriteLine($"ERROR GENERAL: {ex.Message}");
 }
-
-
-
-
-Pero la verdad no estoy segura, qué es lo correcto?
