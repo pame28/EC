@@ -1,4 +1,13 @@
-CREATE OR ALTER PROCEDURE dbo.usp_ProcesarSiguienteEstadoCuenta
+Ok mira, ya creé el SP me quedó asi:
+
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ProcesarSiguienteEstadoCuenta]    Script Date: 1/4/2026 13:19:16 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER   PROCEDURE [dbo].[usp_ProcesarSiguienteEstadoCuenta]
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -17,7 +26,7 @@ BEGIN
 
         BEGIN TRAN;
 
-        -- 🔐 1. Tomar un registro sin que otro hilo lo tome
+        -- Tomar un registro sin que otro hilo lo tome
         SELECT TOP 1
             @NoTarjeta = No_Tarjeta,
             @NoCuenta = No_Cuenta,
@@ -27,17 +36,16 @@ BEGIN
             @Origen = Origen,
             @FechaCorte = Fecha_Corte
         FROM dbo.BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
-        WHERE Procesado = 'NO'
-        ORDER BY IdRow;
+        WHERE Estado = 2
 
-        -- 🚫 Si no hay más registros
+        --  Si no hay más registros
         IF @NoTarjeta IS NULL
         BEGIN
             ROLLBACK TRAN;
             RETURN;
         END
 
-        -- 🔹 2. Generar JSON reutilizando tu SP actual
+        --  Generar JSON reutilizando tu SP actual
         DECLARE @TablaJson TABLE (JsonEstadoCuenta VARCHAR(MAX));
 
         INSERT INTO @TablaJson
@@ -48,14 +56,16 @@ BEGIN
         IF @Json IS NULL OR LTRIM(RTRIM(@Json)) = ''
             SET @Json = '{}';
 
-        -- 🔹 3. UPDATE (marcar como procesado)
+        --  UPDATE (marcar como procesado)
         UPDATE dbo.BandejaEstadoCuenta
-        SET Procesado = 'SI',
-            FechaEjecucion = GETDATE()
+        SET Estado = 1
         WHERE No_Tarjeta = @NoTarjeta
         AND No_Cuenta = @NoCuenta;
 
-        -- 🔹 4. INSERT histórico
+
+
+		SELECT * FROM BandejaEstadoCuenta
+        --  INSERT histórico
         INSERT INTO dbo.HistoricoMaestroEstadosCuentaJSON
         (
             FechaCorte,
@@ -79,13 +89,13 @@ BEGIN
             @Correo,
             @Origen,
             NULL,
-            'SI',
+            1,
             GETDATE()
         );
 
         COMMIT TRAN;
 
-        -- 🔹 5. DEVOLVER RESULTADO
+        --  DEVOLVER RESULTADO
         SELECT 
             @NoTarjeta AS NoTarjeta,
             @Json AS JsonEstadoCuenta;
@@ -98,4 +108,301 @@ BEGIN
         RAISERROR(@Error, 16, 1);
     END CATCH
 END
-GO
+
+
+
+Esto es lo que se adapta
+
+
+Ahora en la consola.. no se qué tengo que modificar:
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class EstadoCuentaRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public EstadoCuentaRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        // 🔹 Obtener 1 registro pendiente
+        public TarjetaPendienteDto ObtenerPendiente()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ObtenerTarjeta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return null;
+
+            return new TarjetaPendienteDto
+            {
+                FechaCorte = reader["Fecha_Corte"]?.ToString(),
+                NoTarjeta = reader["No_Tarjeta"]?.ToString(),
+                NoCuenta = reader["No_Cuenta"]?.ToString(),
+                NoCuentaVASA = reader["No_Cuenta_VASA"]?.ToString(),
+                Nombre = reader["Nombre"]?.ToString(),
+                Correo = reader["Correo"]?.ToString(),
+                Origen = reader["Origen"]?.ToString()
+            };
+        }
+
+        // 🔹 Obtener JSON directo (OPTIMIZADO)
+        public string ObtenerJson(string tarjeta, string fechaCorte)
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
+         //   cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte);
+
+            var result = cmd.ExecuteScalar();
+
+            return result?.ToString() ?? "{}";
+        }
+
+        // 🔹 Actualizar estado
+        public void MarcarProcesado(string tarjeta, string cuenta)
+        {
+            _sql.Execute($@"
+                UPDATE BandejaEstadoCuenta
+                SET Estado = 1
+                WHERE No_Tarjeta = '{tarjeta}'
+                AND No_Cuenta = '{cuenta}'
+            ");
+        }
+
+        // 🔹 Insertar histórico
+        public void InsertarHistorico(
+           DateTime fechaCorte,
+           string tarjeta,
+           string cuenta,
+           string cuentaVasa,
+           string nombre,
+           string correo,
+           string origen,           
+           int? lote = null
+       )
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_InsertarHistoricoECJson", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte);
+            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta ?? "");
+            cmd.Parameters.AddWithValue("@NoCuenta", cuenta ?? "");
+            cmd.Parameters.AddWithValue("@NoCuentaVASA", cuentaVasa ?? "");
+            cmd.Parameters.AddWithValue("@Nombre", nombre ?? "");
+            cmd.Parameters.AddWithValue("@Correo", correo ?? "");
+            cmd.Parameters.AddWithValue("@Origen", origen ?? "");
+            cmd.Parameters.AddWithValue("@Lote", lote ?? (object)DBNull.Value);
+ 
+
+            cmd.ExecuteNonQuery();
+        }
+
+        // 🔹 Cantidad restante
+        public int ObtenerCantidadPendiente()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ObtenerCantidadEstadosCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+    }
+}
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionIndividualService
+    {
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionIndividualService> _logger;
+
+        public GeneracionIndividualService(
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionIndividualService> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
+
+        public void Ejecutar(string rutaBase, DateTime fechaCorte)
+        {
+            try
+            {
+                _logger.LogInformation("Inicio Generación Individual");
+
+                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+
+                if (!Directory.Exists(ruta))
+                {
+                    Directory.CreateDirectory(ruta);
+                }
+
+                var archivoJson = Path.Combine(ruta, $"Estado_de_cuenta_corte_{fechaCorte.Day}.json");
+                var contadorPath = Path.Combine(ruta, "Contador.txt");
+
+                if (!File.Exists(contadorPath))
+                    File.WriteAllText(contadorPath, "0");
+
+                while (true)
+                {
+                    var tarjeta = _repo.ObtenerPendiente();
+
+                    if (tarjeta == null)
+                        break;
+
+                    var cantidad = _repo.ObtenerCantidadPendiente();
+
+                    var json = _repo.ObtenerJson(tarjeta.NoTarjeta, tarjeta.FechaCorte);
+
+                    if (string.IsNullOrWhiteSpace(json))
+                        json = "{}";
+
+                    var tarjetaKey = $"\"{tarjeta.NoTarjeta}\":";
+
+
+                    if (!File.Exists(contadorPath))
+                    {
+                        File.WriteAllText(contadorPath, "0");
+                    }
+
+                    var contadorTexto = File.ReadAllText(contadorPath);
+                    bool esInicio = string.IsNullOrEmpty(contadorTexto);
+                    bool esFinal = cantidad == 1;
+
+                    if (esInicio)
+                    {
+                        File.AppendAllText(archivoJson, "{");
+                        File.WriteAllText(contadorPath, "1");
+                    }
+                    else
+                    {
+                        int contador = int.Parse(contadorTexto) + 1;
+                        File.WriteAllText(contadorPath, contador.ToString());
+                    }
+
+                    if (esFinal)
+                    {
+                        File.AppendAllText(archivoJson, $"{tarjetaKey}{json}");
+                        File.AppendAllText(archivoJson, "}");
+                    }
+                    else
+                    {
+                        File.AppendAllText(archivoJson, $"{tarjetaKey}{json},");
+                    }
+
+                    _repo.MarcarProcesado(tarjeta.NoTarjeta, tarjeta.NoCuenta);
+
+                    _repo.InsertarHistorico(
+                       DateTime.Parse(tarjeta.FechaCorte),
+                        tarjeta.NoTarjeta,
+                        tarjeta.NoCuenta,
+                        tarjeta.NoCuentaVASA,
+                        tarjeta.Nombre,
+                        tarjeta.Correo,
+                        tarjeta.Origen
+                    );
+
+                    _logger.LogInformation("Procesado: {tarjeta}", tarjeta.NoTarjeta);
+                }
+
+                _logger.LogInformation("Fin Generación Individual");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en Generación Individual");
+                throw;
+            }
+        }
+    }
+}
+
+
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionEstadoCuentaService
+    {
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly JsonRepository _jsonRepo;
+
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            JsonRepository jsonRepo,
+            ILogger<GeneracionEstadoCuentaService> logger)
+        {
+            _individualService = individualService;
+            _logger = logger;
+            _jsonRepo = jsonRepo;
+        }
+
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+
+            // Paso 3 - generar JSON
+            var cantidadGenerada = _jsonRepo.GenerarJson();
+
+            _logger.LogInformation(
+                "Registros generados: {count}",
+                cantidadGenerada
+            );
+
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo INDIVIDUAL");
+                _individualService.Ejecutar(parametros.RutaArchivoJson, parametros.FechaCorteProcesar);
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo LOTE (pendiente)");
+                throw new NotImplementedException("LOTE aún no implementado");
+            }
+            else
+            {
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+        }
+    }
+}
