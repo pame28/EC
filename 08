@@ -1,6 +1,6 @@
 Ok mira, para la siguiente fase (4) se llama Generación de Estados de cuenta Json 
 
-La voy a dicidir en 3 partes porque es mucho, esta bien?
+La voy a dicidir en partes porque es mucho, esta bien?
 
 P A R T E N U M E R O 0 1 
 
@@ -50,7 +50,7 @@ En un lado si le doy Doble clic abro el Editor de restricciones de Procedencia
 
 Expresión:       @[User::TipoGeneracion] == "INDIVIDUAL"
 
-
+Para esta decisión de pienso que seria buena crear una tabla con este tipo de información, como de parametrización 
 
 Dentro de esta Subdivisión Hay un Contenedor llamado Generación de Estados de Cuenta:
 
