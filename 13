@@ -1,157 +1,35 @@
-========== INICIO PROCESO ==========
-
-FASE 1: PREPARA DATA
-Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento
-Paso 2: Limpiando bandeja Estado Cuenta
-Paso 3: Llenando bandeja Estado Cuenta
-
-FASE 2: CORREOS NO VALIDOS
-
-FASE 3: OBTENER PARÁMETROS
-info: EstadosCuentaTC.Services.CorreosService[0]
-      Fin Correos No Válidos
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      FASE 4 - INICIO
-
-FASE 4: GENERACIÓN ESTADOS DE CUENTA
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Fecha Corte: 03/10/2026 00:00:00, Total Registros Estados de Cuenta: 14739
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      FASE 4 - FIN
-info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
-      FASE 4 - GENERACIÓN ESTADOS DE CUENTA
-info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
-      Registros generados:
-info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
-      Modo LOTE
-ERROR GENERAL: Se agotó el tiempo de espera de ejecución. El período de tiempo de espera transcurrió antes de la finalización de la operación o el servidor no responde.
-
-
-
-
-
-
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
-
-namespace EstadosCuentaTC.Repositories
-{
-    public class EstadoCuentaRepository
-    {
-        private readonly SqlExecutor _sql;
-
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
-
-
-        public (string tarjeta, string json)? ProcesarSiguiente()
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return null;
-
-            return (
-                reader["NoTarjeta"]?.ToString(),
-                reader["JsonEstadoCuenta"]?.ToString()
-            );
-        }
-
-
-        public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
-        {
-            var lista = new List<(string, string)>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-           // cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add((
-                    reader["NoTarjeta"].ToString(),
-                    reader["JsonEstadoCuenta"].ToString()
-                ));
-            }
-
-            return lista;
-        }
-
-    }
-}
-
-
-
-
-USE [EstadosCuentaJSONProcesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_ProcesarLoteEstadosCuenta]    Script Date: 1/4/2026 15:51:11 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[usp_ProcesarLoteEstadosCuenta]
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @Resultados TABLE (
-        NoTarjeta VARCHAR(16),
-        JsonEstadoCuenta NVARCHAR(MAX)
-    );
-
-    DECLARE @Lote INT = 1;
     DECLARE @TamanoLote INT;
+    DECLARE @Lote INT = 1;
 
-    --  Obtener tamaño de lote desde parámetros
+    -- Obtener tamaño lote
     SELECT TOP 1 @TamanoLote = RegistrosPorLote
     FROM ParametrosGeneracionEC;
 
     IF @TamanoLote IS NULL OR @TamanoLote <= 0
-        SET @TamanoLote = 100; -- valor por defecto
+        SET @TamanoLote = 100;
 
-    DECLARE @Offset INT = 0;
+    WHILE (1 = 1)
+    BEGIN
+        BEGIN TRY
+            BEGIN TRAN;
 
-    BEGIN TRY
-        BEGIN TRAN;
-
-        WHILE (1 = 1)
-        BEGIN
-            --  Obtener lote actual
-            ;WITH CTE AS (
-                SELECT *
-                FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
-                WHERE Estado = 2
-                ORDER BY No_Tarjeta
-                OFFSET @Offset ROWS
-                FETCH NEXT @TamanoLote ROWS ONLY
-            )
-            SELECT * INTO #Lote FROM CTE;
+            -- 🔥 Tomar lote SIN OFFSET
+            SELECT TOP (@TamanoLote) *
+            INTO #Lote
+            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
+            WHERE Estado = 2
+            ORDER BY No_Tarjeta;
 
             IF NOT EXISTS (SELECT 1 FROM #Lote)
+            BEGIN
+                ROLLBACK;
                 BREAK;
+            END
 
             DECLARE @NoTarjeta VARCHAR(16);
             DECLARE @Json NVARCHAR(MAX);
@@ -164,24 +42,17 @@ BEGIN
 
             WHILE @@FETCH_STATUS = 0
             BEGIN
-                SET @Json = NULL;
-
-                --  Capturar JSON correctamente
-                DECLARE @TablaJson TABLE (
-                    JsonEstadoCuenta NVARCHAR(MAX)
-                );
+                DECLARE @TablaJson TABLE (JsonEstadoCuenta NVARCHAR(MAX));
 
                 INSERT INTO @TablaJson
                 EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
 
-                SELECT @Json = JsonEstadoCuenta
-                FROM @TablaJson;
+                SELECT TOP 1 @Json = JsonEstadoCuenta FROM @TablaJson;
 
                 IF @Json IS NULL
                     SET @Json = '{}';
 
-                INSERT INTO @Resultados (NoTarjeta, JsonEstadoCuenta)
-                VALUES (@NoTarjeta, @Json);
+                -- 👉 AQUÍ puedes devolver directo si quieres stream (opcional)
 
                 FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
             END
@@ -189,7 +60,7 @@ BEGIN
             CLOSE cursor_lote;
             DEALLOCATE cursor_lote;
 
-            --  Marcar como procesado
+            -- 🔥 Marcar procesados
             UPDATE b
             SET Estado = 1
             FROM BandejaEstadoCuenta b
@@ -197,7 +68,7 @@ BEGIN
                 ON b.No_Tarjeta = l.No_Tarjeta
                 AND b.No_Cuenta = l.No_Cuenta;
 
-            --  Insertar histórico con lote correcto
+            -- 🔥 Histórico
             INSERT INTO HistoricoMaestroEstadosCuentaJSON
             (
                 FechaCorte,
@@ -224,25 +95,40 @@ BEGIN
                 GETDATE()
             FROM #Lote;
 
-            --  Avanzar al siguiente lote
-            SET @Offset = @Offset + @TamanoLote;
-            SET @Lote = @Lote + 1;
+            COMMIT;
 
             DROP TABLE #Lote;
-        END
 
-        COMMIT;
+            PRINT CONCAT('Lote procesado: ', @Lote);
 
-        --  Resultado final
-        SELECT 
-            NoTarjeta,
-            JsonEstadoCuenta
-        FROM @Resultados;
+            SET @Lote = @Lote + 1;
 
-    END TRY
-    BEGIN CATCH
-        ROLLBACK;
-        THROW;
-    END CATCH
+        END TRY
+        BEGIN CATCH
+            ROLLBACK;
+            THROW;
+        END CATCH
+    END
 END
 
+
+
+
+
+
+
+
+
+
+public void ProcesarLotes()
+{
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
+    {
+        CommandType = CommandType.StoredProcedure,
+        CommandTimeout = 0 // 🔥 clave
+    };
+
+    cmd.ExecuteNonQuery();
+}
