@@ -1,0 +1,26 @@
+Sabes tengo varias consultas .. y es ...que estoy pensando en futuro
+
+1. Yo tengo que implementar la parametrización de hilos, lotes.. Asi como lo enviaste me lo va a permitir?
+
+Y la otra cosa es que me gustaria que crearamos un SP para el insert que me muestras 
+
+En sí esta es la tabla donde se tiene que hacer el insert:
+
+CREATE TABLE [dbo].[HistoricoMaestroEstadosCuentaJSON](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NOT NULL,
+	[NoTarjeta] [char](16) NULL,
+	[NoCuenta] [varchar](25) NOT NULL,
+	[NoCuentaVASA] [varchar](25) NOT NULL,
+	[Nombre] [varchar](255) NOT NULL,
+	[Correo] [varchar](255) NOT NULL,
+	[Origen] [varchar](4) NULL,
+	[Lote] [int] NULL,
+	[Procesado] [char](2) NOT NULL,
+	[FechaEjecucion] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
