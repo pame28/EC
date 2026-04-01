@@ -1,6 +1,9 @@
-Msg 156, Level 15, State 1, Procedure usp_ProcesarLoteEstadosCuenta, Line 53 [Batch Start Line 7]
-Incorrect syntax near the keyword 'EXEC'.
-Msg 102, Level 15, State 1, Procedure usp_ProcesarLoteEstadosCuenta, Line 54 [Batch Start Line 7]
-Incorrect syntax near ')'.
+DECLARE @TablaJson TABLE (
+    JsonEstadoCuenta NVARCHAR(MAX)
+);
 
-Completion time: 2026-04-01T15:17:36.1302191-06:00
+INSERT INTO @TablaJson
+EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
+
+SELECT @Json = JsonEstadoCuenta
+FROM @TablaJson;
