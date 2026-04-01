@@ -7,93 +7,6 @@ Fase 02. Correos No Validos
 Fase 03. Parámetros 
 
 Te voy a mostrar lo que llevamos actualmente en la consola:
-
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Repositories;
-using EstadosCuentaTC.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
-var builder = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: false);
-
-var config = builder.Build();
-
-var connectionString = config.GetConnectionString("DefaultConnection")
-    ?? throw new Exception("ConnectionString no configurado");
-
-// 🔹 Logger
-var loggerFactory = LoggerFactory.Create(builder =>
-{
-    builder.AddConsole();
-});
-
-var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
-var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
-var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
-
-// 🔹 Infraestructura
-var sql = new SqlExecutor(connectionString);
-
-// 🔹 FASE 1
-var prepara = new PreparaDataService(sql);
-
-// 🔹 Repos
-var configRepo = new ConfigRepository(sql);
-var correosRepo = new CorreosRepository(sql);
-var emailRepo = new EmailRepository(configRepo, loggerEmail);
-var paramRepo = new ParametrosGeneracionECRepository(sql);
-var jsonRepo = new JsonRepository(sql);
-
-// 🔹 FASE 2
-var correosService = new CorreosService(
-    correosRepo,
-    emailRepo,
-    loggerCorreos
-);
-
-var ParametrosECService = new ParametrosGeneracionECService(
-    paramRepo, 
-    jsonRepo, 
-    loggerParam);
-
-try
-{
-    Console.WriteLine("========== INICIO PROCESO ==========\n");
-
-    // =========================
-    // FASE 1
-    // =========================
-    Console.WriteLine("FASE 1: PREPARA DATA");
-    prepara.Ejecutar();
-
-    // =========================
-    // FASE 2
-    // =========================
-    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
-    await correosService.EjecutarAsync();
-
-    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
-    ParametrosECService.Ejecutar();
-
-    Console.WriteLine("\n========== FIN PROCESO ==========");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
-}
-
-
-
-
-
-
---------------
-
-SERVICES
-
--------------
-
 using EstadosCuentaTC.Data;
 
 
@@ -124,8 +37,6 @@ namespace EstadosCuentaTC.Services
 
 
 
-
-
 using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
@@ -150,7 +61,7 @@ namespace EstadosCuentaTC.Services
             _logger = logger;
         }
 
-        public async Task EjecutarAsync()
+        public async Task InsertarCorreosNoValidosAsync()
         {
             try
             {
@@ -158,35 +69,25 @@ namespace EstadosCuentaTC.Services
 
                 _repo.LimpiarHistorico("NOVALIDOS");
 
-                var lista = _repo.ObtenerCorreosNoValidos();
-
-                _logger.LogInformation("Cantidad de Correo No Válidos: {count}", lista.Count);
-
-                if (lista.Any())
-                    _repo.InsertarHistorico(lista);
+                _repo.LlenarHistoricoCorreosInvalidos();
 
                 _logger.LogInformation("Fin Correos No Válidos");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error proceso");
+                _logger.LogError(ex, "Error proceso Correos No Válidos");
 
                 await _email.EnviarAsync("ERROR", ex.Message);
             }
         }
+
     }
 }
-
-
-
-
-
 
 using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.IO;
 
 namespace EstadosCuentaTC.Services
 {
@@ -206,35 +107,44 @@ namespace EstadosCuentaTC.Services
             _logger = logger;
         }
 
-        public void Ejecutar()
+        public void ObtenerParametros()
         {
             try
             {
                 _logger.LogInformation("FASE 4 - INICIO");
 
-                // Paso 1
-                var correoError = _paramRepo.ObtenerCorreoError();
-
-                // Paso 2
+                // Paso 1 - obtener parámetros reales (desde SP)
                 var parametros = _paramRepo.ObtenerParametros();
 
-                // Paso 3 - contador registros
-                _logger.LogInformation("Query Cantidad: {query}", parametros.QueryConteo);
+                _logger.LogInformation(
+                    "Fecha Corte: {fecha}, Total Registros Estados de Cuenta: {count}",
+                    parametros.FechaCorteProcesar,
+                    parametros.CantidadEstadosCuenta
+                );
 
-                // Paso 5 - crear carpeta y contador
-                var ruta = parametros.RutaJson + parametros.FechaCorte.ToString("yyyy-MM-dd");
+                // Paso 2 - crear ruta
+                var ruta = Path.Combine(
+                    parametros.RutaArchivoJson,
+                    parametros.FechaCorteProcesar.ToString("yyyy-MM-dd")
+                );
 
                 if (Directory.Exists(ruta))
                     Directory.Delete(ruta, true);
 
                 Directory.CreateDirectory(ruta);
 
-                File.WriteAllText(Path.Combine(ruta, "Contador.txt"), "");
+                File.WriteAllText(
+                    Path.Combine(ruta, "Contador.txt"),
+                    parametros.CantidadEstadosCuenta.ToString()
+                );
 
-                // Paso 6 - generar JSON
-                var cantidad = _jsonRepo.GenerarJson();
+                // Paso 3 - generar JSON
+                var cantidadGenerada = _jsonRepo.GenerarJson();
 
-                _logger.LogInformation("Registros generados: {count}", cantidad);
+                _logger.LogInformation(
+                    "Registros generados: {count}",
+                    cantidadGenerada
+                );
 
                 _logger.LogInformation("FASE 4 - FIN");
             }
@@ -247,7 +157,292 @@ namespace EstadosCuentaTC.Services
     }
 }
 
+Repositorios:
 
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class ConfigRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public ConfigRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public ConfigEmailDto ObtenerConfigEmail(string tipo)
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ObtenerConfiguracionEmailPorTipo", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.Add("@Tipo", SqlDbType.VarChar, 50).Value = tipo;
+
+
+            using var reader = cmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                return new ConfigEmailDto
+                {
+
+                    SmtpServer = reader["SmtpServer"]?.ToString(),
+                    MailFrom = reader["MailFrom"]?.ToString(),
+                    MailSubject = reader["MailSubject"]?.ToString(),
+                    CorreoDestino = reader["CorreoDestino"]?.ToString(),
+                    PlantillaHTML = reader["PlantillaHTML"]?.ToString()
+                };
+            }
+
+            throw new Exception($"No existe configuración para tipo: {tipo}");
+        }
+    }
+}
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class CorreosRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public CorreosRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public void LimpiarHistorico(string tipo)
+        {
+            _sql.ExecuteStoredProcedure("usp_LimpiarTablaHistoricoCorreosEC",
+                new Dictionary<string, object>
+                {
+                    { "@Tipo", tipo }
+
+                });
+        }
+
+
+        public void LlenarHistoricoCorreosInvalidos()
+        {
+            _sql.Execute(
+                "usp_LlenarHistoricoCorreosInvalidosEC"
+            );
+        }
+
+    }
+}
+
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Net.Mail;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class EmailRepository
+    {
+        private readonly ILogger<EmailRepository> _logger;
+        private readonly ConfigRepository _configRepo;
+
+        public EmailRepository(
+            ConfigRepository configRepo,
+            ILogger<EmailRepository> logger)
+        {
+            _configRepo = configRepo;
+            _logger = logger;
+        }
+
+        public async Task EnviarAsync(string tipo, string mensaje, string? destinoOverride = null)
+        {
+            try
+            {
+                var config = _configRepo.ObtenerConfigEmail(tipo);
+
+                using var smtp = new SmtpClient(config.SmtpServer)
+                {
+                    UseDefaultCredentials = true
+                };
+
+                using var mail = new MailMessage
+                {
+                    From = new MailAddress(config.MailFrom),
+                    Subject = config.MailSubject,
+                    Body = mensaje,
+                    IsBodyHtml = false
+                };
+
+                var destinoFinal = destinoOverride ?? config.CorreoDestino;
+
+                mail.To.Add(destinoFinal);
+
+                await smtp.SendMailAsync(mail);
+
+                _logger.LogInformation("Correo tipo {tipo} enviado a {destino}", tipo, destinoFinal);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error enviando correo tipo {tipo}", tipo);
+            }
+        }
+    }
+}
+
+
+using EstadosCuentaTC.Data;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class JsonRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public JsonRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public int GenerarJson()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_LlenarBandejaEstadoCuentaJson", conn);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+            var result = cmd.ExecuteScalar();
+
+            return Convert.ToInt32(result);
+        }
+    }
+}
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Models;
+using Microsoft.Data.SqlClient;
+using System.Data;
+
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class ParametroCorteRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public ParametroCorteRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+
+        public ParametroCorte ObtenerActivo()
+        {
+            using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("usp_ObtenerFechaCorteActiva", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return null;
+
+            return new ParametroCorte
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                FechaCorte = reader.GetDateTime(reader.GetOrdinal("FechaCorte")),
+                Estado = Convert.ToChar(reader["Estado"])
+            };
+        }
+
+    }
+}
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Data;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class ParametrosGeneracionECRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public ParametrosGeneracionECRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public ParametrosGeneracionECDto ObtenerParametros()
+        {
+            using var conn = _sql.GetConnection();
+
+            // 1️⃣ Obtener parámetros de generación
+            using var cmd = new SqlCommand("usp_ObtenerParametrosGeneracionEC", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                throw new Exception("No hay parámetros de generación configurados");
+
+            var parametros = new ParametrosGeneracionECDto
+            {
+                FechaCorteProcesar = reader.GetDateTime(reader.GetOrdinal("FechaCorteProcesar")),
+                DireccionReporte = reader["DireccionReporte"]?.ToString(),
+                RutaArchivoJson = reader["RutaArchivoJson"]?.ToString(),
+                RutaArchivoHistoricoJson = reader["RutaArchivoHistoricoJson"]?.ToString(),
+                LlaveEncripta = reader["LlaveEncripta"]?.ToString(),
+                TipoGeneracion = reader["TipoGeneracion"]?.ToString(),
+                RegistrosPorLote = reader.GetInt32(reader.GetOrdinal("RegistrosPorLote")),
+                CantidadHilos = reader.GetInt32(reader.GetOrdinal("CantidadHilos"))
+            };
+
+            reader.Close();
+
+            //  Obtener conteo desde su SP
+            parametros.CantidadEstadosCuenta = ObtenerCantidadEstadosCuenta(conn);
+
+            return parametros;
+        }
+
+        private int ObtenerCantidadEstadosCuenta(SqlConnection conn)
+        {
+            using var cmd = new SqlCommand("usp_ObtenerCantidadEstadosCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+    }
+}
 
 Esto que te envio es solo para tu conocimiento...
 La dinamica que hemos estado llevando es ... yo te envio el paso a paso del dtsx y lo vamos migrando.
