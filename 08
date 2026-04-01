@@ -1092,8 +1092,12 @@ namespace ST_c72b21f52fe04a7cb5624ab6fff3c847
     }
 }
 
+Tambien ya tengo los dos SP que usa :
+EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta='1000000004008065'
+EXEC dbo.usp_SBEstadoCuenta @NoTarjeta='1000000004008065'
 
 
+Ambos solo cuentan con un parámetro
 
 3. Cantidad de Registros (Tarea SQL): User::QueryCant
 
@@ -1116,3 +1120,6 @@ select COUNT(*) as CantidadEstadosCuenta from [dbo].[BandejaEstadoCuenta] B wher
 
 END
 
+
+
+Dime paso a paso qué tengo que hacer para migrarlo
