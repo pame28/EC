@@ -1,44 +1,117 @@
-CREATE PROCEDURE dbo.usp_InsertarHistoricoECJson
-(
-    @FechaCorte DATE,
-    @NoTarjeta CHAR(16),
-    @NoCuenta VARCHAR(25),
-    @NoCuentaVASA VARCHAR(25),
-    @Nombre VARCHAR(255),
-    @Correo VARCHAR(255),
-    @Origen VARCHAR(4) = NULL,
-    @Lote INT = NULL,
-    @Procesado CHAR(2)
-)
+CREATE SEQUENCE dbo.Seq_LoteEstadoCuenta
+AS INT
+START WITH 1
+INCREMENT BY 1;
+
+
+
+
+
+ALTER PROCEDURE dbo.usp_ProcesarLoteEstadosCuenta
+    @Cantidad INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO dbo.HistoricoMaestroEstadosCuentaJSON
-    (
-        FechaCorte,
-        NoTarjeta,
-        NoCuenta,
-        NoCuentaVASA,
-        Nombre,
-        Correo,
-        Origen,
-        Lote,
-        Procesado,
-        FechaEjecucion
-    )
-    VALUES
-    (
-        @FechaCorte,
-        @NoTarjeta,
-        @NoCuenta,
-        ISNULL(@NoCuentaVASA, ''),
-        ISNULL(@Nombre, ''),
-        ISNULL(@Correo, ''),
-        @Origen,
-        @Lote,
-        @Procesado,
-        GETDATE()
+    DECLARE @Resultados TABLE (
+        NoTarjeta VARCHAR(16),
+        JsonEstadoCuenta VARCHAR(MAX)
     );
+
+    DECLARE @Lote INT;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- 🔹 Obtener número de lote secuencial
+        SELECT @Lote = NEXT VALUE FOR dbo.Seq_LoteEstadoCuenta;
+
+        -- 🔹 Tomar registros del lote
+        ;WITH CTE AS (
+            SELECT TOP (@Cantidad) *
+            FROM BandejaEstadoCuenta WITH (UPDLOCK, READPAST)
+            WHERE Estado = 2
+        )
+        SELECT * INTO #Lote FROM CTE;
+
+        IF NOT EXISTS (SELECT 1 FROM #Lote)
+        BEGIN
+            ROLLBACK;
+            RETURN;
+        END
+
+        DECLARE @NoTarjeta VARCHAR(16);
+
+        DECLARE cursor_lote CURSOR FOR
+        SELECT No_Tarjeta FROM #Lote;
+
+        OPEN cursor_lote;
+        FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            DECLARE @Json TABLE (JsonEstadoCuenta VARCHAR(MAX));
+
+            INSERT INTO @Json
+            EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
+
+            INSERT INTO @Resultados
+            SELECT 
+                @NoTarjeta,
+                ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
+
+            FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+        END
+
+        CLOSE cursor_lote;
+        DEALLOCATE cursor_lote;
+
+        -- 🔹 UPDATE masivo
+        UPDATE b
+        SET Estado = 1
+        FROM BandejaEstadoCuenta b
+        INNER JOIN #Lote l
+            ON b.No_Tarjeta = l.No_Tarjeta
+            AND b.No_Cuenta = l.No_Cuenta;
+
+        -- 🔹 HISTÓRICO con LOTE SECUENCIAL
+        INSERT INTO HistoricoMaestroEstadosCuentaJSON
+        (
+            FechaCorte,
+            NoTarjeta,
+            NoCuenta,
+            NoCuentaVASA,
+            Nombre,
+            Correo,
+            Origen,
+            Lote,
+            Procesado,
+            FechaEjecucion
+        )
+        SELECT 
+            Fecha_Corte,
+            No_Tarjeta,
+            No_Cuenta,
+            No_Cuenta_VASA,
+            Nombre,
+            Correo,
+            Origen,
+            @Lote,
+            1,
+            GETDATE()
+        FROM #Lote;
+
+        COMMIT;
+
+        -- 🔹 Resultado
+        SELECT 
+            NoTarjeta,
+            JsonEstadoCuenta
+        FROM @Resultados;
+
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
 END
-GO
