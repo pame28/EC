@@ -1,77 +1,95 @@
-using EstadosCuentaTC.Dtos;
+Ayudame a actualizar el program.cs
+
+using EstadosCuentaTC.Data;
 using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace EstadosCuentaTC.Services
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+//  Logger
+var loggerFactory = LoggerFactory.Create(builder =>
 {
-    public class GeneracionEstadoCuentaService
-    {
-        private readonly GeneracionIndividualService _individualService;
-        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly JsonRepository _jsonRepo;
-        private readonly EstadoCuentaRepository _repo;
+    builder.AddConsole();
+});
 
-        public GeneracionEstadoCuentaService(
-            GeneracionIndividualService individualService,
-            JsonRepository jsonRepo,
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionEstadoCuentaService> logger,
-            ILoggerFactory loggerFactory)
-        {
-            _individualService = individualService;
-            _logger = logger;
-            _jsonRepo = jsonRepo;
-            _repo = repo;
-            _loggerFactory = loggerFactory;
-        }
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+var loggerLote = loggerFactory.CreateLogger<GeneracionLoteService>();
+//  Infraestructura
+var sql = new SqlExecutor(connectionString);
 
-        public void Ejecutar(ParametrosGeneracionECDto parametros)
-        {
-            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+//  FASE 1
+var prepara = new PreparaDataService(sql);
 
-            // Paso 3 - generar JSON
-            var cantidadGenerada = _jsonRepo.GenerarJson();
+// Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
 
-            _logger.LogInformation(
-                "Registros generados: {count}",
-                cantidadGenerada
-            );
+//  FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
+// FASE 3
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
 
 
-            if (parametros.TipoGeneracion == "INDIVIDUAL")
-            {
-                _logger.LogInformation("Modo INDIVIDUAL");
-                _individualService.Ejecutar(parametros.RutaArchivoJson, parametros.FechaCorteProcesar);
-            }
-            else if (parametros.TipoGeneracion == "LOTE")
-            {
-                _logger.LogInformation("Modo LOTE");
+//  FASE 4 (Servicios de generación)
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
 
-                var loteLogger = _loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
-                var loteService = new GeneracionLoteService(_repo, loteLogger);
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    loggerGeneracion
 
-                loteService.Ejecutar(
-                    parametros.RutaArchivoJson,
-                    parametros.FechaCorteProcesar,
-                    parametros.RegistrosPorLote
-                );
-            }
-            else
-            {
-                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
-            }
-        }
-    }
+);
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
+
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
+
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.InsertarCorreosNoValidosAsync();
+
+    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
+    var parametros = ParametrosECService.ObtenerParametros();
+
+
+    Console.WriteLine("\nFASE 4: GENERACIÓN ESTADOS DE CUENTA");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
 }
-
-
-
-
-
-No se ha dado ningún argumento que corresponda al parámetro requerido "logger" de "GeneracionEstadoCuentaService.GeneracionEstadoCuentaService(GeneracionIndividualService, JsonRepository, EstadoCuentaRepository, ILogger<GeneracionEstadoCuentaService>, ILoggerFactory)"
-Argumento 2: no se puede convertir de 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.GeneracionEstadoCuentaService>' a 'Microsoft.Extensions.Logging.ILogger<EstadosCuentaTC.Services.GeneracionLoteService>'
-
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
