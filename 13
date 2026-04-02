@@ -167,3 +167,33 @@ BEGIN
         @ErrorMensaje
     );
 END
+
+
+
+
+
+
+
+
+
+public (string tarjeta, string json)? ProcesarPorTarjeta(string noTarjeta)
+{
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
+    {
+        CommandType = CommandType.StoredProcedure
+    };
+
+    cmd.Parameters.AddWithValue("@NoTarjeta", noTarjeta);
+
+    using var reader = cmd.ExecuteReader();
+
+    if (!reader.Read())
+        return (noTarjeta, "{}");
+
+    return (
+        noTarjeta,
+        reader["JsonEstadoCuenta"]?.ToString() ?? "{}"
+    );
+}
