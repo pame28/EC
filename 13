@@ -1,4 +1,116 @@
-Ya se ejecuta el worker, pero el archivo se genera vacio, y claro ... pues porque em ningun momento vamos a SP_SBEstadoCuentaJson.
+CREATE OR ALTER PROCEDURE usp_ProcesarLoteEstadosCuenta_JSON
+    @Cantidad INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Resultados TABLE (
+        NoTarjeta VARCHAR(50),
+        JsonEstadoCuenta NVARCHAR(MAX)
+    );
+
+    DECLARE @NoTarjeta VARCHAR(50);
+
+    DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
+        SELECT TOP (@Cantidad) No_Tarjeta
+        FROM BandejaEstadoCuenta WITH (READPAST)
+        WHERE Estado = 0
+        ORDER BY No_Tarjeta;
+
+    OPEN cur;
+
+    FETCH NEXT FROM cur INTO @NoTarjeta;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        BEGIN TRY
+            DECLARE @Json TABLE (JsonEstadoCuenta NVARCHAR(MAX));
+
+            INSERT INTO @Json
+            EXEC usp_SBEstadoCuentaJson @NoTarjeta;
+
+            INSERT INTO @Resultados
+            SELECT 
+                @NoTarjeta,
+                ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
+
+            UPDATE BandejaEstadoCuenta
+            SET Estado = 1
+            WHERE No_Tarjeta = @NoTarjeta;
+        END TRY
+        BEGIN CATCH
+            UPDATE BandejaEstadoCuenta
+            SET Estado = 3,
+                Error = ERROR_MESSAGE()
+            WHERE No_Tarjeta = @NoTarjeta;
+        END CATCH;
+
+        FETCH NEXT FROM cur INTO @NoTarjeta;
+    END
+
+    CLOSE cur;
+    DEALLOCATE cur;
+
+    SELECT * FROM @Resultados;
+END
 
 
-¿Que sigue? Recuerda darme todo paso a paso y bien estructurado, dime que archivos tocar y asi sucesivamente
+
+
+
+
+
+
+
+public List<(string tarjeta, string json)> ProcesarLoteMasivo(int cantidad)
+{
+    var lista = new List<(string, string)>();
+
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta_JSON", conn)
+    {
+        CommandType = CommandType.StoredProcedure,
+        CommandTimeout = 0
+    };
+
+    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+
+    using var reader = cmd.ExecuteReader();
+
+    while (reader.Read())
+    {
+        lista.Add((
+            reader["NoTarjeta"]?.ToString(),
+            reader["JsonEstadoCuenta"]?.ToString()
+        ));
+    }
+
+    return lista;
+}
+
+
+
+
+
+
+
+var lote = _repo.ProcesarLoteMasivo(loteSize);
+
+if (lote.Count == 0)
+{
+    _logger.LogInformation("No hay más registros");
+    break;
+}
+
+var resultados = new List<string>();
+
+foreach (var item in lote)
+{
+    var json = item.json ?? "{}";
+
+    if (string.IsNullOrWhiteSpace(json) || json == "{}")
+        continue;
+
+    resultados.Add($"\"{item.tarjeta}\":{json}");
+}
