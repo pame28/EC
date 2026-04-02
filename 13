@@ -1,148 +1,24 @@
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
-
-namespace EstadosCuentaTC.Repositories
+public List<string> ObtenerTarjetasPendientes(int cantidad)
 {
-    public class EstadoCuentaRepository
+    var lista = new List<string>();
+
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
     {
-        private readonly SqlExecutor _sql;
+        CommandType = CommandType.StoredProcedure
+    };
 
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
+    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
 
+    using var reader = cmd.ExecuteReader();
 
-        public (string tarjeta, string json)? ProcesarSiguiente()
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return null;
-
-            return (
-                reader["NoTarjeta"]?.ToString(),
-                reader["JsonEstadoCuenta"]?.ToString()
-            );
-        }
-
-        public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
-        {
-            var lista = new List<(string, string)>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 0
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add((
-                    reader["NoTarjeta"]?.ToString(),
-                    reader["JsonEstadoCuenta"]?.ToString()
-                ));
-            }
-
-            return lista;
-        }
-
-        public (string tarjeta, string json)? ProcesarPorTarjeta(string noTarjeta)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", noTarjeta);
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return (noTarjeta, "{}");
-
-            return (
-                noTarjeta,
-                reader["JsonEstadoCuenta"]?.ToString() ?? "{}"
-            );
-        }
-        public List<(string tarjeta)> ObtenerTarjetasPendientes(int cantidad)
-        {
-            var lista = new List<(string)>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add(reader["No_Tarjeta"].ToString());
-            }
-
-            return lista;
-        }
-
-
-
-        public void MarcarComoProcesado(string tarjeta)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaProcesado", conn)
-            {
-                CommandType  = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-
-            cmd.ExecuteNonQuery();
-        }
-
-
-        public void MarcarComoError(string tarjeta, string error)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaError", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-            cmd.Parameters.AddWithValue("@ErrorMensaje", error?.Substring(0, Math.Min(error.Length, 4000)));
-
-            cmd.ExecuteNonQuery();
-        }
-
+    while (reader.Read())
+    {
+        lista.Add(reader["No_Tarjeta"].ToString());
     }
 
+    return lista;
 }
 
 
@@ -150,112 +26,34 @@ namespace EstadosCuentaTC.Repositories
 
 
 
-using EstadosCuentaTC.Repositories;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace EstadosCuentaTC.Services
+
+
+Parallel.ForEach(lote, opciones, tarjeta =>
 {
-    public class GeneracionLoteService
+    try
     {
-        private readonly EstadoCuentaRepository _repo;
-        private readonly ILogger<GeneracionLoteService> _logger;
-  
+        var resultado = _repo.ProcesarPorTarjeta(tarjeta);
 
-        public GeneracionLoteService(EstadoCuentaRepository repo,
-            ILogger<GeneracionLoteService> logger)
+        var linea = $"\"{resultado?.tarjeta}\":{resultado?.json}";
+
+        lock (resultados)
         {
-            _repo = repo;
-            _logger = logger;
+            resultados.Add(linea);
         }
 
-        public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize, int cantidadHilos)
-        {
-            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(ruta);
-
-            var archivoJson = Path.Combine(
-                ruta,
-                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
-            );
-
-            using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
-
-            var opciones = new ParallelOptions
-            {
-                MaxDegreeOfParallelism = cantidadHilos
-            };
-
-            writer.Write("{");
-
-            bool primeraVez = true;
-            int numeroLote = 1;
-
-            while (true)
-            {
-                var lote = _repo.ObtenerTarjetasPendientes(loteSize);
-
-                if (lote.Count == 0)
-                    break;
-
-                var opciones = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = cantidadHilos
-                };
-
-                var resultados = new List<string>();
-
-                Parallel.ForEach(lote, opciones, item =>
-                {
-                    try
-                    {
-                        var resultado = _repo.ProcesarPorTarjeta(item.tarjeta);
-
-                        var linea = $"\"{resultado?.tarjeta}\":{resultado?.json}";
-
-                        lock (resultados)
-                        {
-                            resultados.Add(linea);
-                        }
-
-                        _repo.MarcarComoProcesado(item.tarjeta);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
-
-                        _repo.MarcarComoError(item.tarjeta, ex.Message);
-                    }
-                });
-
-                foreach (var linea in resultados)
-                {
-                    if (!primeraVez)
-                        writer.Write(",");
-
-                    writer.Write(linea);
-
-                    primeraVez = false;
-                }
-            }
-
-            writer.Write("}");
-
-            _logger.LogInformation("Fin generación por lote");
-        }
+        _repo.MarcarComoProcesado(tarjeta);
     }
-}
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Error con tarjeta {tarjeta}");
+
+        _repo.MarcarComoError(tarjeta, ex.Message);
+    }
+});
 
 
 
-
-
-Una tupla debe contener al menos dos elementos.
-Una tupla debe contener al menos dos elementos.
-Argumento 1: no se puede convertir de 'string' a '(string, ?)'
-Una variable local o un parámetro denominados 'opciones' no se pueden declarar en este ámbito porque ese nombre se está usando en un ámbito local envolvente para definir una variable local o un parámetro
 
 
 
