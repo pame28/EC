@@ -1,150 +1,26 @@
-Pues te cuento que en mi archivo solo se generó {} eso fue todo 
-
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
-
-namespace EstadosCuentaTC.Repositories
+try
 {
-    public class EstadoCuentaRepository
+    var resultado = _repo.ProcesarPorTarjeta(tarjeta);
+
+    var json = resultado?.json ?? "{}";
+
+    // Validación básica
+    if (string.IsNullOrWhiteSpace(json) || json == "{}")
+        throw new Exception("JSON vacío o inválido");
+
+    var linea = $"\"{tarjeta}\":{json}";
+
+    lock (resultados)
     {
-        private readonly SqlExecutor _sql;
-
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
-
-
-        public (string tarjeta, string json)? ProcesarSiguiente()
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return null;
-
-            return (
-                reader["NoTarjeta"]?.ToString(),
-                reader["JsonEstadoCuenta"]?.ToString()
-            );
-        }
-
-        public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
-        {
-            var lista = new List<(string, string)>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 0
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add((
-                    reader["NoTarjeta"]?.ToString(),
-                    reader["JsonEstadoCuenta"]?.ToString()
-                ));
-            }
-
-            return lista;
-        }
-
-        public (string tarjeta, string json)? ProcesarPorTarjeta(string noTarjeta)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", noTarjeta);
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return (noTarjeta, "{}");
-
-            return (
-                noTarjeta,
-                reader["JsonEstadoCuenta"]?.ToString() ?? "{}"
-            );
-        }
-        public List<string> ObtenerTarjetasPendientes(int cantidad)
-        {
-            var lista = new List<string>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add(reader["No_Tarjeta"].ToString());
-            }
-
-            return lista;
-        }
-
-
-
-
-        public void MarcarComoProcesado(string tarjeta)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaProcesado", conn)
-            {
-                CommandType  = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-
-            cmd.ExecuteNonQuery();
-        }
-
-
-        public void MarcarComoError(string tarjeta, string error)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaError", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-            cmd.Parameters.AddWithValue("@ErrorMensaje", error?.Substring(0, Math.Min(error.Length, 4000)));
-
-            cmd.ExecuteNonQuery();
-        }
-
+        resultados.Add(linea);
     }
 
+    // SOLO si TODO salió bien
+    _repo.MarcarComoProcesado(tarjeta);
 }
+catch (Exception ex)
+{
+    _logger.LogError(ex, $"Error con tarjeta {tarjeta}");
 
+    _repo.MarcarComoError(tarjeta, ex.Message);
+}
