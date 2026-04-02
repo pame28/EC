@@ -1,7 +1,8 @@
 System.AggregateException: 'Some services are not able to be constructed (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Repositories.EstadoCuentaRepository Lifetime: Singleton ImplementationType: EstadosCuentaTC.Repositories.EstadoCuentaRepository': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.) (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Services.GeneracionLoteService Lifetime: Singleton ImplementationType: EstadosCuentaTC.Services.GeneracionLoteService': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.) (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Services.ParametrosGeneracionECService Lifetime: Singleton ImplementationType: EstadosCuentaTC.Services.ParametrosGeneracionECService': Unable to resolve service for type 'EstadosCuentaTC.Repositories.ParametrosGeneracionECRepository' while attempting to activate 'EstadosCuentaTC.Services.ParametrosGeneracionECService'.) (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Data.SqlExecutor Lifetime: Singleton ImplementationType: EstadosCuentaTC.Data.SqlExecutor': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.) (Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.Hosting.IHostedService Lifetime: Singleton ImplementationType: EstadosCuentaWorker.Worker': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.)'
 
-
 InvalidOperationException: Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.
+
+InvalidOperationException: Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Repositories.EstadoCuentaRepository Lifetime: Singleton ImplementationType: EstadosCuentaTC.Repositories.EstadoCuentaRepository': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.
 
 
 using EstadosCuentaTC.Data;
@@ -15,6 +16,7 @@ builder.Services.AddSingleton<EstadoCuentaRepository>();
 builder.Services.AddSingleton<GeneracionLoteService>();
 builder.Services.AddSingleton<ParametrosGeneracionECService>();
 builder.Services.AddSingleton<SqlExecutor>();
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();
