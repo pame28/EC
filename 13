@@ -1,15 +1,101 @@
-var builder = Host.CreateApplicationBuilder(args);
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
 
-builder.Services.AddSingleton<SqlExecutor>();
-builder.Services.AddSingleton<EstadoCuentaRepository>();
-builder.Services.AddSingleton<ParametrosGeneracionECRepository>();
+var config = builder.Build();
 
-builder.Services.AddSingleton<GeneracionLoteService>();
-builder.Services.AddSingleton<ParametrosGeneracionECService>();
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
 
-builder.Services.AddHostedService<Worker>();
+//  Logger
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
 
-var host = builder.Build();
-host.Run();
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+
+//  Infraestructura
+var sql = new SqlExecutor(connectionString);
+
+//  FASE 1
+var prepara = new PreparaDataService(sql);
+
+// Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
+
+//  FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
+// FASE 3
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
+
+
+//  FASE 4 (Servicios de generación)
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory
+
+);
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
+
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
+
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.InsertarCorreosNoValidosAsync();
+
+    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
+    var parametros = ParametrosECService.ObtenerParametros();
+
+
+    Console.WriteLine("\nFASE 4: GENERACIÓN ESTADOS DE CUENTA");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
+
+
+
+
+Argumento 1: no se puede convertir de 'string' a 'Microsoft.Extensions.Configuration.IConfiguration'
+Argumento 1: no se puede convertir de 'string' a 'Microsoft.Extensions.Configuration.IConfiguration'
