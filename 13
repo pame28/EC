@@ -1,48 +1,250 @@
-while (true)
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
 {
-    var lote = _repo.ObtenerTarjetasPendientes(loteSize);
-
-    if (lote.Count == 0)
-        break;
-
-    var opciones = new ParallelOptions
+    public class EstadoCuentaRepository
     {
-        MaxDegreeOfParallelism = cantidadHilos
-    };
+        private readonly SqlExecutor _sql;
 
-    var resultados = new List<string>();
-
-    Parallel.ForEach(lote, opciones, item =>
-    {
-        try
+        public EstadoCuentaRepository(SqlExecutor sql)
         {
-            var resultado = _repo.ProcesarPorTarjeta(item.tarjeta);
+            _sql = sql;
+        }
 
-            var linea = $"\"{resultado?.tarjeta}\":{resultado?.json}";
 
-            lock (resultados)
+        public (string tarjeta, string json)? ProcesarSiguiente()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
             {
-                resultados.Add(linea);
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return null;
+
+            return (
+                reader["NoTarjeta"]?.ToString(),
+                reader["JsonEstadoCuenta"]?.ToString()
+            );
+        }
+
+        public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
+        {
+            var lista = new List<(string, string)>();
+
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 0
+            };
+
+            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                lista.Add((
+                    reader["NoTarjeta"]?.ToString(),
+                    reader["JsonEstadoCuenta"]?.ToString()
+                ));
             }
 
-            _repo.MarcarComoProcesado(item.tarjeta);
+            return lista;
         }
-        catch (Exception ex)
+
+        public (string tarjeta, string json)? ProcesarPorTarjeta(string noTarjeta)
         {
-            _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
+            using var conn = _sql.GetConnection();
 
-            _repo.MarcarComoError(item.tarjeta, ex.Message);
+            using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@NoTarjeta", noTarjeta);
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return (noTarjeta, "{}");
+
+            return (
+                noTarjeta,
+                reader["JsonEstadoCuenta"]?.ToString() ?? "{}"
+            );
         }
-    });
+        public List<(string tarjeta)> ObtenerTarjetasPendientes(int cantidad)
+        {
+            var lista = new List<(string)>();
 
-    foreach (var linea in resultados)
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                lista.Add(reader["No_Tarjeta"].ToString());
+            }
+
+            return lista;
+        }
+
+
+
+        public void MarcarComoProcesado(string tarjeta)
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaProcesado", conn)
+            {
+                CommandType  = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
+
+            cmd.ExecuteNonQuery();
+        }
+
+
+        public void MarcarComoError(string tarjeta, string error)
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaError", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
+            cmd.Parameters.AddWithValue("@ErrorMensaje", error?.Substring(0, Math.Min(error.Length, 4000)));
+
+            cmd.ExecuteNonQuery();
+        }
+
+    }
+
+}
+
+
+
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionLoteService
     {
-        if (!primeraVez)
-            writer.Write(",");
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionLoteService> _logger;
+  
 
-        writer.Write(linea);
+        public GeneracionLoteService(EstadoCuentaRepository repo,
+            ILogger<GeneracionLoteService> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
 
-        primeraVez = false;
+        public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize, int cantidadHilos)
+        {
+            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+            Directory.CreateDirectory(ruta);
+
+            var archivoJson = Path.Combine(
+                ruta,
+                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
+            );
+
+            using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
+
+            var opciones = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = cantidadHilos
+            };
+
+            writer.Write("{");
+
+            bool primeraVez = true;
+            int numeroLote = 1;
+
+            while (true)
+            {
+                var lote = _repo.ObtenerTarjetasPendientes(loteSize);
+
+                if (lote.Count == 0)
+                    break;
+
+                var opciones = new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = cantidadHilos
+                };
+
+                var resultados = new List<string>();
+
+                Parallel.ForEach(lote, opciones, item =>
+                {
+                    try
+                    {
+                        var resultado = _repo.ProcesarPorTarjeta(item.tarjeta);
+
+                        var linea = $"\"{resultado?.tarjeta}\":{resultado?.json}";
+
+                        lock (resultados)
+                        {
+                            resultados.Add(linea);
+                        }
+
+                        _repo.MarcarComoProcesado(item.tarjeta);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
+
+                        _repo.MarcarComoError(item.tarjeta, ex.Message);
+                    }
+                });
+
+                foreach (var linea in resultados)
+                {
+                    if (!primeraVez)
+                        writer.Write(",");
+
+                    writer.Write(linea);
+
+                    primeraVez = false;
+                }
+            }
+
+            writer.Write("}");
+
+            _logger.LogInformation("Fin generación por lote");
+        }
     }
 }
 
@@ -50,150 +252,10 @@ while (true)
 
 
 
-
-
-public List<(string tarjeta)> ObtenerTarjetasPendientes(int cantidad)
-{
-    var lista = new List<(string)>();
-
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
-    {
-        CommandType = CommandType.StoredProcedure
-    };
-
-    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-    using var reader = cmd.ExecuteReader();
-
-    while (reader.Read())
-    {
-        lista.Add(reader["No_Tarjeta"].ToString());
-    }
-
-    return lista;
-}
+Una tupla debe contener al menos dos elementos.
+Una tupla debe contener al menos dos elementos.
+Argumento 1: no se puede convertir de 'string' a '(string, ?)'
+Una variable local o un parámetro denominados 'opciones' no se pueden declarar en este ámbito porque ese nombre se está usando en un ámbito local envolvente para definir una variable local o un parámetro
 
 
 
-
-
-
-
-public void MarcarComoProcesado(string tarjeta)
-{
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand(@"
-        UPDATE BandejaEstadoCuenta
-        SET Estado = 1
-        WHERE No_Tarjeta = @tarjeta", conn);
-
-    cmd.Parameters.AddWithValue("@tarjeta", tarjeta);
-
-    cmd.ExecuteNonQuery();
-}
-
-
-
-
-
-
-
-
-
-public void MarcarComoError(string tarjeta, string error)
-{
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand(@"
-        UPDATE BandejaEstadoCuenta
-        SET Estado = 3,
-            Intentos = ISNULL(Intentos,0) + 1,
-            UltimoError = @error
-        WHERE No_Tarjeta = @tarjeta", conn);
-
-    cmd.Parameters.AddWithValue("@tarjeta", tarjeta);
-    cmd.Parameters.AddWithValue("@error", error);
-
-    cmd.ExecuteNonQuery();
-}
-
-
-
-
-
-
-CREATE PROCEDURE usp_MarcarEstadoCuentaProcesado
-    @NoTarjeta VARCHAR(16)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE BandejaEstadoCuenta
-    SET 
-        Estado = 1,
-        UltimoError = NULL
-    WHERE No_Tarjeta = @NoTarjeta;
-END
-
-
-
-
-
-
-
-CREATE PROCEDURE usp_MarcarEstadoCuentaError
-    @NoTarjeta VARCHAR(16),
-    @ErrorMensaje VARCHAR(MAX)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE BandejaEstadoCuenta
-    SET 
-        Estado = 3,
-        Intentos = ISNULL(Intentos,0) + 1,
-        UltimoError = @ErrorMensaje
-    WHERE No_Tarjeta = @NoTarjeta;
-
-    INSERT INTO LogErroresEstadosCuenta (
-        NoTarjeta,
-        ErrorMensaje
-    )
-    VALUES (
-        @NoTarjeta,
-        @ErrorMensaje
-    );
-END
-
-
-
-
-
-
-
-
-
-public (string tarjeta, string json)? ProcesarPorTarjeta(string noTarjeta)
-{
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_SBEstadoCuentaJson", conn)
-    {
-        CommandType = CommandType.StoredProcedure
-    };
-
-    cmd.Parameters.AddWithValue("@NoTarjeta", noTarjeta);
-
-    using var reader = cmd.ExecuteReader();
-
-    if (!reader.Read())
-        return (noTarjeta, "{}");
-
-    return (
-        noTarjeta,
-        reader["JsonEstadoCuenta"]?.ToString() ?? "{}"
-    );
-}
