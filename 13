@@ -1,28 +1,169 @@
-var resultados = new List<string>();
-
-Parallel.ForEach(lote, opciones, item =>
+while (true)
 {
-    try
-    {
-        var linea = $"\"{item.tarjeta}\":{item.json}";
+    var lote = _repo.ObtenerTarjetasPendientes(loteSize);
 
-        lock (resultados)
+    if (lote.Count == 0)
+        break;
+
+    var opciones = new ParallelOptions
+    {
+        MaxDegreeOfParallelism = cantidadHilos
+    };
+
+    var resultados = new List<string>();
+
+    Parallel.ForEach(lote, opciones, item =>
+    {
+        try
         {
-            resultados.Add(linea);
+            var resultado = _repo.ProcesarPorTarjeta(item.tarjeta);
+
+            var linea = $"\"{resultado?.tarjeta}\":{resultado?.json}";
+
+            lock (resultados)
+            {
+                resultados.Add(linea);
+            }
+
+            _repo.MarcarComoProcesado(item.tarjeta);
         }
-    }
-    catch (Exception ex)
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
+
+            _repo.MarcarComoError(item.tarjeta, ex.Message);
+        }
+    });
+
+    foreach (var linea in resultados)
     {
-        _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
+        if (!primeraVez)
+            writer.Write(",");
+
+        writer.Write(linea);
+
+        primeraVez = false;
     }
-});
-
-foreach (var linea in resultados)
-{
-    if (!primeraVez)
-        writer.Write(",");
-
-    writer.Write(linea);
-
-    primeraVez = false;
 }
+
+
+
+
+
+
+
+public List<(string tarjeta)> ObtenerTarjetasPendientes(int cantidad)
+{
+    var lista = new List<(string)>();
+
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
+    {
+        CommandType = CommandType.StoredProcedure
+    };
+
+    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+
+    using var reader = cmd.ExecuteReader();
+
+    while (reader.Read())
+    {
+        lista.Add(reader["No_Tarjeta"].ToString());
+    }
+
+    return lista;
+}
+
+
+
+
+
+
+
+public void MarcarComoProcesado(string tarjeta)
+{
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand(@"
+        UPDATE BandejaEstadoCuenta
+        SET Estado = 1
+        WHERE No_Tarjeta = @tarjeta", conn);
+
+    cmd.Parameters.AddWithValue("@tarjeta", tarjeta);
+
+    cmd.ExecuteNonQuery();
+}
+
+
+
+
+
+
+
+
+
+public void MarcarComoError(string tarjeta, string error)
+{
+    using var conn = _sql.GetConnection();
+
+    using var cmd = new SqlCommand(@"
+        UPDATE BandejaEstadoCuenta
+        SET Estado = 3,
+            Intentos = ISNULL(Intentos,0) + 1,
+            UltimoError = @error
+        WHERE No_Tarjeta = @tarjeta", conn);
+
+    cmd.Parameters.AddWithValue("@tarjeta", tarjeta);
+    cmd.Parameters.AddWithValue("@error", error);
+
+    cmd.ExecuteNonQuery();
+}
+
+
+
+
+
+
+CREATE PROCEDURE usp_MarcarEstadoCuentaProcesado
+    @NoTarjeta VARCHAR(16)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE BandejaEstadoCuenta
+    SET 
+        Estado = 1,
+        UltimoError = NULL
+    WHERE No_Tarjeta = @NoTarjeta;
+END
+
+
+
+
+
+
+
+CREATE PROCEDURE usp_MarcarEstadoCuentaError
+    @NoTarjeta VARCHAR(16),
+    @ErrorMensaje VARCHAR(MAX)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE BandejaEstadoCuenta
+    SET 
+        Estado = 3,
+        Intentos = ISNULL(Intentos,0) + 1,
+        UltimoError = @ErrorMensaje
+    WHERE No_Tarjeta = @NoTarjeta;
+
+    INSERT INTO LogErroresEstadosCuenta (
+        NoTarjeta,
+        ErrorMensaje
+    )
+    VALUES (
+        @NoTarjeta,
+        @ErrorMensaje
+    );
+END
