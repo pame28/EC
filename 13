@@ -1,6 +1,265 @@
-Fijate que se crea bien raro asi:
+ALTER PROCEDURE [dbo].[usp_SBEstadoCuentaJson]
+    @NoTarjeta VARCHAR(16)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-{"Encabezado":"{\"Origen\":\"VASA\",\"Emisor\":\"404042\",\"No_Cuenta\":\"5000001839609\",\"Nombre_TH_Tit\":\"ENRIQUE JAVIER MUNGUIA ORTIZ\",\"Emisor_Madre\":\"404042\",\"Cuenta_Madre\":\"\",\"Nombre_Empresa\":\"\",\"Tipo_Tarjeta\":\"VI1202\",\"No_Tarjeta\":\"1000000004105330\",\"Fecha_Pago\":\"06\\\/04\\\/2026\",\"Fecha_Corte\":\"10\\\/03\\\/2026\",\"Pago_Contado_MN\":26847.8900,\"Pago_Minimo_MN\":4200.0000,\"Saldo_Vencido_MN\":0.0000,\"Saldo_Anterior_MN\":17007.2600,\"Saldo_Final_MN\":26847.8900,\"Compras_Deb_MN\":13430.8100,\"Pagos_Cred_MN\":3590.1800,\"Sobregiro_MN\":0.0000,\"Cuota_Mes_MN\":4200.0000,\"Pago_Contado_ME\":68.2300,\"Pago_Minimo_ME\":36.0000,\"Saldo_Vencido_ME\":0.0000,\"Saldo_Anterior_ME\":67.5100,\"Saldo_Final_ME\":68.2300,\"Saldo_Consumo_MN\":26213.4800,\"Saldo_Consumo_ME\":66.7800,\"Compras_Deb_ME\":35.7200,\"Pagos_Cred_ME\":35.0000,\"Sobregiro_ME\":0.0000,\"Cuota_Mes_ME\":36.0000,\"Moneda_Lim_Cre\":\"$\",\"Limite_Credito\":2800.0000,\"Disponible_Cta_MN\":34483.7400,\"Disponible_Cta_ME\":1294.5200,\"Disponible_Ret_MN\":34483.7400,\"Disponible_Ret_ME\":1294.5200,\"PTS_Saldo_Ant\":2933,\"PTS_Ganados\":14,\"PTS_Usuados\":0,\"PTS_Saldo_Actual\":2947,\"Moneda_Lim_EF\":\"$\",\"EF_Limite\":2772.0000,\"EF_Saldo_MN\":43408.1400,\"EF_Debitos_MN\":2442.8600,\"EF_Creditos_MN\":0.0000,\"EF_Saldo_ME\":137.0500,\"EF_Debitos_ME\":34.2700,\"EF_Creditos_ME\":0.0000,\"EF_Disponible_MN\":2748.1600,\"EF_Disponible_ME\":103.1700,\"Tasa_Int_Anual_MN\":51.3700,\"Tasa_Int_Anual_ME\":51.3700,\"Direccion_1\":\"ENVIAR SOLO POR CORREO ELECTRONICO\",\"Direccion_2\":\"RO CL 10 AV LA   REPUBLICA ESQUINA OPUES\",\"Direccion_3\":\"TA A BANCO DAVIV IENDA  LA CEIBA\",\"Apdo_Postal\":\"\",\"Ciudad\":\"LA CEIBA\",\"Mensaje_1\":\"\",\"Mensaje_2\":\"\",\"Mensaje_3\":\"\",\"Mensaje_4\":\"\",\"Mensaje_5\":\"3\",\"Tarjeta_Imprimir\":\"6420\",\"Costo_Anual_Tot_MN\":44.9800,\"Costo_Anual_Tot_ME\":0.0000,\"Plazo_Canc_Deuda_MN\":70,\"Plazo_Canc_Deuda_ME\":3,\"Interes_Pago_Min_MN\":1282.4600,\"Interes_Pago_Min_ME\":1.4400,\"
+    DECLARE @FechaCorte DATE;
+    DECLARE @No_Cuenta VARCHAR(20);
+    DECLARE @Estado NVARCHAR(10);
 
+    -- Fecha corte
+    SELECT TOP 1 @FechaCorte = FechaCorte
+    FROM dbo.ParametrosCorte
+    WHERE Estado = 1
+    ORDER BY FechaCorte DESC;
 
-Y ni siquiera me deja copiarlo completo
+    -- Cuenta
+    SELECT TOP 1 @No_Cuenta = No_Cuenta
+    FROM dbo.BandejaEncabezado
+    WHERE No_Tarjeta = @NoTarjeta
+      AND Fecha_Corte = @FechaCorte;
+
+    -- Estado
+    SELECT TOP 1 @Estado = EstadoTarjeta
+    FROM dbo.Tarjetas
+    WHERE NumeroTarjeta = @NoTarjeta;
+
+    SELECT
+    ---------------------------------------
+    -- ENCABEZADO (igual que antes)
+    ---------------------------------------
+    JSON_QUERY(
+        (
+            SELECT
+                hc.Origen,
+                hc.Emisor,
+                hc.No_Cuenta,
+                hc.Nombre_TH_Tit,
+                hc.Emisor_Madre,
+                hc.Cuenta_Madre,
+                hc.Nombre_Empresa,
+                hc.Tipo_Tarjeta,
+                hc.No_Tarjeta,
+                FORMAT(hc.Fecha_Pago, 'yyyy-MM-dd') AS Fecha_Pago,
+                FORMAT(hc.Fecha_Corte, 'yyyy-MM-dd') AS Fecha_Corte,
+
+                hc.Pago_Contado_MN,
+                hc.Pago_Minimo_MN,
+                hc.Saldo_Vencido_MN,
+                hc.Saldo_Anterior_MN,
+                hc.Saldo_Final_MN,
+                hc.Compras_Deb_MN,
+                hc.Pagos_Cred_MN,
+                hc.Sobregiro_MN,
+                hc.Cuota_Mes_MN,
+
+                hc.Pago_Contado_ME,
+                hc.Pago_Minimo_ME,
+                hc.Saldo_Vencido_ME,
+                hc.Saldo_Anterior_ME,
+                hc.Saldo_Final_ME,
+
+                (hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN) AS Saldo_Consumo_MN,
+                (hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME) AS Saldo_Consumo_ME,
+
+                hc.Compras_Deb_ME,
+                hc.Pagos_Cred_ME,
+                hc.Sobregiro_ME,
+                hc.Cuota_Mes_ME,
+
+                hc.Moneda_Lim_Cre,
+                hc.Limite_Credito,
+                hc.Disponible_Cta_MN,
+                hc.Disponible_Cta_ME,
+                hc.Disponible_Ret_MN,
+                hc.Disponible_Ret_ME,
+
+                hc.PTS_Saldo_Ant,
+                hc.PTS_Ganados,
+                hc.PTS_Usuados,
+                hc.PTS_Saldo_Actual,
+
+                hc.Moneda_Lim_EF,
+                hc.EF_Limite,
+                hc.EF_Saldo_MN,
+                hc.EF_Debitos_MN,
+                hc.EF_Creditos_MN,
+                hc.EF_Saldo_ME,
+                hc.EF_Debitos_ME,
+                hc.EF_Creditos_ME,
+                hc.EF_Disponible_MN,
+                hc.EF_Disponible_ME,
+
+                hc.Tasa_Int_Anual_MN,
+                hc.Tasa_Int_Anual_ME,
+
+                hc.Direccion_1,
+                hc.Direccion_2,
+                hc.Direccion_3,
+                hc.Apdo_Postal,
+                hc.Cidudad AS Ciudad,
+
+                map.Mensaje AS Mensaje_1,
+                hc.Mensaje_2,
+                hc.Mensaje_3,
+                hc.Mensaje_4,
+                hc.Mensaje_5,
+
+                hc.Tarjeta_Imprimir,
+                hc.Costo_Anual_Tot_MN,
+                hc.Costo_Anual_Tot_ME,
+                hc.Plazo_Canc_Deuda_MN,
+                hc.Plazo_Canc_Deuda_ME,
+                hc.Interes_Pago_Min_MN,
+                hc.Interes_Pago_Min_ME,
+                hc.Correo,
+
+                hc.Limite_CreditoMN,
+                hc.Interes_Corriente_MN,
+                hc.Interes_Corriente_ME,
+
+                ISNULL(@Estado, '0') AS Estado
+
+            FROM dbo.BandejaEncabezado hc
+            LEFT JOIN dbo.CuentasArregloPagos ecap
+                ON hc.NoCuentaClaro = ecap.NumeroCuenta
+               AND ecap.FechaCorte = @FechaCorte
+            LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map
+                ON map.idMensaje = ecap.idMensaje
+
+            WHERE hc.No_Cuenta = @No_Cuenta
+              AND hc.Fecha_Corte = @FechaCorte
+
+            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+        )
+    ) AS Encabezado,
+
+    ---------------------------------------
+    -- DETALLE (MISMA LÓGICA ORIGINAL)
+    ---------------------------------------
+    JSON_QUERY(
+        (
+            SELECT
+                FORMAT(D.Fecha_Consumo, 'yyyy-MM-dd') AS Fecha_Consumo,
+                D.Tipo_Reg,
+                D.Descripcion_Mov,
+                D.DebitosMN,
+                D.CreditosMN,
+                D.DebitosME,
+                D.CreditosME
+            FROM
+            (
+                -- Movimientos
+                SELECT
+                    a.Fecha_Consumo,
+                    1 Tipo_Reg,
+                    a.Descripcion_Mov,
+                    CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
+                    CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
+                    CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosME,
+                    CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosME
+                FROM dbo.BandejaDetalle a
+                INNER JOIN dbo.TiposMovimientos b
+                    ON b.CodMovimiento = a.Codigo_Mov
+                WHERE a.Fecha_Corte = @FechaCorte
+                  AND a.EC_DetalleNo_Cuenta = @No_Cuenta
+
+                UNION ALL
+
+                -- Subtotales
+                SELECT
+                    a.Fecha_Corte,
+                    2,
+                    'Subtotal',
+                    SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
+                    SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END),
+                    SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
+                    SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END)
+                FROM dbo.BandejaDetalle a
+                INNER JOIN dbo.TiposMovimientos b
+                    ON b.CodMovimiento = a.Codigo_Mov
+                WHERE a.Fecha_Corte = @FechaCorte
+                  AND a.EC_DetalleNo_Cuenta = @No_Cuenta
+                GROUP BY a.Fecha_Corte
+
+                UNION ALL
+
+                -- Totales
+                SELECT
+                    a.Fecha_Corte,
+                    3,
+                    'Total',
+                    SUM(a.Monto_Mov),
+                    0,
+                    0,
+                    0
+                FROM dbo.BandejaDetalle a
+                WHERE a.Fecha_Corte = @FechaCorte
+                  AND a.EC_DetalleNo_Cuenta = @No_Cuenta
+                GROUP BY a.Fecha_Corte
+
+            ) D
+            ORDER BY D.Tipo_Reg, D.Fecha_Consumo
+            FOR JSON PATH
+        )
+    ) AS Detalle,
+
+    ---------------------------------------
+    -- FINANCIAMIENTOS (MISMA LÓGICA)
+    ---------------------------------------
+    JSON_QUERY(
+        (
+            SELECT
+                Tipo,
+                FORMAT(Fecha, 'yyyy-MM-dd') AS Fecha,
+                Monto,
+                Moneda,
+                Cuota,
+                Plazo,
+                CuotaAplicada,
+                Tasa,
+                Saldo
+            FROM
+            (
+                SELECT
+                    'Intrafinanciamientos' Tipo,
+                    f.FechaOtorgamiento Fecha,
+                    f.ImporteTotalPlan Monto,
+                    f.MonedaMovimiento Moneda,
+                    f.Importe Cuota,
+                    f.CantidadCuotasPlan Plazo,
+                    f.NoCuotaLiquidada CuotaAplicada,
+                    CASE WHEN f.PlanExtraTasa = 0 THEN '0%' ELSE CAST(f.PlanExtraTasa AS VARCHAR) + '%' END Tasa,
+                    f.PlanCuotaCapitalPend Saldo
+                FROM dbo.BandejaFinanciamientos f
+                WHERE f.NumeroCuenta = @No_Cuenta
+                  AND f.FechaCierre = @FechaCorte
+                  AND f.PlanCuotaCapitalPend > 0
+                  AND f.EsIntra = 1
+
+                UNION ALL
+
+                SELECT
+                    'Extrafinanciamientos',
+                    f.FechaOtorgamiento,
+                    f.ImporteTotalPlan,
+                    f.MonedaMovimiento,
+                    f.Importe,
+                    f.CantidadCuotasPlan,
+                    f.NoCuotaLiquidada,
+                    CASE WHEN f.PlanExtraTasa = 0 THEN '0%' ELSE CAST(f.PlanExtraTasa AS VARCHAR) + '%' END,
+                    f.PlanCuotaCapitalPend
+                FROM dbo.BandejaFinanciamientos f
+                WHERE f.NumeroCuenta = @No_Cuenta
+                  AND f.FechaCierre = @FechaCorte
+                  AND f.PlanCuotaCapitalPend > 0
+                  AND f.EsExtra = 1
+            ) F
+            FOR JSON PATH
+        )
+    ) AS Financiamientos
+
+    FOR JSON PATH, WITHOUT_ARRAY_WRAPPER;
+
+END
