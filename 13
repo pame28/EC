@@ -1,66 +1,28 @@
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Data;
+var resultados = new List<string>();
 
-namespace EstadosCuentaTC.Repositories
+Parallel.ForEach(lote, opciones, item =>
 {
-    public class ParametrosGeneracionECRepository
+    try
     {
-        private readonly SqlExecutor _sql;
+        var linea = $"\"{item.tarjeta}\":{item.json}";
 
-        public ParametrosGeneracionECRepository(SqlExecutor sql)
+        lock (resultados)
         {
-            _sql = sql;
-        }
-
-        public ParametrosGeneracionECDto ObtenerParametros()
-        {
-            using var conn = _sql.GetConnection();
-
-            // 1️⃣ Obtener parámetros de generación
-            using var cmd = new SqlCommand("usp_ObtenerParametrosGeneracionEC", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                throw new Exception("No hay parámetros de generación configurados");
-
-            var parametros = new ParametrosGeneracionECDto
-            {
-                FechaCorteProcesar = reader.GetDateTime(reader.GetOrdinal("FechaCorteProcesar")),
-                DireccionReporte = reader["DireccionReporte"]?.ToString(),
-                RutaArchivoJson = reader["RutaArchivoJson"]?.ToString(),
-                RutaArchivoHistoricoJson = reader["RutaArchivoHistoricoJson"]?.ToString(),
-                LlaveEncripta = reader["LlaveEncripta"]?.ToString(),
-                TipoGeneracion = reader["TipoGeneracion"]?.ToString(),
-                RegistrosPorLote = reader.GetInt32(reader.GetOrdinal("RegistrosPorLote")),
-                CantidadHilos = reader.GetInt32(reader.GetOrdinal("CantidadHilos"))
-            };
-
-            reader.Close();
-
-            //  Obtener conteo desde su SP
-            parametros.CantidadEstadosCuenta = ObtenerCantidadEstadosCuenta(conn);
-
-            return parametros;
-        }
-
-        private int ObtenerCantidadEstadosCuenta(SqlConnection conn)
-        {
-            using var cmd = new SqlCommand("usp_ObtenerCantidadEstadosCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            return Convert.ToInt32(cmd.ExecuteScalar());
+            resultados.Add(linea);
         }
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
+    }
+});
+
+foreach (var linea in resultados)
+{
+    if (!primeraVez)
+        writer.Write(",");
+
+    writer.Write(linea);
+
+    primeraVez = false;
 }
-
-
-Este es el que tengo de parametros, creo que está mal lo que me diste para modificar el service de Lote 
