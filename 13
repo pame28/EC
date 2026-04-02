@@ -1,146 +1,67 @@
 using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Services.AddSingleton<EstadoCuentaRepository>();
+builder.Services.AddSingleton<GeneracionLoteService>();
+
+builder.Services.AddHostedService<Worker>();
+
+var host = builder.Build();
+host.Run();
+
+
+
+
+
+
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
-namespace EstadosCuentaTC.Services
+namespace EstadosCuentaTC.Worker
 {
-    public class GeneracionLoteService
+    public class Worker : BackgroundService
     {
-        private readonly EstadoCuentaRepository _repo;
-        private readonly ILogger<GeneracionLoteService> _logger;
+        private readonly ILogger<Worker> _logger;
+        private readonly GeneracionLoteService _loteService;
 
-        public GeneracionLoteService(
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionLoteService> logger)
+        public Worker(
+            ILogger<Worker> logger,
+            GeneracionLoteService loteService)
         {
-            _repo = repo;
             _logger = logger;
+            _loteService = loteService;
         }
 
-        public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize, int cantidadHilos)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(ruta);
+            _logger.LogInformation("Worker iniciado...");
 
-            var archivoJson = Path.Combine(
-                ruta,
-                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
-            );
-
-            using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
-
-            writer.Write("{");
-
-            bool primeraVez = true;
-            int numeroLote = 1;
-
-            while (true)
+            while (!stoppingToken.IsCancellationRequested)
             {
-                var inicioLote = DateTime.Now;
-
-                // ✅ Obtener lote YA PROCESADO (SP debe traer json)
-                var lote = _repo.ProcesarLote(loteSize);
-
-                if (lote.Count == 0)
+                try
                 {
-                    _logger.LogInformation("Se procesaron todas las tarjetas pendientes");
-                    break;
+                    _logger.LogInformation("Iniciando proceso de lote...");
+
+                    // ⚡ EJECUTAR PROCESO COMPLETO
+                    _loteService.Ejecutar(
+                        rutaBase: "C:\\EstadosCuenta",
+                        fechaCorte: DateTime.Now,
+                        loteSize: 1000,
+                        cantidadHilos: 4
+                    );
+
+                    _logger.LogInformation("Lote terminado correctamente");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error en el worker");
                 }
 
-                var resultados = new List<string>();
-
-                foreach (var item in lote)
-                {
-                    try
-                    {
-                        var tarjeta = item.tarjeta;
-                        var json = item.json ?? "{}";
-
-                        if (string.IsNullOrWhiteSpace(json) || json == "{}")
-                            throw new Exception("JSON vacío o inválido");
-
-                        var linea = $"\"{tarjeta}\":{json}";
-
-                        resultados.Add(linea);
-
-                        // marcar como procesado
-                        _repo.MarcarComoProcesado(tarjeta);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Error con tarjeta {item.tarjeta}");
-
-                        _repo.MarcarComoError(item.tarjeta, ex.Message);
-                    }
-                }
-
-                // escritura optimizada
-                if (resultados.Count > 0)
-                {
-                    if (!primeraVez)
-                        writer.Write(",");
-
-                    writer.Write(string.Join(",", resultados));
-
-                    primeraVez = false;
-                }
-
-                var duracion = DateTime.Now - inicioLote;
-
-                _logger.LogInformation(
-                    $"Lote #{numeroLote}. Registros: {resultados.Count}. Tiempo: {duracion.TotalSeconds} segundos"
-                );
-
-                numeroLote++;
+                // ⏱️ Espera antes del siguiente ciclo (evita sobrecargar)
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
-
-            writer.Write("}");
-
-            _logger.LogInformation("Fin generación por lote");
         }
     }
 }
-
-
-
-
-
-
-public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
-{
-    var lista = new List<(string, string)>();
-
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta", conn)
-    {
-        CommandType = CommandType.StoredProcedure,
-        CommandTimeout = 0
-    };
-
-    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-    using var reader = cmd.ExecuteReader();
-
-    while (reader.Read())
-    {
-        lista.Add((
-            reader["NoTarjeta"]?.ToString(),
-            reader["JsonEstadoCuenta"]?.ToString()
-        ));
-    }
-
-    return lista;
-}
-
-
-
-
-
-
-
-
-
