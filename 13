@@ -1,59 +1,18 @@
-public List<string> ObtenerTarjetasPendientes(int cantidad)
-{
-    var lista = new List<string>();
+CREATE PROCEDURE usp_ObtenerTarjetasPendientes
+    @Cantidad INT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
-    {
-        CommandType = CommandType.StoredProcedure
-    };
-
-    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-    using var reader = cmd.ExecuteReader();
-
-    while (reader.Read())
-    {
-        lista.Add(reader["No_Tarjeta"].ToString());
-    }
-
-    return lista;
-}
-
-
-
-
-
-
-
-
-
-Parallel.ForEach(lote, opciones, tarjeta =>
-{
-    try
-    {
-        var resultado = _repo.ProcesarPorTarjeta(tarjeta);
-
-        var linea = $"\"{resultado?.tarjeta}\":{resultado?.json}";
-
-        lock (resultados)
-        {
-            resultados.Add(linea);
-        }
-
-        _repo.MarcarComoProcesado(tarjeta);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, $"Error con tarjeta {tarjeta}");
-
-        _repo.MarcarComoError(tarjeta, ex.Message);
-    }
-});
-
-
-
-
-
-
+    ;WITH CTE AS
+    (
+        SELECT TOP (@Cantidad)
+            No_Tarjeta
+        FROM BandejaEstadoCuenta WITH (ROWLOCK, READPAST)
+        WHERE Estado = 0
+        ORDER BY No_Tarjeta
+    )
+    UPDATE CTE
+    SET Estado = 2
+    OUTPUT inserted.No_Tarjeta;
+END
