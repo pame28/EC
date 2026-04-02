@@ -1,72 +1,66 @@
-DECLARE cursor_lote CURSOR FOR
-SELECT No_Tarjeta FROM @Lote;
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Data;
 
-OPEN cursor_lote;
-FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
+namespace EstadosCuentaTC.Repositories
+{
+    public class ParametrosGeneracionECRepository
+    {
+        private readonly SqlExecutor _sql;
 
-WHILE @@FETCH_STATUS = 0
-BEGIN
-    BEGIN TRY
-        DECLARE @Json TABLE (JsonEstadoCuenta NVARCHAR(MAX));
+        public ParametrosGeneracionECRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
 
-        INSERT INTO @Json
-        EXEC dbo.usp_SBEstadoCuentaJson @NoTarjeta;
+        public ParametrosGeneracionECDto ObtenerParametros()
+        {
+            using var conn = _sql.GetConnection();
 
-        INSERT INTO @Resultados
-        SELECT 
-            @NoTarjeta,
-            ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
+            // 1️⃣ Obtener parámetros de generación
+            using var cmd = new SqlCommand("usp_ObtenerParametrosGeneracionEC", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
 
-    END TRY
-    BEGIN CATCH
+            using var reader = cmd.ExecuteReader();
 
-        INSERT INTO @Resultados
-        VALUES (@NoTarjeta, '{}');
+            if (!reader.Read())
+                throw new Exception("No hay parámetros de generación configurados");
 
-        INSERT INTO LogErroresEstadosCuenta (
-            NoTarjeta,
-            ErrorMensaje
-        )
-        VALUES (
-            @NoTarjeta,
-            ERROR_MESSAGE()
-        );
+            var parametros = new ParametrosGeneracionECDto
+            {
+                FechaCorteProcesar = reader.GetDateTime(reader.GetOrdinal("FechaCorteProcesar")),
+                DireccionReporte = reader["DireccionReporte"]?.ToString(),
+                RutaArchivoJson = reader["RutaArchivoJson"]?.ToString(),
+                RutaArchivoHistoricoJson = reader["RutaArchivoHistoricoJson"]?.ToString(),
+                LlaveEncripta = reader["LlaveEncripta"]?.ToString(),
+                TipoGeneracion = reader["TipoGeneracion"]?.ToString(),
+                RegistrosPorLote = reader.GetInt32(reader.GetOrdinal("RegistrosPorLote")),
+                CantidadHilos = reader.GetInt32(reader.GetOrdinal("CantidadHilos"))
+            };
 
-        UPDATE BandejaEstadoCuenta
-        SET 
-            Estado = 3,
-            Intentos = ISNULL(Intentos,0) + 1,
-            UltimoError = ERROR_MESSAGE()
-        WHERE No_Tarjeta = @NoTarjeta;
+            reader.Close();
 
-    END CATCH;
+            //  Obtener conteo desde su SP
+            parametros.CantidadEstadosCuenta = ObtenerCantidadEstadosCuenta(conn);
 
-    FETCH NEXT FROM cursor_lote INTO @NoTarjeta;
-END
+            return parametros;
+        }
 
-CLOSE cursor_lote;
-DEALLOCATE cursor_lote;
+        private int ObtenerCantidadEstadosCuenta(SqlConnection conn)
+        {
+            using var cmd = new SqlCommand("usp_ObtenerCantidadEstadosCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
 
-
-
-
-
-
-
-
-CREATE TABLE LogErroresEstadosCuenta (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    NoTarjeta VARCHAR(16),
-    ErrorMensaje VARCHAR(MAX),
-    Fecha DATETIME DEFAULT GETDATE()
-);
-
-
-
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
+    }
+}
 
 
-
-
-ALTER TABLE BandejaEstadoCuenta
-ADD Intentos INT DEFAULT 0,
-    UltimoError VARCHAR(MAX);
+Este es el que tengo de parametros, creo que está mal lo que me diste para modificar el service de Lote 
