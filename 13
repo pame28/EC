@@ -1,23 +1,64 @@
-System.AggregateException: 'Some services are not able to be constructed (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Repositories.EstadoCuentaRepository Lifetime: Singleton ImplementationType: EstadosCuentaTC.Repositories.EstadoCuentaRepository': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.) (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Services.GeneracionLoteService Lifetime: Singleton ImplementationType: EstadosCuentaTC.Services.GeneracionLoteService': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.) (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Services.ParametrosGeneracionECService Lifetime: Singleton ImplementationType: EstadosCuentaTC.Services.ParametrosGeneracionECService': Unable to resolve service for type 'EstadosCuentaTC.Repositories.ParametrosGeneracionECRepository' while attempting to activate 'EstadosCuentaTC.Services.ParametrosGeneracionECService'.) (Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Data.SqlExecutor Lifetime: Singleton ImplementationType: EstadosCuentaTC.Data.SqlExecutor': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.) (Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.Hosting.IHostedService Lifetime: Singleton ImplementationType: EstadosCuentaWorker.Worker': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.)'
+using Microsoft.Data.SqlClient;
 
-InvalidOperationException: Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.
+namespace EstadosCuentaTC.Data
+{
+    public class SqlExecutor
+    {
+        private readonly string _connectionString;
 
-InvalidOperationException: Error while validating the service descriptor 'ServiceType: EstadosCuentaTC.Repositories.EstadoCuentaRepository Lifetime: Singleton ImplementationType: EstadosCuentaTC.Repositories.EstadoCuentaRepository': Unable to resolve service for type 'System.String' while attempting to activate 'EstadosCuentaTC.Data.SqlExecutor'.
+        public SqlExecutor(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public SqlConnection GetConnection()
+        {
+            var conn = new SqlConnection(_connectionString);
+            conn.Open();
+            return conn;
+        }
 
 
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Repositories;
-using EstadosCuentaTC.Services;
-using EstadosCuentaWorker;
+        public void Execute(string sql)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
 
-var builder = Host.CreateApplicationBuilder(args);
+            cmd.CommandType = System.Data.CommandType.Text;
 
-builder.Services.AddSingleton<EstadoCuentaRepository>();
-builder.Services.AddSingleton<GeneracionLoteService>();
-builder.Services.AddSingleton<ParametrosGeneracionECService>();
-builder.Services.AddSingleton<SqlExecutor>();
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-builder.Services.AddHostedService<Worker>();
+            cmd.ExecuteNonQuery();
+        }
 
-var host = builder.Build();
-host.Run();
+
+        public void Execute(string sql, Dictionary<string, object> parameters)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(sql, conn);
+
+            cmd.CommandType = System.Data.CommandType.Text;
+
+            foreach (var param in parameters)
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+            }
+
+            cmd.ExecuteNonQuery();
+        }
+
+
+        public void ExecuteStoredProcedure(string spName, Dictionary<string, object> parameters)
+        {
+            using var conn = GetConnection();
+            using var cmd = new SqlCommand(spName, conn);
+
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+            foreach (var param in parameters)
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+            }
+
+            cmd.ExecuteNonQuery();
+        }
+    }
+}
