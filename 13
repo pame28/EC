@@ -1,116 +1,82 @@
-CREATE OR ALTER PROCEDURE usp_ProcesarLoteEstadosCuenta_JSON
-    @Cantidad INT
-AS
-BEGIN
-    SET NOCOUNT ON;
+public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize, int cantidadHilos)
+{
+    var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+    Directory.CreateDirectory(ruta);
 
-    DECLARE @Resultados TABLE (
-        NoTarjeta VARCHAR(50),
-        JsonEstadoCuenta NVARCHAR(MAX)
+    var archivoJson = Path.Combine(
+        ruta,
+        $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
     );
 
-    DECLARE @NoTarjeta VARCHAR(50);
+    using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
 
-    DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
-        SELECT TOP (@Cantidad) No_Tarjeta
-        FROM BandejaEstadoCuenta WITH (READPAST)
-        WHERE Estado = 0
-        ORDER BY No_Tarjeta;
+    writer.Write("{");
 
-    OPEN cur;
+    bool primeraVez = true;
+    int numeroLote = 1;
 
-    FETCH NEXT FROM cur INTO @NoTarjeta;
-
-    WHILE @@FETCH_STATUS = 0
-    BEGIN
-        BEGIN TRY
-            DECLARE @Json TABLE (JsonEstadoCuenta NVARCHAR(MAX));
-
-            INSERT INTO @Json
-            EXEC usp_SBEstadoCuentaJson @NoTarjeta;
-
-            INSERT INTO @Resultados
-            SELECT 
-                @NoTarjeta,
-                ISNULL((SELECT TOP 1 JsonEstadoCuenta FROM @Json), '{}');
-
-            UPDATE BandejaEstadoCuenta
-            SET Estado = 1
-            WHERE No_Tarjeta = @NoTarjeta;
-        END TRY
-        BEGIN CATCH
-            UPDATE BandejaEstadoCuenta
-            SET Estado = 3,
-                Error = ERROR_MESSAGE()
-            WHERE No_Tarjeta = @NoTarjeta;
-        END CATCH;
-
-        FETCH NEXT FROM cur INTO @NoTarjeta;
-    END
-
-    CLOSE cur;
-    DEALLOCATE cur;
-
-    SELECT * FROM @Resultados;
-END
-
-
-
-
-
-
-
-
-
-public List<(string tarjeta, string json)> ProcesarLoteMasivo(int cantidad)
-{
-    var lista = new List<(string, string)>();
-
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta_JSON", conn)
+    while (true)
     {
-        CommandType = CommandType.StoredProcedure,
-        CommandTimeout = 0
-    };
+        var inicioLote = DateTime.Now;
 
-    cmd.Parameters.AddWithValue("@Cantidad", cantidad);
+        var tarjetas = _repo.ObtenerTarjetasPendientes(loteSize);
 
-    using var reader = cmd.ExecuteReader();
+        if (tarjetas.Count == 0)
+        {
+            _logger.LogInformation("No hay más registros");
+            break;
+        }
 
-    while (reader.Read())
-    {
-        lista.Add((
-            reader["NoTarjeta"]?.ToString(),
-            reader["JsonEstadoCuenta"]?.ToString()
-        ));
+        var opciones = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = cantidadHilos
+        };
+
+        var resultados = new ConcurrentBag<string>();
+
+        Parallel.ForEach(tarjetas, opciones, tarjeta =>
+        {
+            try
+            {
+                var resultado = _repo.ProcesarPorTarjeta(tarjeta);
+
+                var json = resultado?.json ?? "{}";
+
+                if (string.IsNullOrWhiteSpace(json) || json == "{}")
+                    throw new Exception("JSON vacío");
+
+                var linea = $"\"{tarjeta}\":{json}";
+
+                resultados.Add(linea);
+
+                _repo.MarcarComoProcesado(tarjeta);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error con tarjeta {tarjeta}");
+                _repo.MarcarComoError(tarjeta, ex.Message);
+            }
+        });
+
+        foreach (var linea in resultados)
+        {
+            if (!primeraVez)
+                writer.Write(",");
+
+            writer.Write(linea);
+            primeraVez = false;
+        }
+
+        var duracion = DateTime.Now - inicioLote;
+
+        _logger.LogInformation(
+            $"Lote {numeroLote} | Registros: {resultados.Count} | Tiempo: {duracion.TotalSeconds}s"
+        );
+
+        numeroLote++;
     }
 
-    return lista;
-}
+    writer.Write("}");
 
-
-
-
-
-
-
-var lote = _repo.ProcesarLoteMasivo(loteSize);
-
-if (lote.Count == 0)
-{
-    _logger.LogInformation("No hay más registros");
-    break;
-}
-
-var resultados = new List<string>();
-
-foreach (var item in lote)
-{
-    var json = item.json ?? "{}";
-
-    if (string.IsNullOrWhiteSpace(json) || json == "{}")
-        continue;
-
-    resultados.Add($"\"{item.tarjeta}\":{json}");
+    _logger.LogInformation("Proceso finalizado");
 }
