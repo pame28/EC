@@ -1,7 +1,57 @@
+SELECT CASE 
+    WHEN EXISTS (SELECT 1 FROM @Lote) THEN 1
+    ELSE 0
+END AS Resultado;
+
+
+
+
+using EstadosCuentaTC.Data;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Data;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class EstadoCuentaRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public EstadoCuentaRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public int EjecutarProcesoMasivo()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", conn)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 0
+            };
+
+            var result = cmd.ExecuteScalar();
+
+            if (result == null || result == DBNull.Value)
+                return 0;
+
+            return Convert.ToInt32(result);
+        }
+    }
+}
+
+
+
+
+
+
+
+
 using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,6 +81,8 @@ namespace EstadosCuentaTC.Services
                 $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
             );
 
+            using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
+
             _logger.LogInformation($"Iniciando procesamiento con {cantidadHilos} hilos...");
 
             var tareas = new Task[cantidadHilos];
@@ -47,20 +99,20 @@ namespace EstadosCuentaTC.Services
                     {
                         try
                         {
-                            // Ejecuta UNA vez el SP por ciclo de lote
-                            _repo.EjecutarProcesoMasivo();
+                            var resultado = _repo.EjecutarProcesoMasivo();
 
-                            // IMPORTANTE: permitir que el SP termine correctamente
-                            // Si no hay más datos, el SP simplemente retorna
+                            // 🔴 ESTE ES EL BREAK CORRECTO
+                            if (resultado == 0)
+                            {
+                                _logger.LogInformation($"Hilo {hilo}: no hay más registros.");
+                                break;
+                            }
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, $"Error en hilo {hilo}");
                             break;
                         }
-
-                        // 🔥 opcional: pequeña pausa para evitar saturación
-                        // Thread.Sleep(100);
                     }
 
                     _logger.LogInformation($"Hilo {hilo} finalizado");
@@ -73,46 +125,3 @@ namespace EstadosCuentaTC.Services
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-public int EjecutarProcesoMasivo()
-{
-    using var conn = _sql.GetConnection();
-
-    using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", conn)
-    {
-        CommandType = CommandType.StoredProcedure,
-        CommandTimeout = 0
-    };
-
-    return cmd.ExecuteNonQuery(); // o algún OUTPUT del SP
-}
-
-
-
-
-
-
-
-
-
-var resultado = _repo.EjecutarProcesoMasivo();
-
-if (resultado == 0)
-    break;
-
-
-
-
-
-
-
-SELECT 0 AS Procesados;
