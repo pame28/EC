@@ -12,6 +12,9 @@ namespace EstadosCuentaTC.Services
         private readonly EstadoCuentaRepository _repo;
         private readonly ILogger<GeneracionLoteService> _logger;
 
+        // 🔒 LOCK PARA ESCRITURA SEGURA
+        private static readonly object _lockFile = new object();
+
         public GeneracionLoteService(
             EstadoCuentaRepository repo,
             ILogger<GeneracionLoteService> logger)
@@ -24,6 +27,17 @@ namespace EstadosCuentaTC.Services
         {
             var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
             Directory.CreateDirectory(ruta);
+
+            var archivoJson = Path.Combine(
+                ruta,
+                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
+            );
+
+            // 🔥 Crear archivo vacío
+            using (var writer = new StreamWriter(archivoJson, false, Encoding.UTF8))
+            {
+                writer.Write("{");
+            }
 
             _logger.LogInformation($"Iniciando con {cantidadHilos} hilos...");
 
@@ -41,10 +55,17 @@ namespace EstadosCuentaTC.Services
                     {
                         try
                         {
-                            var resultado = _repo.EjecutarProcesoMasivo(workerId);
+                            // 🔥 EL SP DEBE DEVOLVER JSON POR REGISTRO
+                            var json = _repo.EjecutarProcesoMasivo(workerId);
 
-                            if (resultado == 0)
+                            if (string.IsNullOrEmpty(json))
                                 break;
+
+                            // 🔒 ESCRITURA SEGURA
+                            lock (_lockFile)
+                            {
+                                File.AppendAllText(archivoJson, json + ",");
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -59,6 +80,15 @@ namespace EstadosCuentaTC.Services
 
             Task.WaitAll(tareas);
 
+            // 🔥 CERRAR JSON CORRECTAMENTE
+            lock (_lockFile)
+            {
+                using (var writer = new StreamWriter(archivoJson, true, Encoding.UTF8))
+                {
+                    writer.Write("}");
+                }
+            }
+
             _logger.LogInformation("Proceso finalizado");
         }
     }
@@ -67,4 +97,23 @@ namespace EstadosCuentaTC.Services
 
 
 
-Solo ayudame a modificar el service porfis para que escriba en el archivo el json
+
+
+
+public string EjecutarProcesoMasivo(int workerId)
+{
+    using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", _connection)
+    {
+        CommandType = CommandType.StoredProcedure,
+        CommandTimeout = 0
+    };
+
+    cmd.Parameters.AddWithValue("@WorkerId", workerId);
+
+    if (_connection.State != ConnectionState.Open)
+        _connection.Open();
+
+    var result = cmd.ExecuteScalar();
+
+    return result?.ToString();
+}
