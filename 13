@@ -1,4 +1,4 @@
-Mira, actualmente este es el SP que utilizo para Genrar el estado de cuenta masivo, necesito que implementemos la generación por lote, hilos de manera paralela para optimizar la generación de estado de cuenta, como ya me lo habias mencionado antes .. necesito realizar modificaciones en mi SP Para que eso sea posible 
+mira como lo tengo, creo que hay muchas cosa mal
 
 
 USE [EstadosCuentaJSONProcesador]
@@ -14,13 +14,26 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @FechaCorte DATE;
+	DECLARE  @BatchSize INT;
+	DECLARE @Lote Table (No_Tarjeta VARCHAR(16));
 
     -- Fecha corte activa
     SELECT TOP 1 @FechaCorte = FechaCorte
     FROM dbo.ParametrosCorte
     WHERE Estado = 1
     ORDER BY FechaCorte DESC;
+
+
+	SELECT TOP 1 @BatchSize = RegistrosPorLote 
+	FROM [dbo].[ParametrosGeneracionEC];
+
+
+	UPDATE TOP (@BatchSize) dbo.BandejaEstadoCuenta
+	SET Estado = 2
+	OUTPUT inserted.No_Tarjeta INTO @Lote 
+	WHERE Estado = 0;
 	
+
 	INSERT INTO dbo.JsonEstadoCuenta (FechaCorte, JsonData)
 	SELECT
 	@FechaCorte,
@@ -288,7 +301,12 @@ BEGIN
 
         )) AS JsonItem
 
-    FROM dbo.BandejaEstadoCuenta be
+    FROM (
+		SELECT TOP(@BatchSize)*
+		FROM dbo.BandejaEstadoCuenta WITH (ROWLOCK, READPAST)
+		WHERE Estado = 0
+		ORDER BY No_Tarjeta
+	) be
 
     CROSS APPLY (
         SELECT TOP 1 hc.*
@@ -303,9 +321,22 @@ BEGIN
         WHERE t.NumeroTarjeta = be.No_Tarjeta
 	)t
 
-    WHERE be.Estado = 0
+  --  WHERE be.Estado = 0
 
   --  FOR JSON PATH
 	--) AS NVARCHAR(MAX)) AS JsonEstadoCuentaa
 	) x;
+
+
+
+	UPDATE be
+	SET Estado = 1
+	FROM dbo.BandejaEstadoCuenta be
+	INNER JOIN(
+		SELECT TOP (@BatchSize) No_Tarjeta
+		FROM dbo.BandejaEstadoCuenta
+		Where Estado =2
+		ORDER BY No_Tarjeta
+	)x ON be.No_Tarjeta = x.No_Tarjeta;
+
 END
