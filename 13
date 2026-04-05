@@ -1,52 +1,75 @@
-SELECT CASE 
-    WHEN EXISTS (SELECT 1 FROM @Lote) THEN 1
-    ELSE 0
-END AS Resultado;
+Tengo un serio problema, y es que me parece que no se está ejecutando bien la consola ... 
+
+1. porque no escribe nada en el archivo
+2. Se supone con los hilos debió disminuir los tiempos ... pero, de hecho antes de arreglar el SP para que se agregara lo de paralismo se tardaba 20s en procesar toda la tabla de BandejaEstadoCuenta que tenia 14,000 registros
+. ahora se tarda lo mismo con resgistros por lote de 3,000 y con 7 hilos... deberia tardar mucho menos, no?
 
 
 
+========== INICIO PROCESO ==========
 
-using EstadosCuentaTC.Data;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Data;
+FASE 1: PREPARA DATA
+Paso 1: Limpiando y Llenando bandejas: BandejaEncabezado, BandejaDetalles, BandejaFinanciamiento
+Paso 2: Limpiando bandeja Estado Cuenta
+Paso 3: Llenando bandeja Estado Cuenta
 
-namespace EstadosCuentaTC.Repositories
-{
-    public class EstadoCuentaRepository
-    {
-        private readonly SqlExecutor _sql;
+FASE 2: CORREOS NO VALIDOS
 
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
+FASE 3: OBTENER PARÁMETROS
+info: EstadosCuentaTC.Services.CorreosService[0]
+      Fin Correos No Válidos
+info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
+      FASE 4 - INICIO
 
-        public int EjecutarProcesoMasivo()
-        {
-            using var conn = _sql.GetConnection();
+FASE 4: GENERACIÓN ESTADOS DE CUENTA
+info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
+      Fecha Corte: 03/10/2026 00:00:00, Total Registros Estados de Cuenta: 14739
+info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
+      FASE 4 - FIN
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      FASE 4 - GENERACIÓN ESTADOS DE CUENTA
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Modo LOTE
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Iniciando procesamiento con 5 hilos...
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 2 iniciado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 1 iniciado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 3 iniciado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 4 iniciado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 5 iniciado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 1: no hay más registros.
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 1 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 4: no hay más registros.
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 4 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 5: no hay más registros.
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 5 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 2: no hay más registros.
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 2 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 3: no hay más registros.
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Hilo 3 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Procesamiento finalizado
 
-            using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", conn)
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 0
-            };
+========== FIN PROCESO ==========
 
-            var result = cmd.ExecuteScalar();
-
-            if (result == null || result == DBNull.Value)
-                return 0;
-
-            return Convert.ToInt32(result);
-        }
-    }
-}
-
-
-
-
-
-
+C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\EstadosCuentaTC.exe (proceso 36936) se cerró con el código 0 (0x0).
+Para cerrar automáticamente la consola cuando se detiene la depuración, habilite Herramientas ->Opciones ->Depuración ->Cerrar la consola automáticamente al detenerse la depuración.
+Presione cualquier tecla para cerrar esta ventana. . .
 
 
 using EstadosCuentaTC.Repositories;
@@ -101,7 +124,7 @@ namespace EstadosCuentaTC.Services
                         {
                             var resultado = _repo.EjecutarProcesoMasivo();
 
-                            // 🔴 ESTE ES EL BREAK CORRECTO
+                            
                             if (resultado == 0)
                             {
                                 _logger.LogInformation($"Hilo {hilo}: no hay más registros.");
