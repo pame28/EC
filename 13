@@ -1,5 +1,4 @@
-mira como lo tengo, creo que hay muchas cosa mal
-
+Revisa este SP, ahora si sirve para los lotes, parelelismo e hilos?
 
 USE [EstadosCuentaJSONProcesador]
 GO
@@ -301,12 +300,9 @@ BEGIN
 
         )) AS JsonItem
 
-    FROM (
-		SELECT TOP(@BatchSize)*
-		FROM dbo.BandejaEstadoCuenta WITH (ROWLOCK, READPAST)
-		WHERE Estado = 0
-		ORDER BY No_Tarjeta
-	) be
+    FROM @Lote l
+	INNER JOIN dbo.BandejaEstadoCuenta be
+		ON be.No_Tarjeta = l.No_Tarjeta
 
     CROSS APPLY (
         SELECT TOP 1 hc.*
@@ -327,16 +323,11 @@ BEGIN
 	--) AS NVARCHAR(MAX)) AS JsonEstadoCuentaa
 	) x;
 
-
-
 	UPDATE be
 	SET Estado = 1
 	FROM dbo.BandejaEstadoCuenta be
-	INNER JOIN(
-		SELECT TOP (@BatchSize) No_Tarjeta
-		FROM dbo.BandejaEstadoCuenta
-		Where Estado =2
-		ORDER BY No_Tarjeta
-	)x ON be.No_Tarjeta = x.No_Tarjeta;
+	INNER JOIN @Lote l
+	ON be.No_Tarjeta = l.No_Tarjeta 
+	WHERE be.Estado = 2;
 
 END
