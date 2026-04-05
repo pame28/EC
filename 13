@@ -1,85 +1,70 @@
-public class EstadoCuentaRepository
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EstadosCuentaTC.Services
 {
-    private readonly SqlConnection _connection;
-
-    public EstadoCuentaRepository(SqlConnection connection)
+    public class GeneracionLoteService
     {
-        _connection = connection;
-    }
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionLoteService> _logger;
 
-    public int EjecutarProcesoMasivo(int workerId)
-    {
-        using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", _connection)
+        public GeneracionLoteService(
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionLoteService> logger)
         {
-            CommandType = CommandType.StoredProcedure,
-            CommandTimeout = 0
-        };
-
-        cmd.Parameters.AddWithValue("@WorkerId", workerId);
-
-        if (_connection.State != ConnectionState.Open)
-            _connection.Open();
-
-        var result = cmd.ExecuteScalar();
-
-        return result == null ? 0 : Convert.ToInt32(result);
-    }
-}
-
-
-
-
-
-
-
-
-public class GeneracionLoteService
-{
-    private readonly EstadoCuentaRepository _repo;
-    private readonly ILogger<GeneracionLoteService> _logger;
-
-    public GeneracionLoteService(
-        EstadoCuentaRepository repo,
-        ILogger<GeneracionLoteService> logger)
-    {
-        _repo = repo;
-        _logger = logger;
-    }
-
-    public void Ejecutar(int cantidadHilos)
-    {
-        var tareas = new Task[cantidadHilos];
-
-        for (int i = 0; i < cantidadHilos; i++)
-        {
-            int workerId = i + 1;
-
-            tareas[i] = Task.Run(() =>
-            {
-                _logger.LogInformation($"Worker {workerId} iniciado");
-
-                while (true)
-                {
-                    try
-                    {
-                        var resultado = _repo.EjecutarProcesoMasivo(workerId);
-
-                        if (resultado == 0)
-                            break;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Error en worker {workerId}");
-                        break;
-                    }
-                }
-
-                _logger.LogInformation($"Worker {workerId} finalizado");
-            });
+            _repo = repo;
+            _logger = logger;
         }
 
-        Task.WaitAll(tareas);
+        public void Ejecutar(string rutaBase, DateTime fechaCorte, int cantidadHilos)
+        {
+            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+            Directory.CreateDirectory(ruta);
 
-        _logger.LogInformation("Proceso finalizado");
+            _logger.LogInformation($"Iniciando con {cantidadHilos} hilos...");
+
+            var tareas = new Task[cantidadHilos];
+
+            for (int i = 0; i < cantidadHilos; i++)
+            {
+                int workerId = i + 1;
+
+                tareas[i] = Task.Run(() =>
+                {
+                    _logger.LogInformation($"Worker {workerId} iniciado");
+
+                    while (true)
+                    {
+                        try
+                        {
+                            var resultado = _repo.EjecutarProcesoMasivo(workerId);
+
+                            if (resultado == 0)
+                                break;
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error en worker {workerId}");
+                            break;
+                        }
+                    }
+
+                    _logger.LogInformation($"Worker {workerId} finalizado");
+                });
+            }
+
+            Task.WaitAll(tareas);
+
+            _logger.LogInformation("Proceso finalizado");
+        }
     }
 }
+
+
+
+
+Solo ayudame a modificar el service porfis para que escriba en el archivo el json
