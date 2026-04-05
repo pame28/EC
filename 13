@@ -1,148 +1,28 @@
-public class GeneracionLoteRequest
+public void Ejecutar(ParametrosGeneracionECDto parametros)
 {
-    public string RutaBase { get; set; }
-    public DateTime FechaCorte { get; set; }
-    public int RegistrosPorLote { get; set; }
-    public int CantidadHilos { get; set; }
-}
+    _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
 
-
-
-
-
-else if (parametros.TipoGeneracion == "LOTE")
-{
-    _logger.LogInformation("Modo LOTE");
-
-    var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
-
-    var loteService = new GeneracionLoteService(
-        _repo,
-        loteLogger
-    );
-
-    var request = new GeneracionLoteRequest
+    if (parametros.TipoGeneracion == "INDIVIDUAL")
     {
-        RutaBase = parametros.RutaArchivoJson,
-        FechaCorte = parametros.FechaCorteProcesar,
-        RegistrosPorLote = parametros.RegistrosPorLote,
-        CantidadHilos = parametros.CantidadHilos
-    };
+        _logger.LogInformation("Modo INDIVIDUAL");
 
-    loteService.Ejecutar(request);
-}
-
-
-
-
-
-
-
-
-
-
-
-public void Ejecutar(GeneracionLoteRequest request)
-{
-    var ruta = Path.Combine(
-        request.RutaBase,
-        request.FechaCorte.ToString("yyyy-MM-dd")
-    );
-
-    Directory.CreateDirectory(ruta);
-
-    var archivoJson = Path.Combine(
-        ruta,
-        $"Estado_de_cuenta_{request.FechaCorte:yyyyMMdd}.json"
-    );
-
-    using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
-
-    writer.Write("{");
-
-    bool primeraVez = true;
-    int numeroLote = 1;
-
-    while (true)
-    {
-        var inicioLote = DateTime.Now;
-
-        var tarjetas = _repo.ObtenerTarjetasPendientes(request.RegistrosPorLote);
-
-        if (tarjetas.Count == 0)
-        {
-            _logger.LogInformation("No hay más registros");
-            break;
-        }
-
-        var opciones = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = request.CantidadHilos
-        };
-
-        var resultados = new ConcurrentBag<string>();
-
-        Parallel.ForEach(tarjetas, opciones, tarjeta =>
-        {
-            try
-            {
-                var resultado = _repo.ProcesarPorTarjeta(tarjeta);
-
-                var json = resultado?.json ?? "{}";
-
-                if (string.IsNullOrWhiteSpace(json) || json == "{}")
-                    throw new Exception("JSON vacío");
-
-                var linea = $"\"{tarjeta}\":{json}";
-
-                resultados.Add(linea);
-
-                _repo.MarcarComoProcesado(tarjeta);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error con tarjeta {tarjeta}");
-                _repo.MarcarComoError(tarjeta, ex.Message);
-            }
-        });
-
-        foreach (var linea in resultados)
-        {
-            if (!primeraVez)
-                writer.Write(",");
-
-            writer.Write(linea);
-            primeraVez = false;
-        }
-
-        var duracion = DateTime.Now - inicioLote;
-
-        _logger.LogInformation(
-            $"Lote {numeroLote} | Registros: {resultados.Count} | Tiempo: {duracion.TotalSeconds}s"
+        _individualService.Ejecutar(
+            parametros.RutaArchivoJson,
+            parametros.FechaCorteProcesar
         );
-
-        numeroLote++;
     }
+    else if (parametros.TipoGeneracion == "LOTE")
+    {
+        _logger.LogInformation("Modo LOTE");
 
-    writer.Write("}");
+        var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
 
-    _logger.LogInformation($"Archivo generado en: {archivoJson}");
-    _logger.LogInformation("Proceso finalizado");
+        var loteService = new GeneracionLoteService(_repo, loteLogger);
+
+        loteService.Ejecutar(parametros.CantidadHilos);
+    }
+    else
+    {
+        throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+    }
 }
-
-
-
-
-
-
-
-
-"GeneracionEC": {
-  "NombreArchivo": "Estado_de_cuenta_{0}.json",
-  "FormatoFechaCarpeta": "yyyy-MM-dd"
-}
-
-
-
-
-
