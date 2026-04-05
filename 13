@@ -1,3 +1,5 @@
+Tengo una cuestión y es que el SP me está devolviendo tres select 
+
 USE [EstadosCuentaJSONProcesador]
 GO
 /****** Object:  StoredProcedure [dbo].[usp_SBEstadoCuentaJsonMasivo]    Script Date: 4/4/2026 17:40:30 ******/
@@ -14,6 +16,7 @@ BEGIN TRY
     DECLARE @FechaCorte DATE;
 	DECLARE  @BatchSize INT;
 	DECLARE @Lote Table (No_Tarjeta VARCHAR(16));
+	DECLARE @JsonFinal NVARCHAR(MAX);
 
 
     -- Fecha corte activa
@@ -57,12 +60,8 @@ BEGIN TRY
 		)
 	
 
-		
 
-
-	INSERT INTO dbo.JsonEstadoCuenta (FechaCorte, JsonData)
-	SELECT
-	@FechaCorte,
+	SELECT @JsonFinal =
     '{' + STRING_AGG(JsonItem, ',') + '}'
 
 	FROM
@@ -346,15 +345,20 @@ BEGIN TRY
 
 	) x;
 
+	
+	INSERT INTO dbo.JsonEstadoCuenta (FechaCorte, JsonData)
+	VALUES (@FechaCorte, @JsonFinal);
+
 	UPDATE be
 	SET Estado = 1
 	FROM dbo.BandejaEstadoCuenta be
 	INNER JOIN @Lote l
 	ON be.No_Tarjeta = l.No_Tarjeta 
 
+
+SELECT @JsonFinal AS JsonData;
 SELECT 1 AS Resultado;
 
-SELECT JsonData;
 
 END TRY
 
@@ -372,7 +376,13 @@ END CATCH
 
 
 
-Msg 207, Level 16, State 1, Procedure usp_SBEstadoCuentaJsonMasivo, Line 350 [Batch Start Line 7]
-Invalid column name 'JsonData'.
 
-Completion time: 2026-04-04T22:44:06.2663852-06:00
+1. No_Tarjeta y son aquel monton de registros de tarjetas
+2. El jsonData el cual esta bieb
+3. Y Resultado 1 que supongo que tambien está bien
+
+
+
+Pero imagino que es la razon por la cual el archovo se está escribiendo asi:
+
+{1000000004301542,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
