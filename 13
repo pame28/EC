@@ -1,74 +1,29 @@
-Quiero que hagamos la implementación en C# te voy a mostrar lo que tengo actualmente en la consola: 
+using EstadosCuentaTC.Data;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
-
-using EstadosCuentaTC.Dtos;
-using EstadosCuentaTC.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EstadosCuentaTC.Services
+namespace EstadosCuentaTC.Repositories
 {
-    public class GeneracionEstadoCuentaService
+    public class EstadoCuentaRepository
     {
-        private readonly GeneracionIndividualService _individualService;
-        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly JsonRepository _jsonRepo;
-        private readonly EstadoCuentaRepository _repo;
+        private readonly SqlExecutor _sql;
 
-        public GeneracionEstadoCuentaService(
-            GeneracionIndividualService individualService,
-            JsonRepository jsonRepo,
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionEstadoCuentaService> logger,
-            ILoggerFactory loggerFactory, IConfiguration config)
+        public EstadoCuentaRepository(SqlExecutor sql)
         {
-            _individualService = individualService;
-            _logger = logger;
-            _jsonRepo = jsonRepo;
-            _repo = repo;
-            _loggerFactory = loggerFactory;
+            _sql = sql;
         }
 
-        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        public void EjecutarProcesoMasivo()
         {
-            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+            using var conn = _sql.GetConnection();
 
-            // Paso 3 - generar JSON
-            var cantidadGenerada = _jsonRepo.GenerarJson();
-
-            _logger.LogInformation(
-                "Registros generados: ",
-                cantidadGenerada
-            );
-
-
-            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", conn)
             {
-                _logger.LogInformation("Modo INDIVIDUAL");
-                _individualService.Ejecutar(parametros.RutaArchivoJson, parametros.FechaCorteProcesar);
-            }
-            else if (parametros.TipoGeneracion == "LOTE")
-            {
-                _logger.LogInformation("Modo LOTE");
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 0
+            };
 
-                var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
-                var loteService = new GeneracionLoteService(_repo, loteLogger);
-
-                loteService.Ejecutar(
-                    parametros.RutaArchivoJson,
-                    parametros.FechaCorteProcesar,
-                    parametros.RegistrosPorLote,
-                    parametros.CantidadHilos
-                );
-            }
-            else
-            {
-                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
-            }
+            cmd.ExecuteNonQuery();
         }
     }
 }
@@ -78,13 +33,18 @@ namespace EstadosCuentaTC.Services
 
 
 
+
+
+
+
+
+
+
 using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EstadosCuentaTC.Services
 {
@@ -101,87 +61,40 @@ namespace EstadosCuentaTC.Services
             _logger = logger;
         }
 
-        public void Ejecutar(string rutaBase, DateTime fechaCorte, int loteSize, int cantidadHilos)
+        public void Ejecutar(int cantidadHilos)
         {
-            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(ruta);
+            _logger.LogInformation($"Iniciando procesamiento con {cantidadHilos} hilos...");
 
-            var archivoJson = Path.Combine(
-                ruta,
-                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
-            );
+            var tareas = new Task[cantidadHilos];
 
-            using var writer = new StreamWriter(archivoJson, false, Encoding.UTF8);
-
-            writer.Write("{");
-
-            bool primeraVez = true;
-            int numeroLote = 1;
-
-            while (true)
+            for (int i = 0; i < cantidadHilos; i++)
             {
-                var inicioLote = DateTime.Now;
+                int hilo = i + 1;
 
-                var tarjetas = _repo.ObtenerTarjetasPendientes(loteSize);
-
-                if (tarjetas.Count == 0)
+                tareas[i] = Task.Run(() =>
                 {
-                    _logger.LogInformation("No hay más registros");
-                    break;
-                }
+                    _logger.LogInformation($"Hilo {hilo} iniciado");
 
-                var opciones = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = cantidadHilos
-                };
-
-                var resultados = new ConcurrentBag<string>();
-
-                Parallel.ForEach(tarjetas, opciones, tarjeta =>
-                {
-                    try
+                    while (true)
                     {
-                        var resultado = _repo.ProcesarPorTarjeta(tarjeta);
-
-                        var json = resultado?.json ?? "{}";
-
-                        if (string.IsNullOrWhiteSpace(json) || json == "{}")
-                            throw new Exception("JSON vacío");
-
-                        var linea = $"\"{tarjeta}\":{json}";
-
-                        resultados.Add(linea);
-
-                        _repo.MarcarComoProcesado(tarjeta);
+                        try
+                        {
+                            _repo.EjecutarProcesoMasivo();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error en hilo {hilo}");
+                            break;
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Error con tarjeta {tarjeta}");
-                        _repo.MarcarComoError(tarjeta, ex.Message);
-                    }
+
+                    _logger.LogInformation($"Hilo {hilo} finalizado");
                 });
-
-                foreach (var linea in resultados)
-                {
-                    if (!primeraVez)
-                        writer.Write(",");
-
-                    writer.Write(linea);
-                    primeraVez = false;
-                }
-
-                var duracion = DateTime.Now - inicioLote;
-
-                _logger.LogInformation(
-                    $"Lote {numeroLote} | Registros: {resultados.Count} | Tiempo: {duracion.TotalSeconds}s"
-                );
-
-                numeroLote++;
             }
 
-            writer.Write("}");
+            Task.WaitAll(tareas);
 
-            _logger.LogInformation("Proceso finalizado");
+            _logger.LogInformation("Procesamiento finalizado");
         }
     }
 }
@@ -189,279 +102,39 @@ namespace EstadosCuentaTC.Services
 
 
 
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Dtos;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
 
-namespace EstadosCuentaTC.Repositories
+
+
+
+
+
+
+
+public void Ejecutar(ParametrosGeneracionECDto parametros)
 {
-    public class EstadoCuentaRepository
+    _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+
+    if (parametros.TipoGeneracion == "INDIVIDUAL")
     {
-        private readonly SqlExecutor _sql;
+        _logger.LogInformation("Modo INDIVIDUAL");
 
-        public EstadoCuentaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
-
-
-        public (string tarjeta, string json)? ProcesarSiguiente()
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return null;
-
-            return (
-                reader["NoTarjeta"]?.ToString(),
-                reader["JsonEstadoCuenta"]?.ToString()
-            );
-        }
-
-        public List<(string tarjeta, string json)> ProcesarLoteMasivo(int cantidad)
-        {
-            var lista = new List<(string, string)>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ProcesarLoteEstadosCuenta_JSON", conn)
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 0
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add((
-                    reader["NoTarjeta"]?.ToString(),
-                    reader["JsonEstadoCuenta"]?.ToString()
-                ));
-            }
-
-            return lista;
-        }
-
-        public List<(string tarjeta, string json)> ProcesarLote(int cantidad)
-        {
-            var lista = new List<(string, string)>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 0
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add((
-                    reader["NoTarjeta"]?.ToString(),
-                    reader["JsonEstadoCuenta"]?.ToString()
-                ));
-            }
-
-            return lista;
-        }
-
-        public (string tarjeta, string json)? ProcesarPorTarjeta(string noTarjeta)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_SBEstadoCuentaJsooon", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", noTarjeta);
-
-            using var reader = cmd.ExecuteReader();
-
-            if (!reader.Read())
-                return (noTarjeta, "{}");
-
-            return (
-                noTarjeta,
-                reader["JsonEstadoCuenta"]?.ToString() ?? "{}"
-            );
-        }
-        public List<string> ObtenerTarjetasPendientes(int cantidad)
-        {
-            var lista = new List<string>();
-
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("usp_ObtenerTarjetasPendientes", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@Cantidad", cantidad);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
-            {
-                lista.Add(reader["No_Tarjeta"].ToString());
-            }
-
-            return lista;
-        }
-        public void MarcarComoProcesado(string tarjeta)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaProcesado", conn)
-            {
-                CommandType  = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-
-            cmd.ExecuteNonQuery();
-        }
-        public void MarcarComoError(string tarjeta, string error)
-        {
-            using var conn = _sql.GetConnection();
-
-            using var cmd = new SqlCommand("dbo.usp_MarcarTCEstadoCuentaError", conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            cmd.Parameters.AddWithValue("@NoTarjeta", tarjeta);
-            cmd.Parameters.AddWithValue("@ErrorMensaje", error?.Substring(0, Math.Min(error.Length, 4000)));
-
-            cmd.ExecuteNonQuery();
-        }
-
+        _individualService.Ejecutar(
+            parametros.RutaArchivoJson,
+            parametros.FechaCorteProcesar
+        );
     }
+    else if (parametros.TipoGeneracion == "LOTE")
+    {
+        _logger.LogInformation("Modo LOTE");
 
+        var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
+
+        var loteService = new GeneracionLoteService(_repo, loteLogger);
+
+        loteService.Ejecutar(parametros.CantidadHilos);
+    }
+    else
+    {
+        throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+    }
 }
-
-
-
-
-
-
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Repositories;
-using EstadosCuentaTC.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
-var builder = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: false);
-
-var config = builder.Build();
-
-var connectionString = config.GetConnectionString("DefaultConnection")
-    ?? throw new Exception("ConnectionString no configurado");
-
-//  Logger
-var loggerFactory = LoggerFactory.Create(builder =>
-{
-    builder.AddConsole();
-});
-
-var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
-var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
-var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
-var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
-var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
-
-//  Infraestructura
-//var sql = new SqlExecutor(connectionString);
-var sql = new SqlExecutor(config);
-
-//  FASE 1
-var prepara = new PreparaDataService(sql);
-
-// Repos
-var configRepo = new ConfigRepository(sql);
-var correosRepo = new CorreosRepository(sql);
-var emailRepo = new EmailRepository(configRepo, loggerEmail);
-var paramRepo = new ParametrosGeneracionECRepository(sql);
-var jsonRepo = new JsonRepository(sql);
-var ecRepo = new EstadoCuentaRepository(sql);
-
-//  FASE 2
-var correosService = new CorreosService(
-    correosRepo,
-    emailRepo,
-    loggerCorreos
-);
-// FASE 3
-var ParametrosECService = new ParametrosGeneracionECService(
-    paramRepo, 
-    jsonRepo, 
-    loggerParam);
-
-
-//  FASE 4 (Servicios de generación)
-var individualService = new GeneracionIndividualService(
-    ecRepo,
-    loggerIndividual
-);
-
-var generacionService = new GeneracionEstadoCuentaService(
-    individualService,
-    jsonRepo,
-    ecRepo,
-    loggerGeneracion,
-    loggerFactory,
-    config
-
-);
-try
-{
-    Console.WriteLine("========== INICIO PROCESO ==========\n");
-
-    // =========================
-    // FASE 1
-    // =========================
-    Console.WriteLine("FASE 1: PREPARA DATA");
-    prepara.Ejecutar();
-
-    // =========================
-    // FASE 2
-    // =========================
-    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
-    await correosService.InsertarCorreosNoValidosAsync();
-
-    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
-    var parametros = ParametrosECService.ObtenerParametros();
-
-
-    Console.WriteLine("\nFASE 4: GENERACIÓN ESTADOS DE CUENTA");
-    generacionService.Ejecutar(parametros);
-    Console.WriteLine("\n========== FIN PROCESO ==========");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
-}
-
-
-
-
-Recuerda que yo necesito hacer todo parametrizado, bien estructurado, no quiero sobrecargar las clases, quiero que estén al 100. Porfa brindame archivos completos y bien hechos
