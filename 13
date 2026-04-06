@@ -1,220 +1,414 @@
-ALTER PROCEDURE [dbo].[usp_SBEstadoCuentaJsonMasivo]
-    @WorkerId INT
-AS
-BEGIN TRY
-    SET NOCOUNT ON;
+Ya teniendo el archivo tengo que encriptarlo, según el dtsx que estamos migrando a la consola funciona asi:
 
-    DECLARE @FechaCorte DATE;
-    DECLARE @BatchSize INT;
 
-    CREATE TABLE #Lote (
-        No_Tarjeta VARCHAR(16) PRIMARY KEY
-    );
+#region Help:  Introduction to the script task
+/* The Script Task allows you to perform virtually any operation that can be accomplished in
+ * a .Net application within the context of an Integration Services control flow. 
+ * 
+ * Expand the other regions which have "Help" prefixes for examples of specific ways to use
+ * Integration Services features within this script task. */
+#endregion
 
-    SELECT TOP 1 @FechaCorte = FechaCorte
-    FROM dbo.ParametrosCorte
-    WHERE Estado = 1
-    ORDER BY FechaCorte DESC;
 
-    SELECT TOP 1 @BatchSize = RegistrosPorLote 
-    FROM dbo.ParametrosGeneracionEC;
+#region Namespaces
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Security.Cryptography;
+using System.IO;
+using System.IO.Compression;
+using ST_3ba5fe2c14ce475cbf9d979b3056e0ab.src;
+#endregion
 
-    INSERT INTO #Lote (No_Tarjeta)
-    SELECT TOP (@BatchSize) No_Tarjeta
-    FROM dbo.BandejaEstadoCuenta WITH (READPAST)
-    WHERE Estado = 0
-      AND (WorkerId IS NULL OR WorkerId = @WorkerId)
-    ORDER BY No_Tarjeta;
+namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab
+{
+    /// <summary>
+    /// ScriptMain is the entry point class of the script.  Do not change the name, attributes,
+    /// or parent of this class.
+    /// </summary>
+	[Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+	public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+	{
+        #region Help:  Using Integration Services variables and parameters in a script
+        /* To use a variable in this script, first ensure that the variable has been added to 
+         * either the list contained in the ReadOnlyVariables property or the list contained in 
+         * the ReadWriteVariables property of this script task, according to whether or not your
+         * code needs to write to the variable.  To add the variable, save this script, close this instance of
+         * Visual Studio, and update the ReadOnlyVariables and 
+         * ReadWriteVariables properties in the Script Transformation Editor window.
+         * To use a parameter in this script, follow the same steps. Parameters are always read-only.
+         * 
+         * Example of reading from a variable:
+         *  DateTime startTime = (DateTime) Dts.Variables["System::StartTime"].Value;
+         * 
+         * Example of writing to a variable:
+         *  Dts.Variables["User::myStringVariable"].Value = "new value";
+         * 
+         * Example of reading from a package parameter:
+         *  int batchId = (int) Dts.Variables["$Package::batchId"].Value;
+         *  
+         * Example of reading from a project parameter:
+         *  int batchId = (int) Dts.Variables["$Project::batchId"].Value;
+         * 
+         * Example of reading from a sensitive project parameter:
+         *  int batchId = (int) Dts.Variables["$Project::batchId"].GetSensitiveValue();
+         * */
 
-    IF NOT EXISTS (SELECT 1 FROM #Lote)
-    BEGIN
-        SELECT 0 AS Resultado;
-        RETURN;
-    END
+        #endregion
 
-    UPDATE be
-    SET Estado = 2,
-        WorkerId = @WorkerId
-    FROM dbo.BandejaEstadoCuenta be
-    INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta
-    WHERE be.Estado = 0;
+        #region Help:  Firing Integration Services events from a script
+        /* This script task can fire events for logging purposes.
+         * 
+         * Example of firing an error event:
+         *  Dts.Events.FireError(18, "Process Values", "Bad value", "", 0);
+         * 
+         * Example of firing an information event:
+         *  Dts.Events.FireInformation(3, "Process Values", "Processing has started", "", 0, ref fireAgain)
+         * 
+         * Example of firing a warning event:
+         *  Dts.Events.FireWarning(14, "Process Values", "No values received for input", "", 0);
+         * */
+        #endregion
 
-    DECLARE @JsonFinal NVARCHAR(MAX);
+        #region Help:  Using Integration Services connection managers in a script
+        /* Some types of connection managers can be used in this script task.  See the topic 
+         * "Working with Connection Managers Programatically" for details.
+         * 
+         * Example of using an ADO.Net connection manager:
+         *  object rawConnection = Dts.Connections["Sales DB"].AcquireConnection(Dts.Transaction);
+         *  SqlConnection myADONETConnection = (SqlConnection)rawConnection;
+         *  //Use the connection in some code here, then release the connection
+         *  Dts.Connections["Sales DB"].ReleaseConnection(rawConnection);
+         *
+         * Example of using a File connection manager
+         *  object rawConnection = Dts.Connections["Prices.zip"].AcquireConnection(Dts.Transaction);
+         *  string filePath = (string)rawConnection;
+         *  //Use the connection in some code here, then release the connection
+         *  Dts.Connections["Prices.zip"].ReleaseConnection(rawConnection);
+         * */
+        #endregion
 
-    SELECT @JsonFinal =
-    '{' + STRING_AGG(JsonItem, ',') + '}'
-    FROM
-    (
-        SELECT 
-            '"' + be.No_Tarjeta + '":' +
 
-            JSON_QUERY((
-                SELECT
+		/// <summary>
+        /// This method is called when this script task executes in the control flow.
+        /// Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+        /// To open Help, press F1.
+        /// </summary>
+		public void Main()
+		{
+            string RutaJson = Dts.Variables["User::RutaJson"].Value.ToString() + Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value).ToString("yyyy-MM-dd");
+            string NombreJson = Dts.Variables["User::NombreJson"].Value.ToString();
 
-                    -- =========================
-                    -- ENCABEZADO COMPLETO
-                    -- =========================
-                    JSON_QUERY((
-                        SELECT
-                            LTRIM(RTRIM(ISNULL(hc.Origen, ''))) AS Origen,
-                            LTRIM(RTRIM(ISNULL(hc.Emisor, ''))) AS Emisor,
-                            LTRIM(RTRIM(ISNULL(hc.No_Cuenta, ''))) AS No_Cuenta,
-                            LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))) AS Nombre_TH_Tit,
-                            LTRIM(RTRIM(ISNULL(hc.Emisor_Madre, ''))) AS Emisor_Madre,
-                            LTRIM(RTRIM(ISNULL(hc.Cuenta_Madre, ''))) AS Cuenta_Madre,
-                            LTRIM(RTRIM(ISNULL(hc.Nombre_Empresa, ''))) AS Nombre_Empresa,
-                            LTRIM(RTRIM(ISNULL(hc.Tipo_Tarjeta, ''))) AS Tipo_Tarjeta,
-                            LTRIM(RTRIM(ISNULL(hc.No_Tarjeta, ''))) AS No_Tarjeta,
+            //string path = @"" + RutaJson + "\\" + NombreJson.Replace("json", "zip");
+            string path = @"" + RutaJson + "\\" + NombreJson;
+            
+            //Generate the key and IV
+            byte[] iv = new byte[16];
+            string keyString = Dts.Variables["User::Llave"].Value.ToString();
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(iv);
+            }
 
-                            CONVERT(VARCHAR(10), hc.Fecha_Pago, 103) AS Fecha_Pago,
-                            CONVERT(VARCHAR(10), hc.Fecha_Corte, 103) AS Fecha_Corte,
+            string llaveiv = Convert.ToBase64String(iv);
+			string RutaLlavePublica = @"" + RutaJson + "\\" + "LlavePublica.txt";
 
-                            CAST(ISNULL(hc.Pago_Contado_MN, 0) AS DECIMAL(10,2)) AS Pago_Contado_MN,
-                            CAST(ISNULL(hc.Pago_Minimo_MN, 0) AS DECIMAL(10,2)) AS Pago_Minimo_MN,
-                            CAST(ISNULL(hc.Saldo_Vencido_MN, 0) AS DECIMAL(10,2)) AS Saldo_Vencido_MN,
-                            CAST(ISNULL(hc.Saldo_Anterior_MN, 0) AS DECIMAL(10,2)) AS Saldo_Anterior_MN,
-                            CAST(ISNULL(hc.Saldo_Final_MN, 0) AS DECIMAL(10,2)) AS Saldo_Final_MN,
-                            CAST(ISNULL(hc.Compras_Deb_MN, 0) AS DECIMAL(10,2)) AS Compras_Deb_MN,
-                            CAST(ISNULL(hc.Pagos_Cred_MN, 0) AS DECIMAL(10,2)) AS Pagos_Cred_MN,
-                            CAST(ISNULL(hc.Sobregiro_MN, 0) AS DECIMAL(10,2)) AS Sobregiro_MN,
-                            CAST(ISNULL(hc.Cuota_Mes_MN, 0) AS DECIMAL(10,2)) AS Cuota_Mes_MN,
+			File.AppendAllText(RutaLlavePublica, llaveiv);
+			Dts.Variables["User::RutaLlavePublica"].Value = RutaLlavePublica;
 
-                            CAST(ISNULL(hc.Pago_Contado_ME, 0) AS DECIMAL(10,2)) AS Pago_Contado_ME,
-                            CAST(ISNULL(hc.Pago_Minimo_ME, 0) AS DECIMAL(10,2)) AS Pago_Minimo_ME,
-                            CAST(ISNULL(hc.Saldo_Vencido_ME, 0) AS DECIMAL(10,2)) AS Saldo_Vencido_ME,
-                            CAST(ISNULL(hc.Saldo_Anterior_ME, 0) AS DECIMAL(10,2)) AS Saldo_Anterior_ME,
-                            CAST(ISNULL(hc.Saldo_Final_ME, 0) AS DECIMAL(10,2)) AS Saldo_Final_ME,
+            EncriptacionAES.EncriptarArchivo(path, path+"e", keyString, llaveiv);
+            File.Delete(path);
+            File.Move(path + "e", path);
 
-                            CAST(ISNULL(hc.Compras_Deb_ME, 0) AS DECIMAL(10,2)) AS Compras_Deb_ME,
-                            CAST(ISNULL(hc.Pagos_Cred_ME, 0) AS DECIMAL(10,2)) AS Pagos_Cred_ME,
-                            CAST(ISNULL(hc.Sobregiro_ME, 0) AS DECIMAL(10,2)) AS Sobregiro_ME,
-                            CAST(ISNULL(hc.Cuota_Mes_ME, 0) AS DECIMAL(10,2)) AS Cuota_Mes_ME,
+            ZipJson(@"" + RutaJson, @"" + RutaJson + ".zip", NombreJson.Replace("json", "zip"));
 
-                            LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_Cre, ''))) AS Moneda_Lim_Cre,
-                            CAST(ISNULL(hc.Limite_Credito, 0) AS DECIMAL(10,2)) AS Limite_Credito,
-                            CAST(ISNULL(hc.Disponible_Cta_MN, 0) AS DECIMAL(10,2)) AS Disponible_Cta_MN,
-                            CAST(ISNULL(hc.Disponible_Cta_ME, 0) AS DECIMAL(10,2)) AS Disponible_Cta_ME,
-                            CAST(ISNULL(hc.Disponible_Ret_MN, 0) AS DECIMAL(10,2)) AS Disponible_Ret_MN,
-                            CAST(ISNULL(hc.Disponible_Ret_ME, 0) AS DECIMAL(10,2)) AS Disponible_Ret_ME,
+            Dts.TaskResult = (int)ScriptResults.Success;
+		}
+        static byte[] Encrypt(string simpletext, byte[] key, byte[] iv)
+        {
+            byte[] cipheredtext;
+            using (Aes aes = Aes.Create())
+            {
+                ICryptoTransform encryptor = aes.CreateEncryptor(key, iv);
+                using (MemoryStream memoryStream = new MemoryStream())
+                {
+                    using (CryptoStream cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter streamWriter = new StreamWriter(cryptoStream))
+                        {
+                            streamWriter.Write(simpletext);
+                        }
+                        cipheredtext = memoryStream.ToArray();
+                    }
+                }
+            }
 
-                            CAST(ISNULL(hc.PTS_Saldo_Ant, 0) AS BIGINT) AS PTS_Saldo_Ant,
-                            CAST(ISNULL(hc.PTS_Ganados, 0) AS BIGINT) AS PTS_Ganados,
-                            CAST(ISNULL(hc.PTS_Usuados, 0) AS BIGINT) AS PTS_Usuados,
-                            CAST(ISNULL(hc.PTS_Saldo_Actual, 0) AS BIGINT) AS PTS_Saldo_Actual,
+            return cipheredtext;
+        }
+        static void ZipJson(string sourceDirectoryName, string destinationDirectoryName, string renameValue)
+        {
+            System.IO.Compression.ZipFile.CreateFromDirectory(sourceDirectoryName, destinationDirectoryName);
+            File.Move(destinationDirectoryName, sourceDirectoryName + "\\" + renameValue);
+            File.Delete(destinationDirectoryName);
+        }
 
-                            LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_EF, ''))) AS Moneda_Lim_EF,
-                            CAST(ISNULL(hc.EF_Limite, 0) AS DECIMAL(10,2)) AS EF_Limite,
-                            CAST(ISNULL(hc.EF_Saldo_MN, 0) AS DECIMAL(10,2)) AS EF_Saldo_MN,
-                            CAST(ISNULL(hc.EF_Debitos_MN, 0) AS DECIMAL(10,2)) AS EF_Debitos_MN,
-                            CAST(ISNULL(hc.EF_Creditos_MN, 0) AS DECIMAL(10,2)) AS EF_Creditos_MN,
-                            CAST(ISNULL(hc.EF_Saldo_ME, 0) AS DECIMAL(10,2)) AS EF_Saldo_ME,
-                            CAST(ISNULL(hc.EF_Debitos_ME, 0) AS DECIMAL(10,2)) AS EF_Debitos_ME,
-                            CAST(ISNULL(hc.EF_Creditos_ME, 0) AS DECIMAL(10,2)) AS EF_Creditos_ME,
-                            CAST(ISNULL(hc.EF_Disponible_MN, 0) AS DECIMAL(10,2)) AS EF_Disponible_MN,
-                            CAST(ISNULL(hc.EF_Disponible_ME, 0) AS DECIMAL(10,2)) AS EF_Disponible_ME,
+        #region ScriptResults declaration
+        /// <summary>
+        /// This enum provides a convenient shorthand within the scope of this class for setting the
+        /// result of the script.
+        /// 
+        /// This code was generated automatically.
+        /// </summary>
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
 
-                            CAST(ISNULL(hc.Tasa_Int_Anual_MN, 0) AS DECIMAL(10,2)) AS Tasa_Int_Anual_MN,
-                            CAST(ISNULL(hc.Tasa_Int_Anual_ME, 0) AS DECIMAL(10,2)) AS Tasa_Int_Anual_ME,
+	}
+}
 
-                            LTRIM(RTRIM(ISNULL(hc.Direccion_1, ''))) AS Direccion_1,
-                            LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))) AS Direccion_2,
-                            LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))) AS Direccion_3,
-                            LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))) AS Apdo_Postal,
-                            LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))) AS Ciudad,
 
-                            LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))) AS Mensaje_2,
-                            LTRIM(RTRIM(ISNULL(hc.Mensaje_3, ''))) AS Mensaje_3,
-                            LTRIM(RTRIM(ISNULL(hc.Mensaje_4, ''))) AS Mensaje_4,
-                            LTRIM(RTRIM(ISNULL(hc.Mensaje_5, ''))) AS Mensaje_5,
 
-                            LTRIM(RTRIM(ISNULL(hc.Tarjeta_Imprimir, ''))) AS Tarjeta_Imprimir,
 
-                            CAST(ISNULL(hc.Costo_Anual_Tot_MN, 0) AS DECIMAL(10,2)) AS Costo_Anual_Tot_MN,
-                            CAST(ISNULL(hc.Costo_Anual_Tot_ME, 0) AS DECIMAL(10,2)) AS Costo_Anual_Tot_ME,
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
-                            CAST(ISNULL(hc.Plazo_Canc_Deuda_MN, 0) AS INT) AS Plazo_Canc_Deuda_MN,
-                            CAST(ISNULL(hc.Plazo_Canc_Deuda_ME, 0) AS INT) AS Plazo_Canc_Deuda_ME,
+namespace ST_3ba5fe2c14ce475cbf9d979b3056e0ab.src
+{  
+    class EncriptacionAES
+    {
+        public static void EncriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string llaveiv)
+        {
+            //Llave Privada
+            //string keyString = "qeH8b6jBD5h9i4KjMZBqYA==";
 
-                            CAST(ISNULL(hc.Interes_Pago_Min_MN, 0) AS DECIMAL(10,2)) AS Interes_Pago_Min_MN,
-                            CAST(ISNULL(hc.Interes_Pago_Min_ME, 0) AS DECIMAL(10,2)) AS Interes_Pago_Min_ME,
+            //Se convierte el base 64 hacia byte para desencriptar
+            byte[] key = Convert.FromBase64String(keyString);
+            byte[] iv = Convert.FromBase64String(llaveiv);
 
-                            LTRIM(RTRIM(ISNULL(hc.Correo, ''))) AS Correo,
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = key;
+                aesAlg.IV = iv;
+                aesAlg.Mode = CipherMode.CBC;
+                aesAlg.Padding = PaddingMode.PKCS7;
 
-                            CAST(ISNULL(hc.Limite_CreditoMN, 0) AS DECIMAL(10,2)) AS Limite_CreditoMN,
-                            CAST(ISNULL(hc.Interes_Corriente_MN, 0) AS DECIMAL(10,2)) AS Interes_Corriente_MN,
-                            CAST(ISNULL(hc.Interes_Corriente_ME, 0) AS DECIMAL(10,2)) AS Interes_Corriente_ME,
+                using (FileStream fsEntrada = new FileStream(rutaEntrada, FileMode.Open, FileAccess.Read))
+                using (FileStream fsSalida = new FileStream(rutaSalida, FileMode.Create, FileAccess.Write))
+                using (CryptoStream cs = new CryptoStream(fsSalida, aesAlg.CreateEncryptor(), CryptoStreamMode.Write))
+                {
+                    fsEntrada.CopyTo(cs);
+                }
+            }
+        }
 
-                            LTRIM(RTRIM(ISNULL(t.EstadoTarjeta, '0'))) AS Estado
+        public static void DesencriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string llaveiv)
+        {
+            //Se convierte el base 64 hacia byte para desencriptar
+            byte[] key = Convert.FromBase64String(keyString);
+            byte[] iv = Convert.FromBase64String(llaveiv);
 
-                        FROM dbo.BandejaEncabezado hc
-                        LEFT JOIN dbo.Tarjetas t 
-                            ON t.NumeroTarjeta = hc.No_Tarjeta
-                        WHERE hc.No_Tarjeta = be.No_Tarjeta
-                          AND hc.Fecha_Corte = @FechaCorte
-                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
-                    )) AS Encabezado,
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = key;
+                aesAlg.IV = iv;
+                aesAlg.Mode = CipherMode.CBC;
+                aesAlg.Padding = PaddingMode.PKCS7;
 
-                    -- DETALLE
-                    ISNULL((
-                        SELECT
-                            CONVERT(VARCHAR(10), d.Fecha_Consumo, 103) AS Fecha_Consumo,
-                            d.Tipo_Reg,
-                            d.Descripcion_Mov,
-                            d.DebitosMN,
-                            d.CreditosMN,
-                            d.DebitosME,
-                            d.CreditosME
-                        FROM dbo.BandejaDetalle d
-                        WHERE d.Fecha_Corte = @FechaCorte
-                          AND d.EC_DetalleNo_Cuenta = be.No_Cuenta
-                        FOR JSON PATH
-                    ), '[]') AS Detalle,
+                using (FileStream fsEntrada = new FileStream(rutaEntrada, FileMode.Open, FileAccess.Read))
+                using (FileStream fsSalida = new FileStream(rutaSalida, FileMode.Create, FileAccess.Write))
+                using (CryptoStream cs = new CryptoStream(fsEntrada, aesAlg.CreateDecryptor(), CryptoStreamMode.Read))
+                {
+                    cs.CopyTo(fsSalida);
+                }
+            }
+        }
+    }
 
-                    -- FINANCIAMIENTOS
-                    ISNULL((
-                        SELECT
-                            f.Tipo,
-                            CONVERT(VARCHAR(10), f.FechaOtorgamiento, 103) AS Fecha,
-                            f.ImporteTotalPlan,
-                            f.MonedaMovimiento,
-                            f.Importe,
-                            f.CantidadCuotasPlan,
-                            f.NoCuotaLiquidada,
-                            f.PlanExtraTasa,
-                            f.PlanCuotaCapitalPend
-                        FROM dbo.BandejaFinanciamientos f
-                        WHERE f.NumeroCuenta = be.No_Cuenta
-                          AND f.FechaCierre = @FechaCorte
-                        FOR JSON PATH
-                    ), '[]') AS Financiamientos
+}
 
-                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
-            )) AS JsonItem
 
-        FROM #Lote l
-        INNER JOIN dbo.BandejaEstadoCuenta be
-            ON be.No_Tarjeta = l.No_Tarjeta
 
-    ) x;
 
-    INSERT INTO dbo.JsonEstadoCuenta (FechaCorte, JsonData)
-    VALUES (@FechaCorte, @JsonFinal);
 
-    UPDATE be
-    SET Estado = 1
-    FROM dbo.BandejaEstadoCuenta be
-    INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta;
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
-    SELECT @JsonFinal AS JsonData;
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
 
-END TRY
-BEGIN CATCH
+var config = builder.Build();
 
-    UPDATE be
-    SET Estado = 0
-    FROM dbo.BandejaEstadoCuenta be
-    INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta;
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
 
-    SELECT 0 AS Resultado;
+//  Logger
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+});
 
-END CATCH;
+var loggerEmail = loggerFactory.CreateLogger<EmailRepository>();
+var loggerCorreos = loggerFactory.CreateLogger<CorreosService>();
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+
+//  Infraestructura
+//var sql = new SqlExecutor(connectionString);
+var sql = new SqlExecutor(config);
+
+//  FASE 1
+var prepara = new PreparaDataService(sql);
+
+// Repos
+var configRepo = new ConfigRepository(sql);
+var correosRepo = new CorreosRepository(sql);
+var emailRepo = new EmailRepository(configRepo, loggerEmail);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
+
+//  FASE 2
+var correosService = new CorreosService(
+    correosRepo,
+    emailRepo,
+    loggerCorreos
+);
+// FASE 3
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
+
+
+//  FASE 4 (Servicios de generación)
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config
+
+);
+try
+{
+    Console.WriteLine("========== INICIO PROCESO ==========\n");
+
+    // =========================
+    // FASE 1
+    // =========================
+    Console.WriteLine("FASE 1: PREPARA DATA");
+    prepara.Ejecutar();
+
+    // =========================
+    // FASE 2
+    // =========================
+    Console.WriteLine("\nFASE 2: CORREOS NO VALIDOS");
+    await correosService.InsertarCorreosNoValidosAsync();
+
+    Console.WriteLine("\nFASE 3: OBTENER PARÁMETROS");
+    var parametros = ParametrosECService.ObtenerParametros();
+
+
+    Console.WriteLine("\nFASE 4: GENERACIÓN ESTADOS DE CUENTA");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
+
+
+Asi vamos 
+
+
+
+
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionEstadoCuentaService
+    {
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly JsonRepository _jsonRepo;
+        private readonly EstadoCuentaRepository _repo;
+
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            JsonRepository jsonRepo,
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionEstadoCuentaService> logger,
+            ILoggerFactory loggerFactory, IConfiguration config)
+        {
+            _individualService = individualService;
+            _logger = logger;
+            _jsonRepo = jsonRepo;
+            _repo = repo;
+            _loggerFactory = loggerFactory;
+        }
+
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo INDIVIDUAL");
+
+                _individualService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.FechaCorteProcesar
+                );
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo LOTE");
+
+                var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
+
+                var loteService = new GeneracionLoteService(_repo, loteLogger);
+
+                loteService.Ejecutar(
+                     parametros.RutaArchivoJson,
+                    parametros.FechaCorteProcesar,
+                    parametros.CantidadHilos);
+            }
+            else
+            {
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+        }
+    }
+}
+
+
+
+
+
+Dime como hacemos la encriptación paso a paso, brindame archivos completos
+
