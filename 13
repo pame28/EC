@@ -1,300 +1,619 @@
-ALTER PROCEDURE [dbo].[usp_SBEstadoCuentaJsonMasivo]
-AS
-BEGIN
-    SET NOCOUNT ON;
+Le adjjnto los json de prueba para cada endpoint
 
-    DECLARE @FechaCorte DATE;
+/transactions
 
-    -- Fecha corte activa
-    SELECT TOP 1 @FechaCorte = FechaCorte
-    FROM dbo.ParametrosCorte
-    WHERE Estado = 1
-    ORDER BY FechaCorte DESC;
-	
+{
+  "card": {
+        "bin": "421005",
+        "lastFourDigits": "2067"
+    },
+    "client": {
+        "documentNumber": "0501 1952 02475",
+        "documentType": "I",
+        "gender": "M"
+    }
+}
 
-	SELECT CAST((
-    SELECT 
-        be.No_Tarjeta,
+/terms
 
-        JSON_QUERY((
-            SELECT
-
-                -- =========================
-                -- ENCABEZADO
-                -- =========================
-                JSON_QUERY((
-                    SELECT
-					 LTRIM(RTRIM(ISNULL(hc.Origen, ''))) AS Origen,
-                LTRIM(RTRIM(ISNULL(hc.Emisor, ''))) AS Emisor,
-                LTRIM(RTRIM(ISNULL(hc.No_Cuenta, ''))) AS No_Cuenta,
-                LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))) AS Nombre_TH_Tit,
-                LTRIM(RTRIM(ISNULL(hc.Emisor_Madre, ''))) AS Emisor_Madre,
-                LTRIM(RTRIM(ISNULL(hc.Cuenta_Madre, ''))) AS Cuenta_Madre,
-                LTRIM(RTRIM(ISNULL(hc.Nombre_Empresa, ''))) AS Nombre_Empresa,
-                LTRIM(RTRIM(ISNULL(hc.Tipo_Tarjeta, ''))) AS Tipo_Tarjeta,
-                LTRIM(RTRIM(ISNULL(hc.No_Tarjeta, ''))) AS No_Tarjeta,
-
-                CONVERT(VARCHAR(10), hc.Fecha_Pago, 103) AS Fecha_Pago,
-                CONVERT(VARCHAR(10), hc.Fecha_Corte, 103) AS Fecha_Corte,
-
-               CAST(ISNULL(hc.Pago_Contado_MN, 0) AS DECIMAL(10,2)) AS Pago_Contado_MN,
-				CAST(ISNULL(hc.Pago_Minimo_MN, 0) AS DECIMAL(10,2)) AS Pago_Minimo_MN,
-				CAST(ISNULL(hc.Saldo_Vencido_MN, 0) AS DECIMAL(10,2)) AS Saldo_Vencido_MN,
-				CAST(ISNULL(hc.Saldo_Anterior_MN, 0) AS DECIMAL(10,2)) AS Saldo_Anterior_MN,
-				CAST(ISNULL(hc.Saldo_Final_MN, 0) AS DECIMAL(10,2)) AS Saldo_Final_MN,
-				CAST(ISNULL(hc.Compras_Deb_MN, 0) AS DECIMAL(10,2)) AS Compras_Deb_MN,
-				CAST(ISNULL(hc.Pagos_Cred_MN, 0) AS DECIMAL(10,2)) AS Pagos_Cred_MN,
-				CAST(ISNULL(hc.Sobregiro_MN, 0) AS DECIMAL(10,2)) AS Sobregiro_MN,
-				CAST(ISNULL(hc.Cuota_Mes_MN, 0) AS DECIMAL(10,2)) AS Cuota_Mes_MN,
-
-				CAST(ISNULL(hc.Pago_Contado_ME, 0) AS DECIMAL(10,2)) AS Pago_Contado_ME,
-				CAST(ISNULL(hc.Pago_Minimo_ME, 0) AS DECIMAL(10,2)) AS Pago_Minimo_ME,
-				CAST(ISNULL(hc.Saldo_Vencido_ME, 0) AS DECIMAL(10,2)) AS Saldo_Vencido_ME,
-				CAST(ISNULL(hc.Saldo_Anterior_ME, 0) AS DECIMAL(10,2)) AS Saldo_Anterior_ME,
-				CAST(ISNULL(hc.Saldo_Final_ME, 0) AS DECIMAL(10,2)) AS Saldo_Final_ME,
-
-				CAST(
-					ISNULL(
-						(hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN),
-						0
-					) AS DECIMAL(10,2)
-				) AS Saldo_Consumo_MN,
-
-				CAST(
-					ISNULL(
-						(hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME),
-						0
-					) AS DECIMAL(10,2)
-				) AS Saldo_Consumo_ME,
-
-				CAST(ISNULL(hc.Compras_Deb_ME, 0) AS DECIMAL(10,2)) AS Compras_Deb_ME,
-				CAST(ISNULL(hc.Pagos_Cred_ME, 0) AS DECIMAL(10,2)) AS Pagos_Cred_ME,
-				CAST(ISNULL(hc.Sobregiro_ME, 0) AS DECIMAL(10,2)) AS Sobregiro_ME,
-				CAST(ISNULL(hc.Cuota_Mes_ME, 0) AS DECIMAL(10,2)) AS Cuota_Mes_ME,
-
-                LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_Cre, ''))) AS Moneda_Lim_Cre,
-               CAST(ISNULL(hc.Limite_Credito, 0) AS DECIMAL(10,2)) AS Limite_Credito,
-				CAST(ISNULL(hc.Disponible_Cta_MN, 0) AS DECIMAL(10,2)) AS Disponible_Cta_MN,
-				CAST(ISNULL(hc.Disponible_Cta_ME, 0) AS DECIMAL(10,2)) AS Disponible_Cta_ME,
-				CAST(ISNULL(hc.Disponible_Ret_MN, 0) AS DECIMAL(10,2)) AS Disponible_Ret_MN,
-				CAST(ISNULL(hc.Disponible_Ret_ME, 0) AS DECIMAL(10,2)) AS Disponible_Ret_ME,
-
-				CAST(ISNULL(hc.PTS_Saldo_Ant, 0) AS BIGINT) AS PTS_Saldo_Ant,
-				CAST(ISNULL(hc.PTS_Ganados, 0) AS BIGINT) AS PTS_Ganados,
-				CAST(ISNULL(hc.PTS_Usuados, 0) AS BIGINT) AS PTS_Usuados,
-				CAST(ISNULL(hc.PTS_Saldo_Actual, 0) AS BIGINT) AS PTS_Saldo_Actual,
-
-                LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_EF, ''))) AS Moneda_Lim_EF,
-               CAST(ISNULL(hc.EF_Limite, 0) AS DECIMAL(10,2)) AS EF_Limite,
-				CAST(ISNULL(hc.EF_Saldo_MN, 0) AS DECIMAL(10,2)) AS EF_Saldo_MN,
-				CAST(ISNULL(hc.EF_Debitos_MN, 0) AS DECIMAL(10,2)) AS EF_Debitos_MN,
-				CAST(ISNULL(hc.EF_Creditos_MN, 0) AS DECIMAL(10,2)) AS EF_Creditos_MN,
-				CAST(ISNULL(hc.EF_Saldo_ME, 0) AS DECIMAL(10,2)) AS EF_Saldo_ME,
-				CAST(ISNULL(hc.EF_Debitos_ME, 0) AS DECIMAL(10,2)) AS EF_Debitos_ME,
-				CAST(ISNULL(hc.EF_Creditos_ME, 0) AS DECIMAL(10,2)) AS EF_Creditos_ME,
-				CAST(ISNULL(hc.EF_Disponible_MN, 0) AS DECIMAL(10,2)) AS EF_Disponible_MN,
-				CAST(ISNULL(hc.EF_Disponible_ME, 0) AS DECIMAL(10,2)) AS EF_Disponible_ME,
-
-				CAST(ISNULL(hc.Tasa_Int_Anual_MN, 0) AS DECIMAL(10,2)) AS Tasa_Int_Anual_MN,
-				CAST(ISNULL(hc.Tasa_Int_Anual_ME, 0) AS DECIMAL(10,2)) AS Tasa_Int_Anual_ME,
-
-                LTRIM(RTRIM(ISNULL(hc.Direccion_1, ''))) AS Direccion_1,
-                LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))) AS Direccion_2,
-                LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))) AS Direccion_3,
-                LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))) AS Apdo_Postal,
-                LTRIM(RTRIM(ISNULL(hc.Cidudad, ''))) AS Ciudad,
-
-                LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX), map.Mensaje), ''))) AS Mensaje_1,
-                LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))) AS Mensaje_2,
-                LTRIM(RTRIM(ISNULL(hc.Mensaje_3, ''))) AS Mensaje_3,
-                LTRIM(RTRIM(ISNULL(hc.Mensaje_4, ''))) AS Mensaje_4,
-                LTRIM(RTRIM(ISNULL(hc.Mensaje_5, ''))) AS Mensaje_5,
-
-                LTRIM(RTRIM(ISNULL(hc.Tarjeta_Imprimir, ''))) AS Tarjeta_Imprimir,
-
-              CAST(ISNULL(hc.Costo_Anual_Tot_MN, 0) AS DECIMAL(10,2)) AS Costo_Anual_Tot_MN,
-				CAST(ISNULL(hc.Costo_Anual_Tot_ME, 0) AS DECIMAL(10,2)) AS Costo_Anual_Tot_ME,
-
-				CAST(ISNULL(hc.Plazo_Canc_Deuda_MN, 0) AS INT) AS Plazo_Canc_Deuda_MN,
-				CAST(ISNULL(hc.Plazo_Canc_Deuda_ME, 0) AS INT) AS Plazo_Canc_Deuda_ME,
-
-				CAST(ISNULL(hc.Interes_Pago_Min_MN, 0) AS DECIMAL(10,2)) AS Interes_Pago_Min_MN,
-				CAST(ISNULL(hc.Interes_Pago_Min_ME, 0) AS DECIMAL(10,2)) AS Interes_Pago_Min_ME,
-
-                LTRIM(RTRIM(ISNULL(hc.Correo, ''))) AS Correo,
-				CAST(ISNULL(hc.Limite_CreditoMN, 0) AS DECIMAL(10,2)) AS Limite_CreditoMN,
-				CAST(ISNULL(hc.Interes_Corriente_MN, 0) AS DECIMAL(10,2)) AS Interes_Corriente_MN,
-				CAST(ISNULL(hc.Interes_Corriente_ME, 0) AS DECIMAL(10,2)) AS Interes_Corriente_ME,
-
-
-                        LTRIM(RTRIM(ISNULL(t.EstadoTarjeta, '0'))) AS Estado
-
-                    FROM dbo.BandejaEncabezado hc
-                    LEFT JOIN dbo.CuentasArregloPagos ecap
-                        ON hc.NoCuentaClaro = ecap.NumeroCuenta
-                       AND ecap.FechaCorte = @FechaCorte
-                    LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map
-                        ON map.idMensaje = ecap.idMensaje
-
-                    WHERE hc.No_Cuenta = hc.No_Cuenta
-                      AND hc.Fecha_Corte = @FechaCorte
-                      AND hc.No_Tarjeta = be.No_Tarjeta
-
-                    FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
-                )) AS Encabezado,
-
-                -- =========================
-                -- DETALLE
-                -- =========================
-                ISNULL(JSON_QUERY((
-                  SELECT
-                FORMAT(D.Fecha_Consumo, 'dd/MM/yyyy') AS Fecha_Consumo,        
-				LTRIM(RTRIM(ISNULL(D.Tipo_Reg, ''))) AS Tipo_Reg,
-				LTRIM(RTRIM(ISNULL( D.Descripcion_Mov, ''))) AS  Descripcion_Mov,               
-				CAST(D.DebitosMN  AS DECIMAL(10,2)) AS DebitosMN,
-				CAST(D.CreditosMN AS DECIMAL(10,2)) AS CreditosMN,
-				CAST(D.DebitosME  AS DECIMAL(10,2)) AS DebitosME,
-				CAST(D.CreditosME AS DECIMAL(10,2)) AS CreditosME
-
-            FROM
-            (
-                -- Movimientos
-                SELECT
-                    a.Fecha_Consumo,
-                    1 Tipo_Reg,
-                    a.Descripcion_Mov,
-                    CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosMN,
-                    CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosMN,
-                    CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END DebitosME,
-                    CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END CreditosME
-                FROM dbo.BandejaDetalle a
-                INNER JOIN dbo.TiposMovimientos b
-                    ON b.CodMovimiento = a.Codigo_Mov
-                WHERE a.Fecha_Corte = @FechaCorte
-                  AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
-
-                UNION ALL
-
-                -- Subtotales
-                SELECT
-                    a.Fecha_Corte,
-                    2,
-                    'Subtotal',
-                    SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
-                    SUM(CASE WHEN a.Moneda_Mov = 'HN' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END),
-                    SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'D' THEN a.Monto_Mov ELSE 0 END),
-                    SUM(CASE WHEN a.Moneda_Mov = 'DO' AND b.TipoMovimiento = 'C' THEN a.Monto_Mov ELSE 0 END)
-                FROM dbo.BandejaDetalle a
-                INNER JOIN dbo.TiposMovimientos b
-                    ON b.CodMovimiento = a.Codigo_Mov
-                WHERE a.Fecha_Corte = @FechaCorte
-                  AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
-                GROUP BY a.Fecha_Corte
-
-                UNION ALL
-
-                -- Totales
-                SELECT
-                    a.Fecha_Corte,
-                    3,
-                    'Total',
-                    SUM(a.Monto_Mov),
-                    0,
-                    0,
-                    0
-                FROM dbo.BandejaDetalle a
-                WHERE a.Fecha_Corte = @FechaCorte
-                  AND a.EC_DetalleNo_Cuenta = hc.No_Cuenta
-                GROUP BY a.Fecha_Corte
-
-            ) D
-            ORDER BY D.Tipo_Reg, D.Fecha_Consumo
-            FOR JSON PATH
-        )
-    ) , '[]') AS Detalle,
-
-                -- =========================
-                -- FINANCIAMIENTOS
-                -- =========================
-                ISNULL(JSON_QUERY((
-                   SELECT
-                Tipo,
-                FORMAT(Fecha, 'dd/MM/yyyy') AS Fecha,
-                Monto,
-                Moneda,
-                Cuota,
-                Plazo,
-                CuotaAplicada,
-                Tasa,
-                Saldo
-            FROM
-            (
-                SELECT
-                    'Intrafinanciamientos' Tipo,
-                    f.FechaOtorgamiento Fecha,
-                    f.ImporteTotalPlan Monto,
-                    f.MonedaMovimiento Moneda,
-                    f.Importe Cuota,
-                    f.CantidadCuotasPlan Plazo,
-                    f.NoCuotaLiquidada CuotaAplicada,
-                    CASE WHEN f.PlanExtraTasa = 0 THEN '0%' ELSE CAST(f.PlanExtraTasa AS VARCHAR) + '%' END Tasa,
-                    f.PlanCuotaCapitalPend Saldo
-                FROM dbo.BandejaFinanciamientos f
-                WHERE f.NumeroCuenta = hc.No_Cuenta
-                  AND f.FechaCierre = @FechaCorte
-                  AND f.PlanCuotaCapitalPend > 0
-                  AND f.EsIntra = 1
-
-                UNION ALL
-
-                SELECT
-                    'Extrafinanciamientos',
-                    f.FechaOtorgamiento,
-                    f.ImporteTotalPlan,
-                    f.MonedaMovimiento,
-                    f.Importe,
-                    f.CantidadCuotasPlan,
-                    f.NoCuotaLiquidada,
-                    CASE WHEN f.PlanExtraTasa = 0 THEN '0%' ELSE CAST(f.PlanExtraTasa AS VARCHAR) + '%' END,
-                    f.PlanCuotaCapitalPend
-                FROM dbo.BandejaFinanciamientos f
-                WHERE f.NumeroCuenta = hc.No_Cuenta
-                  AND f.FechaCierre = @FechaCorte
-                  AND f.PlanCuotaCapitalPend > 0
-                  AND f.EsExtra = 1
-            ) F
-            FOR JSON PATH
-        )
-    ) , '[]') AS Financiamientos
-
-            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
-
-
-        )) AS JsonEstadoCuenta
-
-    FROM dbo.BandejaEstadoCuenta be
-
-    CROSS APPLY (
-        SELECT TOP 1 hc.*
-        FROM dbo.BandejaEncabezado hc
-        WHERE hc.No_Tarjeta = be.No_Tarjeta
-          AND hc.Fecha_Corte = @FechaCorte
-    ) hc
-
-	OUTER APPLY (
-		SELECT TOP 1 t.EstadoTarjeta
-        FROM dbo.Tarjetas t
-        WHERE t.NumeroTarjeta = be.No_Tarjeta
-	)t
-
-    WHERE be.Estado = 0
-
-    FOR JSON PATH
-	) AS NVARCHAR(MAX)) AS JsonEstadoCuentaa
-
-END
+{
+    "amount": 1500.00,
+    "currency": "HNL",
+    "card": {
+        "bin": "421005",
+        "lastFourDigits": "2067"
+    },
+    "client": {
+        "documentNumber": "0501 1952 02475   ",
+        "documentType": "I",
+        "gender": "M"
+    }
+}
 
 
 
 
-Soloque, lo ejecuto y me devuelve json, pero siento que se está cortando, o no se si es cuando le doy copiar a la celda para colocarlo en otro editor de texto, como puedo saber? y es que me parece raro porque oslo se tarda 10 s en ejecutarse
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/transactions
+Request:
+
+
+{
+  "card": {
+        "bin": "421005",
+        "lastFourDigits": "2067"
+    },
+    "client": {
+        "documentNumber": "0501 1952 02475",
+        "documentType": "I",
+        "gender": "M"
+    }
+}
+
+
+Response: 
+{
+    "response": {
+        "code": "00",
+        "description": "RESPUESTA EXITOSA"
+    },
+    "movements": [
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012193",
+            "originDate": "06/10/2025",
+            "amount": 20.00,
+            "merchantName": "PINTURAS ARCOR",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012194",
+            "originDate": "06/10/2025",
+            "amount": 18.00,
+            "merchantName": "DONAS PINK",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012195",
+            "originDate": "06/10/2025",
+            "amount": 15.87,
+            "merchantName": "WESTVILL",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012196",
+            "originDate": "06/10/2025",
+            "amount": 14.00,
+            "merchantName": "BIBLIAS LA LUZ",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012197",
+            "originDate": "06/10/2025",
+            "amount": 20.00,
+            "merchantName": "FLAUTAS PEREZ",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012198",
+            "originDate": "06/10/2025",
+            "amount": 12.00,
+            "merchantName": "POPTORTY",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012199",
+            "originDate": "06/10/2025",
+            "amount": 13.03,
+            "merchantName": "LONAS BARBARAS",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012200",
+            "originDate": "06/10/2025",
+            "amount": 15.15,
+            "merchantName": "VIVIBIEN",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012201",
+            "originDate": "06/10/2025",
+            "amount": 14.98,
+            "merchantName": "PIANOS EL SOLISTA",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012202",
+            "originDate": "06/10/2025",
+            "amount": 15.73,
+            "merchantName": "KILOS GYM",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012203",
+            "originDate": "06/10/2025",
+            "amount": 16.00,
+            "merchantName": "CREMAS DEL PUEBLO",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012204",
+            "originDate": "06/10/2025",
+            "amount": 17.44,
+            "merchantName": "CASACLUB LOS PINOS",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012206",
+            "originDate": "06/10/2025",
+            "amount": 6.28,
+            "merchantName": "MENSAJERÍA MAQUIN",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012207",
+            "originDate": "06/10/2025",
+            "amount": 6.78,
+            "merchantName": "CAMAS EL CUAJE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012208",
+            "originDate": "06/10/2025",
+            "amount": 8.31,
+            "merchantName": "GATOSHOP",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012209",
+            "originDate": "06/10/2025",
+            "amount": 20.00,
+            "merchantName": "QUESOS LA VAQUITA",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012210",
+            "originDate": "06/10/2025",
+            "amount": 20.00,
+            "merchantName": "DOGGIES GUATE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012211",
+            "originDate": "06/10/2025",
+            "amount": 5.00,
+            "merchantName": "NIÑOS DEL CAMPO",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012212",
+            "originDate": "06/10/2025",
+            "amount": 2.99,
+            "merchantName": "LEMUS",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012213",
+            "originDate": "06/10/2025",
+            "amount": 3.00,
+            "merchantName": "CARWASH LA MUGRE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012214",
+            "originDate": "06/10/2025",
+            "amount": 20.01,
+            "merchantName": "YUPI HAPPY",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012215",
+            "originDate": "06/10/2025",
+            "amount": 11.00,
+            "merchantName": "PELOTAS EL CALLEJERO",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012216",
+            "originDate": "06/10/2025",
+            "amount": 14.59,
+            "merchantName": "EL ZORRO, VALIENTE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012217",
+            "originDate": "06/10/2025",
+            "amount": 14.87,
+            "merchantName": "TROFEOS",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012219",
+            "originDate": "06/10/2025",
+            "amount": 19.77,
+            "merchantName": "JEEP TRUCK",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012220",
+            "originDate": "06/10/2025",
+            "amount": 8.37,
+            "merchantName": "MCNIFICA",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012221",
+            "originDate": "06/10/2025",
+            "amount": 15.44,
+            "merchantName": "SHOESMOUNTAIN",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012222",
+            "originDate": "06/10/2025",
+            "amount": 20.54,
+            "merchantName": "LEE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012223",
+            "originDate": "06/10/2025",
+            "amount": 17.41,
+            "merchantName": "NIKEGT",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012224",
+            "originDate": "06/10/2025",
+            "amount": 9.99,
+            "merchantName": "CALVIN KLEIN",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012225",
+            "originDate": "06/10/2025",
+            "amount": 18.99,
+            "merchantName": "WOLF SHOP",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012226",
+            "originDate": "06/10/2025",
+            "amount": 7.77,
+            "merchantName": "DOGGIE'S SHAKE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012227",
+            "originDate": "06/10/2025",
+            "amount": 20.73,
+            "merchantName": "BIBLIAS LA LUZ",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012228",
+            "originDate": "06/10/2025",
+            "amount": 15.49,
+            "merchantName": "EEGSA",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012229",
+            "originDate": "06/10/2025",
+            "amount": 6.99,
+            "merchantName": "MEMBERPLAYERS",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012230",
+            "originDate": "06/10/2025",
+            "amount": 17.68,
+            "merchantName": "NIKE SPRINT",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012231",
+            "originDate": "06/10/2025",
+            "amount": 20.11,
+            "merchantName": "RUN FREE",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        },
+        {
+            "installmentCampaign": "0000000002",
+            "receiptNumber": "000000012232",
+            "originDate": "06/10/2025",
+            "amount": 2.00,
+            "merchantName": "PUBLITIK",
+            "installmentModel": "0000000002",
+            "currency": "USD",
+            "product": "VI0304",
+            "card": "4210-0570-**-2067"
+        }
+    ]
+}
+
+
+/terms
+
+Request:
+
+{
+    "amount": 1500.00,
+    "currency": "HNL",
+    "card": {
+        "bin": "421005",
+        "lastFourDigits": "2067"
+    },
+    "client": {
+        "documentNumber": "0501 1952 02475   ",
+        "documentType": "I",
+        "gender": "M"
+    }
+}
+
+Response:
+
+{
+    "response": {
+        "code": "00",
+        "description": "RESPUESTA EXITOSA"
+    },
+    "installments": [
+        {
+            "bin": "421005",
+            "installmentNumber": 3,
+            "installmentDescription": "3  Meses",
+            "intraFinancingRate": 0.00,
+            "extraFinancingRate": 0.00,
+            "intraFinancigCommission": 0.00,
+            "extraFinancingCommission": 0.00,
+            "product": "VI0304",
+            "singleIntraFinancigCommission": 0.00,
+            "singleExtraFinancingCommission": 0.00,
+            "firstInsallmentIntraFinancing": 500.00,
+            "firstInsallmentExtraFinancing": 0.00,
+            "monthlyIstallmentIntraFinancing": 500.00,
+            "monthlyIstallmentExtraFinancing": 0.00
+        },
+        {
+            "bin": "421005",
+            "installmentNumber": 6,
+            "installmentDescription": "6  Meses",
+            "intraFinancingRate": 0.00,
+            "extraFinancingRate": 0.00,
+            "intraFinancigCommission": 0.00,
+            "extraFinancingCommission": 0.00,
+            "product": "VI0304",
+            "singleIntraFinancigCommission": 0.00,
+            "singleExtraFinancingCommission": 0.00,
+            "firstInsallmentIntraFinancing": 250.00,
+            "firstInsallmentExtraFinancing": 0.00,
+            "monthlyIstallmentIntraFinancing": 250.00,
+            "monthlyIstallmentExtraFinancing": 0.00
+        },
+        {
+            "bin": "421005",
+            "installmentNumber": 9,
+            "installmentDescription": "9  Meses",
+            "intraFinancingRate": 0.00,
+            "extraFinancingRate": 0.00,
+            "intraFinancigCommission": 0.00,
+            "extraFinancingCommission": 0.00,
+            "product": "VI0304",
+            "singleIntraFinancigCommission": 0.00,
+            "singleExtraFinancingCommission": 0.00,
+            "firstInsallmentIntraFinancing": 166.66,
+            "firstInsallmentExtraFinancing": 0.00,
+            "monthlyIstallmentIntraFinancing": 166.66,
+            "monthlyIstallmentExtraFinancing": 0.00
+        },
+        {
+            "bin": "421005",
+            "installmentNumber": 12,
+            "installmentDescription": "12  Meses",
+            "intraFinancingRate": 0.00,
+            "extraFinancingRate": 0.00,
+            "intraFinancigCommission": 0.00,
+            "extraFinancingCommission": 0.00,
+            "product": "VI0304",
+            "singleIntraFinancigCommission": 0.00,
+            "singleExtraFinancingCommission": 0.00,
+            "firstInsallmentIntraFinancing": 125.00,
+            "firstInsallmentExtraFinancing": 0.00,
+            "monthlyIstallmentIntraFinancing": 125.00,
+            "monthlyIstallmentExtraFinancing": 0.00
+        },
+        {
+            "bin": "421005",
+            "installmentNumber": 18,
+            "installmentDescription": "18  Meses",
+            "intraFinancingRate": 0.00,
+            "extraFinancingRate": 0.00,
+            "intraFinancigCommission": 0.00,
+            "extraFinancingCommission": 0.00,
+            "product": "VI0304",
+            "singleIntraFinancigCommission": 0.00,
+            "singleExtraFinancingCommission": 0.00,
+            "firstInsallmentIntraFinancing": 83.33,
+            "firstInsallmentExtraFinancing": 0.00,
+            "monthlyIstallmentIntraFinancing": 83.33,
+            "monthlyIstallmentExtraFinancing": 0.00
+        },
+        {
+            "bin": "421005",
+            "installmentNumber": 24,
+            "installmentDescription": "24  Meses",
+            "intraFinancingRate": 0.00,
+            "extraFinancingRate": 0.00,
+            "intraFinancigCommission": 0.00,
+            "extraFinancingCommission": 0.00,
+            "product": "VI0304",
+            "singleIntraFinancigCommission": 0.00,
+            "singleExtraFinancingCommission": 0.00,
+            "firstInsallmentIntraFinancing": 62.50,
+            "firstInsallmentExtraFinancing": 0.00,
+            "monthlyIstallmentIntraFinancing": 62.50,
+            "monthlyIstallmentExtraFinancing": 0.00
+        }
+    ]
+}
