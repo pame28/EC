@@ -1,7 +1,263 @@
-Estoy tratando de probar el SP en sql y tengo esto: Msg 207, Level 16, State 1, Procedure dbo.usp_SBEstadoCuentaJsonMasivo4, Line 61 [Batch Start Line 9]
-Invalid column name 'Tipo_Reg'.
+Ok, basicamnete me devuelve 4 select, el ultimo parece ser un listado de Tarjetas.
 
-Completion time: 2026-04-10T15:48:20.9798655-06:00
+Primero quiero que tomes en cuenta que, ahorita estamos desarrollando la Generación de estado de cuenta por LOTE
+
+Ok, te voy a pasar mi cpdigo de .NET porque yo estaba intentando hacerlo con Lotes e Hilos, que si debo hacerlo asi, porque me exigen.. y si te fijas en mi codigo son valores que ya tengo parametrizados en SQL
+
+Ayudame a brindarme los archivos completos, y sin errores:
 
 
-creo que tiene que ver con la sección detalles, creo qu ehabia un subquery antes
+
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionEstadoCuentaService
+    {
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly JsonRepository _jsonRepo;
+        private readonly EstadoCuentaRepository _repo;
+        private readonly EncriptacionService _encriptacionService;
+
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            JsonRepository jsonRepo,
+            EstadoCuentaRepository repo,         
+            ILogger<GeneracionEstadoCuentaService> logger,
+            ILoggerFactory loggerFactory, IConfiguration config,
+            EncriptacionService encriptacionService)
+        {
+            _individualService = individualService;
+            _logger = logger;
+            _jsonRepo = jsonRepo;
+            _repo = repo;
+            _loggerFactory = loggerFactory;
+            _encriptacionService = encriptacionService;
+        }
+
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
+            string nombreArchivoFinal = parametros.NombreArchivo + parametros.FechaCorteProcesar;
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo INDIVIDUAL");
+
+                _individualService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.FechaCorteProcesar
+                );
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo LOTE");
+
+                var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
+
+                var loteService = new GeneracionLoteService(_repo, loteLogger);
+
+                loteService.Ejecutar(
+                     parametros.RutaArchivoJson,
+                    parametros.FechaCorteProcesar,
+                    parametros.CantidadHilos);
+            }
+
+
+
+            else
+            {
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+
+            //  ENCRIPTAR
+            //_encriptacionService.Ejecutar(
+            //    parametros.RutaArchivoJson,
+            //    nombreArchivoFinal,
+            //    parametros.FechaCorteProcesar,
+            //    parametros.LlaveEncripta
+            //);
+        }
+    }
+}
+
+
+
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EstadosCuentaTC.Services
+{
+    public class GeneracionLoteService
+    {
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionLoteService> _logger;
+
+        private static readonly object _lockFile = new object();
+
+        public GeneracionLoteService(
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionLoteService> logger)
+        {
+            _repo = repo;
+            _logger = logger;
+        }
+
+        public void Ejecutar(string rutaBase, DateTime fechaCorte, int cantidadHilos)
+        {
+            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+            Directory.CreateDirectory(ruta);
+
+            var archivoJson = Path.Combine(
+                ruta,
+                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
+            );
+
+           
+            using (var writer = new StreamWriter(archivoJson, false, Encoding.UTF8))
+            {
+                writer.Write("{");
+            }
+
+            _logger.LogInformation($"Iniciando con {cantidadHilos} hilos...");
+
+            var tareas = new Task[cantidadHilos];
+
+            for (int i = 0; i < cantidadHilos; i++)
+            {
+                int workerId = i + 1;
+
+                tareas[i] = Task.Run(() =>
+                {
+                    _logger.LogInformation($"Worker {workerId} iniciado");
+
+                    while (true)
+                    {
+                        try
+                        {
+                            
+                            var json = _repo.EjecutarProcesoMasivo(workerId);
+
+                            if (string.IsNullOrEmpty(json))
+                                break;
+
+                          
+                            lock (_lockFile)
+                            {
+                                File.AppendAllText(archivoJson, json + ",");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error en worker {workerId}");
+                            break;
+                        }
+                    }
+
+                    _logger.LogInformation($"Worker {workerId} finalizado");
+                });
+            }
+
+            Task.WaitAll(tareas);
+
+         
+            lock (_lockFile)
+            {
+                using (var writer = new StreamWriter(archivoJson, true, Encoding.UTF8))
+                {
+                    writer.Write("}");
+                }
+            }
+
+            _logger.LogInformation("Proceso finalizado");
+        }
+    }
+}
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class EstadoCuentaRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public EstadoCuentaRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+
+        public (string tarjeta, string json)? ProcesarSiguiente()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return null;
+
+            return (
+                reader["NoTarjeta"]?.ToString(),
+                reader["JsonEstadoCuenta"]?.ToString()
+            );
+        }
+
+        public string EjecutarProcesoMasivo(int workerId)
+        {
+            using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("usp_SBEstadoCuentaJsonMasivo", conn)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 0
+            };
+
+            cmd.Parameters.AddWithValue("@WorkerId", workerId);
+
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+
+            var result = cmd.ExecuteScalar();
+
+            return result?.ToString();
+        }
+
+    }
+
+}
+
+
+
+Brindame los archivos completos con las correcciones necesarias.
+
+
+
+
+
+
