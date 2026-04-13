@@ -1,34 +1,158 @@
+using APIBPTarjetas.Models;
+using Newtonsoft.Json;
+using System.Text;
+
+namespace APIBPTarjetas.Services
 {
-  "ConnectionStrings": {
-    "ConexionSQL": "***",
-    "AS400Connection": "****",
-    "MigracionesConnection": "***"
-  },
-  "MicroservicioTransacFlotantes": {
-    "Url": "****",
-    "UrlGateway": "***",
-    "UserGateway": "user",
-    "PasswordGateway": "password"
-  },
+    // DTOs internos para deserializar la respuesta del gateway
+    internal class GatewayTokenData
+    {
+        [JsonProperty("accessToken")]
+        public string AccessToken { get; set; } = string.Empty;
 
-  
-    "Migracion": {
-      "ModoMicroservicio": false
-    },
- 
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
+        [JsonProperty("expiresIn")]
+        public string ExpiresIn { get; set; } = string.Empty;
     }
-  },
-  "AllowedHosts": "*",
-  "AmbientePRISMA": "DES",
-  "UsarProxy": "false"					  
+
+    internal class GatewayTokenResponse
+    {
+        [JsonProperty("data")]
+        public GatewayTokenData Data { get; set; } = new();
+    }
+
+    public class GatewayTokenService
+    {
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<GatewayTokenService> _logger;
+
+        private string _cachedToken = string.Empty;
+        private DateTime _tokenExpiry = DateTime.MinValue;
+
+        // Lock para evitar múltiples renovaciones simultáneas
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+
+        public GatewayTokenService(
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            ILogger<GatewayTokenService> logger)
+        {
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
+            _logger = logger;
+        }
+
+        public async Task<string> GetTokenAsync()
+        {
+            // Si el token aún es válido (con margen de 30s), lo retornamos directo
+            if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
+            {
+                _logger.LogDebug("Token de gateway vigente, usando caché");
+                return _cachedToken;
+            }
+
+            // Solo un hilo entra a renovar
+            await _lock.WaitAsync();
+            try
+            {
+                // Double-check: otro hilo pudo haber renovado mientras esperábamos
+                if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
+                    return _cachedToken;
+
+                _logger.LogInformation("Renovando token del gateway...");
+                await RenovarTokenAsync();
+                return _cachedToken;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        private async Task RenovarTokenAsync()
+        {
+            var urlGateway = _configuration["MicroservicioTransacFlotantes:UrlGateway"];
+            var user      = _configuration["MicroservicioTransacFlotantes:UserGateway"];
+            var password  = _configuration["MicroservicioTransacFlotantes:PasswordGateway"];
+
+            var body = JsonConvert.SerializeObject(new { user, password });
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
+
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PostAsync(urlGateway, content);
+            response.EnsureSuccessStatusCode();
+
+            var raw = await response.Content.ReadAsStringAsync();
+            var resultado = JsonConvert.DeserializeObject<GatewayTokenResponse>(raw);
+
+            if (resultado?.Data == null || string.IsNullOrEmpty(resultado.Data.AccessToken))
+                throw new Exception("La respuesta del gateway no contiene un token válido");
+
+            _cachedToken = resultado.Data.AccessToken;
+
+            // "2026-04-13 14:44:13"
+            _tokenExpiry = DateTime.Parse(resultado.Data.ExpiresIn);
+
+            _logger.LogInformation($"Token de gateway renovado. Expira: {_tokenExpiry}");
+        }
+    }
 }
 
 
 
+
+
+
+
+
+
+
+
+
+using APIBPTarjetas.Models;
+using APIBPTarjetas.Models.Dtos;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
+using System.Text;
+
+namespace APIBPTarjetas.Services
+{
+    public class MicroservicioClient
+    {
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
+        private readonly GatewayTokenService _gatewayTokenService;
+
+        public MicroservicioClient(
+            HttpClient httpClient,
+            IConfiguration configuration,
+            GatewayTokenService gatewayTokenService)
+        {
+            _httpClient = httpClient;
+            _configuration = configuration;
+            _gatewayTokenService = gatewayTokenService;
+        }
+
+        public async Task<Response<List<AuthorizationResponseDto>>> ConsultarAsync(object request)
+        {
+            var url = _configuration["MicroservicioTransacFlotantes:Url"];
+
+            // Obtener token vigente (desde caché o renovado automáticamente)
+            var token = await _gatewayTokenService.GetTokenAsync();
+
+            var json = JsonConvert.SerializeObject(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Inyectar el Bearer token en el header
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await _httpClient.PostAsync(url, content);
+            var result = await response.Content.ReadAsStringAsync();
+
+            return JsonConvert.DeserializeObject<Response<List<AuthorizationResponseDto>>>(result);
+        }
+    }
 }
 
 
@@ -37,4 +161,12 @@
 
 
 
+
+
+// Singleton porque maneja estado compartido del token
+builder.Services.AddSingleton<GatewayTokenService>();
 builder.Services.AddHttpClient<MicroservicioClient>();
+
+// Necesario para que GatewayTokenService pueda crear sus propios HttpClients
+builder.Services.AddHttpClient();
+
