@@ -1,18 +1,28 @@
-      Start processing HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
-info: System.Net.Http.HttpClient.Default.ClientHandler[100]
-      Sending HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
-info: System.Net.Http.HttpClient.Default.ClientHandler[101]
-      Received HTTP response headers after 474.2871ms - 400
-info: System.Net.Http.HttpClient.Default.LogicalHandler[101]
-      End processing HTTP request after 514.2682ms - 400
+      End processing HTTP request after 1618.3174ms - 400
 fail: Microsoft.AspNetCore.Server.Kestrel[13]
-      Connection id "0HNKPDNTMO337", Request id "0HNKPDNTMO337:00000002": An unhandled exception was thrown by the application.
+      Connection id "0HNKPE28UB9TF", Request id "0HNKPE28UB9TF:00000003": An unhandled exception was thrown by the application.
       System.Net.Http.HttpRequestException: Response status code does not indicate success: 400 (Bad Request).
          at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
          at APIBPTarjetas.Services.GatewayTokenService.RenovarTokenAsync() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\GatewayTokenService.cs:line 68
          at APIBPTarjetas.Services.GatewayTokenService.GetTokenAsync() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\GatewayTokenService.cs:line 48
          at APIBPTarjetas.Services.MicroservicioClient.ConsultarAsync(Object request) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\MicroservicioClient.cs:line 27
          at APIBPTarjetas.Controllers.RegistrosCongeladosController.BXIRegistrosCongeladosAsync(RequestDto requestDto) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Controllers\RegistrosCongeladosController.cs:line 70
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+         at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
+         at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
+         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+         at Microsoft.WebTools.BrowserLink.Net.BrowserLinkMiddleware.InvokeAsync(HttpContext context)
+         at Microsoft.AspNetCore.Watch.BrowserRefresh.BrowserRefreshMiddleware.InvokeAsync(HttpContext context)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
 
 
 
