@@ -5,9 +5,7 @@ namespace transacciones_flotantes.DTOs.Response
         public class LegacyTransaccionesResponseDto
         {
             public ResultDto Result { get; set; } = new();
-
-            public TotalFloatingDto? Total_Floating { get; set; }  // ← NUEVO
-
+            public TotalFloatingDto? Total_Floating { get; set; }
             public object Respuesta { get; set; } = 0;
         }
 
@@ -17,7 +15,7 @@ namespace transacciones_flotantes.DTOs.Response
             public string Descripcion { get; set; } = string.Empty;
         }
 
-        public class TotalFloatingDto  // ← NUEVO
+        public class TotalFloatingDto
         {
             public string Total_HNL { get; set; } = "0";
             public string Total_USD { get; set; } = "0";
@@ -26,11 +24,11 @@ namespace transacciones_flotantes.DTOs.Response
         public class LegacyAutorizacionDto
         {
             public string Date { get; set; } = string.Empty;
-            public string merchant_name { get; set; } = string.Empty;  // ← renombrado
+            public string merchant_name { get; set; } = string.Empty;
             public decimal Amount { get; set; }
             public string Currency { get; set; } = string.Empty;
             public string? Reference { get; set; }
-            public string transaction_type { get; set; } = string.Empty;  // ← renombrado
+            public string transaction_type { get; set; } = string.Empty;
         }
     }
 }
@@ -43,44 +41,30 @@ namespace transacciones_flotantes.DTOs.Response
 
 
 
-
-
-
 var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(1);
 
 var autorizaciones = await Task.WhenAll(
-    proveedorData.Authorizations.Select(async a =>
+    proveedorData.Authorizations.Select(async a => new LegacyAutorizacionDto
     {
-        // Signo negativo si el movimiento es DEBITO
-        var signo = a.MovementType?.Equals("DEBITO", StringComparison.OrdinalIgnoreCase) == true
-            ? -1m : 1m;
-
-        return new LegacyAutorizacionDto
-        {
-            Date           = a.Date,
-            merchant_name  = a.MerchantName,
-            Amount         = a.Amount * signo,
-            Currency       = await _currencyService.ResolverAsync(a.Currency),
-            Reference      = a.Reference,
-            transaction_type = a.TransactionType
-        };
+        Date             = a.Date,
+        merchant_name    = a.MerchantName,
+        Amount           = a.Amount,
+        Currency         = await _currencyService.ResolverAsync(a.Currency),
+        Reference        = a.Reference,
+        transaction_type = a.TransactionType
     }));
-
-// Totales: DEBITO = negativo
-var totalHNL = -proveedorData.TotalFloating.TotalHNL;
-var totalUSD = -proveedorData.TotalFloating.TotalUSD;
 
 return new LegacyTransaccionesResponseDto
 {
     Result =
     {
-        Codigo     = catalogo.Codigo,
+        Codigo      = catalogo.Codigo,
         Descripcion = catalogo.Descripcion
     },
     Total_Floating = new TotalFloatingDto
     {
-        Total_HNL = totalHNL.ToString("0.#"),  // "0" si es cero, "-2300" o "-582.8" si tiene decimales
-        Total_USD = totalUSD.ToString("0.#")
+        Total_HNL = proveedorData.TotalFloating.TotalHNL.ToString("0.##"),
+        Total_USD = proveedorData.TotalFloating.TotalUSD.ToString("0.##")
     },
     Respuesta = autorizaciones.ToList()
 };
