@@ -1,51 +1,36 @@
-using System.Text.Json.Serialization;
-
-namespace transacciones_flotantes.DTOs.TransaccionesFlotantes
+namespace transacciones_flotantes.DTOs.Response
 {
-    public class ProveedorTransaccionesFlotantesResponseDto
+    public class ResponseDto
     {
-        public class ProveedorResponseDto
+        public class LegacyTransaccionesResponseDto
         {
-            [JsonPropertyName("totalFloating")]
-            public TotalesProveedorDto TotalFloating { get; set; } = new();
+            public ResultDto Result { get; set; } = new();
 
-            [JsonPropertyName("authorizations")]
-            public List<ProveedorAutorizacionDto> Authorizations { get; set; } = new();
+            public TotalFloatingDto? Total_Floating { get; set; }  // ← NUEVO
+
+            public object Respuesta { get; set; } = 0;
         }
 
-        public class TotalesProveedorDto
+        public class ResultDto
         {
-            [JsonPropertyName("totalHNL")]
-            public decimal TotalHNL { get; set; }
-
-            [JsonPropertyName("totalUSD")]
-            public decimal TotalUSD { get; set; }
+            public int Codigo { get; set; }
+            public string Descripcion { get; set; } = string.Empty;
         }
 
-        public class ProveedorAutorizacionDto
+        public class TotalFloatingDto  // ← NUEVO
         {
-            [JsonPropertyName("transactionType")]
-            public string TransactionType { get; set; } = string.Empty;
-            [JsonPropertyName("date")]
-            public string Date { get; set; }
+            public string Total_HNL { get; set; } = "0";
+            public string Total_USD { get; set; } = "0";
+        }
 
-            [JsonPropertyName("currency")]
-            public string Currency { get; set; } = string.Empty;
-
-            [JsonPropertyName("amount")]
+        public class LegacyAutorizacionDto
+        {
+            public string Date { get; set; } = string.Empty;
+            public string merchant_name { get; set; } = string.Empty;  // ← renombrado
             public decimal Amount { get; set; }
-
-            [JsonPropertyName("merchantName")]
-            public string MerchantName { get; set; } = string.Empty;
-
-
-            [JsonPropertyName("reference")]
+            public string Currency { get; set; } = string.Empty;
             public string? Reference { get; set; }
-
-          
-
-            [JsonPropertyName("movementType")]
-            public string MovementType { get; set; } = string.Empty;
+            public string transaction_type { get; set; } = string.Empty;  // ← renombrado
         }
     }
 }
@@ -56,36 +41,46 @@ namespace transacciones_flotantes.DTOs.TransaccionesFlotantes
 
 
 
-using transacciones_flotantes.Repository.Interface;
-using transacciones_flotantes.Service.Interface;
 
-namespace transacciones_flotantes.Service
-{
-    public class CurrencyService : ICurrencyService
+
+
+
+
+var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(1);
+
+var autorizaciones = await Task.WhenAll(
+    proveedorData.Authorizations.Select(async a =>
     {
-        private readonly ICurrencyRepository _repository;
-        private readonly IConfiguration _configuration;
+        // Signo negativo si el movimiento es DEBITO
+        var signo = a.MovementType?.Equals("DEBITO", StringComparison.OrdinalIgnoreCase) == true
+            ? -1m : 1m;
 
-        public CurrencyService(ICurrencyRepository repository, IConfiguration configuration)
+        return new LegacyAutorizacionDto
         {
-            _repository = repository;
-            _configuration = configuration;
-        }
+            Date           = a.Date,
+            merchant_name  = a.MerchantName,
+            Amount         = a.Amount * signo,
+            Currency       = await _currencyService.ResolverAsync(a.Currency),
+            Reference      = a.Reference,
+            transaction_type = a.TransactionType
+        };
+    }));
 
-        public async Task<string> ResolverAsync(string monedaIso)
-        {
-            if (string.IsNullOrWhiteSpace(monedaIso))
-                return monedaIso;
+// Totales: DEBITO = negativo
+var totalHNL = -proveedorData.TotalFloating.TotalHNL;
+var totalUSD = -proveedorData.TotalFloating.TotalUSD;
 
-            bool usarMapeo = _configuration.GetValue<bool>("CurrencyMapping:Enabled");
-
-            if (!usarMapeo)
-                return monedaIso;
-
-            var legacy = await _repository.ObtenerMonedaLegacyAsync(monedaIso);
-
-            return legacy ?? monedaIso;
-        }
-    }
-}
-
+return new LegacyTransaccionesResponseDto
+{
+    Result =
+    {
+        Codigo     = catalogo.Codigo,
+        Descripcion = catalogo.Descripcion
+    },
+    Total_Floating = new TotalFloatingDto
+    {
+        Total_HNL = totalHNL.ToString("0.#"),  // "0" si es cero, "-2300" o "-582.8" si tiene decimales
+        Total_USD = totalUSD.ToString("0.#")
+    },
+    Respuesta = autorizaciones.ToList()
+};
