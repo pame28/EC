@@ -1,93 +1,98 @@
+using Serilog;
 using System.Net.Http.Headers;
+using transacciones_flotantes.Infrastructure.Data;
+using transacciones_flotantes.Repository;
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service;
 using transacciones_flotantes.Service.Interface;
+using transacciones_flotantes.Utils;
 
-namespace transacciones_flotantes.Service
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------
+// Validaciones de configuración
+// -----------------------
+var baseAddressToken = builder.Configuration["ApiSettings:BaseAddressAccessToken"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressAccessToken");
+
+var baseAddressTransacciones = builder.Configuration["ApiSettings:BaseAddressTransaccionesFlotantes"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressTransaccionesFlotantes");
+
+var allowInvalidCertsStr = builder.Configuration["ApiSettings:AllowInvalidCerts"];
+var allowInvalidCerts = bool.TryParse(allowInvalidCertsStr, out var result) && result;
+
+// -----------------------
+// Configuración Serilog
+// -----------------------
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithThreadId()
+    .WriteTo.Console(
+        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+    )
+    .WriteTo.File(
+        "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+    )
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IProveedorTokenService, ProveedorTokenService>();
+builder.Services.AddTransient<AuthHandler>();
+builder.Services.AddHttpClient<IProveedorApiClient, ProveedorApiClient>(client =>
 {
-    public class AuthHandler : DelegatingHandler
+    client.BaseAddress = new Uri(baseAddressTransacciones);
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
     {
-        private readonly IProveedorTokenService _tokenProvider;
-        private readonly ILogger<AuthHandler> _logger;
+        ServerCertificateCustomValidationCallback = allowInvalidCerts
+            ? (message, cert, chain, errors) => true
+            : null
+    };
+})
+.AddHttpMessageHandler<AuthHandler>();
 
-        public AuthHandler(IProveedorTokenService tokenProvider, ILogger<AuthHandler> logger)
-        {
-            _tokenProvider = tokenProvider;
-            _logger = logger;
-        }
+// -----------------------
+// Dependency Injection
+// -----------------------
+builder.Services.AddScoped<ICatalogoErroresRepository, CatalogoErroresRepository>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepositoryImp>();
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<ITransaccionFlotanteRepository, TransaccionFlotanteRepository>();
+builder.Services.AddScoped<ITransaccionesFlotantesService, TransaccionesFlotantesService>();
+builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 
-        protected override async Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("***** Petición recibida AuthHandler.SendAsync() *****");
+// -----------------------
+// Controllers
+// -----------------------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-            try
-            {
-                var token = await _tokenProvider.ObtenerAccessTokenAsync();
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+var app = builder.Build();
 
-                _logger.LogInformation("Token enviado en Authorization Header : {Token}", token);
-
-                var response = await base.SendAsync(request, cancellationToken);
-
-                // Si el proveedor rechaza el token, invalidar y reintentar una vez
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                {
-                    _logger.LogWarning("Token rechazado con 401. Invalidando y reintentando...");
-
-                    _tokenProvider.InvalidarToken();
-
-                    var nuevoToken = await _tokenProvider.ObtenerAccessTokenAsync();
-
-                    // Clonar el request porque HttpRequestMessage no se puede reusar
-                    var retryRequest = await CloneRequestAsync(request, nuevoToken);
-
-                    _logger.LogInformation(
-                        "Reintento con nuevo token: {Token}", nuevoToken);
-
-                    response = await base.SendAsync(retryRequest, cancellationToken);
-                }
-
-                _logger.LogInformation("***** Llamado completado con AuthHandler.SendAsync() *****");
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Error en AuthHandler.SendAsync(). Descripcion: {Message}", ex.Message);
-
-                return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
-                {
-                    Content = new StringContent($"Error en AuthHandler: {ex.Message}")
-                };
-            }
-        }
-
-        // HttpRequestMessage no se puede reenviar, hay que clonarlo
-        private static async Task<HttpRequestMessage> CloneRequestAsync(
-            HttpRequestMessage original, string nuevoToken)
-        {
-            var clone = new HttpRequestMessage(original.Method, original.RequestUri);
-
-            // Copiar headers excepto Authorization (se reemplaza con el nuevo token)
-            foreach (var header in original.Headers)
-            {
-                if (!header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
-                    clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
-
-            clone.Headers.Authorization = new AuthenticationHeaderValue("Bearer", nuevoToken);
-
-            // Copiar el body si existe
-            if (original.Content != null)
-            {
-                var bodyBytes = await original.Content.ReadAsByteArrayAsync();
-                clone.Content = new ByteArrayContent(bodyBytes);
-
-                foreach (var header in original.Content.Headers)
-                    clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
-
-            return clone;
-        }
-    }
+// -----------------------
+// Middleware
+// -----------------------
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
