@@ -1,31 +1,19 @@
-    Content root path: C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas
-warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
-      Failed to determine the https port for redirect.
+      Start processing HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
+info: System.Net.Http.HttpClient.Default.ClientHandler[100]
+      Sending HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
+info: System.Net.Http.HttpClient.Default.ClientHandler[101]
+      Received HTTP response headers after 474.2871ms - 400
+info: System.Net.Http.HttpClient.Default.LogicalHandler[101]
+      End processing HTTP request after 514.2682ms - 400
 fail: Microsoft.AspNetCore.Server.Kestrel[13]
-      Connection id "0HNKPD4OJ5EV5", Request id "0HNKPD4OJ5EV5:00000005": An unhandled exception was thrown by the application.
-      System.InvalidOperationException: Unable to resolve service for type 'APIBPTarjetas.Services.GatewayTokenService' while attempting to activate 'APIBPTarjetas.Services.MicroservicioClient'.
-         at Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ThrowHelperUnableToResolveService(Type type, Type requiredBy)
-         at lambda_method26(Closure, IServiceProvider, Object[])
-         at Microsoft.Extensions.Http.DefaultTypedHttpClientFactory`1.CreateClient(HttpClient httpClient)
-         at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
-         at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.VisitDisposeCache(ServiceCallSite transientCallSite, RuntimeResolverContext context)
-         at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
-         at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver.Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
-         at Microsoft.Extensions.DependencyInjection.ServiceLookup.DynamicServiceProviderEngine.<>c__DisplayClass2_0.<RealizeService>b__0(ServiceProviderEngineScope scope)
-         at Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(ServiceIdentifier serviceIdentifier, ServiceProviderEngineScope serviceProviderEngineScope)
-         at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
-         at lambda_method9(Closure, IServiceProvider, Object[])
-         at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
-      --- End of stack trace from previous location ---
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
-         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
-         at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
-         at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
-         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
-         at Microsoft.WebTools.BrowserLink.Net.BrowserLinkMiddleware.InvokeAsync(HttpContext context)
-         at Microsoft.AspNetCore.Watch.BrowserRefresh.BrowserRefreshMiddleware.InvokeAsync(HttpContext context)
-         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+      Connection id "0HNKPDNTMO337", Request id "0HNKPDNTMO337:00000002": An unhandled exception was thrown by the application.
+      System.Net.Http.HttpRequestException: Response status code does not indicate success: 400 (Bad Request).
+         at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+         at APIBPTarjetas.Services.GatewayTokenService.RenovarTokenAsync() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\GatewayTokenService.cs:line 68
+         at APIBPTarjetas.Services.GatewayTokenService.GetTokenAsync() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\GatewayTokenService.cs:line 48
+         at APIBPTarjetas.Services.MicroservicioClient.ConsultarAsync(Object request) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\MicroservicioClient.cs:line 27
+         at APIBPTarjetas.Controllers.RegistrosCongeladosController.BXIRegistrosCongeladosAsync(RequestDto requestDto) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Controllers\RegistrosCongeladosController.cs:line 70
+
+
+
+Mira este error
