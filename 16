@@ -9,6 +9,37 @@ info: Microsoft.Hosting.Lifetime[0]
 warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
       Failed to determine the https port for redirect.
 Security Warning: The negotiated TLS 1.0 is an insecure protocol and is supported for backward compatibility only. The recommended protocol version is TLS 1.2 and later.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'CreditosME' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'CreditosMN' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'DebitosME' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'DebitosMN' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'CapitalPendiente' on entity type 'Financiamientos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'MontoCuota' on entity type 'Financiamientos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'MontoFinanciamiento' on entity type 'Financiamientos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'Importe' on entity type 'MovimientosRecientes'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (161ms) [Parameters=[p0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      EXEC SP_GetClientData @Equivalente=@p0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (153ms) [Parameters=[p0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      EXEC SP_GetCardData @Equivalente=@p0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (69ms) [Parameters=[p0='?' (Size = 4000), p1='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      EXEC SP_GetAPiParams @ambiente=@p0, @objeto=@p1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (68ms) [Parameters=[p0='?' (Size = 4000), p1='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+      EXEC SP_GetAPiParams @ambiente=@p0, @objeto=@p1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (67ms) [Parameters=[p0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      EXEC SP_GetCatalogoResponse @error_code=@p0
 info: APIBPTarjetas.Services.GatewayTokenService[0]
       Renovando token del gateway...
 info: System.Net.Http.HttpClient.Default.LogicalHandler[100]
@@ -16,40 +47,22 @@ info: System.Net.Http.HttpClient.Default.LogicalHandler[100]
 info: System.Net.Http.HttpClient.Default.ClientHandler[100]
       Sending HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
 info: System.Net.Http.HttpClient.Default.ClientHandler[101]
-      Received HTTP response headers after 509.8285ms - 200
+      Received HTTP response headers after 535.3445ms - 200
 info: System.Net.Http.HttpClient.Default.LogicalHandler[101]
-      End processing HTTP request after 540.7163ms - 200
+      End processing HTTP request after 569.3794ms - 200
 info: APIBPTarjetas.Services.GatewayTokenService[0]
-      Token de gateway renovado. Expira: 13/4/2026 16:47:49
+      Token de gateway renovado. Expira: 13/4/2026 17:08:16
 info: System.Net.Http.HttpClient.MicroservicioClient.LogicalHandler[100]
       Start processing HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/flotantes/transacciones
 info: System.Net.Http.HttpClient.MicroservicioClient.ClientHandler[100]
       Sending HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/flotantes/transacciones
 info: System.Net.Http.HttpClient.MicroservicioClient.ClientHandler[101]
-      Received HTTP response headers after 678.878ms - 200
+      Received HTTP response headers after 626.1596ms - 200
 info: System.Net.Http.HttpClient.MicroservicioClient.LogicalHandler[101]
-      End processing HTTP request after 691.361ms - 200
+      End processing HTTP request after 641.5915ms - 200
 fail: Microsoft.AspNetCore.Server.Kestrel[13]
-      Connection id "0HNKPEFRIHB4F", Request id "0HNKPEFRIHB4F:00000003": An unhandled exception was thrown by the application.
-      Newtonsoft.Json.JsonSerializationException: Error converting value 0 to type 'System.Collections.Generic.List`1[APIBPTarjetas.Models.Dtos.AuthorizationResponseDto]'. Path 'respuesta', line 1, position 76.
-       ---> System.ArgumentException: Could not cast or convert from System.Int64 to System.Collections.Generic.List`1[APIBPTarjetas.Models.Dtos.AuthorizationResponseDto].
-         at Newtonsoft.Json.Utilities.ConvertUtils.EnsureTypeAssignable(Object value, Type initialType, Type targetType)
-         at Newtonsoft.Json.Utilities.ConvertUtils.ConvertOrCast(Object initialValue, CultureInfo culture, Type targetType)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.EnsureType(JsonReader reader, Object value, CultureInfo culture, JsonContract contract, Type targetType)
-         --- End of inner exception stack trace ---
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.EnsureType(JsonReader reader, Object value, CultureInfo culture, JsonContract contract, Type targetType)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.CreateValueInternal(JsonReader reader, Type objectType, JsonContract contract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerMember, Object existingValue)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.ResolvePropertyAndCreatorValues(JsonObjectContract contract, JsonProperty containerProperty, JsonReader reader, Type objectType)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.CreateObjectUsingCreatorWithParameters(JsonReader reader, JsonObjectContract contract, JsonProperty containerProperty, ObjectConstructor`1 creator, String id)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.CreateNewObject(JsonReader reader, JsonObjectContract objectContract, JsonProperty containerMember, JsonProperty containerProperty, String id, Boolean& createdFromNonDefaultCreator)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.CreateObject(JsonReader reader, Type objectType, JsonContract contract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerMember, Object existingValue)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.CreateValueInternal(JsonReader reader, Type objectType, JsonContract contract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerMember, Object existingValue)
-         at Newtonsoft.Json.Serialization.JsonSerializerInternalReader.Deserialize(JsonReader reader, Type objectType, Boolean checkAdditionalContent)
-         at Newtonsoft.Json.JsonSerializer.DeserializeInternal(JsonReader reader, Type objectType)
-         at Newtonsoft.Json.JsonSerializer.Deserialize(JsonReader reader, Type objectType)
-         at Newtonsoft.Json.JsonConvert.DeserializeObject(String value, Type type, JsonSerializerSettings settings)
-         at Newtonsoft.Json.JsonConvert.DeserializeObject[T](String value, JsonSerializerSettings settings)
-         at Newtonsoft.Json.JsonConvert.DeserializeObject[T](String value)
+      Connection id "0HNKPEQOFML8K", Request id "0HNKPEQOFML8K:00000006": An unhandled exception was thrown by the application.
+      System.Exception: Raw RESPONSE: {"result":{"codigo":2,"descripcion":"No se encontraron registros"},"respuesta":0}
          at APIBPTarjetas.Services.MicroservicioClient.ConsultarAsync(Object request) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\MicroservicioClient.cs:line 40
          at APIBPTarjetas.Controllers.RegistrosCongeladosController.BXIRegistrosCongeladosAsync(RequestDto requestDto) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Controllers\RegistrosCongeladosController.cs:line 70
          at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
@@ -68,5 +81,25 @@ fail: Microsoft.AspNetCore.Server.Kestrel[13]
          at Microsoft.WebTools.BrowserLink.Net.BrowserLinkMiddleware.InvokeAsync(HttpContext context)
          at Microsoft.AspNetCore.Watch.BrowserRefresh.BrowserRefreshMiddleware.InvokeAsync(HttpContext context)
          at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+
+
+
+
+Mira, creo que tiene que ver con la respuesta del microservicio, esa respuesta está correcta, el microservicio está diseñado para que responda igual a como responderia APIBPTarjetas
+
+asi que, podemos usar esa misma respuesta asi tal cual... cuando no pasa por el microservicio muestra una respuesta asi:
+
+
+Code	Details
+200	
+Response body
+Download
+{
+  "result": {
+    "codigo": 2,
+    "descripcion": "No se encontraron registros"
+  },
+  "respuesta": 0
+}
 
 
