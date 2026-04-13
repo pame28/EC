@@ -1,98 +1,16 @@
-using Serilog;
-using System.Net.Http.Headers;
-using transacciones_flotantes.Infrastructure.Data;
-using transacciones_flotantes.Repository;
-using transacciones_flotantes.Repository.Interface;
-using transacciones_flotantes.Service;
-using transacciones_flotantes.Service.Interface;
-using transacciones_flotantes.Utils;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// -----------------------
-// Validaciones de configuración
-// -----------------------
-var baseAddressToken = builder.Configuration["ApiSettings:BaseAddressAccessToken"]
-    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressAccessToken");
-
-var baseAddressTransacciones = builder.Configuration["ApiSettings:BaseAddressTransaccionesFlotantes"]
-    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressTransaccionesFlotantes");
-
-var allowInvalidCertsStr = builder.Configuration["ApiSettings:AllowInvalidCerts"];
-var allowInvalidCerts = bool.TryParse(allowInvalidCertsStr, out var result) && result;
-
-// -----------------------
-// Configuración Serilog
-// -----------------------
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .Enrich.WithThreadId()
-    .WriteTo.Console(
-        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-    )
-    .WriteTo.File(
-        "logs/log-.txt",
-        rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-    )
-    .CreateLogger();
-
-builder.Host.UseSerilog();
-builder.Services.AddMemoryCache();
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<IProveedorTokenService, ProveedorTokenService>();
-builder.Services.AddTransient<AuthHandler>();
-builder.Services.AddHttpClient<IProveedorApiClient, ProveedorApiClient>(client =>
+private static string ConvertirFecha(string fechaIso)
 {
-    client.BaseAddress = new Uri(baseAddressTransacciones);
-    client.DefaultRequestHeaders.Accept.Add(
-        new MediaTypeWithQualityHeaderValue("application/json"));
-})
-.ConfigurePrimaryHttpMessageHandler(() =>
-{
-    return new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = allowInvalidCerts
-            ? (message, cert, chain, errors) => true
-            : null
-    };
-})
-.AddHttpMessageHandler<AuthHandler>();
+    if (string.IsNullOrWhiteSpace(fechaIso))
+        return fechaIso;
 
-// -----------------------
-// Dependency Injection
-// -----------------------
-builder.Services.AddScoped<ICatalogoErroresRepository, CatalogoErroresRepository>();
-builder.Services.AddScoped<IParametrosRepository, ParametrosRepositoryImp>();
-builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
-builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
-builder.Services.AddScoped<DBHelper>();
-builder.Services.AddScoped<ITransaccionFlotanteRepository, TransaccionFlotanteRepository>();
-builder.Services.AddScoped<ITransaccionesFlotantesService, TransaccionesFlotantesService>();
-builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+    if (!DateTimeOffset.TryParse(fechaIso, out var dto))
+        return fechaIso; // Si no parsea, devolver tal cual
 
-// -----------------------
-// Controllers
-// -----------------------
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+    // Convertir al timezone local del servidor
+    var localTime = TimeZoneInfo.ConvertTime(
+        dto,
+        TimeZoneInfo.Local
+    );
 
-var app = builder.Build();
-
-// -----------------------
-// Middleware
-// -----------------------
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    return localTime.ToString("yyyy-MM-ddTHH:mm:sszzz");
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
