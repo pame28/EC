@@ -1,105 +1,429 @@
-info: Microsoft.Hosting.Lifetime[14]
-      Now listening on: http://localhost:5261
-info: Microsoft.Hosting.Lifetime[0]
-      Application started. Press Ctrl+C to shut down.
-info: Microsoft.Hosting.Lifetime[0]
-      Hosting environment: Production
-info: Microsoft.Hosting.Lifetime[0]
-      Content root path: C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas
-warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
-      Failed to determine the https port for redirect.
-Security Warning: The negotiated TLS 1.0 is an insecure protocol and is supported for backward compatibility only. The recommended protocol version is TLS 1.2 and later.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'CreditosME' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'CreditosMN' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'DebitosME' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'DebitosMN' on entity type 'EstadoCuentaPorTC'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'CapitalPendiente' on entity type 'Financiamientos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'MontoCuota' on entity type 'Financiamientos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'MontoFinanciamiento' on entity type 'Financiamientos'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
-      No store type was specified for the decimal property 'Importe' on entity type 'MovimientosRecientes'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (161ms) [Parameters=[p0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
-      EXEC SP_GetClientData @Equivalente=@p0
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (153ms) [Parameters=[p0='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
-      EXEC SP_GetCardData @Equivalente=@p0
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (69ms) [Parameters=[p0='?' (Size = 4000), p1='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
-      EXEC SP_GetAPiParams @ambiente=@p0, @objeto=@p1
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (68ms) [Parameters=[p0='?' (Size = 4000), p1='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
-      EXEC SP_GetAPiParams @ambiente=@p0, @objeto=@p1
-info: Microsoft.EntityFrameworkCore.Database.Command[20101]
-      Executed DbCommand (67ms) [Parameters=[p0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
-      EXEC SP_GetCatalogoResponse @error_code=@p0
-info: APIBPTarjetas.Services.GatewayTokenService[0]
-      Renovando token del gateway...
-info: System.Net.Http.HttpClient.Default.LogicalHandler[100]
-      Start processing HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
-info: System.Net.Http.HttpClient.Default.ClientHandler[100]
-      Sending HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/login
-info: System.Net.Http.HttpClient.Default.ClientHandler[101]
-      Received HTTP response headers after 535.3445ms - 200
-info: System.Net.Http.HttpClient.Default.LogicalHandler[101]
-      End processing HTTP request after 569.3794ms - 200
-info: APIBPTarjetas.Services.GatewayTokenService[0]
-      Token de gateway renovado. Expira: 13/4/2026 17:08:16
-info: System.Net.Http.HttpClient.MicroservicioClient.LogicalHandler[100]
-      Start processing HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/flotantes/transacciones
-info: System.Net.Http.HttpClient.MicroservicioClient.ClientHandler[100]
-      Sending HTTP request POST https://apicreditcardservicede.banpais.hn/gateway/flotantes/transacciones
-info: System.Net.Http.HttpClient.MicroservicioClient.ClientHandler[101]
-      Received HTTP response headers after 626.1596ms - 200
-info: System.Net.Http.HttpClient.MicroservicioClient.LogicalHandler[101]
-      End processing HTTP request after 641.5915ms - 200
-fail: Microsoft.AspNetCore.Server.Kestrel[13]
-      Connection id "0HNKPEQOFML8K", Request id "0HNKPEQOFML8K:00000006": An unhandled exception was thrown by the application.
-      System.Exception: Raw RESPONSE: {"result":{"codigo":2,"descripcion":"No se encontraron registros"},"respuesta":0}
-         at APIBPTarjetas.Services.MicroservicioClient.ConsultarAsync(Object request) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Services\MicroservicioClient.cs:line 40
-         at APIBPTarjetas.Controllers.RegistrosCongeladosController.BXIRegistrosCongeladosAsync(RequestDto requestDto) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\ApiBPTarjetas\Controllers\RegistrosCongeladosController.cs:line 70
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
-         at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
-         at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
-         at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
-         at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
-         at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
-         at Microsoft.WebTools.BrowserLink.Net.BrowserLinkMiddleware.InvokeAsync(HttpContext context)
-         at Microsoft.AspNetCore.Watch.BrowserRefresh.BrowserRefreshMiddleware.InvokeAsync(HttpContext context)
-         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
+Mira, necesito hacer una actualización en mi microservicio y es que, mi microservicio tiene que responder asi:
 
-
-
-
-Mira, creo que tiene que ver con la respuesta del microservicio, esa respuesta está correcta, el microservicio está diseñado para que responda igual a como responderia APIBPTarjetas
-
-asi que, podemos usar esa misma respuesta asi tal cual... cuando no pasa por el microservicio muestra una respuesta asi:
-
-
-Code	Details
-200	
-Response body
-Download
 {
   "result": {
-    "codigo": 2,
-    "descripcion": "No se encontraron registros"
+    "codigo": 1,
+    "descripcion": "True"
   },
-  "respuesta": 0
+  "total_floating": {
+    "total_HNL": "-582.8",
+    "total_USD": "0"
+  },
+  "respuesta": [
+    {
+      "date": "2026-04-12T16:41:08-06:00",
+      "merchant_name": "TEXACO EST SERVIC BUENOS",
+      "amount": 582.8,
+      "currency": "HNL",
+      "reference": null,
+      "transaction_type": "CON LOC"
+    }
+  ]
 }
 
 
+
+Actualmente responde asi:
+
+{
+    "result": {
+        "codigo": 1,
+        "descripcion": "True"
+    },
+    "respuesta": [
+        {
+            "date": "2026-03-30T11:21:30+0000",
+            "merchant_Name": "TIENDAS AHORRO",
+            "amount": 1500.00,
+            "currency": "LOC",
+            "reference": "830408",
+            "transaction_Type": "COMPRA"
+        },
+        {
+            "date": "2026-04-06T12:49:43+0000",
+            "merchant_Name": "FORNO PIZZA SPS",
+            "amount": 800.00,
+            "currency": "LOC",
+            "reference": "611720",
+            "transaction_Type": "COMPRA"
+        },
+        {
+            "date": "2026-04-06T12:28:27+0000",
+            "merchant_Name": "PERRIJOS",
+            "amount": 55.55,
+            "currency": "U$S",
+            "reference": "519618",
+            "transaction_Type": "COMPRA"
+        },
+        {
+            "date": "2026-04-06T12:47:58+0000",
+            "merchant_Name": "CIRCLE K CIRCUNVALACION",
+            "amount": 33.33,
+            "currency": "U$S",
+            "reference": "922237",
+            "transaction_Type": "COMPRA"
+        }
+    ]
+}
+
+
+
+La respuesta de mi microservicio depende de lo qu enevie nuestro proveedor que lo que me envia es algo asi:
+
+{
+    "totalFloating": {
+        "totalHNL": 2300.00,
+        "totalUSD": 88.88
+    },
+    "authorizations": [
+        {
+            "transactionType": "COMPRA",
+            "date": "2026-03-30T11:21:30+0000",
+            "currency": "HNL",
+            "amount": 1500.00,
+            "merchantName": "TIENDAS AHORRO",
+            "reference": "830408",
+            "movementType": "DEBITO"
+        },
+        {
+            "transactionType": "COMPRA",
+            "date": "2026-04-06T12:49:43+0000",
+            "currency": "HNL",
+            "amount": 800.00,
+            "merchantName": "FORNO PIZZA SPS",
+            "reference": "611720",
+            "movementType": "DEBITO"
+        },
+        {
+            "transactionType": "COMPRA",
+            "date": "2026-04-06T12:28:27+0000",
+            "currency": "USD",
+            "amount": 55.55,
+            "merchantName": "PERRIJOS",
+            "reference": "519618",
+            "movementType": "DEBITO"
+        },
+        {
+            "transactionType": "COMPRA",
+            "date": "2026-04-06T12:47:58+0000",
+            "currency": "USD",
+            "amount": 33.33,
+            "merchantName": "CIRCLE K CIRCUNVALACION",
+            "reference": "922237",
+            "movementType": "DEBITO"
+        }
+    ]
+}
+
+
+using System.Net;
+using System.Text.Json;
+using transacciones_flotantes.DTOs.Response;
+using transacciones_flotantes.DTOs.TransaccionesFlotantes;
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service.Interface;
+using static transacciones_flotantes.DTOs.Response.ResponseDto;
+using static transacciones_flotantes.DTOs.TransaccionesFlotantes.ProveedorTransaccionesFlotantesResponseDto;
+
+namespace transacciones_flotantes.Service
+{
+    public class TransaccionesFlotantesService : ITransaccionesFlotantesService
+    {
+        private readonly ITransaccionFlotanteRepository _repository;
+        private readonly IProveedorApiClient _proveedorClient;
+        private readonly ICatalogoErroresRepository _catalogoErrores;
+        private readonly ILogger<TransaccionesFlotantesService> _logger;
+        private readonly ICurrencyService _currencyService;
+
+        public TransaccionesFlotantesService(
+            ITransaccionFlotanteRepository repository,
+            IProveedorApiClient proveedorClient,
+            ICatalogoErroresRepository catalogoErrores,
+            ILogger<TransaccionesFlotantesService> logger,
+            ICurrencyService currencyService)
+        {
+            _repository = repository;
+            _proveedorClient = proveedorClient;
+            _catalogoErrores = catalogoErrores;
+            _logger = logger;
+            _currencyService = currencyService;
+        }
+
+        public async Task<LegacyTransaccionesResponseDto> ProcesarAsync(
+            TransaccionesFlotantesRequestDto request)
+        {
+            var start = DateTime.UtcNow;
+            _logger.LogInformation("Inicio procesamiento");
+
+            try
+            {
+                var data = await _repository.ObtenerDatosProveedorAsync(request.CounterpartCard);
+                if (data == null)
+                    return await CrearRespuestaError(2, "Datos proveedor no encontrados");
+
+                var proveedorRequest = new ProveedorTransaccionFlotanteRequestDto
+                {
+                    card = new()
+                    {
+                        bin = data.bin,
+                        lastFourDigits = data.lastFourDigits
+                    },
+                    client = new()
+                    {
+                        documentNumber = data.documentNumber,
+                        documentType = data.documentType,
+                        gender = data.gender
+                    }
+                };
+
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                    "Request proveedor: {Json}",
+                    JsonSerializer.Serialize(proveedorRequest));
+                }
+                string rawResponse;
+
+                try
+                {
+                    rawResponse = await _proveedorClient.EnviarTransaccionAsync(proveedorRequest);
+                }
+
+                catch (ProveedorApiException ex)
+                {
+                    _logger.LogWarning(
+                        "Error proveedor {StatusCode} - {Body}",
+                        ex.StatusCode,
+                        ex.ResponseBody);
+
+                    return ex.StatusCode switch
+                    {
+                        HttpStatusCode.BadRequest =>
+                            await CrearRespuestaError(
+                                5,
+                                $"Error al consumir proveedor - {ex.ResponseBody}"
+                            ),
+
+                        HttpStatusCode.NotFound =>
+                            await CrearRespuestaError(
+                                2,
+                                "No se encontraron registros"
+                            ),
+
+                        HttpStatusCode.InternalServerError =>
+                            await CrearRespuestaError(
+                                3,
+                                $"Proveedor no disponible - {ex.ResponseBody}"
+                            ),
+
+                        _ =>
+                            await CrearRespuestaError(
+                                3,
+                                "Proveedor no disponible"
+                            )
+                    };
+                }
+
+                catch (TaskCanceledException ex)
+                {
+                    _logger.LogError(ex, "Timeout proveedor");
+                    return await CrearRespuestaError(4, "Timeout proveedor");
+                }
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Response cruda proveedor: {Raw}", rawResponse);
+                }
+                ProveedorResponseDto proveedorData;
+                try
+                {
+                    proveedorData = JsonSerializer.Deserialize<ProveedorResponseDto>(rawResponse)
+                        ?? throw new Exception("JSON vacío");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "JSON inválido proveedor");
+                    return await CrearRespuestaError(6, "Respuesta inválida proveedor");
+                }
+
+                if (proveedorData.Authorizations.Count() == 0)
+                    return await CrearRespuestaError(2, "Sin autorizaciones");
+
+                var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(1);
+
+                var autorizaciones = await Task.WhenAll(
+                    proveedorData.Authorizations.Select(async a => new LegacyAutorizacionDto
+                    {
+                        Date = a.Date,
+                        Merchant_Name = a.MerchantName,
+                        Amount = a.Amount,
+                        Currency = await _currencyService.ResolverAsync(a.Currency),
+                        Reference = a.Reference,
+                        Transaction_Type = a.TransactionType
+                    }));
+
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                    "Proceso exitoso. Tiempo: {Ms} ms",
+                    (DateTime.UtcNow - start).TotalMilliseconds);
+                }
+                return new LegacyTransaccionesResponseDto
+                {
+                    Result =
+                    {
+                        Codigo = catalogo.Codigo,
+                        Descripcion = catalogo.Descripcion
+                    },
+                    Respuesta = autorizaciones.ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Error no controlado en servicio");
+                throw;
+            }
+        }
+
+        private async Task<LegacyTransaccionesResponseDto> CrearRespuestaError(
+            int codigo, string detalle)
+        {
+            var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(codigo);
+
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                "Error controlado {Codigo}: {Detalle}",
+                codigo, detalle);
+            }
+            return new LegacyTransaccionesResponseDto
+            {
+                Result =
+                {
+                    Codigo = catalogo.Codigo,
+                    Descripcion = catalogo.Descripcion
+                },
+                Respuesta = 0
+            };
+        }
+    }
+}
+
+
+
+using System.Data;
+using Microsoft.Data.SqlClient;
+using Dapper;
+using transacciones_flotantes.Models.TransaccionesFlotantes;
+using transacciones_flotantes.Repository.Interface;
+
+
+namespace transacciones_flotantes.Repository
+{
+    public class TransaccionFlotanteRepository : ITransaccionFlotanteRepository
+    {
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<TransaccionFlotanteRepository> _logger;
+
+        public TransaccionFlotanteRepository(
+            IConfiguration configuration,
+            ILogger<TransaccionFlotanteRepository> logger)
+        {
+            _configuration = configuration;
+            _logger = logger;
+        }
+
+        public async Task<TransaccionFlotanteProveedorDataModel?>
+            ObtenerDatosProveedorAsync(string counterpartCard)
+        {
+
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                var ultimos4 = !string.IsNullOrEmpty(counterpartCard) && counterpartCard.Length >= 4
+                    ? counterpartCard[^4..]
+                    : counterpartCard;
+
+                _logger.LogInformation(
+                    "Buscando datos del proveedor para tarjeta terminada en {Ultimos4}",
+                    ultimos4);
+            }
+
+            using var connection =
+                new SqlConnection(_configuration.GetConnectionString("TransaccionesFlotantesConnection"));
+
+            var result = await connection.QueryFirstOrDefaultAsync<
+                TransaccionFlotanteProveedorDataModel>(
+                "sp_ObtenerDatosTransaccionFlotante",
+                new { CounterpartCard = counterpartCard },
+                commandType: CommandType.StoredProcedure
+            );
+
+            if (result == null)
+                _logger.LogWarning(
+                    "No se encontraron datos para la tarjeta solicitada");
+
+            return result;
+        }
+    }
+}
+
+namespace transacciones_flotantes.DTOs.Response
+{
+    public class ResponseDto
+    {
+        public class LegacyTransaccionesResponseDto
+        {
+            public ResultDto Result { get; set; } = new();
+
+            public object Respuesta { get; set; } = 0;
+        }
+
+        public class ResultDto
+        {
+            public int Codigo { get; set; }
+            public string Descripcion { get; set; } = string.Empty;
+        }
+
+        public class LegacyAutorizacionDto
+        {
+            public string Date { get; set; } = string.Empty;
+            public string Merchant_Name { get; set; } = string.Empty;
+            public decimal Amount { get; set; }
+            public string Currency { get; set; } = string.Empty;
+            public string? Reference { get; set; }
+            public string Transaction_Type { get; set; } = string.Empty;
+        }
+    }
+}
+
+
+
+namespace transacciones_flotantes.DTOs.TransaccionesFlotantes
+{
+    public class TransaccionesFlotantesResponseDto
+    {
+        public TotalesFloatingDto TotalFloating { get; set; } = new();
+        public List<AutorizacionDto> Respuesta { get; set; } = new();
+    }
+
+    public class TotalesFloatingDto
+    {
+        public string TotalHNL { get; set; } = "0";
+        public string TotalUSD { get; set; } = "0";
+    }
+
+    public class AutorizacionDto
+    {
+        public string Date { get; set; } = string.Empty;
+        public string MerchantName { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string Currency { get; set; } = string.Empty;
+        public string? Reference { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
+    }
+}
+
+
+Dime si necesitas ver otro archivo para realizar las modificaciones correspondientes 
