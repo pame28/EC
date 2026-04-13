@@ -1,185 +1,141 @@
-Esto no deberia pasar:
-
-13-04-2026 15:21:41.195 [13] [Information] transacciones_flotantes.Service.ProveedorApiClient - JSON enviado al proveedor: {"card":{"bin":"421005","lastFourDigits":"6545"},"client":{"documentNumber":"0001190008991","documentType":"001","gender":"F"}}
-13-04-2026 15:21:41.201 [13] [Information] System.Net.Http.HttpClient.IProveedorApiClient.LogicalHandler - Start processing HTTP request POST https://apiprocesadortarjetasbytepu.banpais.hn/transaction-data-service/authorizations
-13-04-2026 15:21:41.208 [13] [Information] transacciones_flotantes.Service.AuthHandler - ***** Petición recibida AuthHandler.SendAsync() *****
-13-04-2026 15:21:41.214 [13] [Information] transacciones_flotantes.Service.AuthHandler - Token enviado en Authorization Header : eyJraWQiOiI3ZThlYTg2MC1iNDliLTRiYTctYTJiOS0xNjY2NzI4Y2I1MzIiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3NzYxMTU5ODIsImlhdCI6MTc3NjExNTA4MiwianRpIjoiNWU1OTBlMDItZjI2Ny00NzQ2LWFjZjQtYmVhNzdkMDBjOGEwIn0.IIrNE0vzGDh1vOp2Rmart3--R_Mk-povq1CPaCwWchznImulaR6HCc8dxY2_LNTP1M6Nqd3j4UPomt3LelklRZJvN20vjalLKuePAMmULNqL_LtAu4dvjoLWZ37GmC7V_dlHbbV6I7IAUgFwD9oM8-yAoMeu_4fX4pjZwXWC0pzkcGsupapTm39XnIZ_O1tkGi1sl4XHGF12lw0w0BmR9o14FRpDJ_WflH4q4cKatVyXLn44gZY9fu0gWoGBmrAkMrfOIUCUgU0LrhwV9h2v0W16Tja0sbiOVQg03Xi4UU7Gv2mJXZVWe0DfYDC_gzRosua6aOJNX776i1Xs9MLym20d_1Xb1kJp0Gc78BwB0uksXTcpaTldf1_WTCOLvgCT3QbH8FeDCKIjGv_rPCdyOr1V3BEhXdFQXA61GCSpaHALLYHsys5AUPwDbJT2vsixfXBLxbspNYiVirsVBpryheGWvlEMzciNIKBaTK2jEExeW1ZUd_KGlgn7Jg3HmUFt0QGXCdjUTmRSER6INVXcieYfBfeAECibVkqQNqS68ztKmI7fuyUurO4OgWGz4CbcLWeVNNS_C5z1kPTJ1fOik-Sd8s1VKnWlEgY9nsZxOo2ubkGsugNdZg0LP-oW-RVbOHL19RQ4QCc4Hmda-43Q0kfQ1Du2rQak5fh724e7Q5I
-13-04-2026 15:21:41.220 [13] [Information] transacciones_flotantes.Service.AuthHandler - ***** Llamado completado con AuthHandler.SendAsync() *****
-13-04-2026 15:21:41.224 [13] [Information] System.Net.Http.HttpClient.IProveedorApiClient.ClientHandler - Sending HTTP request POST https://apiprocesadortarjetasbytepu.banpais.hn/transaction-data-service/authorizations
-13-04-2026 15:21:41.311 [13] [Information] System.Net.Http.HttpClient.IProveedorApiClient.ClientHandler - Received HTTP response headers after 82.3978ms - 401
-13-04-2026 15:21:41.320 [13] [Information] System.Net.Http.HttpClient.IProveedorApiClient.LogicalHandler - End processing HTTP request after 118.8332ms - 401
-13-04-2026 15:21:41.326 [13] [Information] transacciones_flotantes.Service.ProveedorApiClient - Proveedor HTTP Unauthorized
-13-04-2026 15:21:41.330 [13] [Error] transacciones_flotantes.Service.ProveedorApiClient - Proveedor error HTTP Unauthorized - Body: {
-  "timestamp": "2026-04-13T21:21:41.297736084Z",
-  "status": 401,
-  "error": "UNAUTHORIZED",
-  "message": "UNAUTHORIZED",
-  "path": "/transaction-data-service/authorizations"
-}
-13-04-2026 15:21:41.399 [13] [Error] transacciones_flotantes.Service.ProveedorApiClient - Error enviando transacción al proveedor
-transacciones_flotantes.Service.ProveedorApiException: Proveedor respondió Unauthorized
-   at transacciones_flotantes.Service.ProveedorApiClient.EnviarTransaccionAsync(ProveedorTransaccionFlotanteRequestDto request) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\transacciones_flotantes\transacciones_flotantes\Service\ProveedorApiClient.cs:line 77
-13-04-2026 15:21:41.525 [13] [Warning] transacciones_flotantes.Service.TransaccionesFlotantesService - Error proveedor Unauthorized - {
-  "timestamp": "2026-04-13T21:21:41.297736084Z",
-  "status": 401,
-  "error": "UNAUTHORIZED",
-  "message": "UNAUTHORIZED",
-  "path": "/transaction-data-service/authorizations"
-}
-13-04-2026 15:21:41.531 [13] [Information] transacciones_flotantes.Repository.CatalogoErroresRepository - Consultando catálogo de errores. Código: 3
-13-04-2026 15:21:41.632 [13] [Information] transacciones_flotantes.Repository.CatalogoErroresRepository - Catálogo encontrado. Código:3 - Proveedor no disponible
-13-04-2026 15:21:41.643 [13] [Warning] transacciones_flotantes.Service.TransaccionesFlotantesService - Error controlado 3: Proveedor no disponible
-13-04-2026 15:21:41.651 [13] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing OkObjectResult, writing value of type 'transacciones_flotantes.DTOs.Response.ResponseDto+LegacyTransaccionesResponseDto'.
-13-04-2026 15:21:41.656 [13] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController.Procesar (transacciones_flotantes) in 686.0668ms
-13-04-2026 15:21:41.661 [13] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController.Procesar (transacciones_flotantes)'
-13-04-2026 15:21:41.666 [13] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://localhost:5260/api/transacciones-flotantes - 200 null application/json; charset=utf-8 756.5905ms
-
-
-
-
-Porque si ya se venció lo que tiene que hacer es ir a hacer login de nuevo pues, para obtener el accesstoken, dime que archivos necesitas ver para revisar esto:
-
+using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
-using transacciones_flotantes.DTOs.TransaccionesFlotantes;
+using transacciones_flotantes.Models.AccessToken;
 using transacciones_flotantes.Service.Interface;
 
 namespace transacciones_flotantes.Service
 {
-    public class ProveedorApiClient : IProveedorApiClient
+    public class ProveedorTokenService : IProveedorTokenService
     {
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<ProveedorApiClient> _logger;
+        private readonly ILogger<ProveedorTokenService> _logger;
 
-        public ProveedorApiClient(
-            HttpClient httpClient,
+        private static readonly SemaphoreSlim _lock = new(1, 1);
+
+        private const string CACHE_TOKEN = "ACCESS_TOKEN";
+        private const string CACHE_KEY = "BYTE_KEY";
+
+        public ProveedorTokenService(
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache,
             IConfiguration configuration,
-            ILogger<ProveedorApiClient> logger)
+            ILogger<ProveedorTokenService> logger)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
+            _cache = cache;
             _configuration = configuration;
             _logger = logger;
         }
 
-        public async Task<string> EnviarTransaccionAsync(
-            ProveedorTransaccionFlotanteRequestDto request)
+        public async Task<string> ObtenerAccessTokenAsync()
         {
+            if (_cache.TryGetValue(CACHE_TOKEN, out string token))
+            {
+                return token;
+            }
+
+            await _lock.WaitAsync();
+
             try
             {
-                var baseAddress = _configuration["ApiSettings:BaseAddressTransaccionesFlotantes"];
-                var endpoint = _configuration["ApiSettings:EndpointTransacciones"];
-
-                if (string.IsNullOrWhiteSpace(baseAddress))
-                    throw new InvalidOperationException(
-                        "No está configurado ApiSettings:BaseAddressTransaccionesFlotantes");
-
-                if (string.IsNullOrWhiteSpace(endpoint))
-                    throw new InvalidOperationException(
-                        "No está configurado ApiSettings:EndpointTransacciones");
-
-                var url = new Uri(new Uri(baseAddress), endpoint);
-
-
-                var jsonRequest = JsonSerializer.Serialize(request);
-
-                _logger.LogInformation(
-                    "JSON enviado al proveedor: {JsonRequest}",
-                    jsonRequest);
-
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+                // Double check para evitar race conditions
+                if (_cache.TryGetValue(CACHE_TOKEN, out token))
                 {
-                    Content = new StringContent(
-                        JsonSerializer.Serialize(request),
-                        Encoding.UTF8,
-                        "application/json")
-                };
-              
-                var response = await _httpClient.SendAsync(httpRequest);
-
-                var body = await response.Content.ReadAsStringAsync();
-
-                if (_logger.IsEnabled(LogLevel.Information))
-                {
-                    _logger.LogInformation(
-                        "Proveedor HTTP {StatusCode}",
-                        response.StatusCode);
+                    return token;
                 }
 
+                _logger.LogInformation("Generando nuevo accessToken...");
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError(
-                        "Proveedor error HTTP {StatusCode} - Body: {Body}",
-                        response.StatusCode,
-                        body);
+                var key = await ObtenerKeyAsync();
 
-                    throw new ProveedorApiException(
-                        response.StatusCode,
-                        body);
-                }
+                var tokenResponse = await GenerarTokenAsync(key);
 
-                return body;
+                var expiration = DateTime.UtcNow.AddSeconds(tokenResponse.expiresIn - 60);
 
+                _cache.Set(
+                    CACHE_TOKEN,
+                    tokenResponse.accessToken,
+                    expiration
+                );
+
+                _logger.LogInformation("AccessToken generado y almacenado en cache");
+
+                return tokenResponse.accessToken;
             }
-            catch (Exception ex)
+            finally
             {
-                _logger.LogError(ex,
-                    "Error enviando transacción al proveedor");
-
-                throw;
+                _lock.Release();
             }
+        }
+
+        private async Task<string> ObtenerKeyAsync()
+        {
+            if (_cache.TryGetValue(CACHE_KEY, out string key))
+            {
+                return key;
+            }
+
+            _logger.LogInformation("Generando nuevo ByteKey...");
+
+            var client = _httpClientFactory.CreateClient();
+
+            var url = $"{_configuration["ApiSettings:BaseAddressByteKey"]}{_configuration["ApiSettings:EndpointByteKey"]}";
+
+            var response = await client.GetAsync(url);
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+            key = data["authorization"];
+
+            _cache.Set(
+                CACHE_KEY,
+                key,
+                TimeSpan.FromHours(24)
+            );
+
+            _logger.LogInformation("ByteKey almacenado en cache");
+
+            return key;
+        }
+
+        private async Task<AccessTokenResponse> GenerarTokenAsync(string key)
+        {
+            var client = _httpClientFactory.CreateClient();
+
+            var url = $"{_configuration["ApiSettings:BaseAddressAccessToken"]}{_configuration["ApiSettings:EndpointAccessToken"]}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Basic", key.Replace("Basic ", ""));
+
+            var response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<AccessTokenResponse>(json);
         }
     }
 }
 
 
-using System.Net.Http.Headers;
-using transacciones_flotantes.Service.Interface;
 
-namespace transacciones_flotantes.Service
+
+namespace transacciones_flotantes.Service.Interface
 {
-    public class AuthHandler : DelegatingHandler
+    public interface IProveedorTokenService
     {
-        private readonly IProveedorTokenService _tokenProvider;
-        private readonly ILogger<AuthHandler> _logger;
-        public AuthHandler(IProveedorTokenService tokenProvider, ILogger<AuthHandler> logger)
-        {
-            _tokenProvider = tokenProvider;
-            _logger = logger;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("***** Petición recibida AuthHandler.SendAsync() *****");
-            try
-            {
-                var token = await _tokenProvider.ObtenerAccessTokenAsync();
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-
-
-                if (_logger.IsEnabled(LogLevel.Information))
-                {
-                    _logger.LogInformation("Token enviado en Authorization Header : {Token}", token);
-                    _logger.LogInformation("***** Llamado completado con AuthHandler.SendAsync() *****");
-                }
-                return await base.SendAsync(request, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-
-                if (_logger.IsEnabled(LogLevel.Information))
-                {
-                    _logger.LogError(ex, "Error en AuthHandler.SendAsync(). Descripcion: {Message}", ex.Message);
-                }
-                    return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
-                {
-                    Content = new StringContent($"Error en AuthHandler: {ex.Message}")
-                };
-            }
-
-        }
+        Task<string> ObtenerAccessTokenAsync();
     }
 }
+
