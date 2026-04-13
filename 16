@@ -1,429 +1,91 @@
-Mira, necesito hacer una actualización en mi microservicio y es que, mi microservicio tiene que responder asi:
-
-{
-  "result": {
-    "codigo": 1,
-    "descripcion": "True"
-  },
-  "total_floating": {
-    "total_HNL": "-582.8",
-    "total_USD": "0"
-  },
-  "respuesta": [
-    {
-      "date": "2026-04-12T16:41:08-06:00",
-      "merchant_name": "TEXACO EST SERVIC BUENOS",
-      "amount": 582.8,
-      "currency": "HNL",
-      "reference": null,
-      "transaction_type": "CON LOC"
-    }
-  ]
-}
-
-
-
-Actualmente responde asi:
-
-{
-    "result": {
-        "codigo": 1,
-        "descripcion": "True"
-    },
-    "respuesta": [
-        {
-            "date": "2026-03-30T11:21:30+0000",
-            "merchant_Name": "TIENDAS AHORRO",
-            "amount": 1500.00,
-            "currency": "LOC",
-            "reference": "830408",
-            "transaction_Type": "COMPRA"
-        },
-        {
-            "date": "2026-04-06T12:49:43+0000",
-            "merchant_Name": "FORNO PIZZA SPS",
-            "amount": 800.00,
-            "currency": "LOC",
-            "reference": "611720",
-            "transaction_Type": "COMPRA"
-        },
-        {
-            "date": "2026-04-06T12:28:27+0000",
-            "merchant_Name": "PERRIJOS",
-            "amount": 55.55,
-            "currency": "U$S",
-            "reference": "519618",
-            "transaction_Type": "COMPRA"
-        },
-        {
-            "date": "2026-04-06T12:47:58+0000",
-            "merchant_Name": "CIRCLE K CIRCUNVALACION",
-            "amount": 33.33,
-            "currency": "U$S",
-            "reference": "922237",
-            "transaction_Type": "COMPRA"
-        }
-    ]
-}
-
-
-
-La respuesta de mi microservicio depende de lo qu enevie nuestro proveedor que lo que me envia es algo asi:
-
-{
-    "totalFloating": {
-        "totalHNL": 2300.00,
-        "totalUSD": 88.88
-    },
-    "authorizations": [
-        {
-            "transactionType": "COMPRA",
-            "date": "2026-03-30T11:21:30+0000",
-            "currency": "HNL",
-            "amount": 1500.00,
-            "merchantName": "TIENDAS AHORRO",
-            "reference": "830408",
-            "movementType": "DEBITO"
-        },
-        {
-            "transactionType": "COMPRA",
-            "date": "2026-04-06T12:49:43+0000",
-            "currency": "HNL",
-            "amount": 800.00,
-            "merchantName": "FORNO PIZZA SPS",
-            "reference": "611720",
-            "movementType": "DEBITO"
-        },
-        {
-            "transactionType": "COMPRA",
-            "date": "2026-04-06T12:28:27+0000",
-            "currency": "USD",
-            "amount": 55.55,
-            "merchantName": "PERRIJOS",
-            "reference": "519618",
-            "movementType": "DEBITO"
-        },
-        {
-            "transactionType": "COMPRA",
-            "date": "2026-04-06T12:47:58+0000",
-            "currency": "USD",
-            "amount": 33.33,
-            "merchantName": "CIRCLE K CIRCUNVALACION",
-            "reference": "922237",
-            "movementType": "DEBITO"
-        }
-    ]
-}
-
-
-using System.Net;
-using System.Text.Json;
-using transacciones_flotantes.DTOs.Response;
-using transacciones_flotantes.DTOs.TransaccionesFlotantes;
-using transacciones_flotantes.Repository.Interface;
-using transacciones_flotantes.Service.Interface;
-using static transacciones_flotantes.DTOs.Response.ResponseDto;
-using static transacciones_flotantes.DTOs.TransaccionesFlotantes.ProveedorTransaccionesFlotantesResponseDto;
-
-namespace transacciones_flotantes.Service
-{
-    public class TransaccionesFlotantesService : ITransaccionesFlotantesService
-    {
-        private readonly ITransaccionFlotanteRepository _repository;
-        private readonly IProveedorApiClient _proveedorClient;
-        private readonly ICatalogoErroresRepository _catalogoErrores;
-        private readonly ILogger<TransaccionesFlotantesService> _logger;
-        private readonly ICurrencyService _currencyService;
-
-        public TransaccionesFlotantesService(
-            ITransaccionFlotanteRepository repository,
-            IProveedorApiClient proveedorClient,
-            ICatalogoErroresRepository catalogoErrores,
-            ILogger<TransaccionesFlotantesService> logger,
-            ICurrencyService currencyService)
-        {
-            _repository = repository;
-            _proveedorClient = proveedorClient;
-            _catalogoErrores = catalogoErrores;
-            _logger = logger;
-            _currencyService = currencyService;
-        }
-
-        public async Task<LegacyTransaccionesResponseDto> ProcesarAsync(
-            TransaccionesFlotantesRequestDto request)
-        {
-            var start = DateTime.UtcNow;
-            _logger.LogInformation("Inicio procesamiento");
-
-            try
-            {
-                var data = await _repository.ObtenerDatosProveedorAsync(request.CounterpartCard);
-                if (data == null)
-                    return await CrearRespuestaError(2, "Datos proveedor no encontrados");
-
-                var proveedorRequest = new ProveedorTransaccionFlotanteRequestDto
-                {
-                    card = new()
-                    {
-                        bin = data.bin,
-                        lastFourDigits = data.lastFourDigits
-                    },
-                    client = new()
-                    {
-                        documentNumber = data.documentNumber,
-                        documentType = data.documentType,
-                        gender = data.gender
-                    }
-                };
-
-
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug(
-                    "Request proveedor: {Json}",
-                    JsonSerializer.Serialize(proveedorRequest));
-                }
-                string rawResponse;
-
-                try
-                {
-                    rawResponse = await _proveedorClient.EnviarTransaccionAsync(proveedorRequest);
-                }
-
-                catch (ProveedorApiException ex)
-                {
-                    _logger.LogWarning(
-                        "Error proveedor {StatusCode} - {Body}",
-                        ex.StatusCode,
-                        ex.ResponseBody);
-
-                    return ex.StatusCode switch
-                    {
-                        HttpStatusCode.BadRequest =>
-                            await CrearRespuestaError(
-                                5,
-                                $"Error al consumir proveedor - {ex.ResponseBody}"
-                            ),
-
-                        HttpStatusCode.NotFound =>
-                            await CrearRespuestaError(
-                                2,
-                                "No se encontraron registros"
-                            ),
-
-                        HttpStatusCode.InternalServerError =>
-                            await CrearRespuestaError(
-                                3,
-                                $"Proveedor no disponible - {ex.ResponseBody}"
-                            ),
-
-                        _ =>
-                            await CrearRespuestaError(
-                                3,
-                                "Proveedor no disponible"
-                            )
-                    };
-                }
-
-                catch (TaskCanceledException ex)
-                {
-                    _logger.LogError(ex, "Timeout proveedor");
-                    return await CrearRespuestaError(4, "Timeout proveedor");
-                }
-
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug("Response cruda proveedor: {Raw}", rawResponse);
-                }
-                ProveedorResponseDto proveedorData;
-                try
-                {
-                    proveedorData = JsonSerializer.Deserialize<ProveedorResponseDto>(rawResponse)
-                        ?? throw new Exception("JSON vacío");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "JSON inválido proveedor");
-                    return await CrearRespuestaError(6, "Respuesta inválida proveedor");
-                }
-
-                if (proveedorData.Authorizations.Count() == 0)
-                    return await CrearRespuestaError(2, "Sin autorizaciones");
-
-                var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(1);
-
-                var autorizaciones = await Task.WhenAll(
-                    proveedorData.Authorizations.Select(async a => new LegacyAutorizacionDto
-                    {
-                        Date = a.Date,
-                        Merchant_Name = a.MerchantName,
-                        Amount = a.Amount,
-                        Currency = await _currencyService.ResolverAsync(a.Currency),
-                        Reference = a.Reference,
-                        Transaction_Type = a.TransactionType
-                    }));
-
-
-                if (_logger.IsEnabled(LogLevel.Information))
-                {
-                    _logger.LogInformation(
-                    "Proceso exitoso. Tiempo: {Ms} ms",
-                    (DateTime.UtcNow - start).TotalMilliseconds);
-                }
-                return new LegacyTransaccionesResponseDto
-                {
-                    Result =
-                    {
-                        Codigo = catalogo.Codigo,
-                        Descripcion = catalogo.Descripcion
-                    },
-                    Respuesta = autorizaciones.ToList()
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogCritical(ex, "Error no controlado en servicio");
-                throw;
-            }
-        }
-
-        private async Task<LegacyTransaccionesResponseDto> CrearRespuestaError(
-            int codigo, string detalle)
-        {
-            var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(codigo);
-
-            if (_logger.IsEnabled(LogLevel.Warning))
-            {
-                _logger.LogWarning(
-                "Error controlado {Codigo}: {Detalle}",
-                codigo, detalle);
-            }
-            return new LegacyTransaccionesResponseDto
-            {
-                Result =
-                {
-                    Codigo = catalogo.Codigo,
-                    Descripcion = catalogo.Descripcion
-                },
-                Respuesta = 0
-            };
-        }
-    }
-}
-
-
-
-using System.Data;
-using Microsoft.Data.SqlClient;
-using Dapper;
-using transacciones_flotantes.Models.TransaccionesFlotantes;
-using transacciones_flotantes.Repository.Interface;
-
-
-namespace transacciones_flotantes.Repository
-{
-    public class TransaccionFlotanteRepository : ITransaccionFlotanteRepository
-    {
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<TransaccionFlotanteRepository> _logger;
-
-        public TransaccionFlotanteRepository(
-            IConfiguration configuration,
-            ILogger<TransaccionFlotanteRepository> logger)
-        {
-            _configuration = configuration;
-            _logger = logger;
-        }
-
-        public async Task<TransaccionFlotanteProveedorDataModel?>
-            ObtenerDatosProveedorAsync(string counterpartCard)
-        {
-
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                var ultimos4 = !string.IsNullOrEmpty(counterpartCard) && counterpartCard.Length >= 4
-                    ? counterpartCard[^4..]
-                    : counterpartCard;
-
-                _logger.LogInformation(
-                    "Buscando datos del proveedor para tarjeta terminada en {Ultimos4}",
-                    ultimos4);
-            }
-
-            using var connection =
-                new SqlConnection(_configuration.GetConnectionString("TransaccionesFlotantesConnection"));
-
-            var result = await connection.QueryFirstOrDefaultAsync<
-                TransaccionFlotanteProveedorDataModel>(
-                "sp_ObtenerDatosTransaccionFlotante",
-                new { CounterpartCard = counterpartCard },
-                commandType: CommandType.StoredProcedure
-            );
-
-            if (result == null)
-                _logger.LogWarning(
-                    "No se encontraron datos para la tarjeta solicitada");
-
-            return result;
-        }
-    }
-}
-
-namespace transacciones_flotantes.DTOs.Response
-{
-    public class ResponseDto
-    {
-        public class LegacyTransaccionesResponseDto
-        {
-            public ResultDto Result { get; set; } = new();
-
-            public object Respuesta { get; set; } = 0;
-        }
-
-        public class ResultDto
-        {
-            public int Codigo { get; set; }
-            public string Descripcion { get; set; } = string.Empty;
-        }
-
-        public class LegacyAutorizacionDto
-        {
-            public string Date { get; set; } = string.Empty;
-            public string Merchant_Name { get; set; } = string.Empty;
-            public decimal Amount { get; set; }
-            public string Currency { get; set; } = string.Empty;
-            public string? Reference { get; set; }
-            public string Transaction_Type { get; set; } = string.Empty;
-        }
-    }
-}
-
-
+using System.Text.Json.Serialization;
 
 namespace transacciones_flotantes.DTOs.TransaccionesFlotantes
 {
-    public class TransaccionesFlotantesResponseDto
+    public class ProveedorTransaccionesFlotantesResponseDto
     {
-        public TotalesFloatingDto TotalFloating { get; set; } = new();
-        public List<AutorizacionDto> Respuesta { get; set; } = new();
-    }
+        public class ProveedorResponseDto
+        {
+            [JsonPropertyName("totalFloating")]
+            public TotalesProveedorDto TotalFloating { get; set; } = new();
 
-    public class TotalesFloatingDto
-    {
-        public string TotalHNL { get; set; } = "0";
-        public string TotalUSD { get; set; } = "0";
-    }
+            [JsonPropertyName("authorizations")]
+            public List<ProveedorAutorizacionDto> Authorizations { get; set; } = new();
+        }
 
-    public class AutorizacionDto
-    {
-        public string Date { get; set; } = string.Empty;
-        public string MerchantName { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
-        public string Currency { get; set; } = string.Empty;
-        public string? Reference { get; set; }
-        public string TransactionType { get; set; } = string.Empty;
+        public class TotalesProveedorDto
+        {
+            [JsonPropertyName("totalHNL")]
+            public decimal TotalHNL { get; set; }
+
+            [JsonPropertyName("totalUSD")]
+            public decimal TotalUSD { get; set; }
+        }
+
+        public class ProveedorAutorizacionDto
+        {
+            [JsonPropertyName("transactionType")]
+            public string TransactionType { get; set; } = string.Empty;
+            [JsonPropertyName("date")]
+            public string Date { get; set; }
+
+            [JsonPropertyName("currency")]
+            public string Currency { get; set; } = string.Empty;
+
+            [JsonPropertyName("amount")]
+            public decimal Amount { get; set; }
+
+            [JsonPropertyName("merchantName")]
+            public string MerchantName { get; set; } = string.Empty;
+
+
+            [JsonPropertyName("reference")]
+            public string? Reference { get; set; }
+
+          
+
+            [JsonPropertyName("movementType")]
+            public string MovementType { get; set; } = string.Empty;
+        }
     }
 }
 
 
-Dime si necesitas ver otro archivo para realizar las modificaciones correspondientes 
+
+
+
+
+
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service.Interface;
+
+namespace transacciones_flotantes.Service
+{
+    public class CurrencyService : ICurrencyService
+    {
+        private readonly ICurrencyRepository _repository;
+        private readonly IConfiguration _configuration;
+
+        public CurrencyService(ICurrencyRepository repository, IConfiguration configuration)
+        {
+            _repository = repository;
+            _configuration = configuration;
+        }
+
+        public async Task<string> ResolverAsync(string monedaIso)
+        {
+            if (string.IsNullOrWhiteSpace(monedaIso))
+                return monedaIso;
+
+            bool usarMapeo = _configuration.GetValue<bool>("CurrencyMapping:Enabled");
+
+            if (!usarMapeo)
+                return monedaIso;
+
+            var legacy = await _repository.ObtenerMonedaLegacyAsync(monedaIso);
+
+            return legacy ?? monedaIso;
+        }
+    }
+}
+
