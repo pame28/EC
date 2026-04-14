@@ -1,9 +1,7 @@
-Mira, en estado de cuenta Individual hay un tema, y es el contador, que no es tan buena paractica que el archivo txt se este abriendo y cerrando
-
 using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace EstadosCuentaTC.Services
@@ -17,12 +15,11 @@ namespace EstadosCuentaTC.Services
             EstadoCuentaRepository repo,
             ILogger<GeneracionIndividualService> logger)
         {
-            _repo = repo;
+            _repo   = repo;
             _logger = logger;
         }
 
-
-        public void Ejecutar(string rutaBase, DateTime fechaCorte)
+        public void Ejecutar(string rutaBase, string nombreArchivoBase, DateTime fechaCorte)
         {
             try
             {
@@ -31,55 +28,55 @@ namespace EstadosCuentaTC.Services
                 var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
                 Directory.CreateDirectory(ruta);
 
+                // ✅ Nombre parametrizado — viene de ParametrosGeneracionECDto.NombreArchivo
                 var archivoJson = Path.Combine(
                     ruta,
-                    $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
+                    $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.json"
                 );
 
                 int contador = 0;
 
-                // Reiniciar el archivo JSON
-                File.WriteAllText(archivoJson, "{");
-
-                while (true)
+                // ✅ StreamWriter mantiene el archivo abierto todo el proceso
+                // bufferSize 64KB — acumula en memoria antes de escribir al disco
+                using (var writer = new StreamWriter(archivoJson, false, Encoding.UTF8, bufferSize: 65536))
                 {
-                    var resultado = _repo.ProcesarSiguiente();
-                    if (resultado == null)
-                        break;
+                    writer.Write("{");
 
-                    var (tarjeta, json) = resultado.Value;
+                    while (true)
+                    {
+                        var resultado = _repo.ProcesarSiguiente();
 
-                    if (string.IsNullOrWhiteSpace(json))
-                        json = "{}";
+                        if (resultado == null)
+                            break;
 
-                    // Agregar coma solo a partir del segundo elemento
-                    if (contador > 0)
-                        File.AppendAllText(archivoJson, ",");
+                        var (tarjeta, json) = resultado.Value;
 
-                    File.AppendAllText(
-                        archivoJson,
-                        $"\"{tarjeta}\":{json}"
-                    );
+                        if (string.IsNullOrWhiteSpace(json))
+                            json = "{}";
 
-                    contador++;
-                    _logger.LogInformation("Procesado: {tarjeta}", tarjeta);
-                }
+                        // Coma separadora antes de cada elemento excepto el primero
+                        if (contador > 0)
+                            writer.Write(",");
 
-                // Cerrar el objeto JSON
-                File.AppendAllText(archivoJson, "}");
+                        writer.Write($"\"{tarjeta}\":{json}");
 
-                _logger.LogInformation("Fin Generación Individual. Total procesados: {contador}", contador);
+                        contador++;
+
+                        _logger.LogInformation("Procesado: {Tarjeta}", tarjeta);
+                    }
+
+                    writer.Write("}");
+
+                } // ← el using cierra y flushea al disco una sola vez
+
+                _logger.LogInformation(
+                    "Fin Generación Individual. Total procesados: {Contador}", contador);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en Generación Individual");
                 throw;
             }
-
         }
     }
-    }
-
-
-
-Como podemos mejorarlo?
+}
