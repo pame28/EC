@@ -1,0 +1,11 @@
+CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC
+(
+  INOUT peTramaMQRcv CHAR(81)
+)
+LANGUAGE RPGLE
+EXTERNAL NAME 'BPPGM/REIMQ07R'
+PARAMETER STYLE GENERAL
+
+
+
+Fijate que, cuando lo intentan ver en la pantalla de AS400 no se ve, pero me dicen que es .. porque no lo creo como "objeto" o algo asi
