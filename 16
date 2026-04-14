@@ -1,351 +1,297 @@
-using EstadosCuentaTC.Dtos;
-using EstadosCuentaTC.Dtos.Generacion_JSON;
-using EstadosCuentaTC.Dtos.Generacion_JSON_Lote;
-using EstadosCuentaTC.Repositories;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Threading.Tasks;
-
-namespace EstadosCuentaTC.Services
-{
-    public class GeneracionLoteService
-    {
-        private readonly EstadoCuentaRepository _repo;
-        private readonly ILogger<GeneracionLoteService> _logger;
-
-        private static readonly object _lockFile = new();
-        private static readonly object _lockPrimer = new();
-
-        private bool _primerFragmento = true;
-
-        public GeneracionLoteService(
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionLoteService> logger)
-        {
-            _repo = repo;
-            _logger = logger;
-        }
-
-        public void Ejecutar(string rutaBase, DateTime fechaCorte, int cantidadHilos)
-        {
-            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-            Directory.CreateDirectory(ruta);
-
-            var archivoJson = Path.Combine(
-                ruta,
-                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
-            );
-
-            File.WriteAllText(archivoJson, "{", Encoding.UTF8);
-            _primerFragmento = true;
-
-            _logger.LogInformation("Iniciando con {Hilos} workers...", cantidadHilos);
-
-            var tareas = new Task[cantidadHilos];
-
-            for (int i = 0; i < cantidadHilos; i++)
-            {
-                int workerId = i + 1;
-
-                tareas[i] = Task.Run(() =>
-                {
-                    _logger.LogInformation("Worker {Id} iniciado", workerId);
-
-                    while (true)
-                    {
-                        try
-                        {
-                            var lote = _repo.ObtenerLote(workerId);
-
-                            if (lote == null)
-                                break;
-
-                            var fragmento = ConstruirFragmento(lote);
-
-                            if (string.IsNullOrEmpty(fragmento))
-                                continue;
-
-                            lock (_lockFile)
-                            {
-                                string prefijo;
-                                lock (_lockPrimer)
-                                {
-                                    prefijo = _primerFragmento ? "" : ",";
-                                    _primerFragmento = false;
-                                }
-                                File.AppendAllText(archivoJson, prefijo + fragmento, Encoding.UTF8);
-                            }
-
-                            _logger.LogInformation(
-                                "Worker {Id} procesó {N} tarjetas",
-                                workerId, lote.Tarjetas.Count);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error en worker {Id}", workerId);
-                            break;
-                        }
-                    }
-
-                    _logger.LogInformation("Worker {Id} finalizado", workerId);
-                });
-            }
-
-            Task.WaitAll(tareas);
-
-            File.AppendAllText(archivoJson, "}", Encoding.UTF8);
-            _logger.LogInformation("Proceso finalizado. Archivo: {Ruta}", archivoJson);
-        }
-
-        // ── Helpers ──────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Escribe un decimal redondeado a exactamente 2 cifras.
-        /// Utf8JsonWriter.WriteNumber(decimal) serializa todos los decimales
-        /// del valor — hay que redondear ANTES de llamar al writer.
-        /// </summary>
-        private static void WriteD2(Utf8JsonWriter w, string name, decimal value)
-            => w.WriteNumber(name, Math.Round(value, 2, MidpointRounding.AwayFromZero));
-
-        /// <summary>Redondea a 2 decimales para valores calculados en línea.</summary>
-        private static decimal R2(decimal value)
-            => Math.Round(value, 2, MidpointRounding.AwayFromZero);
-
-        // ── Constructor de fragmento ──────────────────────────────────────────
-
-        private string ConstruirFragmento(LoteDatosDto lote)
-        {
-            if (lote.Encabezados.Count == 0)
-                return "";
-
-            var detallesPorCuenta = lote.Detalles
-                .GroupBy(d => d.No_Cuenta)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var finanPorCuenta = lote.Financiamientos
-                .GroupBy(f => f.No_Cuenta)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            var sb = new StringBuilder();
-            bool primero = true;
-
-            foreach (var enc in lote.Encabezados)
-            {
-                if (!primero) sb.Append(',');
-                primero = false;
-
-                var detalle = detallesPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
-                var financiamiento = finanPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
-
-                sb.Append('"');
-                sb.Append(enc.No_Tarjeta);
-                sb.Append("\":");
-
-                using var ms = new MemoryStream();
-                using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions
-                {
-                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                });
-
-                writer.WriteStartObject();
-                writer.WritePropertyName("Encabezado");
-                EscribirEncabezado(writer, enc);
-                writer.WritePropertyName("Detalle");
-                EscribirDetalle(writer, detalle);
-                writer.WritePropertyName("Financiamientos");
-                EscribirFinanciamientos(writer, financiamiento);
-                writer.WriteEndObject();
-                writer.Flush();
-
-                sb.Append(Encoding.UTF8.GetString(ms.ToArray()));
-            }
-
-            return sb.ToString();
-        }
-
-        // ── Sección Encabezado ────────────────────────────────────────────────
-
-        private static void EscribirEncabezado(Utf8JsonWriter w, EncabezadoDto e)
-        {
-            w.WriteStartObject();
-
-         
-            w.WriteString("Origen", e.Origen);
-            w.WriteString("Emisor", e.Emisor);
-            w.WriteString("No_Cuenta", e.No_Cuenta);
-            w.WriteString("Nombre_TH_Tit", e.Nombre_TH_Tit);
-            w.WriteString("Emisor_Madre", e.Emisor_Madre);
-            w.WriteString("Cuenta_Madre", e.Cuenta_Madre);
-            w.WriteString("Nombre_Empresa", e.Nombre_Empresa);
-            w.WriteString("Tipo_Tarjeta", e.Tipo_Tarjeta);
-            w.WriteString("No_Tarjeta", e.No_Tarjeta);
-            w.WriteString("Fecha_Pago", e.Fecha_Pago?.ToString("dd/MM/yyyy") ?? "");
-            w.WriteString("Fecha_Corte", e.Fecha_Corte?.ToString("dd/MM/yyyy") ?? "");
-
-            WriteD2(w, "Pago_Contado_MN", e.Pago_Contado_MN);
-            WriteD2(w, "Pago_Minimo_MN", e.Pago_Minimo_MN);
-            WriteD2(w, "Saldo_Vencido_MN", e.Saldo_Vencido_MN);
-            WriteD2(w, "Saldo_Anterior_MN", e.Saldo_Anterior_MN);
-            WriteD2(w, "Saldo_Final_MN", e.Saldo_Final_MN);
-            WriteD2(w, "Compras_Deb_MN", e.Compras_Deb_MN);
-            WriteD2(w, "Pagos_Cred_MN", e.Pagos_Cred_MN);
-            WriteD2(w, "Sobregiro_MN", e.Sobregiro_MN);
-            WriteD2(w, "Cuota_Mes_MN", e.Cuota_Mes_MN);
-
-     
-            WriteD2(w, "Pago_Contado_ME", e.Pago_Contado_ME);
-            WriteD2(w, "Pago_Minimo_ME", e.Pago_Minimo_ME);
-            WriteD2(w, "Saldo_Vencido_ME", e.Saldo_Vencido_ME);
-            WriteD2(w, "Saldo_Anterior_ME", e.Saldo_Anterior_ME);
-            WriteD2(w, "Saldo_Final_ME", e.Saldo_Final_ME);
-            WriteD2(w, "Saldo_Consumo_MN", e.Saldo_Consumo_MN);
-            WriteD2(w, "Saldo_Consumo_ME", e.Saldo_Consumo_ME);
-            WriteD2(w, "Compras_Deb_ME", e.Compras_Deb_ME);
-            WriteD2(w, "Pagos_Cred_ME", e.Pagos_Cred_ME);
-            WriteD2(w, "Sobregiro_ME", e.Sobregiro_ME);
-            WriteD2(w, "Cuota_Mes_ME", e.Cuota_Mes_ME);
-
-            w.WriteString("Moneda_Lim_Cre", e.Moneda_Lim_Cre);
-            WriteD2(w, "Limite_Credito", e.Limite_Credito);
-            WriteD2(w, "Disponible_Cta_MN", e.Disponible_Cta_MN);
-            WriteD2(w, "Disponible_Cta_ME", e.Disponible_Cta_ME);
-            WriteD2(w, "Disponible_Ret_MN", e.Disponible_Ret_MN);
-            WriteD2(w, "Disponible_Ret_ME", e.Disponible_Ret_ME);
-
-          
-            w.WriteNumber("PTS_Saldo_Ant", e.PTS_Saldo_Ant);
-            w.WriteNumber("PTS_Ganados", e.PTS_Ganados);
-            w.WriteNumber("PTS_Usuados", e.PTS_Usuados);
-            w.WriteNumber("PTS_Saldo_Actual", e.PTS_Saldo_Actual);
-
-            w.WriteString("Moneda_Lim_EF", e.Moneda_Lim_EF);
-            WriteD2(w, "EF_Limite", e.EF_Limite);
-            WriteD2(w, "EF_Saldo_MN", e.EF_Saldo_MN);
-            WriteD2(w, "EF_Debitos_MN", e.EF_Debitos_MN);
-            WriteD2(w, "EF_Creditos_MN", e.EF_Creditos_MN);
-            WriteD2(w, "EF_Saldo_ME", e.EF_Saldo_ME);
-            WriteD2(w, "EF_Debitos_ME", e.EF_Debitos_ME);
-            WriteD2(w, "EF_Creditos_ME", e.EF_Creditos_ME);
-            WriteD2(w, "EF_Disponible_MN", e.EF_Disponible_MN);
-            WriteD2(w, "EF_Disponible_ME", e.EF_Disponible_ME);
-
-            WriteD2(w, "Tasa_Int_Anual_MN", e.Tasa_Int_Anual_MN);
-            WriteD2(w, "Tasa_Int_Anual_ME", e.Tasa_Int_Anual_ME);
-
-            w.WriteString("Direccion_1", e.Direccion_1);
-            w.WriteString("Direccion_2", e.Direccion_2);
-            w.WriteString("Direccion_3", e.Direccion_3);
-            w.WriteString("Apdo_Postal", e.Apdo_Postal);
-            w.WriteString("Ciudad", e.Ciudad);
-            w.WriteString("Mensaje_1", e.Mensaje_1);
-            w.WriteString("Mensaje_2", e.Mensaje_2);
-            w.WriteString("Mensaje_3", e.Mensaje_3);
-            w.WriteString("Mensaje_4", e.Mensaje_4);
-            w.WriteString("Mensaje_5", e.Mensaje_5);
-            w.WriteString("Tarjeta_Imprimir", e.Tarjeta_Imprimir);
-
-            WriteD2(w, "Costo_Anual_Tot_MN", e.Costo_Anual_Tot_MN);
-            WriteD2(w, "Costo_Anual_Tot_ME", e.Costo_Anual_Tot_ME);
-
-            w.WriteNumber("Plazo_Canc_Deuda_MN", e.Plazo_Canc_Deuda_MN);
-            w.WriteNumber("Plazo_Canc_Deuda_ME", e.Plazo_Canc_Deuda_ME);
-
-            WriteD2(w, "Interes_Pago_Min_MN", e.Interes_Pago_Min_MN);
-            WriteD2(w, "Interes_Pago_Min_ME", e.Interes_Pago_Min_ME);
-
-            w.WriteString("Correo", e.Correo);
-
-            WriteD2(w, "Limite_CreditoMN", e.Limite_CreditoMN);
-            WriteD2(w, "Interes_Corriente_MN", e.Interes_Corriente_MN);
-            WriteD2(w, "Interes_Corriente_ME", e.Interes_Corriente_ME);
-
-            w.WriteNumber("Estado", int.TryParse(e.EstadoTarjeta, out var estado) ? estado : 0);
-
-            w.WriteEndObject();
-        }
-
-        // ── Sección Detalle ───────────────────────────────────────────────────
-
-        private static void EscribirDetalle(Utf8JsonWriter w, List<DetalleDto> movs)
-        {
-            w.WriteStartArray();
-
-            // Tipo_Reg = 1 — movimientos individuales
-            foreach (var m in movs.OrderBy(x => x.Fecha_Consumo))
-            {
-                w.WriteStartObject();
-                w.WriteString("Fecha_Consumo", m.Fecha_Consumo?.ToString("dd/MM/yyyy") ?? "");
-                w.WriteNumber("Tipo_Reg", 1);
-                w.WriteString("Descripcion_Mov", m.Descripcion_Mov.Trim());
-
-                w.WriteNumber("DebitosMN", R2(m.Moneda_Mov == "HN" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0));
-                w.WriteNumber("CreditosMN", R2(m.Moneda_Mov == "HN" && m.TipoMovimiento == "C" ? m.Monto_Mov : 0));
-                w.WriteNumber("DebitosME", R2(m.Moneda_Mov == "DO" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0));
-                w.WriteNumber("CreditosME", R2(m.Moneda_Mov == "DO" && m.TipoMovimiento == "C" ? m.Monto_Mov : 0));
-                w.WriteEndObject();
-            }
-
-            // Tipo_Reg = 2 — subtotal
-            w.WriteStartObject();
-            w.WriteString("Fecha_Consumo", "");
-            w.WriteNumber("Tipo_Reg", 2);
-            w.WriteString("Descripcion_Mov", "Subtotal");
-            w.WriteNumber("DebitosMN", R2(movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov)));
-            w.WriteNumber("CreditosMN", R2(movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "C").Sum(x => x.Monto_Mov)));
-            w.WriteNumber("DebitosME", R2(movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov)));
-            w.WriteNumber("CreditosME", R2(movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "C").Sum(x => x.Monto_Mov)));
-            w.WriteEndObject();
-
-            // Tipo_Reg = 3 — total
-            w.WriteStartObject();
-            w.WriteString("Fecha_Consumo", "");
-            w.WriteNumber("Tipo_Reg", 3);
-            w.WriteString("Descripcion_Mov", "Total");
-            w.WriteNumber("DebitosMN", R2(movs.Sum(x => x.Monto_Mov)));
-            w.WriteNumber("CreditosMN", 0.00m);
-            w.WriteNumber("DebitosME", 0.00m);
-            w.WriteNumber("CreditosME", 0.00m);
-            w.WriteEndObject();
-
-            w.WriteEndArray();
-        }
-
-        // ── Sección Financiamientos ───────────────────────────────────────────
-
-        private static void EscribirFinanciamientos(Utf8JsonWriter w, List<FinanciamientoDto> items)
-        {
-            w.WriteStartArray();
-
-            foreach (var f in items)
-            {
-                w.WriteStartObject();
-                w.WriteString("Tipo", f.Tipo);
-                w.WriteString("Fecha", f.FechaOtorgamiento?.ToString("dd/MM/yyyy") ?? "");
-           
-                w.WriteNumber("Monto", R2(f.ImporteTotalPlan));
-                w.WriteString("Moneda", f.MonedaMovimiento);
-                w.WriteNumber("Cuota", R2(f.Importe));
-                w.WriteNumber("Plazo", f.CantidadCuotasPlan);
-                w.WriteNumber("CuotaAplicada", f.NoCuotaLiquidada);
-                w.WriteString("Tasa", f.TasaFormateada);
-                w.WriteNumber("Saldo", R2(f.PlanCuotaCapitalPend));
-                w.WriteEndObject();
-            }
-
-            w.WriteEndArray();
-        }
-    }
-}
-
-
-
-
-Tengo un problema y es que, en la secciín de Detalles hay campos caluclados, esoscampos .. 3 de elllos los obtengo como 0      w.WriteNumber("CreditosMN", 0.00m);
-            w.WriteNumber("DebitosME", 0.00m);
-            w.WriteNumber("CreditosME", 0.00m);
+Ok mira, tengo varios problemas:
+
+1. El nombre del archivo me gusta esa nomenclatura, de hecho es asi como la tengo parametrizada, actualmente parece que no lo estamos haciendo asi, no está parametrizado, necesito que asi sea.
+2. No me está registrando todos los estados de cuenta en la tabla 
+
+
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[HistoricoMaestroEstadosCuentaJSON]    Script Date: 14/4/2026 06:17:49 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[HistoricoMaestroEstadosCuentaJSON](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NOT NULL,
+	[NoTarjeta] [char](16) NULL,
+	[NoCuenta] [varchar](25) NOT NULL,
+	[NoCuentaVASA] [varchar](25) NOT NULL,
+	[Nombre] [varchar](255) NOT NULL,
+	[Correo] [varchar](255) NOT NULL,
+	[Origen] [varchar](4) NULL,
+	[Lote] [int] NULL,
+	[Procesado] [char](2) NOT NULL,
+	[FechaEjecucion] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+Creo que eso es culpa del SP
+
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_SBEstadoCuentaJsonMasivo]    Script Date: 14/4/2026 06:18:56 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[usp_SBEstadoCuentaJsonMasivo]
+    @WorkerId INT
+AS
+BEGIN TRY
+    SET NOCOUNT ON;
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- VARIABLES
+    -- ══════════════════════════════════════════════════════════════════
+    DECLARE @FechaCorte DATE;
+    DECLARE @BatchSize  INT;
+
+    CREATE TABLE #Lote (
+        No_Tarjeta VARCHAR(16) PRIMARY KEY
+    );
+
+    -- ── Parámetros de corte y lote ────────────────────────────────────
+    SELECT TOP 1 @FechaCorte = FechaCorte
+    FROM dbo.ParametrosCorte
+    WHERE Estado = 1
+    ORDER BY FechaCorte DESC;
+
+    SELECT TOP 1 @BatchSize = RegistrosPorLote
+    FROM dbo.ParametrosGeneracionEC;
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- RESERVAR LOTE (READPAST evita bloqueos entre workers)
+    -- ══════════════════════════════════════════════════════════════════
+    INSERT INTO #Lote (No_Tarjeta)
+    SELECT TOP (@BatchSize) No_Tarjeta
+    FROM dbo.BandejaEstadoCuenta WITH (ROWLOCK, READPAST)
+    WHERE Estado = 0
+      AND (WorkerId IS NULL OR WorkerId = @WorkerId)
+    ORDER BY No_Tarjeta;
+
+    -- Sin registros → retornar señal de fin al worker
+    IF NOT EXISTS (SELECT 1 FROM #Lote)
+    BEGIN
+        SELECT 0 AS Resultado;   -- .NET detecta esta col y corta el loop
+        RETURN;
+    END
+
+    -- Marcar como "en proceso" por este worker
+    UPDATE be
+    SET Estado   = 2,
+        WorkerId = @WorkerId
+    FROM dbo.BandejaEstadoCuenta be
+    INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta
+    WHERE be.Estado = 0;
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- RESULT SET 1 — ENCABEZADOS
+    -- Un registro por tarjeta, todos los campos planos.
+    -- .NET construye el objeto JSON "Encabezado".
+    -- ══════════════════════════════════════════════════════════════════
+    SELECT
+        hc.No_Tarjeta,
+        hc.No_Cuenta,
+
+        LTRIM(RTRIM(ISNULL(hc.Origen,         ''))) AS Origen,
+        LTRIM(RTRIM(ISNULL(hc.Emisor,         ''))) AS Emisor,
+        LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit,  ''))) AS Nombre_TH_Tit,
+        LTRIM(RTRIM(ISNULL(hc.Emisor_Madre,   ''))) AS Emisor_Madre,
+        LTRIM(RTRIM(ISNULL(hc.Cuenta_Madre,   ''))) AS Cuenta_Madre,
+        LTRIM(RTRIM(ISNULL(hc.Nombre_Empresa, ''))) AS Nombre_Empresa,
+        LTRIM(RTRIM(ISNULL(hc.Tipo_Tarjeta,   ''))) AS Tipo_Tarjeta,
+
+        hc.Fecha_Pago,
+        hc.Fecha_Corte,
+
+        ISNULL(hc.Pago_Contado_MN,   0) AS Pago_Contado_MN,
+        ISNULL(hc.Pago_Minimo_MN,    0) AS Pago_Minimo_MN,
+        ISNULL(hc.Saldo_Vencido_MN,  0) AS Saldo_Vencido_MN,
+        ISNULL(hc.Saldo_Anterior_MN, 0) AS Saldo_Anterior_MN,
+        ISNULL(hc.Saldo_Final_MN,    0) AS Saldo_Final_MN,
+        ISNULL(hc.Compras_Deb_MN,    0) AS Compras_Deb_MN,
+        ISNULL(hc.Pagos_Cred_MN,     0) AS Pagos_Cred_MN,
+        ISNULL(hc.Sobregiro_MN,      0) AS Sobregiro_MN,
+        ISNULL(hc.Cuota_Mes_MN,      0) AS Cuota_Mes_MN,
+
+        ISNULL(hc.Pago_Contado_ME,   0) AS Pago_Contado_ME,
+        ISNULL(hc.Pago_Minimo_ME,    0) AS Pago_Minimo_ME,
+        ISNULL(hc.Saldo_Vencido_ME,  0) AS Saldo_Vencido_ME,
+        ISNULL(hc.Saldo_Anterior_ME, 0) AS Saldo_Anterior_ME,
+        ISNULL(hc.Saldo_Final_ME,    0) AS Saldo_Final_ME,
+        ISNULL(hc.Compras_Deb_ME,    0) AS Compras_Deb_ME,
+        ISNULL(hc.Pagos_Cred_ME,     0) AS Pagos_Cred_ME,
+        ISNULL(hc.Sobregiro_ME,      0) AS Sobregiro_ME,
+        ISNULL(hc.Cuota_Mes_ME,      0) AS Cuota_Mes_ME,
+
+        -- Saldo consumo: .NET también lo calcula como propiedad computada,
+        -- pero lo enviamos por si algún consumidor del RS lo necesita directo.
+        ISNULL(hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN, 0) AS Saldo_Consumo_MN,
+        ISNULL(hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME, 0) AS Saldo_Consumo_ME,
+
+        LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_Cre, ''))) AS Moneda_Lim_Cre,
+        ISNULL(hc.Limite_Credito,      0) AS Limite_Credito,
+        ISNULL(hc.Disponible_Cta_MN,   0) AS Disponible_Cta_MN,
+        ISNULL(hc.Disponible_Cta_ME,   0) AS Disponible_Cta_ME,
+        ISNULL(hc.Disponible_Ret_MN,   0) AS Disponible_Ret_MN,
+        ISNULL(hc.Disponible_Ret_ME,   0) AS Disponible_Ret_ME,
+
+        ISNULL(hc.PTS_Saldo_Ant,    0) AS PTS_Saldo_Ant,
+        ISNULL(hc.PTS_Ganados,      0) AS PTS_Ganados,
+        ISNULL(hc.PTS_Usuados,      0) AS PTS_Usuados,
+        ISNULL(hc.PTS_Saldo_Actual, 0) AS PTS_Saldo_Actual,
+
+        LTRIM(RTRIM(ISNULL(hc.Moneda_Lim_EF, ''))) AS Moneda_Lim_EF,
+        ISNULL(hc.EF_Limite,        0) AS EF_Limite,
+        ISNULL(hc.EF_Saldo_MN,      0) AS EF_Saldo_MN,
+        ISNULL(hc.EF_Debitos_MN,    0) AS EF_Debitos_MN,
+        ISNULL(hc.EF_Creditos_MN,   0) AS EF_Creditos_MN,
+        ISNULL(hc.EF_Saldo_ME,      0) AS EF_Saldo_ME,
+        ISNULL(hc.EF_Debitos_ME,    0) AS EF_Debitos_ME,
+        ISNULL(hc.EF_Creditos_ME,   0) AS EF_Creditos_ME,
+        ISNULL(hc.EF_Disponible_MN, 0) AS EF_Disponible_MN,
+        ISNULL(hc.EF_Disponible_ME, 0) AS EF_Disponible_ME,
+
+        ISNULL(hc.Tasa_Int_Anual_MN, 0) AS Tasa_Int_Anual_MN,
+        ISNULL(hc.Tasa_Int_Anual_ME, 0) AS Tasa_Int_Anual_ME,
+
+        LTRIM(RTRIM(ISNULL(hc.Direccion_1, ''))) AS Direccion_1,
+        LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))) AS Direccion_2,
+        LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))) AS Direccion_3,
+        LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))) AS Apdo_Postal,
+        LTRIM(RTRIM(ISNULL(hc.Cidudad,     ''))) AS Ciudad,          -- alias corrige el typo de la tabla
+
+        LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX), map.Mensaje), ''))) AS Mensaje_1,
+        LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))) AS Mensaje_2,
+        LTRIM(RTRIM(ISNULL(hc.Mensaje_3, ''))) AS Mensaje_3,
+        LTRIM(RTRIM(ISNULL(hc.Mensaje_4, ''))) AS Mensaje_4,
+        LTRIM(RTRIM(ISNULL(hc.Mensaje_5, ''))) AS Mensaje_5,
+
+        LTRIM(RTRIM(ISNULL(hc.Tarjeta_Imprimir, ''))) AS Tarjeta_Imprimir,
+
+        ISNULL(hc.Costo_Anual_Tot_MN,  0) AS Costo_Anual_Tot_MN,
+        ISNULL(hc.Costo_Anual_Tot_ME,  0) AS Costo_Anual_Tot_ME,
+
+        ISNULL(hc.Plazo_Canc_Deuda_MN, 0) AS Plazo_Canc_Deuda_MN,
+        ISNULL(hc.Plazo_Canc_Deuda_ME, 0) AS Plazo_Canc_Deuda_ME,
+
+        ISNULL(hc.Interes_Pago_Min_MN, 0) AS Interes_Pago_Min_MN,
+        ISNULL(hc.Interes_Pago_Min_ME, 0) AS Interes_Pago_Min_ME,
+
+        LTRIM(RTRIM(ISNULL(hc.Correo, ''))) AS Correo,
+
+        ISNULL(hc.Limite_CreditoMN,      0) AS Limite_CreditoMN,
+        ISNULL(hc.Interes_Corriente_MN,  0) AS Interes_Corriente_MN,
+        ISNULL(hc.Interes_Corriente_ME,  0) AS Interes_Corriente_ME,
+
+        LTRIM(RTRIM(ISNULL(t.EstadoTarjeta, '0'))) AS EstadoTarjeta
+
+    FROM #Lote l
+    INNER JOIN dbo.BandejaEstadoCuenta be
+        ON be.No_Tarjeta = l.No_Tarjeta
+    INNER JOIN dbo.BandejaEncabezado hc
+        ON hc.No_Tarjeta  = be.No_Tarjeta
+       AND hc.Fecha_Corte = @FechaCorte
+    LEFT JOIN dbo.CuentasArregloPagos ecap
+        ON ecap.NumeroCuenta = hc.NoCuentaClaro
+       AND ecap.FechaCorte   = @FechaCorte
+    LEFT JOIN HistoricoVASATC.dbo.MensajeArregloPagos map
+        ON map.idMensaje = ecap.idMensaje
+    LEFT JOIN dbo.Tarjetas t
+        ON t.NumeroTarjeta = be.No_Tarjeta;
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- RESULT SET 2 — DETALLE DE MOVIMIENTOS
+    -- Un registro por movimiento. .NET construye Tipo_Reg, Subtotal y Total.
+    -- ══════════════════════════════════════════════════════════════════
+    SELECT
+        a.EC_DetalleNo_Cuenta AS No_Cuenta,
+        a.Fecha_Consumo,
+        a.Codigo_Mov,
+        LTRIM(RTRIM(ISNULL(a.Descripcion_Mov, ''))) AS Descripcion_Mov,
+        LTRIM(RTRIM(ISNULL(a.Moneda_Mov,      ''))) AS Moneda_Mov,       -- "HN" | "DO"
+        LTRIM(RTRIM(ISNULL(b.TipoMovimiento,  ''))) AS TipoMovimiento,   -- "D"  | "C"
+        ISNULL(a.Monto_Mov, 0)                      AS Monto_Mov
+
+    FROM dbo.BandejaDetalle a
+    INNER JOIN dbo.TiposMovimientos b
+        ON b.CodMovimiento = a.Codigo_Mov
+    -- Solo traer movimientos de las cuentas del lote actual
+    INNER JOIN dbo.BandejaEncabezado hc
+        ON hc.No_Cuenta   = a.EC_DetalleNo_Cuenta
+       AND hc.Fecha_Corte = @FechaCorte
+    INNER JOIN #Lote l
+        ON l.No_Tarjeta = hc.No_Tarjeta
+    WHERE a.Fecha_Corte = @FechaCorte;
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- RESULT SET 3 — FINANCIAMIENTOS
+    -- Un registro por financiamiento. .NET construye el array JSON.
+    -- ══════════════════════════════════════════════════════════════════
+    SELECT
+        f.NumeroCuenta AS No_Cuenta,
+        CASE
+            WHEN f.EsIntra = 1 THEN 'Intrafinanciamientos'
+            ELSE                    'Extrafinanciamientos'
+        END                            AS Tipo,
+        f.FechaOtorgamiento,
+        ISNULL(f.ImporteTotalPlan,     0) AS ImporteTotalPlan,
+        LTRIM(RTRIM(ISNULL(f.MonedaMovimiento, ''))) AS MonedaMovimiento,
+        ISNULL(f.Importe,              0) AS Importe,
+        ISNULL(f.CantidadCuotasPlan,   0) AS CantidadCuotasPlan,
+        ISNULL(f.NoCuotaLiquidada,     0) AS NoCuotaLiquidada,
+        ISNULL(f.PlanExtraTasa,        0) AS PlanExtraTasa,        -- .NET formatea "0%" o "X%"
+        ISNULL(f.PlanCuotaCapitalPend, 0) AS PlanCuotaCapitalPend
+
+    FROM dbo.BandejaFinanciamientos f
+    INNER JOIN dbo.BandejaEncabezado hc
+        ON hc.No_Cuenta   = f.NumeroCuenta
+       AND hc.Fecha_Corte = @FechaCorte
+    INNER JOIN #Lote l
+        ON l.No_Tarjeta = hc.No_Tarjeta
+    WHERE f.FechaCierre           = @FechaCorte
+      AND f.PlanCuotaCapitalPend  > 0
+      AND (f.EsIntra = 1 OR f.EsExtra = 1);
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- RESULT SET 4 — TARJETAS DEL LOTE
+    -- .NET lo usa para logging y confirmación del lote procesado.
+    -- ══════════════════════════════════════════════════════════════════
+    SELECT No_Tarjeta
+    FROM #Lote;
+
+    -- ── Marcar lote como procesado ────────────────────────────────────
+    UPDATE be
+    SET Estado = 1
+    FROM dbo.BandejaEstadoCuenta be
+    INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta;
+
+END TRY
+
+BEGIN CATCH
+
+    -- Revertir estado para que otro worker pueda reintentar
+    UPDATE be
+    SET    Estado   = 0,
+           WorkerId = NULL
+    FROM dbo.BandejaEstadoCuenta be
+    INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta;
+
+    -- Propagar el error al llamador (.NET lo captura en el catch del worker)
+    THROW;
+
+END CATCH
+
+
+
+Si te fijas ... la tabla tiene un espacio que dice Lote .. si me gustaria que se agregara el numero de lote en que se ejecutó 
