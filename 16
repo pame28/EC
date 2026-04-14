@@ -1,18 +1,438 @@
-private static string ConvertirFecha(string fechaIso)
+En este punto me genera demasiada curiosidad lo que habias hecho del negativo.. siento que si es necesario ...
+
+using APIBPTarjetas.Data;
+using APIBPTarjetas.Models;
+using APIBPTarjetas.Models.Dtos;								
+using APIBPTarjetas.Repository.IRepository;
+using Devart.Common;					
+using log4net;
+using Microsoft.Data.SqlClient;
+using Microsoft.AspNetCore.Http;								
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
+using Microsoft.Identity.Client;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using System.Data;
+using System.Net;
+using Dapper;
+using System.Runtime.InteropServices.ObjectiveC;												
+
+
+namespace APIBPTarjetas.Repository
 {
-    if (string.IsNullOrWhiteSpace(fechaIso))
-        return fechaIso;
+    public class AuthorizationResponseRepository : IAuthorizationResponseRepository
+    {
+        private readonly ApplicationDBContext _bd;
+        private List<AuthorizationResponse> _lstAuths;
+		private readonly IConfiguration _configuration;
+		private readonly ILog _logger;
+        private readonly string _migradasConnection;
+		private System.Runtime.Caching.MemoryCache memoryCacheFlotantes = System.Runtime.Caching.MemoryCache.Default;																												   
 
-    if (!DateTimeOffset.TryParse(fechaIso, out var dto))
-        return fechaIso;
+        public AuthorizationResponseRepository(ApplicationDBContext bd,IConfiguration configuration, ILog logger)
+        {
+            _bd = bd;
+            _configuration = configuration;
+            _logger = logger;
+            _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+            _migradasConnection = _configuration.GetConnectionString("ConexionSQL");
+        }
 
-    var tzId = OperatingSystem.IsWindows()
-        ? "Central America Standard Time"   // Windows
-        : "America/Tegucigalpa";            // Linux / OpenShift
 
-    var tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+        public async Task<ICollection<AuthorizationResponse>> GetAll( Card card, Client client, string token)
+        {
+            _logger.Info($"Serializando los objetos tarjeta y cliente");
+            var jsonCard = JsonConvert.SerializeObject(card);
+            var jsonClient = JsonConvert.SerializeObject(client);
 
-    var localTime = TimeZoneInfo.ConvertTime(dto, tz);
+            string jsonBody = "{ \"card\":" + jsonCard+ ",\"client\":" + jsonClient+" }";
 
-    return localTime.ToString("yyyy-MM-ddTHH:mm:sszzz");
+            _lstAuths = await GetCardTransactionsAsync(jsonBody, token);
+
+            return _lstAuths;
+        }
+
+        public Card GetCard(string counterPartCard)
+        {
+            Card card = new Card();
+            try
+            {
+                _logger.Info($"Obteniendo los datos de la tarjeta");
+                var lstcard = _bd.cards.FromSqlRaw("EXEC SP_GetCardData @Equivalente={0}", counterPartCard).ToList();
+                card = lstcard[0];
+            }
+            catch (Exception ex)
+            {
+                card.bin = "-1";
+                setLog("GetCard", counterPartCard, ex.ToString());
+                _logger.Error("Error al obtener los datos de la tarjeta",ex);
+            }
+
+            return card;
+        }
+
+        public async Task<List<AuthorizationResponse>> GetCardTransactionsAsync(string rBody, string token)
+        {
+            List<AuthorizationResponse> lstAuths = new List<AuthorizationResponse>();
+            ApiParams apiParams = new ApiParams();
+            try
+            {
+                _logger.Info($"Obteniendo las transacciones de la tarjeta");
+				string Ambiente = _configuration["AmbientePRISMA"].ToString();
+				bool UsarProxy = Convert.ToBoolean(_configuration["UsarProxy"].ToString());																		   
+				apiParams = GetApiParams(Ambiente, "TRANS");
+
+                HttpClientHandler httpClientHandler = new HttpClientHandler {
+                   // Proxy = new WebProxy(apiParams.proxy),
+                    //UseProxy = true
+                    Proxy = new WebProxy(apiParams.proxy),
+                    UseProxy = UsarProxy
+                };
+
+                using var HttpClient = new HttpClient(httpClientHandler);
+
+                string apiUrl = apiParams.url;
+
+                var request = new HttpRequestMessage(HttpMethod.Post, apiUrl);
+
+                request.Content = new StringContent(rBody, System.Text.Encoding.UTF8, "application/json");
+
+                HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                _logger.Debug("Ejecutando request");
+                HttpResponseMessage response = await HttpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+					_logger.Debug("Request ejecutado exitosamente");
+					var jsonResponse = await response.Content.ReadAsStringAsync();
+
+                    ListAuthorizations lstResponse =  JsonConvert.DeserializeObject<ListAuthorizations>( jsonResponse);
+
+                    foreach (AuthorizationResponse item in lstResponse.Authorizations)
+                    {
+                        if (item.transaction_type.Trim()=="PAG LOC" | item.transaction_type.Trim()== "PAG U$S")
+                        {
+                            item.merchant_name = "ABONO A SU CUENTA";
+                        }
+
+						if (item.transaction_type.Trim() == "ADE LOC" | item.transaction_type.Trim() == "ADE U$S")
+						{
+							item.merchant_name = "ADELANTO DE EFECTIVO";
+						}
+
+
+						lstAuths.Add(item);
+                    }
+
+                    var res = await response.Content.ReadAsStringAsync();
+                    return lstAuths;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error al obtener las transacciones", ex);
+                //setLog("GetCardTransactionsAsync", rBody +" "+ token, ex.ToString());
+            }
+            return _lstAuths;
+        }
+
+        public CatalogoResponse GetCatalogoResponse(int cod)
+        {
+            CatalogoResponse catalogoResponse = new CatalogoResponse();
+            _logger.Info($"Obteniendo la respuesta del catalogo cod:{cod}");
+            try
+            {
+                var response = _bd.catalogoResponse.FromSqlRaw("EXEC SP_GetCatalogoResponse @error_code={0}", cod).ToList();
+                catalogoResponse = response[0];
+				_logger.Info($"Respuesta del catalogo cod:{cod} - {catalogoResponse.Descripcion}");
+			}
+            catch (Exception ex)
+            {
+                //setLog("GetCatalogoResponse", cod.ToString(), ex.ToString());
+                _logger.Error("Error al obtener los datos del error", ex);
+            }
+            return catalogoResponse;
+        }
+
+        public Client GetClient(string counterPartCard)
+        {
+            _logger.Info($"Obteniendo los datos del cliente");
+            try
+            {
+                var client = _bd.clients.FromSqlRaw("EXEC SP_GetClientData @Equivalente={0}", counterPartCard).ToList();
+                return client[0];
+            }
+            catch (Exception ex)
+            {
+                Client client = new Client();
+                client.document_number = "-1";
+                //setLog("GetClient", counterPartCard, ex.ToString());
+                _logger.Error("Error al obtener los datos del cliente", ex);
+                return client;
+            }
+        }
+
+        public async Task<Models.Token> GetToken()
+        {
+            Models.Token token = new Models.Token();
+            ApiParams apiParams = new ApiParams();
+            try
+            {
+                _logger.Info("Obteniendo el token OUATH");
+
+                string Ambiente = _configuration["AmbientePRISMA"].ToString();
+				bool UsarProxy = Convert.ToBoolean(_configuration["UsarProxy"].ToString());																		   
+                apiParams = GetApiParams(Ambiente, "TOKEN");
+
+                HttpClientHandler httpClientHandler = new HttpClientHandler
+                {
+                   // Proxy = new WebProxy(apiParams.proxy),
+                    //UseProxy = true
+                    Proxy = new WebProxy(apiParams.proxy),
+                    UseProxy = UsarProxy
+                };
+
+                string apiUrl = apiParams.url;
+
+                string ApiKey = apiParams.apiKey;
+
+                using var client = new HttpClient(httpClientHandler);
+
+                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", ApiKey);
+
+                _logger.Debug("Enviando request");
+                HttpResponseMessage response = await client.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.Debug("Request ejecutado correctamente");
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    return token = JsonConvert.DeserializeObject<Models.Token>(jsonResponse);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error al obtener el token desde el api de Card Transactions",ex);
+                //setLog("GetToken","", ex.ToString());
+            }
+            return token;
+        }
+
+        public ApiParams GetApiParams( string ambiente, string objeto) {
+            ApiParams apiParams = new ApiParams();
+            try
+            {
+                _logger.Debug("Obteniendo parametros");
+                var response = _bd.apiParams.FromSqlRaw("EXEC SP_GetAPiParams @ambiente={0}, @objeto={1}",ambiente,objeto).ToList();
+                apiParams = response[0];
+                return apiParams;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error al obtener los parametros del api ambiente:{ambiente}, objeto:{objeto}", ex);
+                //setLog("GetApiParams", ambiente +" "+ objeto, ex.ToString());
+                return apiParams;
+            }
+        }
+
+
+        public bool EsTarjetaMigrada(string counterpartCard)
+        {
+            try
+            {
+                using var connection = new SqlConnection(_migradasConnection);
+
+                var resultado = connection.QueryFirstOrDefault<int>(
+                    "usp_EsTarjetaMigrada",
+                    new { Equivalente = counterpartCard },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                _logger.Info($"Tarjeta {counterpartCard} migrada: {(resultado == 1)}");
+
+                return resultado == 1;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(
+                    $"Error al validar si la tarjeta {counterpartCard} es migrada. Se continúa flujo legacy.",
+                    ex
+                );
+
+               
+                return false;
+            }
+        }
+
+
+        public void setLog(string method, string entryParams, string error) {
+            Task.Run(() => {
+                _bd.logs.FromSqlRaw("EXEC SP_setLog @Method={0} @EntriesParams={1} @Error={2}", method, entryParams, error);
+            });
+        }
+
+		public SumaFlotantes GetSumaFlotantes(object lista)
+        {
+            SumaFlotantes sumaFlotantes = new SumaFlotantes();
+            try
+            {
+                //Variables dentro de la funcion
+                decimal accionSumarLempiras = 0;
+                decimal accionRestarLempiras = 0;
+                decimal accionSumarDolares = 0;
+                decimal accionRestarDolares = 0;
+                object parametros = null;
+
+                _logger.Debug("Consultando si existen parametros en cache");
+                if (memoryCacheFlotantes.Contains("FloatingParameters"))
+                {
+                    _logger.Debug("Existen los parametros en cache");
+                    parametros = memoryCacheFlotantes.Get("FloatingParameters");
+                }
+
+                if (parametros == null)
+                {
+                    _logger.Debug("No existen parametros en cache");
+                    parametros = _bd.paramFloat.FromSqlRaw("EXEC usp_parametrosFloat 1, null").ToList();
+                    apiPrismaMemoryCacheParameters(parametros);
+                }
+
+                _logger.Debug("Asignando parametros a lista");
+                List<AuthorizationResponseDto> DataFlotantes = lista as List<AuthorizationResponseDto>;              
+                List<ParamTransaccionesFlotantes> parametrosTransacciones = parametros as List<ParamTransaccionesFlotantes>;
+
+                _logger.Debug("Clasificando tipos de transacciones flotantes");
+                //Sumar transacciones de creditos y restar debitos del total de flotantes - utilizar la referencia del mantenimiento. Contemplar la moneda y si está activa la acción.       
+                // Preprocesar parámetros en un diccionario
+                var parametrosPorTipo = (parametrosTransacciones ?? new List<ParamTransaccionesFlotantes>())
+                   .Where(data2 => data2.Estado == "1")
+                   .ToDictionary(data2 => data2.TipoTransaccion);
+
+                // Iterar sobre datos flotantes
+                foreach (var data in DataFlotantes)
+                {
+                    string transactionType = data.transaction_type.ToString();
+                    decimal monto = Convert.ToDecimal(data.amount);
+                    if (parametrosPorTipo.TryGetValue(transactionType, out var data2))
+                    {
+                        string accion = data2.TipoTotal;
+                        string monedatrx = data2.TipoMoneda;
+                        switch (monedatrx)
+                        {
+                            case "HNL":
+                                if (accion == "D")
+                                {
+                                    accionRestarLempiras += monto;
+                                }
+                                else if (accion == "C")
+                                {
+                                    accionSumarLempiras += monto;
+                                }
+                                break;
+                            case "USD":
+                                if (accion == "D")
+                                {
+                                    accionRestarDolares += monto;
+                                }
+                                else if (accion == "C")
+                                {
+                                    accionSumarDolares += monto;
+                                }
+                                break;
+                        }
+                    }
+                }
+
+                //Realizar operación de suma y resta de flotantes obtenidos por monedas
+                decimal totalFlotantesHNL = accionSumarLempiras - accionRestarLempiras;
+                decimal totalFlotantesUSD = accionSumarDolares - accionRestarDolares;
+                sumaFlotantes.total_HNL = totalFlotantesHNL.ToString();
+                sumaFlotantes.total_USD = totalFlotantesUSD.ToString();
+            }
+            catch (Exception ex)
+            {
+                setLog("Error ClasificandoFlotantes", "Flotantes", ex.ToString());
+                _logger.Error("Error al obtener los datos del error", ex);
+            }
+            return sumaFlotantes;
+        }
+        private void apiPrismaMemoryCacheParameters(object ParametrosFloat)
+        {
+            _logger.Debug($"ExpiraCarga: {1}");
+            memoryCacheFlotantes.Add("FloatingParameters", ParametrosFloat, DateTimeOffset.Now.AddDays(1));
+        }
+
+        public ParamTransacciones GetVigenciaFlotante()
+        {
+            ParamTransacciones ParamDays = new ParamTransacciones();
+            try
+            {
+                object parametros = null;
+                string dias_float = string.Empty;
+
+                _logger.Debug("Consultando si existen parametros en cache");
+                if (memoryCacheFlotantes.Contains("DaysParameterFloat"))
+                {
+                    _logger.Debug("Existen los parametros en cache");
+                    parametros = memoryCacheFlotantes.Get("DaysParameterFloat");
+                }
+
+                if (parametros == null)
+                {
+                    _logger.Debug("No existen parametros en cache");
+                    parametros = _bd.paramFloatDays.FromSqlRaw("EXEC usp_parametrosFloat null, 1").ToList();
+                    apiPrismaMemoryCacheParametersDays(parametros);
+                }
+
+                List<ParamTransacciones> parametrosDaysFloat = parametros as List<ParamTransacciones>;
+                foreach (ParamTransacciones data in parametrosDaysFloat)
+                {
+                    ParamDays.id = data.id;
+                    ParamDays.DiasVigencia = data.DiasVigencia;
+                    ParamDays.Estado = data.Estado;
+                }
+            }
+            catch (Exception ex)
+            {
+                setLog("Error ClasificandoFlotantes", "Flotantes", ex.ToString());
+                _logger.Error("Error al obtener los datos del error", ex);
+            }
+            return ParamDays;
+        }
+
+        private void apiPrismaMemoryCacheParametersDays(object ParametrosFloatDays)
+        {
+            _logger.Debug($"ExpiraCarga: {1}");
+            memoryCacheFlotantes.Add("DaysParameterFloat", ParametrosFloatDays, DateTimeOffset.Now.AddDays(1));
+        }
+
+        public object GetReemplazarMerchantName()
+        {
+            object parametros = null;
+
+            if (memoryCacheFlotantes.Contains("FloatingParameters"))
+            {
+                _logger.Debug("Existen los parametros en cache");
+                parametros = memoryCacheFlotantes.Get("FloatingParameters");
+            }
+
+            if (parametros == null)
+            {
+                _logger.Debug("No existen parametros en cache");
+                parametros = _bd.paramFloat.FromSqlRaw("EXEC usp_parametrosFloat 1, null").ToList();
+                apiPrismaMemoryCacheParameters(parametros);
+            }
+            return parametros;
+        }
+    }
 }
+
+
+
+
+Aqui hace eso? 
