@@ -1,438 +1,347 @@
-En este punto me genera demasiada curiosidad lo que habias hecho del negativo.. siento que si es necesario ...
+En la generación de Json en Lote hay que corregir lo siguiente:
 
-using APIBPTarjetas.Data;
-using APIBPTarjetas.Models;
-using APIBPTarjetas.Models.Dtos;								
-using APIBPTarjetas.Repository.IRepository;
-using Devart.Common;					
-using log4net;
-using Microsoft.Data.SqlClient;
-using Microsoft.AspNetCore.Http;								
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
-using System.Data;
-using System.Net;
-using Dapper;
-using System.Runtime.InteropServices.ObjectiveC;												
+1. Los datos decimales solo deben ir con dos cifras después del punto, actualmente hay 4
+
+2. El campo Estado de la Sección de Encabezado debe ser int, actualmente esta como varchar
 
 
-namespace APIBPTarjetas.Repository
+
+
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Dtos.Generacion_JSON;
+using EstadosCuentaTC.Dtos.Generacion_JSON_Lote;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+namespace EstadosCuentaTC.Services
 {
-    public class AuthorizationResponseRepository : IAuthorizationResponseRepository
+    public class GeneracionLoteService
     {
-        private readonly ApplicationDBContext _bd;
-        private List<AuthorizationResponse> _lstAuths;
-		private readonly IConfiguration _configuration;
-		private readonly ILog _logger;
-        private readonly string _migradasConnection;
-		private System.Runtime.Caching.MemoryCache memoryCacheFlotantes = System.Runtime.Caching.MemoryCache.Default;																												   
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionLoteService> _logger;
 
-        public AuthorizationResponseRepository(ApplicationDBContext bd,IConfiguration configuration, ILog logger)
+        // Protege la escritura al archivo compartido
+        private static readonly object _lockFile = new();
+
+        // Controla si ya se escribió el primer fragmento (para la coma separadora)
+        private bool _primerFragmento = true;
+        private static readonly object _lockPrimer = new();
+
+        // Opciones de serialización: sin escapes innecesarios, sin indentar
+        private static readonly JsonSerializerOptions _jsonOpts = new()
         {
-            _bd = bd;
-            _configuration = configuration;
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            WriteIndented = false
+        };
+
+        public GeneracionLoteService(
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionLoteService> logger)
+        {
+            _repo = repo;
             _logger = logger;
-            _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-            _migradasConnection = _configuration.GetConnectionString("ConexionSQL");
         }
 
-
-        public async Task<ICollection<AuthorizationResponse>> GetAll( Card card, Client client, string token)
+        public void Ejecutar(string rutaBase, DateTime fechaCorte, int cantidadHilos)
         {
-            _logger.Info($"Serializando los objetos tarjeta y cliente");
-            var jsonCard = JsonConvert.SerializeObject(card);
-            var jsonClient = JsonConvert.SerializeObject(client);
+            var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+            Directory.CreateDirectory(ruta);
 
-            string jsonBody = "{ \"card\":" + jsonCard+ ",\"client\":" + jsonClient+" }";
+            var archivoJson = Path.Combine(
+                ruta,
+                $"Estado_de_cuenta_{fechaCorte:yyyyMMdd}.json"
+            );
 
-            _lstAuths = await GetCardTransactionsAsync(jsonBody, token);
+            // Inicia el objeto JSON
+            File.WriteAllText(archivoJson, "{", Encoding.UTF8);
+            _primerFragmento = true;
 
-            return _lstAuths;
-        }
+            _logger.LogInformation("Iniciando con {Hilos} workers...", cantidadHilos);
 
-        public Card GetCard(string counterPartCard)
-        {
-            Card card = new Card();
-            try
+            var tareas = new Task[cantidadHilos];
+
+            for (int i = 0; i < cantidadHilos; i++)
             {
-                _logger.Info($"Obteniendo los datos de la tarjeta");
-                var lstcard = _bd.cards.FromSqlRaw("EXEC SP_GetCardData @Equivalente={0}", counterPartCard).ToList();
-                card = lstcard[0];
-            }
-            catch (Exception ex)
-            {
-                card.bin = "-1";
-                setLog("GetCard", counterPartCard, ex.ToString());
-                _logger.Error("Error al obtener los datos de la tarjeta",ex);
-            }
+                int workerId = i + 1;
 
-            return card;
-        }
-
-        public async Task<List<AuthorizationResponse>> GetCardTransactionsAsync(string rBody, string token)
-        {
-            List<AuthorizationResponse> lstAuths = new List<AuthorizationResponse>();
-            ApiParams apiParams = new ApiParams();
-            try
-            {
-                _logger.Info($"Obteniendo las transacciones de la tarjeta");
-				string Ambiente = _configuration["AmbientePRISMA"].ToString();
-				bool UsarProxy = Convert.ToBoolean(_configuration["UsarProxy"].ToString());																		   
-				apiParams = GetApiParams(Ambiente, "TRANS");
-
-                HttpClientHandler httpClientHandler = new HttpClientHandler {
-                   // Proxy = new WebProxy(apiParams.proxy),
-                    //UseProxy = true
-                    Proxy = new WebProxy(apiParams.proxy),
-                    UseProxy = UsarProxy
-                };
-
-                using var HttpClient = new HttpClient(httpClientHandler);
-
-                string apiUrl = apiParams.url;
-
-                var request = new HttpRequestMessage(HttpMethod.Post, apiUrl);
-
-                request.Content = new StringContent(rBody, System.Text.Encoding.UTF8, "application/json");
-
-                HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-                _logger.Debug("Ejecutando request");
-                HttpResponseMessage response = await HttpClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
+                tareas[i] = Task.Run(() =>
                 {
-					_logger.Debug("Request ejecutado exitosamente");
-					var jsonResponse = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation("Worker {Id} iniciado", workerId);
 
-                    ListAuthorizations lstResponse =  JsonConvert.DeserializeObject<ListAuthorizations>( jsonResponse);
-
-                    foreach (AuthorizationResponse item in lstResponse.Authorizations)
+                    while (true)
                     {
-                        if (item.transaction_type.Trim()=="PAG LOC" | item.transaction_type.Trim()== "PAG U$S")
+                        try
                         {
-                            item.merchant_name = "ABONO A SU CUENTA";
+                            // 1. Obtener lote de datos planos desde SQL
+                            var lote = _repo.ObtenerLote(workerId);
+
+                            // Sin más registros → terminar
+                            if (lote == null)
+                                break;
+
+                            // 2. Construir el fragmento JSON en memoria
+                            var fragmento = ConstruirFragmento(lote);
+
+                            if (string.IsNullOrEmpty(fragmento))
+                                continue;
+
+                            // 3. Escribir en el archivo con lock
+                            lock (_lockFile)
+                            {
+                                string prefijo;
+                                lock (_lockPrimer)
+                                {
+                                    prefijo = _primerFragmento ? "" : ",";
+                                    _primerFragmento = false;
+                                }
+
+                                File.AppendAllText(archivoJson,
+                                    prefijo + fragmento, Encoding.UTF8);
+                            }
+
+                            _logger.LogInformation(
+                                "Worker {Id} procesó {N} tarjetas",
+                                workerId, lote.Tarjetas.Count);
                         }
-
-						if (item.transaction_type.Trim() == "ADE LOC" | item.transaction_type.Trim() == "ADE U$S")
-						{
-							item.merchant_name = "ADELANTO DE EFECTIVO";
-						}
-
-
-						lstAuths.Add(item);
-                    }
-
-                    var res = await response.Content.ReadAsStringAsync();
-                    return lstAuths;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error al obtener las transacciones", ex);
-                //setLog("GetCardTransactionsAsync", rBody +" "+ token, ex.ToString());
-            }
-            return _lstAuths;
-        }
-
-        public CatalogoResponse GetCatalogoResponse(int cod)
-        {
-            CatalogoResponse catalogoResponse = new CatalogoResponse();
-            _logger.Info($"Obteniendo la respuesta del catalogo cod:{cod}");
-            try
-            {
-                var response = _bd.catalogoResponse.FromSqlRaw("EXEC SP_GetCatalogoResponse @error_code={0}", cod).ToList();
-                catalogoResponse = response[0];
-				_logger.Info($"Respuesta del catalogo cod:{cod} - {catalogoResponse.Descripcion}");
-			}
-            catch (Exception ex)
-            {
-                //setLog("GetCatalogoResponse", cod.ToString(), ex.ToString());
-                _logger.Error("Error al obtener los datos del error", ex);
-            }
-            return catalogoResponse;
-        }
-
-        public Client GetClient(string counterPartCard)
-        {
-            _logger.Info($"Obteniendo los datos del cliente");
-            try
-            {
-                var client = _bd.clients.FromSqlRaw("EXEC SP_GetClientData @Equivalente={0}", counterPartCard).ToList();
-                return client[0];
-            }
-            catch (Exception ex)
-            {
-                Client client = new Client();
-                client.document_number = "-1";
-                //setLog("GetClient", counterPartCard, ex.ToString());
-                _logger.Error("Error al obtener los datos del cliente", ex);
-                return client;
-            }
-        }
-
-        public async Task<Models.Token> GetToken()
-        {
-            Models.Token token = new Models.Token();
-            ApiParams apiParams = new ApiParams();
-            try
-            {
-                _logger.Info("Obteniendo el token OUATH");
-
-                string Ambiente = _configuration["AmbientePRISMA"].ToString();
-				bool UsarProxy = Convert.ToBoolean(_configuration["UsarProxy"].ToString());																		   
-                apiParams = GetApiParams(Ambiente, "TOKEN");
-
-                HttpClientHandler httpClientHandler = new HttpClientHandler
-                {
-                   // Proxy = new WebProxy(apiParams.proxy),
-                    //UseProxy = true
-                    Proxy = new WebProxy(apiParams.proxy),
-                    UseProxy = UsarProxy
-                };
-
-                string apiUrl = apiParams.url;
-
-                string ApiKey = apiParams.apiKey;
-
-                using var client = new HttpClient(httpClientHandler);
-
-                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
-
-                client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", ApiKey);
-
-                _logger.Debug("Enviando request");
-                HttpResponseMessage response = await client.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.Debug("Request ejecutado correctamente");
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    return token = JsonConvert.DeserializeObject<Models.Token>(jsonResponse);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error al obtener el token desde el api de Card Transactions",ex);
-                //setLog("GetToken","", ex.ToString());
-            }
-            return token;
-        }
-
-        public ApiParams GetApiParams( string ambiente, string objeto) {
-            ApiParams apiParams = new ApiParams();
-            try
-            {
-                _logger.Debug("Obteniendo parametros");
-                var response = _bd.apiParams.FromSqlRaw("EXEC SP_GetAPiParams @ambiente={0}, @objeto={1}",ambiente,objeto).ToList();
-                apiParams = response[0];
-                return apiParams;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error al obtener los parametros del api ambiente:{ambiente}, objeto:{objeto}", ex);
-                //setLog("GetApiParams", ambiente +" "+ objeto, ex.ToString());
-                return apiParams;
-            }
-        }
-
-
-        public bool EsTarjetaMigrada(string counterpartCard)
-        {
-            try
-            {
-                using var connection = new SqlConnection(_migradasConnection);
-
-                var resultado = connection.QueryFirstOrDefault<int>(
-                    "usp_EsTarjetaMigrada",
-                    new { Equivalente = counterpartCard },
-                    commandType: CommandType.StoredProcedure
-                );
-
-                _logger.Info($"Tarjeta {counterpartCard} migrada: {(resultado == 1)}");
-
-                return resultado == 1;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(
-                    $"Error al validar si la tarjeta {counterpartCard} es migrada. Se continúa flujo legacy.",
-                    ex
-                );
-
-               
-                return false;
-            }
-        }
-
-
-        public void setLog(string method, string entryParams, string error) {
-            Task.Run(() => {
-                _bd.logs.FromSqlRaw("EXEC SP_setLog @Method={0} @EntriesParams={1} @Error={2}", method, entryParams, error);
-            });
-        }
-
-		public SumaFlotantes GetSumaFlotantes(object lista)
-        {
-            SumaFlotantes sumaFlotantes = new SumaFlotantes();
-            try
-            {
-                //Variables dentro de la funcion
-                decimal accionSumarLempiras = 0;
-                decimal accionRestarLempiras = 0;
-                decimal accionSumarDolares = 0;
-                decimal accionRestarDolares = 0;
-                object parametros = null;
-
-                _logger.Debug("Consultando si existen parametros en cache");
-                if (memoryCacheFlotantes.Contains("FloatingParameters"))
-                {
-                    _logger.Debug("Existen los parametros en cache");
-                    parametros = memoryCacheFlotantes.Get("FloatingParameters");
-                }
-
-                if (parametros == null)
-                {
-                    _logger.Debug("No existen parametros en cache");
-                    parametros = _bd.paramFloat.FromSqlRaw("EXEC usp_parametrosFloat 1, null").ToList();
-                    apiPrismaMemoryCacheParameters(parametros);
-                }
-
-                _logger.Debug("Asignando parametros a lista");
-                List<AuthorizationResponseDto> DataFlotantes = lista as List<AuthorizationResponseDto>;              
-                List<ParamTransaccionesFlotantes> parametrosTransacciones = parametros as List<ParamTransaccionesFlotantes>;
-
-                _logger.Debug("Clasificando tipos de transacciones flotantes");
-                //Sumar transacciones de creditos y restar debitos del total de flotantes - utilizar la referencia del mantenimiento. Contemplar la moneda y si está activa la acción.       
-                // Preprocesar parámetros en un diccionario
-                var parametrosPorTipo = (parametrosTransacciones ?? new List<ParamTransaccionesFlotantes>())
-                   .Where(data2 => data2.Estado == "1")
-                   .ToDictionary(data2 => data2.TipoTransaccion);
-
-                // Iterar sobre datos flotantes
-                foreach (var data in DataFlotantes)
-                {
-                    string transactionType = data.transaction_type.ToString();
-                    decimal monto = Convert.ToDecimal(data.amount);
-                    if (parametrosPorTipo.TryGetValue(transactionType, out var data2))
-                    {
-                        string accion = data2.TipoTotal;
-                        string monedatrx = data2.TipoMoneda;
-                        switch (monedatrx)
+                        catch (Exception ex)
                         {
-                            case "HNL":
-                                if (accion == "D")
-                                {
-                                    accionRestarLempiras += monto;
-                                }
-                                else if (accion == "C")
-                                {
-                                    accionSumarLempiras += monto;
-                                }
-                                break;
-                            case "USD":
-                                if (accion == "D")
-                                {
-                                    accionRestarDolares += monto;
-                                }
-                                else if (accion == "C")
-                                {
-                                    accionSumarDolares += monto;
-                                }
-                                break;
+                            _logger.LogError(ex, "Error en worker {Id}", workerId);
+                            break;
                         }
                     }
-                }
 
-                //Realizar operación de suma y resta de flotantes obtenidos por monedas
-                decimal totalFlotantesHNL = accionSumarLempiras - accionRestarLempiras;
-                decimal totalFlotantesUSD = accionSumarDolares - accionRestarDolares;
-                sumaFlotantes.total_HNL = totalFlotantesHNL.ToString();
-                sumaFlotantes.total_USD = totalFlotantesUSD.ToString();
+                    _logger.LogInformation("Worker {Id} finalizado", workerId);
+                });
             }
-            catch (Exception ex)
-            {
-                setLog("Error ClasificandoFlotantes", "Flotantes", ex.ToString());
-                _logger.Error("Error al obtener los datos del error", ex);
-            }
-            return sumaFlotantes;
-        }
-        private void apiPrismaMemoryCacheParameters(object ParametrosFloat)
-        {
-            _logger.Debug($"ExpiraCarga: {1}");
-            memoryCacheFlotantes.Add("FloatingParameters", ParametrosFloat, DateTimeOffset.Now.AddDays(1));
+
+            Task.WaitAll(tareas);
+
+            // Cierra el objeto JSON
+            File.AppendAllText(archivoJson, "}", Encoding.UTF8);
+
+            _logger.LogInformation("Proceso finalizado. Archivo: {Ruta}", archivoJson);
         }
 
-        public ParamTransacciones GetVigenciaFlotante()
-        {
-            ParamTransacciones ParamDays = new ParamTransacciones();
-            try
-            {
-                object parametros = null;
-                string dias_float = string.Empty;
+        // ── Constructor de JSON ──────────────────────────────────────────────
 
-                _logger.Debug("Consultando si existen parametros en cache");
-                if (memoryCacheFlotantes.Contains("DaysParameterFloat"))
+        /// <summary>
+        /// Dado un lote con 3 listas planas, construye el fragmento JSON:
+        ///   "XXXXXXXXXXXXXXXX": { "Encabezado": {...}, "Detalle": [...], "Financiamientos": [...] },
+        ///   "YYYYYYYYYYYYYYYY": { ... }
+        /// SIN las llaves externas { } — esas las maneja el archivo.
+        /// </summary>
+        private string ConstruirFragmento(LoteDatosDto lote)
+        {
+            if (lote.Encabezados.Count == 0)
+                return "";
+
+            // Indexar detalle y financiamientos por No_Cuenta para O(1)
+            var detallesPorCuenta = lote.Detalles
+                .GroupBy(d => d.No_Cuenta)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var finanPorCuenta = lote.Financiamientos
+                .GroupBy(f => f.No_Cuenta)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var sb = new StringBuilder();
+            bool primero = true;
+
+            foreach (var enc in lote.Encabezados)
+            {
+                if (!primero) sb.Append(',');
+                primero = false;
+
+                var detalle = detallesPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
+                var financiamiento = finanPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
+
+                // Clave del objeto raíz
+                sb.Append('"');
+                sb.Append(enc.No_Tarjeta);
+                sb.Append("\":");
+
+                using var ms = new MemoryStream();
+                using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions
                 {
-                    _logger.Debug("Existen los parametros en cache");
-                    parametros = memoryCacheFlotantes.Get("DaysParameterFloat");
-                }
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
 
-                if (parametros == null)
-                {
-                    _logger.Debug("No existen parametros en cache");
-                    parametros = _bd.paramFloatDays.FromSqlRaw("EXEC usp_parametrosFloat null, 1").ToList();
-                    apiPrismaMemoryCacheParametersDays(parametros);
-                }
+                writer.WriteStartObject();
 
-                List<ParamTransacciones> parametrosDaysFloat = parametros as List<ParamTransacciones>;
-                foreach (ParamTransacciones data in parametrosDaysFloat)
-                {
-                    ParamDays.id = data.id;
-                    ParamDays.DiasVigencia = data.DiasVigencia;
-                    ParamDays.Estado = data.Estado;
-                }
+                // ── Encabezado ───────────────────────────────────────────
+                writer.WritePropertyName("Encabezado");
+                EscribirEncabezado(writer, enc);
+
+                // ── Detalle ──────────────────────────────────────────────
+                writer.WritePropertyName("Detalle");
+                EscribirDetalle(writer, detalle);
+
+                // ── Financiamientos ──────────────────────────────────────
+                writer.WritePropertyName("Financiamientos");
+                EscribirFinanciamientos(writer, financiamiento);
+
+                writer.WriteEndObject();
+                writer.Flush();
+
+                sb.Append(Encoding.UTF8.GetString(ms.ToArray()));
             }
-            catch (Exception ex)
-            {
-                setLog("Error ClasificandoFlotantes", "Flotantes", ex.ToString());
-                _logger.Error("Error al obtener los datos del error", ex);
-            }
-            return ParamDays;
+
+            return sb.ToString();
         }
 
-        private void apiPrismaMemoryCacheParametersDays(object ParametrosFloatDays)
+        private static void EscribirEncabezado(Utf8JsonWriter w, EncabezadoDto e)
         {
-            _logger.Debug($"ExpiraCarga: {1}");
-            memoryCacheFlotantes.Add("DaysParameterFloat", ParametrosFloatDays, DateTimeOffset.Now.AddDays(1));
+            w.WriteStartObject();
+            w.WriteString("Origen", e.Origen);
+            w.WriteString("Emisor", e.Emisor);
+            w.WriteString("No_Cuenta", e.No_Cuenta);
+            w.WriteString("Nombre_TH_Tit", e.Nombre_TH_Tit);
+            w.WriteString("Emisor_Madre", e.Emisor_Madre);
+            w.WriteString("Cuenta_Madre", e.Cuenta_Madre);
+            w.WriteString("Nombre_Empresa", e.Nombre_Empresa);
+            w.WriteString("Tipo_Tarjeta", e.Tipo_Tarjeta);
+            w.WriteString("No_Tarjeta", e.No_Tarjeta);
+            w.WriteString("Fecha_Pago", e.Fecha_Pago?.ToString("dd/MM/yyyy") ?? "");
+            w.WriteString("Fecha_Corte", e.Fecha_Corte?.ToString("dd/MM/yyyy") ?? "");
+            w.WriteNumber("Pago_Contado_MN", e.Pago_Contado_MN);
+            w.WriteNumber("Pago_Minimo_MN", e.Pago_Minimo_MN);
+            w.WriteNumber("Saldo_Vencido_MN", e.Saldo_Vencido_MN);
+            w.WriteNumber("Saldo_Anterior_MN", e.Saldo_Anterior_MN);
+            w.WriteNumber("Saldo_Final_MN", e.Saldo_Final_MN);
+            w.WriteNumber("Compras_Deb_MN", e.Compras_Deb_MN);
+            w.WriteNumber("Pagos_Cred_MN", e.Pagos_Cred_MN);
+            w.WriteNumber("Sobregiro_MN", e.Sobregiro_MN);
+            w.WriteNumber("Cuota_Mes_MN", e.Cuota_Mes_MN);
+            w.WriteNumber("Pago_Contado_ME", e.Pago_Contado_ME);
+            w.WriteNumber("Pago_Minimo_ME", e.Pago_Minimo_ME);
+            w.WriteNumber("Saldo_Vencido_ME", e.Saldo_Vencido_ME);
+            w.WriteNumber("Saldo_Anterior_ME", e.Saldo_Anterior_ME);
+            w.WriteNumber("Saldo_Final_ME", e.Saldo_Final_ME);
+            w.WriteNumber("Saldo_Consumo_MN", e.Saldo_Consumo_MN);
+            w.WriteNumber("Saldo_Consumo_ME", e.Saldo_Consumo_ME);
+            w.WriteNumber("Compras_Deb_ME", e.Compras_Deb_ME);
+            w.WriteNumber("Pagos_Cred_ME", e.Pagos_Cred_ME);
+            w.WriteNumber("Sobregiro_ME", e.Sobregiro_ME);
+            w.WriteNumber("Cuota_Mes_ME", e.Cuota_Mes_ME);
+            w.WriteString("Moneda_Lim_Cre", e.Moneda_Lim_Cre);
+            w.WriteNumber("Limite_Credito", e.Limite_Credito);
+            w.WriteNumber("Disponible_Cta_MN", e.Disponible_Cta_MN);
+            w.WriteNumber("Disponible_Cta_ME", e.Disponible_Cta_ME);
+            w.WriteNumber("Disponible_Ret_MN", e.Disponible_Ret_MN);
+            w.WriteNumber("Disponible_Ret_ME", e.Disponible_Ret_ME);
+            w.WriteNumber("PTS_Saldo_Ant", e.PTS_Saldo_Ant);
+            w.WriteNumber("PTS_Ganados", e.PTS_Ganados);
+            w.WriteNumber("PTS_Usuados", e.PTS_Usuados);
+            w.WriteNumber("PTS_Saldo_Actual", e.PTS_Saldo_Actual);
+            w.WriteString("Moneda_Lim_EF", e.Moneda_Lim_EF);
+            w.WriteNumber("EF_Limite", e.EF_Limite);
+            w.WriteNumber("EF_Saldo_MN", e.EF_Saldo_MN);
+            w.WriteNumber("EF_Debitos_MN", e.EF_Debitos_MN);
+            w.WriteNumber("EF_Creditos_MN", e.EF_Creditos_MN);
+            w.WriteNumber("EF_Saldo_ME", e.EF_Saldo_ME);
+            w.WriteNumber("EF_Debitos_ME", e.EF_Debitos_ME);
+            w.WriteNumber("EF_Creditos_ME", e.EF_Creditos_ME);
+            w.WriteNumber("EF_Disponible_MN", e.EF_Disponible_MN);
+            w.WriteNumber("EF_Disponible_ME", e.EF_Disponible_ME);
+            w.WriteNumber("Tasa_Int_Anual_MN", e.Tasa_Int_Anual_MN);
+            w.WriteNumber("Tasa_Int_Anual_ME", e.Tasa_Int_Anual_ME);
+            w.WriteString("Direccion_1", e.Direccion_1);
+            w.WriteString("Direccion_2", e.Direccion_2);
+            w.WriteString("Direccion_3", e.Direccion_3);
+            w.WriteString("Apdo_Postal", e.Apdo_Postal);
+            w.WriteString("Ciudad", e.Ciudad);
+            w.WriteString("Mensaje_1", e.Mensaje_1);
+            w.WriteString("Mensaje_2", e.Mensaje_2);
+            w.WriteString("Mensaje_3", e.Mensaje_3);
+            w.WriteString("Mensaje_4", e.Mensaje_4);
+            w.WriteString("Mensaje_5", e.Mensaje_5);
+            w.WriteString("Tarjeta_Imprimir", e.Tarjeta_Imprimir);
+            w.WriteNumber("Costo_Anual_Tot_MN", e.Costo_Anual_Tot_MN);
+            w.WriteNumber("Costo_Anual_Tot_ME", e.Costo_Anual_Tot_ME);
+            w.WriteNumber("Plazo_Canc_Deuda_MN", e.Plazo_Canc_Deuda_MN);
+            w.WriteNumber("Plazo_Canc_Deuda_ME", e.Plazo_Canc_Deuda_ME);
+            w.WriteNumber("Interes_Pago_Min_MN", e.Interes_Pago_Min_MN);
+            w.WriteNumber("Interes_Pago_Min_ME", e.Interes_Pago_Min_ME);
+            w.WriteString("Correo", e.Correo);
+            w.WriteNumber("Limite_CreditoMN", e.Limite_CreditoMN);
+            w.WriteNumber("Interes_Corriente_MN", e.Interes_Corriente_MN);
+            w.WriteNumber("Interes_Corriente_ME", e.Interes_Corriente_ME);
+            w.WriteString("Estado", e.EstadoTarjeta);
+            w.WriteEndObject();
         }
 
-        public object GetReemplazarMerchantName()
+        private static void EscribirDetalle(Utf8JsonWriter w, List<DetalleDto> movs)
         {
-            object parametros = null;
+            w.WriteStartArray();
 
-            if (memoryCacheFlotantes.Contains("FloatingParameters"))
+            // Movimientos (Tipo_Reg = 1)
+            foreach (var m in movs.OrderBy(x => x.Fecha_Consumo))
             {
-                _logger.Debug("Existen los parametros en cache");
-                parametros = memoryCacheFlotantes.Get("FloatingParameters");
+                w.WriteStartObject();
+                w.WriteString("Fecha_Consumo", m.Fecha_Consumo?.ToString("dd/MM/yyyy") ?? "");
+                w.WriteNumber("Tipo_Reg", 1);
+                w.WriteString("Descripcion_Mov", m.Descripcion_Mov.Trim());
+                w.WriteNumber("DebitosMN", m.Moneda_Mov == "HN" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0);
+                w.WriteNumber("CreditosMN", m.Moneda_Mov == "HN" && m.TipoMovimiento == "C" ? m.Monto_Mov : 0);
+                w.WriteNumber("DebitosME", m.Moneda_Mov == "DO" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0);
+                w.WriteNumber("CreditosME", m.Moneda_Mov == "DO" && m.TipoMovimiento == "C" ? m.Monto_Mov : 0);
+                w.WriteEndObject();
             }
 
-            if (parametros == null)
+            // Subtotal (Tipo_Reg = 2)
+            w.WriteStartObject();
+            w.WriteString("Fecha_Consumo", "");
+            w.WriteNumber("Tipo_Reg", 2);
+            w.WriteString("Descripcion_Mov", "Subtotal");
+            w.WriteNumber("DebitosMN", movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov));
+            w.WriteNumber("CreditosMN", movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "C").Sum(x => x.Monto_Mov));
+            w.WriteNumber("DebitosME", movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov));
+            w.WriteNumber("CreditosME", movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "C").Sum(x => x.Monto_Mov));
+            w.WriteEndObject();
+
+            // Total (Tipo_Reg = 3)
+            w.WriteStartObject();
+            w.WriteString("Fecha_Consumo", "");
+            w.WriteNumber("Tipo_Reg", 3);
+            w.WriteString("Descripcion_Mov", "Total");
+            w.WriteNumber("DebitosMN", movs.Sum(x => x.Monto_Mov));
+            w.WriteNumber("CreditosMN", 0m);
+            w.WriteNumber("DebitosME", 0m);
+            w.WriteNumber("CreditosME", 0m);
+            w.WriteEndObject();
+
+            w.WriteEndArray();
+        }
+
+        private static void EscribirFinanciamientos(Utf8JsonWriter w, List<FinanciamientoDto> items)
+        {
+            w.WriteStartArray();
+
+            foreach (var f in items)
             {
-                _logger.Debug("No existen parametros en cache");
-                parametros = _bd.paramFloat.FromSqlRaw("EXEC usp_parametrosFloat 1, null").ToList();
-                apiPrismaMemoryCacheParameters(parametros);
+                w.WriteStartObject();
+                w.WriteString("Tipo", f.Tipo);
+                w.WriteString("Fecha", f.FechaOtorgamiento?.ToString("dd/MM/yyyy") ?? "");
+                w.WriteNumber("Monto", f.ImporteTotalPlan);
+                w.WriteString("Moneda", f.MonedaMovimiento);
+                w.WriteNumber("Cuota", f.Importe);
+                w.WriteNumber("Plazo", f.CantidadCuotasPlan);
+                w.WriteNumber("CuotaAplicada", f.NoCuotaLiquidada);
+                w.WriteString("Tasa", f.TasaFormateada);
+                w.WriteNumber("Saldo", f.PlanCuotaCapitalPend);
+                w.WriteEndObject();
             }
-            return parametros;
+
+            w.WriteEndArray();
         }
     }
 }
 
-
-
-
-Aqui hace eso? 
