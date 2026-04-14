@@ -1,44 +1,6 @@
-Ok mira, tengo varios problemas:
-
-1. El nombre del archivo me gusta esa nomenclatura, de hecho es asi como la tengo parametrizada, actualmente parece que no lo estamos haciendo asi, no está parametrizado, necesito que asi sea.
-2. No me está registrando todos los estados de cuenta en la tabla 
-
-
 USE [EstadosCuentaJSONProcesador]
 GO
 
-/****** Object:  Table [dbo].[HistoricoMaestroEstadosCuentaJSON]    Script Date: 14/4/2026 06:17:49 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE TABLE [dbo].[HistoricoMaestroEstadosCuentaJSON](
-	[IdRow] [int] IDENTITY(1,1) NOT NULL,
-	[FechaCorte] [date] NOT NULL,
-	[NoTarjeta] [char](16) NULL,
-	[NoCuenta] [varchar](25) NOT NULL,
-	[NoCuentaVASA] [varchar](25) NOT NULL,
-	[Nombre] [varchar](255) NOT NULL,
-	[Correo] [varchar](255) NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[Lote] [int] NULL,
-	[Procesado] [char](2) NOT NULL,
-	[FechaEjecucion] [datetime] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[IdRow] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-
-
-Creo que eso es culpa del SP
-
-USE [EstadosCuentaJSONProcesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_SBEstadoCuentaJsonMasivo]    Script Date: 14/4/2026 06:18:56 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -55,6 +17,7 @@ BEGIN TRY
     -- ══════════════════════════════════════════════════════════════════
     DECLARE @FechaCorte DATE;
     DECLARE @BatchSize  INT;
+    DECLARE @NumeroLote INT;
 
     CREATE TABLE #Lote (
         No_Tarjeta VARCHAR(16) PRIMARY KEY
@@ -68,6 +31,15 @@ BEGIN TRY
 
     SELECT TOP 1 @BatchSize = RegistrosPorLote
     FROM dbo.ParametrosGeneracionEC;
+
+    -- ── Calcular número de lote ───────────────────────────────────────
+    -- Se toma el mayor lote ya registrado para esta fecha de corte + 1.
+    -- Workers concurrentes pueden obtener el mismo número si se ejecutan
+    -- en el mismo instante, lo cual es aceptable: agrupa las tarjetas
+    -- procesadas en el mismo ciclo de ejecución.
+    SELECT @NumeroLote = ISNULL(MAX(Lote), 0) + 1
+    FROM dbo.HistoricoMaestroEstadosCuentaJSON
+    WHERE FechaCorte = @FechaCorte;
 
     -- ══════════════════════════════════════════════════════════════════
     -- RESERVAR LOTE (READPAST evita bloqueos entre workers)
@@ -96,8 +68,7 @@ BEGIN TRY
 
     -- ══════════════════════════════════════════════════════════════════
     -- RESULT SET 1 — ENCABEZADOS
-    -- Un registro por tarjeta, todos los campos planos.
-    -- .NET construye el objeto JSON "Encabezado".
+    -- Se agrega NumeroLote para que .NET lo use al construir el histórico
     -- ══════════════════════════════════════════════════════════════════
     SELECT
         hc.No_Tarjeta,
@@ -134,8 +105,6 @@ BEGIN TRY
         ISNULL(hc.Sobregiro_ME,      0) AS Sobregiro_ME,
         ISNULL(hc.Cuota_Mes_ME,      0) AS Cuota_Mes_ME,
 
-        -- Saldo consumo: .NET también lo calcula como propiedad computada,
-        -- pero lo enviamos por si algún consumidor del RS lo necesita directo.
         ISNULL(hc.Compras_Deb_MN - hc.Interes_Corriente_MN + hc.Saldo_Anterior_MN - hc.Pagos_Cred_MN, 0) AS Saldo_Consumo_MN,
         ISNULL(hc.Compras_Deb_ME - hc.Interes_Corriente_ME + hc.Saldo_Anterior_ME - hc.Pagos_Cred_ME, 0) AS Saldo_Consumo_ME,
 
@@ -169,7 +138,7 @@ BEGIN TRY
         LTRIM(RTRIM(ISNULL(hc.Direccion_2, ''))) AS Direccion_2,
         LTRIM(RTRIM(ISNULL(hc.Direccion_3, ''))) AS Direccion_3,
         LTRIM(RTRIM(ISNULL(hc.Apdo_Postal, ''))) AS Apdo_Postal,
-        LTRIM(RTRIM(ISNULL(hc.Cidudad,     ''))) AS Ciudad,          -- alias corrige el typo de la tabla
+        LTRIM(RTRIM(ISNULL(hc.Cidudad,     ''))) AS Ciudad,
 
         LTRIM(RTRIM(ISNULL(CONVERT(VARCHAR(MAX), map.Mensaje), ''))) AS Mensaje_1,
         LTRIM(RTRIM(ISNULL(hc.Mensaje_2, ''))) AS Mensaje_2,
@@ -194,7 +163,13 @@ BEGIN TRY
         ISNULL(hc.Interes_Corriente_MN,  0) AS Interes_Corriente_MN,
         ISNULL(hc.Interes_Corriente_ME,  0) AS Interes_Corriente_ME,
 
-        LTRIM(RTRIM(ISNULL(t.EstadoTarjeta, '0'))) AS EstadoTarjeta
+        LTRIM(RTRIM(ISNULL(t.EstadoTarjeta, '0'))) AS EstadoTarjeta,
+
+        -- Número de lote: .NET lo lee del primer encabezado del RS1
+        @NumeroLote AS NumeroLote,
+
+        -- NoCuentaClaro para el histórico
+        ISNULL(hc.NoCuentaClaro, '') AS NoCuentaVASA
 
     FROM #Lote l
     INNER JOIN dbo.BandejaEstadoCuenta be
@@ -212,21 +187,19 @@ BEGIN TRY
 
     -- ══════════════════════════════════════════════════════════════════
     -- RESULT SET 2 — DETALLE DE MOVIMIENTOS
-    -- Un registro por movimiento. .NET construye Tipo_Reg, Subtotal y Total.
     -- ══════════════════════════════════════════════════════════════════
     SELECT
         a.EC_DetalleNo_Cuenta AS No_Cuenta,
         a.Fecha_Consumo,
         a.Codigo_Mov,
         LTRIM(RTRIM(ISNULL(a.Descripcion_Mov, ''))) AS Descripcion_Mov,
-        LTRIM(RTRIM(ISNULL(a.Moneda_Mov,      ''))) AS Moneda_Mov,       -- "HN" | "DO"
-        LTRIM(RTRIM(ISNULL(b.TipoMovimiento,  ''))) AS TipoMovimiento,   -- "D"  | "C"
+        LTRIM(RTRIM(ISNULL(a.Moneda_Mov,      ''))) AS Moneda_Mov,
+        LTRIM(RTRIM(ISNULL(b.TipoMovimiento,  ''))) AS TipoMovimiento,
         ISNULL(a.Monto_Mov, 0)                      AS Monto_Mov
 
     FROM dbo.BandejaDetalle a
     INNER JOIN dbo.TiposMovimientos b
         ON b.CodMovimiento = a.Codigo_Mov
-    -- Solo traer movimientos de las cuentas del lote actual
     INNER JOIN dbo.BandejaEncabezado hc
         ON hc.No_Cuenta   = a.EC_DetalleNo_Cuenta
        AND hc.Fecha_Corte = @FechaCorte
@@ -236,7 +209,6 @@ BEGIN TRY
 
     -- ══════════════════════════════════════════════════════════════════
     -- RESULT SET 3 — FINANCIAMIENTOS
-    -- Un registro por financiamiento. .NET construye el array JSON.
     -- ══════════════════════════════════════════════════════════════════
     SELECT
         f.NumeroCuenta AS No_Cuenta,
@@ -250,7 +222,7 @@ BEGIN TRY
         ISNULL(f.Importe,              0) AS Importe,
         ISNULL(f.CantidadCuotasPlan,   0) AS CantidadCuotasPlan,
         ISNULL(f.NoCuotaLiquidada,     0) AS NoCuotaLiquidada,
-        ISNULL(f.PlanExtraTasa,        0) AS PlanExtraTasa,        -- .NET formatea "0%" o "X%"
+        ISNULL(f.PlanExtraTasa,        0) AS PlanExtraTasa,
         ISNULL(f.PlanCuotaCapitalPend, 0) AS PlanCuotaCapitalPend
 
     FROM dbo.BandejaFinanciamientos f
@@ -265,10 +237,41 @@ BEGIN TRY
 
     -- ══════════════════════════════════════════════════════════════════
     -- RESULT SET 4 — TARJETAS DEL LOTE
-    -- .NET lo usa para logging y confirmación del lote procesado.
     -- ══════════════════════════════════════════════════════════════════
     SELECT No_Tarjeta
     FROM #Lote;
+
+    -- ══════════════════════════════════════════════════════════════════
+    -- HISTÓRICO — registrar cada tarjeta procesada con su lote
+    -- ══════════════════════════════════════════════════════════════════
+    INSERT INTO dbo.HistoricoMaestroEstadosCuentaJSON
+    (
+        FechaCorte,
+        NoTarjeta,
+        NoCuenta,
+        NoCuentaVASA,
+        Nombre,
+        Correo,
+        Origen,
+        Lote,
+        Procesado,
+        FechaEjecucion
+    )
+    SELECT
+        @FechaCorte,
+        hc.No_Tarjeta,
+        hc.No_Cuenta,
+        ISNULL(hc.NoCuentaClaro, ''),
+        LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))),
+        LTRIM(RTRIM(ISNULL(hc.Correo, ''))),
+        LTRIM(RTRIM(ISNULL(hc.Origen, ''))),
+        @NumeroLote,
+        'OK',
+        GETDATE()
+    FROM #Lote l
+    INNER JOIN dbo.BandejaEncabezado hc
+        ON hc.No_Tarjeta  = l.No_Tarjeta
+       AND hc.Fecha_Corte = @FechaCorte;
 
     -- ── Marcar lote como procesado ────────────────────────────────────
     UPDATE be
@@ -280,6 +283,39 @@ END TRY
 
 BEGIN CATCH
 
+    -- Registrar las tarjetas fallidas en el histórico con marca 'ER'
+    IF EXISTS (SELECT 1 FROM #Lote)
+    BEGIN
+        INSERT INTO dbo.HistoricoMaestroEstadosCuentaJSON
+        (
+            FechaCorte,
+            NoTarjeta,
+            NoCuenta,
+            NoCuentaVASA,
+            Nombre,
+            Correo,
+            Origen,
+            Lote,
+            Procesado,
+            FechaEjecucion
+        )
+        SELECT
+            @FechaCorte,
+            hc.No_Tarjeta,
+            hc.No_Cuenta,
+            ISNULL(hc.NoCuentaClaro, ''),
+            LTRIM(RTRIM(ISNULL(hc.Nombre_TH_Tit, ''))),
+            LTRIM(RTRIM(ISNULL(hc.Correo, ''))),
+            LTRIM(RTRIM(ISNULL(hc.Origen, ''))),
+            @NumeroLote,
+            'ER',
+            GETDATE()
+        FROM #Lote l
+        INNER JOIN dbo.BandejaEncabezado hc
+            ON hc.No_Tarjeta  = l.No_Tarjeta
+           AND hc.Fecha_Corte = @FechaCorte;
+    END
+
     -- Revertir estado para que otro worker pueda reintentar
     UPDATE be
     SET    Estado   = 0,
@@ -287,11 +323,7 @@ BEGIN CATCH
     FROM dbo.BandejaEstadoCuenta be
     INNER JOIN #Lote l ON be.No_Tarjeta = l.No_Tarjeta;
 
-    -- Propagar el error al llamador (.NET lo captura en el catch del worker)
     THROW;
 
 END CATCH
-
-
-
-Si te fijas ... la tabla tiene un espacio que dice Lote .. si me gustaria que se agregara el numero de lote en que se ejecutó 
+GO
