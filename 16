@@ -1,23 +1,24 @@
-CREATE TABLE dbo.ControlLotes (
-    FechaCorte  DATE         NOT NULL,
-    NumeroLote  INT          NOT NULL DEFAULT 0,
-    PRIMARY KEY (FechaCorte)
-);
+public void ReiniciarControlLote(DateTime fechaCorte)
+{
+    using var conn = _sql.GetConnection();
+    if (conn.State != ConnectionState.Open)
+        conn.Open();
+
+    using var cmd = new SqlCommand(@"
+        IF EXISTS (SELECT 1 FROM dbo.ControlLotes WHERE FechaCorte = @FechaCorte)
+            UPDATE dbo.ControlLotes SET NumeroLote = 0 WHERE FechaCorte = @FechaCorte
+        ELSE
+            INSERT INTO dbo.ControlLotes (FechaCorte, NumeroLote) VALUES (@FechaCorte, 0)
+    ", conn);
+
+    cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte.Date);
+    cmd.ExecuteNonQuery();
+}
 
 
 
 
 
--- Incrementa atómicamente y retorna el nuevo valor
-UPDATE dbo.ControlLotes
-SET    @NumeroLote = NumeroLote = NumeroLote + 1
-WHERE  FechaCorte = @FechaCorte;
 
--- Si no existe el registro para esta fecha lo crea
-IF @NumeroLote IS NULL
-BEGIN
-    INSERT INTO dbo.ControlLotes (FechaCorte, NumeroLote)
-    VALUES (@FechaCorte, 1);
-
-    SET @NumeroLote = 1;
-END
+// En GeneracionLoteService.Ejecutar(), antes de lanzar los workers
+_repo.ReiniciarControlLote(fechaCorte);
