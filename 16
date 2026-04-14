@@ -19,7 +19,7 @@ namespace EstadosCuentaTC.Services
         private readonly EstadoCuentaRepository _repo;
         private readonly ILogger<GeneracionLoteService> _logger;
 
-        private static readonly object _lockFile   = new();
+        private static readonly object _lockFile = new();
         private static readonly object _lockPrimer = new();
 
         private bool _primerFragmento = true;
@@ -28,7 +28,7 @@ namespace EstadosCuentaTC.Services
             EstadoCuentaRepository repo,
             ILogger<GeneracionLoteService> logger)
         {
-            _repo   = repo;
+            _repo = repo;
             _logger = logger;
         }
 
@@ -76,7 +76,7 @@ namespace EstadosCuentaTC.Services
                                 string prefijo;
                                 lock (_lockPrimer)
                                 {
-                                    prefijo          = _primerFragmento ? "" : ",";
+                                    prefijo = _primerFragmento ? "" : ",";
                                     _primerFragmento = false;
                                 }
                                 File.AppendAllText(archivoJson, prefijo + fragmento, Encoding.UTF8);
@@ -132,7 +132,7 @@ namespace EstadosCuentaTC.Services
                 .GroupBy(f => f.No_Cuenta)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            var sb      = new StringBuilder();
+            var sb = new StringBuilder();
             bool primero = true;
 
             foreach (var enc in lote.Encabezados)
@@ -140,14 +140,14 @@ namespace EstadosCuentaTC.Services
                 if (!primero) sb.Append(',');
                 primero = false;
 
-                var detalle        = detallesPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
-                var financiamiento = finanPorCuenta   .GetValueOrDefault(enc.No_Cuenta, []);
+                var detalle = detallesPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
+                var financiamiento = finanPorCuenta.GetValueOrDefault(enc.No_Cuenta, []);
 
                 sb.Append('"');
                 sb.Append(enc.No_Tarjeta);
                 sb.Append("\":");
 
-                using var ms     = new MemoryStream();
+                using var ms = new MemoryStream();
                 using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions
                 {
                     Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -175,99 +175,96 @@ namespace EstadosCuentaTC.Services
         {
             w.WriteStartObject();
 
-            // Strings
-            w.WriteString("Origen",         e.Origen);
-            w.WriteString("Emisor",         e.Emisor);
-            w.WriteString("No_Cuenta",      e.No_Cuenta);
-            w.WriteString("Nombre_TH_Tit",  e.Nombre_TH_Tit);
-            w.WriteString("Emisor_Madre",   e.Emisor_Madre);
-            w.WriteString("Cuenta_Madre",   e.Cuenta_Madre);
+         
+            w.WriteString("Origen", e.Origen);
+            w.WriteString("Emisor", e.Emisor);
+            w.WriteString("No_Cuenta", e.No_Cuenta);
+            w.WriteString("Nombre_TH_Tit", e.Nombre_TH_Tit);
+            w.WriteString("Emisor_Madre", e.Emisor_Madre);
+            w.WriteString("Cuenta_Madre", e.Cuenta_Madre);
             w.WriteString("Nombre_Empresa", e.Nombre_Empresa);
-            w.WriteString("Tipo_Tarjeta",   e.Tipo_Tarjeta);
-            w.WriteString("No_Tarjeta",     e.No_Tarjeta);
-            w.WriteString("Fecha_Pago",     e.Fecha_Pago? .ToString("dd/MM/yyyy") ?? "");
-            w.WriteString("Fecha_Corte",    e.Fecha_Corte?.ToString("dd/MM/yyyy") ?? "");
+            w.WriteString("Tipo_Tarjeta", e.Tipo_Tarjeta);
+            w.WriteString("No_Tarjeta", e.No_Tarjeta);
+            w.WriteString("Fecha_Pago", e.Fecha_Pago?.ToString("dd/MM/yyyy") ?? "");
+            w.WriteString("Fecha_Corte", e.Fecha_Corte?.ToString("dd/MM/yyyy") ?? "");
 
-            // Decimales MN — 2 cifras exactas
-            WriteD2(w, "Pago_Contado_MN",   e.Pago_Contado_MN);
-            WriteD2(w, "Pago_Minimo_MN",    e.Pago_Minimo_MN);
-            WriteD2(w, "Saldo_Vencido_MN",  e.Saldo_Vencido_MN);
+            WriteD2(w, "Pago_Contado_MN", e.Pago_Contado_MN);
+            WriteD2(w, "Pago_Minimo_MN", e.Pago_Minimo_MN);
+            WriteD2(w, "Saldo_Vencido_MN", e.Saldo_Vencido_MN);
             WriteD2(w, "Saldo_Anterior_MN", e.Saldo_Anterior_MN);
-            WriteD2(w, "Saldo_Final_MN",    e.Saldo_Final_MN);
-            WriteD2(w, "Compras_Deb_MN",    e.Compras_Deb_MN);
-            WriteD2(w, "Pagos_Cred_MN",     e.Pagos_Cred_MN);
-            WriteD2(w, "Sobregiro_MN",      e.Sobregiro_MN);
-            WriteD2(w, "Cuota_Mes_MN",      e.Cuota_Mes_MN);
+            WriteD2(w, "Saldo_Final_MN", e.Saldo_Final_MN);
+            WriteD2(w, "Compras_Deb_MN", e.Compras_Deb_MN);
+            WriteD2(w, "Pagos_Cred_MN", e.Pagos_Cred_MN);
+            WriteD2(w, "Sobregiro_MN", e.Sobregiro_MN);
+            WriteD2(w, "Cuota_Mes_MN", e.Cuota_Mes_MN);
 
-            // Decimales ME
-            WriteD2(w, "Pago_Contado_ME",   e.Pago_Contado_ME);
-            WriteD2(w, "Pago_Minimo_ME",    e.Pago_Minimo_ME);
-            WriteD2(w, "Saldo_Vencido_ME",  e.Saldo_Vencido_ME);
+     
+            WriteD2(w, "Pago_Contado_ME", e.Pago_Contado_ME);
+            WriteD2(w, "Pago_Minimo_ME", e.Pago_Minimo_ME);
+            WriteD2(w, "Saldo_Vencido_ME", e.Saldo_Vencido_ME);
             WriteD2(w, "Saldo_Anterior_ME", e.Saldo_Anterior_ME);
-            WriteD2(w, "Saldo_Final_ME",    e.Saldo_Final_ME);
-            WriteD2(w, "Saldo_Consumo_MN",  e.Saldo_Consumo_MN);
-            WriteD2(w, "Saldo_Consumo_ME",  e.Saldo_Consumo_ME);
-            WriteD2(w, "Compras_Deb_ME",    e.Compras_Deb_ME);
-            WriteD2(w, "Pagos_Cred_ME",     e.Pagos_Cred_ME);
-            WriteD2(w, "Sobregiro_ME",      e.Sobregiro_ME);
-            WriteD2(w, "Cuota_Mes_ME",      e.Cuota_Mes_ME);
+            WriteD2(w, "Saldo_Final_ME", e.Saldo_Final_ME);
+            WriteD2(w, "Saldo_Consumo_MN", e.Saldo_Consumo_MN);
+            WriteD2(w, "Saldo_Consumo_ME", e.Saldo_Consumo_ME);
+            WriteD2(w, "Compras_Deb_ME", e.Compras_Deb_ME);
+            WriteD2(w, "Pagos_Cred_ME", e.Pagos_Cred_ME);
+            WriteD2(w, "Sobregiro_ME", e.Sobregiro_ME);
+            WriteD2(w, "Cuota_Mes_ME", e.Cuota_Mes_ME);
 
             w.WriteString("Moneda_Lim_Cre", e.Moneda_Lim_Cre);
-            WriteD2(w, "Limite_Credito",     e.Limite_Credito);
-            WriteD2(w, "Disponible_Cta_MN",  e.Disponible_Cta_MN);
-            WriteD2(w, "Disponible_Cta_ME",  e.Disponible_Cta_ME);
-            WriteD2(w, "Disponible_Ret_MN",  e.Disponible_Ret_MN);
-            WriteD2(w, "Disponible_Ret_ME",  e.Disponible_Ret_ME);
+            WriteD2(w, "Limite_Credito", e.Limite_Credito);
+            WriteD2(w, "Disponible_Cta_MN", e.Disponible_Cta_MN);
+            WriteD2(w, "Disponible_Cta_ME", e.Disponible_Cta_ME);
+            WriteD2(w, "Disponible_Ret_MN", e.Disponible_Ret_MN);
+            WriteD2(w, "Disponible_Ret_ME", e.Disponible_Ret_ME);
 
-            // Puntos — enteros largos, sin decimales
-            w.WriteNumber("PTS_Saldo_Ant",    e.PTS_Saldo_Ant);
-            w.WriteNumber("PTS_Ganados",      e.PTS_Ganados);
-            w.WriteNumber("PTS_Usuados",      e.PTS_Usuados);
+          
+            w.WriteNumber("PTS_Saldo_Ant", e.PTS_Saldo_Ant);
+            w.WriteNumber("PTS_Ganados", e.PTS_Ganados);
+            w.WriteNumber("PTS_Usuados", e.PTS_Usuados);
             w.WriteNumber("PTS_Saldo_Actual", e.PTS_Saldo_Actual);
 
             w.WriteString("Moneda_Lim_EF", e.Moneda_Lim_EF);
-            WriteD2(w, "EF_Limite",        e.EF_Limite);
-            WriteD2(w, "EF_Saldo_MN",      e.EF_Saldo_MN);
-            WriteD2(w, "EF_Debitos_MN",    e.EF_Debitos_MN);
-            WriteD2(w, "EF_Creditos_MN",   e.EF_Creditos_MN);
-            WriteD2(w, "EF_Saldo_ME",      e.EF_Saldo_ME);
-            WriteD2(w, "EF_Debitos_ME",    e.EF_Debitos_ME);
-            WriteD2(w, "EF_Creditos_ME",   e.EF_Creditos_ME);
+            WriteD2(w, "EF_Limite", e.EF_Limite);
+            WriteD2(w, "EF_Saldo_MN", e.EF_Saldo_MN);
+            WriteD2(w, "EF_Debitos_MN", e.EF_Debitos_MN);
+            WriteD2(w, "EF_Creditos_MN", e.EF_Creditos_MN);
+            WriteD2(w, "EF_Saldo_ME", e.EF_Saldo_ME);
+            WriteD2(w, "EF_Debitos_ME", e.EF_Debitos_ME);
+            WriteD2(w, "EF_Creditos_ME", e.EF_Creditos_ME);
             WriteD2(w, "EF_Disponible_MN", e.EF_Disponible_MN);
             WriteD2(w, "EF_Disponible_ME", e.EF_Disponible_ME);
 
             WriteD2(w, "Tasa_Int_Anual_MN", e.Tasa_Int_Anual_MN);
             WriteD2(w, "Tasa_Int_Anual_ME", e.Tasa_Int_Anual_ME);
 
-            w.WriteString("Direccion_1",      e.Direccion_1);
-            w.WriteString("Direccion_2",      e.Direccion_2);
-            w.WriteString("Direccion_3",      e.Direccion_3);
-            w.WriteString("Apdo_Postal",      e.Apdo_Postal);
-            w.WriteString("Ciudad",           e.Ciudad);
-            w.WriteString("Mensaje_1",        e.Mensaje_1);
-            w.WriteString("Mensaje_2",        e.Mensaje_2);
-            w.WriteString("Mensaje_3",        e.Mensaje_3);
-            w.WriteString("Mensaje_4",        e.Mensaje_4);
-            w.WriteString("Mensaje_5",        e.Mensaje_5);
+            w.WriteString("Direccion_1", e.Direccion_1);
+            w.WriteString("Direccion_2", e.Direccion_2);
+            w.WriteString("Direccion_3", e.Direccion_3);
+            w.WriteString("Apdo_Postal", e.Apdo_Postal);
+            w.WriteString("Ciudad", e.Ciudad);
+            w.WriteString("Mensaje_1", e.Mensaje_1);
+            w.WriteString("Mensaje_2", e.Mensaje_2);
+            w.WriteString("Mensaje_3", e.Mensaje_3);
+            w.WriteString("Mensaje_4", e.Mensaje_4);
+            w.WriteString("Mensaje_5", e.Mensaje_5);
             w.WriteString("Tarjeta_Imprimir", e.Tarjeta_Imprimir);
 
-            WriteD2(w, "Costo_Anual_Tot_MN",   e.Costo_Anual_Tot_MN);
-            WriteD2(w, "Costo_Anual_Tot_ME",   e.Costo_Anual_Tot_ME);
+            WriteD2(w, "Costo_Anual_Tot_MN", e.Costo_Anual_Tot_MN);
+            WriteD2(w, "Costo_Anual_Tot_ME", e.Costo_Anual_Tot_ME);
 
-            // Plazos — enteros, sin decimales
             w.WriteNumber("Plazo_Canc_Deuda_MN", e.Plazo_Canc_Deuda_MN);
             w.WriteNumber("Plazo_Canc_Deuda_ME", e.Plazo_Canc_Deuda_ME);
 
             WriteD2(w, "Interes_Pago_Min_MN", e.Interes_Pago_Min_MN);
             WriteD2(w, "Interes_Pago_Min_ME", e.Interes_Pago_Min_ME);
 
-            w.WriteString("Correo",             e.Correo);
+            w.WriteString("Correo", e.Correo);
 
-            WriteD2(w, "Limite_CreditoMN",     e.Limite_CreditoMN);
+            WriteD2(w, "Limite_CreditoMN", e.Limite_CreditoMN);
             WriteD2(w, "Interes_Corriente_MN", e.Interes_Corriente_MN);
             WriteD2(w, "Interes_Corriente_ME", e.Interes_Corriente_ME);
 
-            // ✅ CORRECCIÓN 2: Estado como int (era WriteString)
             w.WriteNumber("Estado", int.TryParse(e.EstadoTarjeta, out var estado) ? estado : 0);
 
             w.WriteEndObject();
@@ -283,36 +280,36 @@ namespace EstadosCuentaTC.Services
             foreach (var m in movs.OrderBy(x => x.Fecha_Consumo))
             {
                 w.WriteStartObject();
-                w.WriteString("Fecha_Consumo",  m.Fecha_Consumo?.ToString("dd/MM/yyyy") ?? "");
-                w.WriteNumber("Tipo_Reg",        1);
+                w.WriteString("Fecha_Consumo", m.Fecha_Consumo?.ToString("dd/MM/yyyy") ?? "");
+                w.WriteNumber("Tipo_Reg", 1);
                 w.WriteString("Descripcion_Mov", m.Descripcion_Mov.Trim());
-                // ✅ CORRECCIÓN 1: R2() garantiza 2 cifras en cada monto
-                w.WriteNumber("DebitosMN",  R2(m.Moneda_Mov == "HN" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0));
+
+                w.WriteNumber("DebitosMN", R2(m.Moneda_Mov == "HN" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0));
                 w.WriteNumber("CreditosMN", R2(m.Moneda_Mov == "HN" && m.TipoMovimiento == "C" ? m.Monto_Mov : 0));
-                w.WriteNumber("DebitosME",  R2(m.Moneda_Mov == "DO" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0));
+                w.WriteNumber("DebitosME", R2(m.Moneda_Mov == "DO" && m.TipoMovimiento == "D" ? m.Monto_Mov : 0));
                 w.WriteNumber("CreditosME", R2(m.Moneda_Mov == "DO" && m.TipoMovimiento == "C" ? m.Monto_Mov : 0));
                 w.WriteEndObject();
             }
 
             // Tipo_Reg = 2 — subtotal
             w.WriteStartObject();
-            w.WriteString("Fecha_Consumo",  "");
-            w.WriteNumber("Tipo_Reg",        2);
+            w.WriteString("Fecha_Consumo", "");
+            w.WriteNumber("Tipo_Reg", 2);
             w.WriteString("Descripcion_Mov", "Subtotal");
-            w.WriteNumber("DebitosMN",  R2(movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov)));
+            w.WriteNumber("DebitosMN", R2(movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov)));
             w.WriteNumber("CreditosMN", R2(movs.Where(x => x.Moneda_Mov == "HN" && x.TipoMovimiento == "C").Sum(x => x.Monto_Mov)));
-            w.WriteNumber("DebitosME",  R2(movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov)));
+            w.WriteNumber("DebitosME", R2(movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "D").Sum(x => x.Monto_Mov)));
             w.WriteNumber("CreditosME", R2(movs.Where(x => x.Moneda_Mov == "DO" && x.TipoMovimiento == "C").Sum(x => x.Monto_Mov)));
             w.WriteEndObject();
 
             // Tipo_Reg = 3 — total
             w.WriteStartObject();
-            w.WriteString("Fecha_Consumo",  "");
-            w.WriteNumber("Tipo_Reg",        3);
+            w.WriteString("Fecha_Consumo", "");
+            w.WriteNumber("Tipo_Reg", 3);
             w.WriteString("Descripcion_Mov", "Total");
-            w.WriteNumber("DebitosMN",  R2(movs.Sum(x => x.Monto_Mov)));
+            w.WriteNumber("DebitosMN", R2(movs.Sum(x => x.Monto_Mov)));
             w.WriteNumber("CreditosMN", 0.00m);
-            w.WriteNumber("DebitosME",  0.00m);
+            w.WriteNumber("DebitosME", 0.00m);
             w.WriteNumber("CreditosME", 0.00m);
             w.WriteEndObject();
 
@@ -328,16 +325,16 @@ namespace EstadosCuentaTC.Services
             foreach (var f in items)
             {
                 w.WriteStartObject();
-                w.WriteString("Tipo",          f.Tipo);
-                w.WriteString("Fecha",         f.FechaOtorgamiento?.ToString("dd/MM/yyyy") ?? "");
-                // ✅ CORRECCIÓN 1 aplicada también aquí
-                w.WriteNumber("Monto",         R2(f.ImporteTotalPlan));
-                w.WriteString("Moneda",        f.MonedaMovimiento);
-                w.WriteNumber("Cuota",         R2(f.Importe));
-                w.WriteNumber("Plazo",         f.CantidadCuotasPlan);
+                w.WriteString("Tipo", f.Tipo);
+                w.WriteString("Fecha", f.FechaOtorgamiento?.ToString("dd/MM/yyyy") ?? "");
+           
+                w.WriteNumber("Monto", R2(f.ImporteTotalPlan));
+                w.WriteString("Moneda", f.MonedaMovimiento);
+                w.WriteNumber("Cuota", R2(f.Importe));
+                w.WriteNumber("Plazo", f.CantidadCuotasPlan);
                 w.WriteNumber("CuotaAplicada", f.NoCuotaLiquidada);
-                w.WriteString("Tasa",          f.TasaFormateada);
-                w.WriteNumber("Saldo",         R2(f.PlanCuotaCapitalPend));
+                w.WriteString("Tasa", f.TasaFormateada);
+                w.WriteNumber("Saldo", R2(f.PlanCuotaCapitalPend));
                 w.WriteEndObject();
             }
 
@@ -345,3 +342,10 @@ namespace EstadosCuentaTC.Services
         }
     }
 }
+
+
+
+
+Tengo un problema y es que, en la secciín de Detalles hay campos caluclados, esoscampos .. 3 de elllos los obtengo como 0      w.WriteNumber("CreditosMN", 0.00m);
+            w.WriteNumber("DebitosME", 0.00m);
+            w.WriteNumber("CreditosME", 0.00m);
