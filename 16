@@ -1,17 +1,47 @@
+
+
+
+
+// En GeneracionLoteService.Ejecutar(), antes de lanzar los workers
+_repo.ReiniciarControlLote(fechaCorte);
+
+
+
+CREATE PROCEDURE [dbo].[usp_ReiniciarControlLote]
+    @FechaCorte DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM dbo.ControlLotes WHERE FechaCorte = @FechaCorte)
+        UPDATE dbo.ControlLotes 
+        SET    NumeroLote = 0 
+        WHERE  FechaCorte = @FechaCorte;
+    ELSE
+        INSERT INTO dbo.ControlLotes (FechaCorte, NumeroLote) 
+        VALUES (@FechaCorte, 0);
+END
+
+
+
+
+
+
+
+
 public void ReiniciarControlLote(DateTime fechaCorte)
 {
     using var conn = _sql.GetConnection();
+    using var cmd  = new SqlCommand("usp_ReiniciarControlLote", conn)
+    {
+        CommandType = CommandType.StoredProcedure
+    };
+
+    cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte.Date);
+
     if (conn.State != ConnectionState.Open)
         conn.Open();
 
-    using var cmd = new SqlCommand(@"
-        IF EXISTS (SELECT 1 FROM dbo.ControlLotes WHERE FechaCorte = @FechaCorte)
-            UPDATE dbo.ControlLotes SET NumeroLote = 0 WHERE FechaCorte = @FechaCorte
-        ELSE
-            INSERT INTO dbo.ControlLotes (FechaCorte, NumeroLote) VALUES (@FechaCorte, 0)
-    ", conn);
-
-    cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte.Date);
     cmd.ExecuteNonQuery();
 }
 
@@ -20,5 +50,8 @@ public void ReiniciarControlLote(DateTime fechaCorte)
 
 
 
-// En GeneracionLoteService.Ejecutar(), antes de lanzar los workers
-_repo.ReiniciarControlLote(fechaCorte);
+
+
+
+
+
