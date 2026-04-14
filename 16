@@ -4,13 +4,15 @@ private static string ConvertirFecha(string fechaIso)
         return fechaIso;
 
     if (!DateTimeOffset.TryParse(fechaIso, out var dto))
-        return fechaIso; // Si no parsea, devolver tal cual
+        return fechaIso;
 
-    // Convertir al timezone local del servidor
-    var localTime = TimeZoneInfo.ConvertTime(
-        dto,
-        TimeZoneInfo.Local
-    );
+    var tzId = OperatingSystem.IsWindows()
+        ? "Central America Standard Time"   // Windows
+        : "America/Tegucigalpa";            // Linux / OpenShift
+
+    var tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+
+    var localTime = TimeZoneInfo.ConvertTime(dto, tz);
 
     return localTime.ToString("yyyy-MM-ddTHH:mm:sszzz");
 }
