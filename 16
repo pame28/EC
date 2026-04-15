@@ -1,11 +1,1 @@
-Iniciando el paquete SSIS 'C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\_Otros\GeneracionEstadoCuentaJson\GeneracionEstadoCuentaJson\GeneracionECJson.dtsx'.
-Error: 0xC002F304 en Copiar JSON a Historico, File System Task: An error occurred with the following error message: "Acceso denegado a la ruta de acceso 'C:\EstadosCuenta\JSON\Generados'.".
-Error de la tarea: Copiar JSON a Historico
-Advertencia: 0x80019002 en Generacion de Estado Cuenta JSON: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (1) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
-Advertencia: 0x80019002 en GeneracionECJson: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (1) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
-Paquete SSIS 'C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\_Otros\GeneracionEstadoCuentaJson\GeneracionEstadoCuentaJson\GeneracionECJson.dtsx' finalizado: Error.
-El programa '[38012] DtsDebugHost.exe: DTS' terminó con código 0 (0x0).
-
-
-
-Fijate que siempre me falló
+icacls "C:\EstadosCuenta" /grant Everyone:(OI)(CI)F /T
