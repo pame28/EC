@@ -1,13 +1,13 @@
-# Ver con qué usuario corre el servicio de SQL Server Integration Services
-Get-WmiObject Win32_Service | Where-Object {$_.Name -like "*SSIS*" -or $_.Name -like "*MsDts*"} | Select-Object Name, StartName
+Name                           StartName
+----                           ---------
+Dell SupportAssist Remediation LocalSystem
+MsDtsServer110                 NT Service\MsDtsServer110
+MsDtsServer160                 NT Service\MsDtsServer160
+SSISScaleOutMaster160          NT Service\SSISScaleOu...
+SSISScaleOutWorker160          NT Service\SSISScaleOu...
+SSISTELEMETRY160               NT Service\SSISTELEMET...
+SupportAssistAgent             LocalSystem
 
 
 
-
-
-$acl = Get-Acl "C:\EstadosCuenta"
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-    "NT Service\MsDtsServer160","FullControl","ContainerInherit,ObjectInherit","None","Allow"
-)
-$acl.SetAccessRule($rule)
-Set-Acl "C:\EstadosCuenta" $acl
+Me devolvió muchos
