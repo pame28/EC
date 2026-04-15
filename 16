@@ -1,32 +1,10 @@
-
-PS C:\Windows\System32\WindowsPowerShell\v1.0> New-Item -ItemType Directory -Force -Path "C:\EstadosCuenta\JSON\Generados"
-
-
-    Directorio: C:\EstadosCuenta\JSON
+icacls "C:\EstadosCuenta" /grant "Everyone:(OI)(CI)F" /T
 
 
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
-d-----         15/4/2026     05:32                Generados
 
 
-PS C:\Windows\System32\WindowsPowerShell\v1.0> New-Item -ItemType Directory -Force -Path "C:\EstadosCuenta\JSON\Historico"
 
-
-    Directorio: C:\EstadosCuenta\JSON
-
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
-d-----         15/4/2026     05:26                Historico
-
-
-PS C:\Windows\System32\WindowsPowerShell\v1.0> icacls "C:\EstadosCuenta" /grant Everyone:(OI)(CI)F /T
-OI : El término 'OI' no se reconoce como nombre de un cmdlet, función, archivo de script o programa ejecutable.
-Compruebe si escribió correctamente el nombre o, si incluyó una ruta de acceso, compruebe que dicha ruta es correcta e
-inténtelo de nuevo.
-En línea: 1 Carácter: 44
-+ icacls "C:\EstadosCuenta" /grant Everyone:(OI)(CI)F /T
-+                                            ~~
-    + CategoryInfo          : ObjectNotFound: (OI:String) [], CommandNotFoundException
-    + FullyQualifiedErrorId : CommandNotFoundException
+$acl = Get-Acl "C:\EstadosCuenta"
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone","FullControl","ContainerInherit,ObjectInherit","None","Allow")
+$acl.SetAccessRule($rule)
+Set-Acl "C:\EstadosCuenta" $acl
