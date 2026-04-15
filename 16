@@ -1,26 +1,12 @@
-public void Main()
+// Ya no lees el archivo, lees la variable directamente
+string contenidoContador = Dts.Variables["User::ContenidoContador"].Value.ToString();
+
+// Y extraes los valores igual que antes
+foreach (string linea in contenidoContador.Split(new[] { Environment.NewLine }, StringSplitOptions.None))
 {
-    try
-    {
-        DateTime fechaCortedt = Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value);
-        string rutaBase       = Dts.Variables["User::RutaArchivoJson"].Value.ToString();
+    if (linea.StartsWith("Total Procesados"))
+        totalProcesados = linea.Split(':')[1].Trim();
 
-        string rutaContador = Path.Combine(
-            rutaBase,
-            fechaCortedt.ToString("yyyy-MM-dd"),
-            "Contador.txt"
-        );
-
-        if (File.Exists(rutaContador))
-            Dts.Variables["User::ContenidoContador"].Value = File.ReadAllText(rutaContador);
-        else
-            Dts.Variables["User::ContenidoContador"].Value = "No disponible";
-
-        Dts.TaskResult = (int)ScriptResults.Success;
-    }
-    catch (Exception ex)
-    {
-        Dts.Events.FireError(0, "Error Leer Contador", ex.Message, string.Empty, 0);
-        Dts.TaskResult = (int)ScriptResults.Failure;
-    }
+    if (linea.StartsWith("Fecha Ejecucion"))
+        fechaEjecucion = linea.Split(':')[1].Trim();
 }
