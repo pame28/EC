@@ -1,13 +1,34 @@
-Name                           StartName
-----                           ---------
-Dell SupportAssist Remediation LocalSystem
-MsDtsServer110                 NT Service\MsDtsServer110
-MsDtsServer160                 NT Service\MsDtsServer160
-SSISScaleOutMaster160          NT Service\SSISScaleOu...
-SSISScaleOutWorker160          NT Service\SSISScaleOu...
-SSISTELEMETRY160               NT Service\SSISTELEMET...
-SupportAssistAgent             LocalSystem
+# Dar permisos a todos los servicios SSIS relevantes
+$servicios = @(
+    "NT Service\MsDtsServer160",
+    "NT Service\SSISScaleOutMaster160",
+    "NT Service\SSISScaleOutWorker160"
+)
+
+foreach ($servicio in $servicios) {
+    $acl = Get-Acl "C:\EstadosCuenta"
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        $servicio,"FullControl","ContainerInherit,ObjectInherit","None","Allow"
+    )
+    $acl.SetAccessRule($rule)
+    Set-Acl "C:\EstadosCuenta" $acl
+    Write-Host "Permisos asignados a: $servicio"
+}
 
 
 
-Me devolvió muchos
+
+
+$acl = Get-Acl "C:\EstadosCuenta"
+$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+    "NETWORK SERVICE","FullControl","ContainerInherit,ObjectInherit","None","Allow"
+)
+$acl.SetAccessRule($rule)
+Set-Acl "C:\EstadosCuenta" $acl
+Write-Host "Permisos asignados a: NETWORK SERVICE"
+
+
+
+
+
+(Get-Acl "C:\EstadosCuenta").Access | Select-Object IdentityReference, FileSystemRights
