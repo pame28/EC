@@ -1,187 +1,327 @@
-Mira, tengo que enviar un correo
+Devuelveme ese script completo para mi dtsx para el envio de correo ... 
 
-/*
-   Microsoft SQL Server Integration Services Script Task
-   Write scripts using Microsoft Visual C# 2008.
-   The ScriptMain is the entry point class of the script.
-*/
+y usemos como la estructura de esta plantilla, mas que todo quiero que usemos el encabezado y footer, no contenido, brindamela corregida para actualizar la tabla con la plantillaHTML
 
-using System;
-using System.Data;
-using Microsoft.SqlServer.Dts.Runtime;
-using System.Windows.Forms;
-using System.Net.Mail;
-using System.Data.SqlClient;
-
-namespace ST_3bf4076c13c640ef982304a7067bf285.csproj
-{
-    [Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
-    public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
-    {
-
-        #region VSTA generated code
-        enum ScriptResults
-        {
-            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
-            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
-        };
-        #endregion
-
-        /*
-		The execution engine calls this method when the task executes.
-		To access the object model, use the Dts property. Connections, variables, events,
-		and logging features are available as members of the Dts property as shown in the following examples.
-
-		To reference a variable, call Dts.Variables["MyCaseSensitiveVariableName"].Value;
-		To post a log entry, call Dts.Log("This is my log text", 999, null);
-		To fire an event, call Dts.Events.FireInformation(99, "test", "hit the help message", "", 0, true);
-
-		To use the connections collection use something like the following:
-		ConnectionManager cm = Dts.Connections.Add("OLEDB");
-		cm.ConnectionString = "Data Source=localhost;Initial Catalog=AdventureWorks;Provider=SQLNCLI10;Integrated Security=SSPI;Auto Translate=False;";
-
-		Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
-		
-		To open Help, press F1.
-	*/
-        public string FechaCorte;
-        public void Main()
-        {
-             try
-            {
-                FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
-  
-                MailMessage htmlMessage=new MailMessage();
-                SmtpClient mySmtpClient;
-                string DireccionCorreo= Dts.Variables["User::CorreoReporte"].Value.ToString();
-                foreach (string Destinatarios in DireccionCorreo.Split(';'))
-                {
-                    htmlMessage.To.Add(new MailAddress(Destinatarios));
-                }
-                
-                htmlMessage.From=new MailAddress("ReporteEstadoCuenta@banpais.hn");
-                htmlMessage.Subject = "Reporte Estado Cuenta";
-                htmlMessage.Body = ObtenerBody();
-                htmlMessage.IsBodyHtml = true;
-                object Server = Dts.Connections["SMTP"].AcquireConnection(Dts.Transaction);
-                string Cadena = (string)Server; //"PU-MAILSERVBP";
-                string[] Array = Cadena.Split('=', ';');
-                string smtpServer = Array[1];
-                mySmtpClient = new SmtpClient(smtpServer);
-                mySmtpClient.Send(htmlMessage);
-
-                Dts.Variables["TipoLlenarBandeja"].Value = "Limpiar";
-                Dts.Variables["TipoLimpiarReporte"].Value = "COMPLETA";
-
-                // TODO: Add your code here
-                Dts.TaskResult = (int)ScriptResults.Success;
-            }
-             catch (Exception ex)
-             {
-                 Dts.Variables["Error"].Value = "Error en public void Main, tarea Envio Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
-                 Dts.Events.FireError(0, "Error envio correo reporte Main", ex.Message, String.Empty, 0);
-                 Dts.TaskResult = (int)ScriptResults.Failure;
-                 
-             }
-        }
-
-        public string ObtenerBody()
-        {
-            try
-            {
-                string Body = "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'> <html xmlns='http://www.w3.org/1999/xhtml'> <body> <style> .TituloTbl { background-color: #00446a; color: white; text-align: center; } .Imagen { width: 35%; /* position: relative; left: 300px; border: 1px black solid; */ } tbody tr td { /* border: 1px #0f59a0 solid; */ padding: 5px 5px; } tbody { border: 1px #00446a solid; } .Tabla { /*margin-top: 100px; margin-left: 380PX; */ width: 550px; background-color: white; } </style> <div class='Tabla'> <table style='font-family:Calibri; border-collapse: collapse; width: 100%;'> <thead> <tr style='background-color: #ffef11;'> <td colspan='2'><img src='https://www.banpais.hn/images/logo.png' alt='' class='Imagen' align=left> </td> </tr> <tr> <td colspan='2' style='background-color: #ffef11;'>&nbsp;</td> </tr> <tr> <td colspan='2' class='TituloTbl'>Estados de Cuenta de Tarjeta de Cr&eacute;dito</td> </tr> </thead> <tbody> <tr> <td colspan='2'> Estimado(a): </td> </tr> <tr> <td colspan='2'> <p>Le informamos que el proceso de generación de JSON de estados de cuenta de tarjeta de cr&eacute;dito del corte [FechaCorte] ha finalizado con exito.</p> </td> </tr> </tbody> </table> </div> </body> </html>";
-                Body = Body.Replace("[FechaCorte]", FechaCorte);
-
-                return Body;
-            }
-            catch (Exception ex)
-            {
-                Dts.Variables["Error"].Value = "Error en public string ObtenerBody en tarea Enviar Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
-                Dts.Events.FireError(0, "Error string ObtenerBody", ex.Message, String.Empty, 0);
-                Dts.TaskResult = (int)ScriptResults.Failure;
-                return null;
-            }
-        }
-        
-
-    }
-}
-
-
-
-Necesito migrarlo para mi SSIS, pero no se qué cosas necesito, ni de que correo habla, quiero que tomes en cuenta que los datos para el envio de correo los tengo parametrizados, hasta la plantilla HTML que usé la que vi en el codigo esta:
-
-<!DOCTYPE html
-    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
 <head>
-    <title>Direcci&oacute;n de Cajero</title>
+	<title></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"><!--[if mso]>
+<xml><w:WordDocument xmlns:w="urn:schemas-microsoft-com:office:word"><w:DontUseAdvancedTypographyReadingMail/></w:WordDocument>
+<o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch><o:AllowPNG/></o:OfficeDocumentSettings></xml>
+<![endif]--><!--[if !mso]><!--><!--<![endif]-->
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			padding: 0;
+		}
+
+		a[x-apple-data-detectors] {
+			color: inherit !important;
+			text-decoration: inherit !important;
+		}
+
+		#MessageViewBody a {
+			color: inherit;
+			text-decoration: none;
+		}
+
+		p {
+			line-height: inherit
+		}
+
+		.desktop_hide,
+		.desktop_hide table {
+			mso-hide: all;
+			display: none;
+			max-height: 0px;
+			overflow: hidden;
+		}
+
+		.image_block img+div {
+			display: none;
+		}
+
+		sup,
+		sub {
+			font-size: 75%;
+			line-height: 0;
+		}
+
+		@media (max-width:620px) {
+			.desktop_hide table.icons-inner {
+				display: inline-block !important;
+			}
+
+			.icons-inner {
+				text-align: center;
+			}
+
+			.icons-inner td {
+				margin: 0 auto;
+			}
+
+			.mobile_hide {
+				display: none;
+			}
+
+			.row-content {
+				width: 100% !important;
+			}
+
+			.stack .column {
+				width: 100%;
+				display: block;
+			}
+
+			.mobile_hide {
+				min-height: 0;
+				max-height: 0;
+				max-width: 0;
+				overflow: hidden;
+				font-size: 0px;
+			}
+
+			.desktop_hide,
+			.desktop_hide table {
+				display: table !important;
+				max-height: none !important;
+			}
+
+			.row-4 .column-2 .block-1.paragraph_block td.pad>div,
+			.row-5 .column-1 .block-1.paragraph_block td.pad>div {
+				text-align: left !important;
+				font-size: 14px !important;
+			}
+
+			.row-4 .column-2 .block-1.paragraph_block td.pad,
+			.row-5 .column-1 .block-1.paragraph_block td.pad {
+				padding: 10px !important;
+			}
+		}
+
+
+		@font-face {
+			font-family: 'BiNeoIndustrial';
+			src: url('https://www.banpais.hn/boletines/autobole/digital_wallet/fonts/BiNeoIndustrial-Bold.ttf') format('truetype');
+			font-weight: 800;
+			font-style: normal;
+			font-display: swap;
+		}
+
+		@font-face {
+			font-family: 'BiNeoIndustrial';
+			src: url('https://www.banpais.hn/boletines/autobole/digital_wallet/fonts/BiNeoIndustrial-Regular.ttf') format('truetype');
+			font-weight: 400;
+			font-style: normal;
+			font-display: swap;
+		}
+
+		a{
+			color:#003865;
+			text-decoration: none;
+		}
+
+	</style><!--[if mso ]><style>sup, sub { font-size: 100% !important; } sup { mso-text-raise:10% } sub { mso-text-raise:-10% }</style> <![endif]-->
 </head>
 
-<body>
-    <style>
-        .TituloTbl {
-            background-color: #00446a;
-            color: white;
-            text-align: center;
-        }
+<body class="body" style="background-color: #ffffff; margin: 0; padding: 0; -webkit-text-size-adjust: none; text-size-adjust: none;">
+	<table class="nl-container" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #ffffff;">
+		<tbody>
+			<tr>
+				<td>
+					<table class="row row-1" align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+						<tbody>
+							<tr>
+								<td>
+									<table class="row-content stack" align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-radius: 0; color: #000000; width: 600px; margin: 0 auto;" width="600">
+										<tbody>
+											<tr>
+												<td class="column column-1" width="33.333333333333336%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: bottom;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="empty_block block-1" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad">
+																			<div></div>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+												<td class="column column-2" width="33.333333333333336%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: bottom;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="empty_block block-1" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad">
+																			<div></div>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+												<td class="column column-3" width="33.333333333333336%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: bottom;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="image_block block-1" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad" style="width:100%;padding-right:0px;padding-left:0px;">
+																			<div class="alignment" align="right">
+																				<div style="max-width: 120px;"><img src="https://www.banpais.hn/boletines/autobole/digital_wallet/images/logo.png" style="display: block; height: auto; border: 0; width: 100%;" width="120" alt title height="auto"></div>
+																			</div>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 
-        .Imagen {
-            width: 35%;
-            /* position: relative;
-            left: 300px;
-            border: 1px black solid; */
-        }
+					<table class="row row-3" align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+						<tbody>
+							<tr>
+								<td>
+									<table class="row-content stack" align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; width: 600px; margin: 25pt auto;" width="600">
+										<tbody>
+											<tr>
+												<td class="column column-1" width="100%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="heading_block block-1" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad">
+																			<h3 style="margin: 0; color: #003865; direction: ltr; font-family: BiNeoIndustrial, Helvetica, sans-serif; font-size: 18px; font-weight: 400; letter-spacing: normal; line-height: 1.2; text-align: center; margin-top: 0; margin-bottom: 0; mso-line-height-alt: 25px;"><span class="tinyMce-placeholder" style="word-break: break-word;">Estimado (a):</span></h3>
+																		</td>
+																	</tr>
+																</table>
+																<table class="heading_block block-2" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad">
+																			<h2 style="margin: 0; color: #003865; direction: ltr; font-family: BiNeoIndustrial, Helvetica, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: normal; line-height: 1.2; text-align: center; margin-top: 0; margin-bottom: 0; mso-line-height-alt: 26px;"><span class="tinyMce-placeholder" style="word-break: break-word;"><!-- [NOMBRE] --></span></h2>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<table class="row row-4" align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;margin: 20pt auto;">
+						<tbody>
+							<tr>
+								<td>
+									<table class="row-content stack" align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-radius: 0; color: #000000; width: 450px; margin: 0 auto;" width="450">
+										<tbody>
+											<tr>
+												<td class="column column-1" width="15%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="image_block block-1" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad" style="padding-bottom:10px;padding-left:10px;padding-top:10px;width:100%;padding-right:0px;">
+																			<div class="alignment" align="right">
+																				<div style="max-width: 53px;"><img src="https://www.banpais.hn/boletines/autobole/digital_wallet/images/notification.png" style="display: block; height: auto; border: 0; width: 100%;" width="53" alt title height="auto"></div>
+																			</div>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+												<td class="column column-2" width="85%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="paragraph_block block-1" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;">
+																	<tr>
+																		<td class="pad">
+																			<div style="color:#003865;direction:ltr;font-family:BiNeoIndustrial, Helvetica, sans-serif;font-size:14px;font-weight:400;letter-spacing:0px;line-height:1.2;text-align:left;mso-line-height-alt:24px; text-align: justify;">
+																				<p style="margin: 0; margin-bottom: 16px;">Tu gestión por solicitud de PIN ha sido procesada exitosamente.</p>
+																				<p style="margin: 0; margin-bottom: 16px;">Tu nuevo <strong>PIN</strong> es @PIN</p>
+																				<p style="margin: 0; margin-bottom: 16px;">Te invitamos a visitar un Cajero Automático para personalizar tu número PIN de manera fácil y rápida seleccionando la opción: <strong><i>Cambio de PIN</i></strong>.</p>
+																				<p style="margin: 0;">Si necesitas mayor información con tu gestión, favor contactar a nuestro equipo de Servicio al Cliente al número de teléfono <a href="tel:+50425451212"><strong>(504) 2545-1212</strong></a> o al correo electrónico: <a href="mailto:servicio@banpais.hn"><strong>servicio@banpais.hn</strong></a></p>
+																			</div>
+																		</td>
+																	</tr>
+																	
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 
-        tbody tr td {
-            /* border: 1px #0f59a0 solid; */
-
-            padding: 5px 5px;
-        }
-
-        tbody {
-            border: 1px #00446a solid;
-        }
-
-        .Tabla {
-            /*margin-top: 100px;
-            margin-left: 380PX; */
-            width: 550px;
-            background-color: white;
-
-        }
-    </style>
-    <div class="Tabla">
-        <table style="font-family:Calibri; border-collapse: collapse; width: 100%;">
-            <thead>
-                <tr style="background-color: #ffef11;">
-                    <td colspan="2"><img src="https://www.banpais.hn/images/logo.png" alt="" class="Imagen" align=left>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2" style="background-color: #ffef11;">&nbsp;</td>
-                </tr>
-                <tr>
-                    <td colspan="2" class="TituloTbl"> Reporte Estados de Cuenta de Tarjeta de Cr&eacute;dito</td>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="2">
-                        Estimado(a):
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <p>En adjunto encontrar&aacute; el reporte de estados de cuenta de tarjeta de cr&eacute;dito
-                            enviados/no enviados correspondientes al corte [FechaCorte].</p>
-                    </td>
-                </tr>
-
-            </tbody>
-        </table>
-    </div>
+					<table class="row row-6" align="center" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+						<tbody>
+							<tr>
+								<td>
+									<table class="row-content stack" align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-radius: 0; color: #000000; width: 600px; margin: 0 auto;" width="600">
+										<tbody>
+											<tr>
+												<td class="column column-1" width="100%" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top;">
+													<table width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+														<tr>
+															<td class="col-pad" style="padding-bottom:5px;padding-top:5px;">
+																<table class="image_block block-1" width="100%" border="0" cellpadding="0" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad" style="width:100%;">
+																			<div class="alignment" align="center">
+																				<div style="max-width: 600px;"><img src="https://www.banpais.hn/boletines/autobole/digital_wallet/images/footer.png" style="display: block; height: auto; border: 0; width: 100%;" width="600" alt title height="auto"></div>
+																			</div>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</td>
+			</tr>
+		</tbody>
+	</table><!-- End -->
 </body>
 
 </html>
