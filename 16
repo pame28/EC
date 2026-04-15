@@ -1,5 +1,33 @@
-int index = linea.IndexOf(':');
-if (index != -1)
-{
-    fechaEjecucion = linea.Substring(index + 1).Trim();
-}
+ALTER PROCEDURE dbo.usp_ReporteHistoricoPorFecha
+    @FechaCorte DATE = NULL,
+    @Procesado CHAR(2) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        NoCuenta,
+        NoTarjeta,
+        Nombre,
+        Correo,
+        FechaCorte,
+        Origen,
+        CASE 
+            WHEN LTRIM(RTRIM(Procesado)) = '1' 
+				THEN 'Procesado'
+			WHEN LTRIM(RTRIM(Procesado)) = '0' 
+				THEN 'No Procesado'
+            ELSE 'Pendiente'
+        END AS Procesado,
+        FechaEjecucion
+    FROM dbo.HistoricoMaestroEstadosCuentaJSON WITH (NOLOCK)
+    WHERE
+      FechaCorte = @FechaCorte
+	AND   LTRIM(RTRIM(Procesado)) = @Procesado
+
+    ORDER BY IdRow ASC;
+END
+
+
+
+Hay algo en este stored procedure que hace que todos mis datos esten mal, ayudame a arreglarlo
