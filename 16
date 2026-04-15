@@ -1,7 +1,9 @@
-Iniciando el paquete SSIS 'C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\_Otros\GeneracionEstadoCuentaJson\GeneracionEstadoCuentaJson\GeneracionECJson.dtsx'.
-Error: 0xC002F210 en Obtener Parametros Envio Correo Error, Execute SQL Task: Executing the query "[dbo].[usp_ObtenerConfiguracionEmailPorTipo] @Tipo..." failed with the following error: "Could not find stored procedure ''.". Possible failure reasons: Problems with the query, "ResultSet" property not set correctly, parameters not set correctly, or connection not established correctly.
-Error de la tarea: Obtener Parametros Envio Correo Error
-Advertencia: 0x80019002 en Obtener Parametros: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (1) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
-Advertencia: 0x80019002 en GeneracionECJson: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (1) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
-Paquete SSIS 'C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\_Otros\GeneracionEstadoCuentaJson\GeneracionEstadoCuentaJson\GeneracionECJson.dtsx' finalizado: Error.
-El programa '[39628] DtsDebugHost.exe: DTS' terminó con código 0 (0x0).
+SELECT TOP 1 
+    SmtpServer, 
+    MailFrom, 
+    MailSubject, 
+    CorreoDestino, 
+    PlantillaHTML
+FROM dbo.ParametrosEnvioEmail
+WHERE Estado = 1
+AND Tipo = 'ERROR NOTIFICACION REPORTE'
