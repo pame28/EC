@@ -1,45 +1,29 @@
-ALTER PROCEDURE dbo.usp_ReporteHistoricoPorFecha
-    @FechaCorte DATE = NULL,
-    @Procesado CHAR(1) = NULL  -- Cambiado a CHAR(1)
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    SELECT
-        NoCuenta,
-        NoTarjeta,
-        Nombre,
-        Correo,
-        FechaCorte,
-        Origen,
-        CASE 
-            WHEN LTRIM(RTRIM(Procesado)) = '1' THEN 'Procesado'
-            WHEN LTRIM(RTRIM(Procesado)) = '0' THEN 'No Procesado'
-            ELSE 'Pendiente'
-        END AS Procesado,
-        FechaEjecucion
-    FROM dbo.HistoricoMaestroEstadosCuentaJSON WITH (NOLOCK)
-    WHERE
-        (@FechaCorte IS NULL OR FechaCorte = @FechaCorte)
-        AND (@Procesado IS NULL OR LTRIM(RTRIM(Procesado)) = @Procesado)
-    ORDER BY IdRow ASC;
-END
-
-
-
-
-
-
-
-
--- Todos los registros
-EXEC dbo.usp_ReporteHistoricoPorFecha NULL, NULL
-
--- Solo por fecha
-EXEC dbo.usp_ReporteHistoricoPorFecha '2024-01-15', NULL
-
--- Solo procesados
-EXEC dbo.usp_ReporteHistoricoPorFecha NULL, '1'
-
--- Fecha específica y procesados
-EXEC dbo.usp_ReporteHistoricoPorFecha '2024-01-15', '1'
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Worker 4 procesó 3000 tarjetas (lote 20)
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Worker 1 procesó 3000 tarjetas (lote 24)
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Worker 4 finalizado
+fail: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Error en worker 1
+      Microsoft.Data.SqlClient.SqlException (0x80131904): Transaction (Process ID 75) was deadlocked on lock resources with another process and has been chosen as the deadlock victim. Rerun the transaction.
+         at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+         at Microsoft.Data.SqlClient.Connection.SqlConnectionInternal.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+         at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+         at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+         at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+         at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+         at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+         at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean isAsync, Int32 timeout, Task& task, Boolean asyncWrite, Boolean isRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)
+         at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, TaskCompletionSource`1 completion, Int32 timeout, Task& executeTask, Boolean& usedCache, Boolean asyncWrite, Boolean isRetry, String method)
+         at Microsoft.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method)
+         at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader(CommandBehavior behavior)
+         at Microsoft.Data.SqlClient.SqlCommand.ExecuteReader()
+         at EstadosCuentaTC.Repositories.EstadoCuentaRepository.ObtenerLote(Int32 workerId) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\EstadoCuentaRepository.cs:line 58
+         at EstadosCuentaTC.Services.GeneracionLoteService.<>c__DisplayClass6_1.<Ejecutar>b__0() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\GeneracionLoteService.cs:line 84
+      ClientConnectionId:e9ae26b1-1920-4bad-bf42-61a7b817b9f1
+      Error Number:1205,State:45,Class:13
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Worker 1 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Worker 5 procesó 3000 tarjetas (lote 23)
