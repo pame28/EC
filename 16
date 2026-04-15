@@ -1,17 +1,3 @@
-// ── Comprimir en ZIP ──────────────────────────────────────────
-string nombreZip    = $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.zip";
-string rutaZipTemp  = rutaFinal + ".zip";
-string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
-
-// ✅ Eliminar zip temporal si quedó de una ejecución anterior
-if (File.Exists(rutaZipTemp))
-    File.Delete(rutaZipTemp);
-
-// ✅ Eliminar zip final si ya existe
-if (File.Exists(rutaZipFinal))
-    File.Delete(rutaZipFinal);
-
-ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
-File.Move(rutaZipTemp, rutaZipFinal);
-
-_logger.LogInformation("Archivo comprimido: {Zip}", rutaZipFinal);
+Error de validación. Copiar JSON a Historico Tarea Sistema de archivos: Variable "RutaArchivoHistoricoJson" is used as a source or destination and is empty.
+Error de validación. Copiar JSON a Historico Tarea Sistema de archivos: Variable "RutaArchivoJson" is used as a source or destination and is empty.
+Error de validación. Copiar JSON a Historico : There were errors during task validation.
