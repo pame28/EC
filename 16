@@ -1,2 +1,5 @@
-if (linea.StartsWith("Fecha Ejecucion"))
-    fechaEjecucion = linea.Split(':')[1].Trim();
+int index = linea.IndexOf(':');
+if (index != -1)
+{
+    fechaEjecucion = linea.Substring(index + 1).Trim();
+}
