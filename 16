@@ -1,39 +1,37 @@
-public void Main()
-{
-    string rutaBase = Dts.Variables["User::RutaArchivoJson"].Value.ToString();
-    DateTime fechaCorte = Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value);
+Tengo una duda existencial 
 
-    string sourceDirectory      = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-    string destinationDirectory = rutaBase;
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ObtenerConfiguracionEmailPorTipo]    Script Date: 15/4/2026 06:17:27 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[usp_ObtenerConfiguracionEmailPorTipo]
+    @Tipo VARCHAR(50)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-    // Paso 1 — Eliminar archivos previos en la carpeta destino
-    if (Directory.Exists(destinationDirectory))
-    {
-        foreach (string file in Directory.GetFiles(destinationDirectory))
-            File.Delete(file);
-    }
+    SELECT TOP 1
+          SmtpServer
+        , MailFrom
+        , MailSubject
+        , CorreoDestino
+		,PlantillaHTML
+    FROM dbo.ParametrosEnvioEmail
+    WHERE Estado = 1
+      AND Tipo = @Tipo
+END;
 
-    // Paso 2 — Mover archivos desde subcarpeta fecha hacia carpeta raíz
-    if (Directory.Exists(sourceDirectory))
-    {
-        foreach (string file in Directory.GetFiles(sourceDirectory))
-        {
-            string fileName = Path.GetFileName(file);
-            string destFile = Path.Combine(destinationDirectory, fileName);
-            File.Move(file, destFile);
-        }
 
-        // Paso 3 — Eliminar subcarpeta de fecha ya vacía
-        Directory.Delete(sourceDirectory);
 
-        // Paso 4 — Eliminar todo excepto el .zip
-        foreach (string file in Directory.GetFiles(destinationDirectory))
-        {
-            string fileName = Path.GetFileName(file);
-            if (!fileName.ToUpper().Contains(".ZIP"))
-                File.Delete(file);
-        }
-    }
+Este es el SP que quiero llamar para obtener los parametros de correo que pueden ser:
+SmtpServer	MailFrom	MailSubject	CorreoDestino	PlantillaHTML
+PRD-CAS1	EstadoCuentaTC@banpais.hn	Error proceso EC	pamelas@banpais.hn	
+PRD-CAS1	EstadoCuentaTC@banpais.hn	Reporte EC generado	pamelas@banpais.hn	
+PRD-CAS1	EstadoCuentaTC@banpais.hn	Estado de cuenta disponible	pamelas@banpais.hn	
 
-    Dts.TaskResult = (int)ScriptResults.Success;
-}
+
+
+pero mi duda es .. si yo quiero tener los parametros de un tipo en especifico en otro lado del dts, como se hace? si quiero dejar parametrizado, claro
