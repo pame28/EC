@@ -1,117 +1,78 @@
-using System;
-using System.IO;
-using System.Security.Cryptography;
-
-namespace EstadosCuentaTC.Services
-{
-    public static class EncriptacionAES
-    {
-        public static void EncriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string llaveiv)
-        {
-            byte[] key = Convert.FromBase64String(keyString);
-            byte[] iv  = Convert.FromBase64String(llaveiv);
-
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key     = key;
-                aesAlg.IV      = iv;
-                aesAlg.Mode    = CipherMode.CBC;
-                aesAlg.Padding = PaddingMode.PKCS7;
-
-                using (var fsEntrada = new FileStream(rutaEntrada, FileMode.Open,   FileAccess.Read))
-                using (var fsSalida  = new FileStream(rutaSalida,  FileMode.Create, FileAccess.Write))
-                using (var cs        = new CryptoStream(fsSalida, aesAlg.CreateEncryptor(), CryptoStreamMode.Write))
-                {
-                    fsEntrada.CopyTo(cs);
-                }
-            }
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-using EstadosCuentaTC.Services;
+using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.IO.Compression;
-using System.Security.Cryptography;
+using System.Text;
 
 namespace EstadosCuentaTC.Services
 {
-    public class EncriptacionService
+    public class GeneracionIndividualService
     {
-        private readonly ILogger<EncriptacionService> _logger;
+        private readonly EstadoCuentaRepository _repo;
+        private readonly ILogger<GeneracionIndividualService> _logger;
 
-        public EncriptacionService(ILogger<EncriptacionService> logger)
+        public GeneracionIndividualService(
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionIndividualService> logger)
         {
+            _repo   = repo;
             _logger = logger;
         }
 
-        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte, string keyString)
+        // ✅ Retorna el total procesado para que el orquestador genere el contador
+        public int Ejecutar(string rutaBase, string nombreArchivoBase, DateTime fechaCorte)
         {
             try
             {
-                _logger.LogInformation("INICIO ENCRIPTACIÓN");
+                _logger.LogInformation("Inicio Generación Individual");
 
-                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
+                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+                Directory.CreateDirectory(ruta);
 
-                // Nombre del archivo igual que lo construyen Individual y Lote
-                string nombreJson = $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.json";
-                string pathJson   = Path.Combine(rutaFinal, nombreJson);
+                var archivoJson = Path.Combine(
+                    ruta,
+                    $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.json"
+                );
 
-                if (!File.Exists(pathJson))
-                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
+                int contador = 0;
 
-                // ── Generar IV aleatorio ──────────────────────────────────
-                byte[] iv = new byte[16];
-                using (var rng = RandomNumberGenerator.Create())
-                    rng.GetBytes(iv);
+                using (var writer = new StreamWriter(archivoJson, false, Encoding.UTF8, bufferSize: 65536))
+                {
+                    writer.Write("{");
 
-                string ivBase64 = Convert.ToBase64String(iv);
+                    while (true)
+                    {
+                        var resultado = _repo.ProcesarSiguiente();
 
-                // ── Guardar llave pública ─────────────────────────────────
-                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
-                File.WriteAllText(rutaLlave, ivBase64);
-                _logger.LogInformation("Llave pública guardada: {Ruta}", rutaLlave);
+                        if (resultado == null)
+                            break;
 
-                // ── Encriptar ─────────────────────────────────────────────
-                string archivoEnc = pathJson + "e";   // igual que el script SSIS: path+"e"
+                        var (tarjeta, json) = resultado.Value;
 
-                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyString, ivBase64);
+                        if (string.IsNullOrWhiteSpace(json))
+                            json = "{}";
 
-                // ── Reemplazar el original con el encriptado ──────────────
-                // Igual que el script SSIS: File.Delete + File.Move
-                File.Delete(pathJson);
-                File.Move(archivoEnc, pathJson);
+                        if (contador > 0)
+                            writer.Write(",");
 
-                _logger.LogInformation("Archivo encriptado: {Archivo}", pathJson);
+                        writer.Write($"\"{tarjeta}\":{json}");
 
-                // ── Comprimir en ZIP ──────────────────────────────────────
-                // Igual que ZipJson del script SSIS
-                string nombreZip  = $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.zip";
-                string rutaZipTemp = rutaFinal + ".zip";                  // zip temporal fuera de la carpeta
-                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip); // zip dentro de la carpeta
+                        contador++;
 
-                // Comprimir toda la carpeta de la fecha
-                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
+                        _logger.LogInformation("Procesado: {Tarjeta}", tarjeta);
+                    }
 
-                // Mover el zip dentro de la carpeta y eliminar el temporal
-                File.Move(rutaZipTemp, rutaZipFinal);
+                    writer.Write("}");
+                }
 
-                _logger.LogInformation("Archivo comprimido: {Zip}", rutaZipFinal);
-                _logger.LogInformation("FIN ENCRIPTACIÓN");
+                _logger.LogInformation(
+                    "Fin Generación Individual. Total procesados: {Contador}", contador);
+
+                return contador;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error en encriptación");
+                _logger.LogError(ex, "Error en Generación Individual");
                 throw;
             }
         }
@@ -125,11 +86,38 @@ namespace EstadosCuentaTC.Services
 
 
 
+
+
+// Cambiar la firma del método:
+public int Ejecutar(string rutaBase, string nombreArchivoBase, DateTime fechaCorte, int cantidadHilos)
+
+// Agregar contador thread-safe al inicio del método:
+int totalProcesados = 0;
+object lockContador = new object();
+
+// Dentro del while de cada worker, después de escribir el fragmento:
+lock (lockContador)
+{
+    totalProcesados += lote.Tarjetas.Count;
+}
+
+// Al final antes de cerrar el archivo, retornar:
+_logger.LogInformation("Proceso finalizado. Archivo: {Ruta}", archivoJson);
+return totalProcesados;
+
+
+
+
+
+
+
+
 using EstadosCuentaTC.Dtos;
 using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.IO;
 
 namespace EstadosCuentaTC.Services
 {
@@ -163,11 +151,13 @@ namespace EstadosCuentaTC.Services
         {
             _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
 
+            int totalProcesados = 0;
+
             if (parametros.TipoGeneracion == "INDIVIDUAL")
             {
                 _logger.LogInformation("Modo INDIVIDUAL");
 
-                _individualService.Ejecutar(
+                totalProcesados = _individualService.Ejecutar(
                     parametros.RutaArchivoJson,
                     parametros.NombreArchivo,
                     parametros.FechaCorteProcesar
@@ -180,7 +170,7 @@ namespace EstadosCuentaTC.Services
                 var loteLogger  = _loggerFactory.CreateLogger<GeneracionLoteService>();
                 var loteService = new GeneracionLoteService(_repo, loteLogger);
 
-                loteService.Ejecutar(
+                totalProcesados = loteService.Ejecutar(
                     parametros.RutaArchivoJson,
                     parametros.NombreArchivo,
                     parametros.FechaCorteProcesar,
@@ -192,14 +182,49 @@ namespace EstadosCuentaTC.Services
                 throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
             }
 
-            // ── Encriptación y compresión — se ejecuta siempre al final ──
+            // ── Encriptación y compresión ─────────────────────────────────
             _encriptacionService.Ejecutar(
                 parametros.RutaArchivoJson,
                 parametros.NombreArchivo,
                 parametros.FechaCorteProcesar,
                 parametros.LlaveEncripta
             );
+
+            // ── Generar archivo contador ──────────────────────────────────
+            GenerarArchivoContador(
+                parametros.RutaArchivoJson,
+                parametros.FechaCorteProcesar,
+                parametros.TipoGeneracion,
+                totalProcesados
+            );
+        }
+
+        private void GenerarArchivoContador(
+            string rutaBase,
+            DateTime fechaCorte,
+            string tipoGeneracion,
+            int totalProcesados)
+        {
+            try
+            {
+                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+                var archivoContador = Path.Combine(ruta, "Contador.txt");
+
+                var contenido = $"Fecha Corte      : {fechaCorte:dd/MM/yyyy}{Environment.NewLine}" +
+                                $"Tipo Generacion  : {tipoGeneracion}{Environment.NewLine}" +
+                                $"Fecha Ejecucion  : {DateTime.Now:dd/MM/yyyy HH:mm:ss}{Environment.NewLine}" +
+                                $"Total Procesados : {totalProcesados}";
+
+                File.WriteAllText(archivoContador, contenido);
+
+                _logger.LogInformation(
+                    "Archivo contador generado. Total: {Total}", totalProcesados);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar archivo contador");
+                throw;
+            }
         }
     }
 }
-
