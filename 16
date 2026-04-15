@@ -1,1 +1,7 @@
+New-Item -ItemType Directory -Force -Path "C:\EstadosCuenta\JSON\Generados"
+New-Item -ItemType Directory -Force -Path "C:\EstadosCuenta\JSON\Historico"
+
+
+
+
 icacls "C:\EstadosCuenta" /grant Everyone:(OI)(CI)F /T
