@@ -1,10 +1,10 @@
 ALTER PROCEDURE dbo.usp_ReporteHistoricoPorFecha
     @FechaCorte DATE = NULL,
-    @Procesado CHAR(2) = NULL
+    @Procesado CHAR(1) = NULL  -- Cambiado a CHAR(1)
 AS
 BEGIN
     SET NOCOUNT ON;
-
+    
     SELECT
         NoCuenta,
         NoTarjeta,
@@ -13,21 +13,33 @@ BEGIN
         FechaCorte,
         Origen,
         CASE 
-            WHEN LTRIM(RTRIM(Procesado)) = '1' 
-				THEN 'Procesado'
-			WHEN LTRIM(RTRIM(Procesado)) = '0' 
-				THEN 'No Procesado'
+            WHEN LTRIM(RTRIM(Procesado)) = '1' THEN 'Procesado'
+            WHEN LTRIM(RTRIM(Procesado)) = '0' THEN 'No Procesado'
             ELSE 'Pendiente'
         END AS Procesado,
         FechaEjecucion
     FROM dbo.HistoricoMaestroEstadosCuentaJSON WITH (NOLOCK)
     WHERE
-      FechaCorte = @FechaCorte
-	AND   LTRIM(RTRIM(Procesado)) = @Procesado
-
+        (@FechaCorte IS NULL OR FechaCorte = @FechaCorte)
+        AND (@Procesado IS NULL OR LTRIM(RTRIM(Procesado)) = @Procesado)
     ORDER BY IdRow ASC;
 END
 
 
 
-Hay algo en este stored procedure que hace que todos mis datos esten mal, ayudame a arreglarlo
+
+
+
+
+
+-- Todos los registros
+EXEC dbo.usp_ReporteHistoricoPorFecha NULL, NULL
+
+-- Solo por fecha
+EXEC dbo.usp_ReporteHistoricoPorFecha '2024-01-15', NULL
+
+-- Solo procesados
+EXEC dbo.usp_ReporteHistoricoPorFecha NULL, '1'
+
+-- Fecha específica y procesados
+EXEC dbo.usp_ReporteHistoricoPorFecha '2024-01-15', '1'
