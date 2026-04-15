@@ -1,6 +1,11 @@
-$acl = Get-Acl "C:\EstadosCuenta"
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-    "MAQUINA\80730","FullControl","ContainerInherit,ObjectInherit","None","Allow"
-)
-$acl.SetAccessRule($rule)
-Set-Acl "C:\EstadosCuenta" $acl
+PS C:\Windows\System32\WindowsPowerShell\v1.0> $acl = Get-Acl "C:\EstadosCuenta"
+PS C:\Windows\System32\WindowsPowerShell\v1.0> $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+>>     "hn\80730","FullControl","ContainerInherit,ObjectInherit","None","Allow"
+>> )
+PS C:\Windows\System32\WindowsPowerShell\v1.0> $acl.SetAccessRule($rule)
+PS C:\Windows\System32\WindowsPowerShell\v1.0> Set-Acl "C:\EstadosCuenta" $acl
+PS C:\Windows\System32\WindowsPowerShell\v1.0>
+
+
+
+Parece que se ejecutó bien, pero cuando intento ejeecutar el dtsx recibo el mismo error
