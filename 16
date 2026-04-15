@@ -1,9 +1,187 @@
-SELECT TOP 1 
-    SmtpServer, 
-    MailFrom, 
-    MailSubject, 
-    CorreoDestino, 
-    PlantillaHTML
-FROM dbo.ParametrosEnvioEmail
-WHERE Estado = 1
-AND Tipo = 'ERROR NOTIFICACION REPORTE'
+Mira, tengo que enviar un correo
+
+/*
+   Microsoft SQL Server Integration Services Script Task
+   Write scripts using Microsoft Visual C# 2008.
+   The ScriptMain is the entry point class of the script.
+*/
+
+using System;
+using System.Data;
+using Microsoft.SqlServer.Dts.Runtime;
+using System.Windows.Forms;
+using System.Net.Mail;
+using System.Data.SqlClient;
+
+namespace ST_3bf4076c13c640ef982304a7067bf285.csproj
+{
+    [Microsoft.SqlServer.Dts.Tasks.ScriptTask.SSISScriptTaskEntryPointAttribute]
+    public partial class ScriptMain : Microsoft.SqlServer.Dts.Tasks.ScriptTask.VSTARTScriptObjectModelBase
+    {
+
+        #region VSTA generated code
+        enum ScriptResults
+        {
+            Success = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Success,
+            Failure = Microsoft.SqlServer.Dts.Runtime.DTSExecResult.Failure
+        };
+        #endregion
+
+        /*
+		The execution engine calls this method when the task executes.
+		To access the object model, use the Dts property. Connections, variables, events,
+		and logging features are available as members of the Dts property as shown in the following examples.
+
+		To reference a variable, call Dts.Variables["MyCaseSensitiveVariableName"].Value;
+		To post a log entry, call Dts.Log("This is my log text", 999, null);
+		To fire an event, call Dts.Events.FireInformation(99, "test", "hit the help message", "", 0, true);
+
+		To use the connections collection use something like the following:
+		ConnectionManager cm = Dts.Connections.Add("OLEDB");
+		cm.ConnectionString = "Data Source=localhost;Initial Catalog=AdventureWorks;Provider=SQLNCLI10;Integrated Security=SSPI;Auto Translate=False;";
+
+		Before returning from this method, set the value of Dts.TaskResult to indicate success or failure.
+		
+		To open Help, press F1.
+	*/
+        public string FechaCorte;
+        public void Main()
+        {
+             try
+            {
+                FechaCorte = Dts.Variables["User::FechaCorte"].Value.ToString();
+  
+                MailMessage htmlMessage=new MailMessage();
+                SmtpClient mySmtpClient;
+                string DireccionCorreo= Dts.Variables["User::CorreoReporte"].Value.ToString();
+                foreach (string Destinatarios in DireccionCorreo.Split(';'))
+                {
+                    htmlMessage.To.Add(new MailAddress(Destinatarios));
+                }
+                
+                htmlMessage.From=new MailAddress("ReporteEstadoCuenta@banpais.hn");
+                htmlMessage.Subject = "Reporte Estado Cuenta";
+                htmlMessage.Body = ObtenerBody();
+                htmlMessage.IsBodyHtml = true;
+                object Server = Dts.Connections["SMTP"].AcquireConnection(Dts.Transaction);
+                string Cadena = (string)Server; //"PU-MAILSERVBP";
+                string[] Array = Cadena.Split('=', ';');
+                string smtpServer = Array[1];
+                mySmtpClient = new SmtpClient(smtpServer);
+                mySmtpClient.Send(htmlMessage);
+
+                Dts.Variables["TipoLlenarBandeja"].Value = "Limpiar";
+                Dts.Variables["TipoLimpiarReporte"].Value = "COMPLETA";
+
+                // TODO: Add your code here
+                Dts.TaskResult = (int)ScriptResults.Success;
+            }
+             catch (Exception ex)
+             {
+                 Dts.Variables["Error"].Value = "Error en public void Main, tarea Envio Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
+                 Dts.Events.FireError(0, "Error envio correo reporte Main", ex.Message, String.Empty, 0);
+                 Dts.TaskResult = (int)ScriptResults.Failure;
+                 
+             }
+        }
+
+        public string ObtenerBody()
+        {
+            try
+            {
+                string Body = "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'> <html xmlns='http://www.w3.org/1999/xhtml'> <body> <style> .TituloTbl { background-color: #00446a; color: white; text-align: center; } .Imagen { width: 35%; /* position: relative; left: 300px; border: 1px black solid; */ } tbody tr td { /* border: 1px #0f59a0 solid; */ padding: 5px 5px; } tbody { border: 1px #00446a solid; } .Tabla { /*margin-top: 100px; margin-left: 380PX; */ width: 550px; background-color: white; } </style> <div class='Tabla'> <table style='font-family:Calibri; border-collapse: collapse; width: 100%;'> <thead> <tr style='background-color: #ffef11;'> <td colspan='2'><img src='https://www.banpais.hn/images/logo.png' alt='' class='Imagen' align=left> </td> </tr> <tr> <td colspan='2' style='background-color: #ffef11;'>&nbsp;</td> </tr> <tr> <td colspan='2' class='TituloTbl'>Estados de Cuenta de Tarjeta de Cr&eacute;dito</td> </tr> </thead> <tbody> <tr> <td colspan='2'> Estimado(a): </td> </tr> <tr> <td colspan='2'> <p>Le informamos que el proceso de generación de JSON de estados de cuenta de tarjeta de cr&eacute;dito del corte [FechaCorte] ha finalizado con exito.</p> </td> </tr> </tbody> </table> </div> </body> </html>";
+                Body = Body.Replace("[FechaCorte]", FechaCorte);
+
+                return Body;
+            }
+            catch (Exception ex)
+            {
+                Dts.Variables["Error"].Value = "Error en public string ObtenerBody en tarea Enviar Correo Reporte: " + ex.Message + " Favor revisar el histórico del JOB [PROCESO] - [TC - ESTADOS CUENTA VASA] para más información.";
+                Dts.Events.FireError(0, "Error string ObtenerBody", ex.Message, String.Empty, 0);
+                Dts.TaskResult = (int)ScriptResults.Failure;
+                return null;
+            }
+        }
+        
+
+    }
+}
+
+
+
+Necesito migrarlo para mi SSIS, pero no se qué cosas necesito, ni de que correo habla, quiero que tomes en cuenta que los datos para el envio de correo los tengo parametrizados, hasta la plantilla HTML que usé la que vi en el codigo esta:
+
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <title>Direcci&oacute;n de Cajero</title>
+</head>
+
+<body>
+    <style>
+        .TituloTbl {
+            background-color: #00446a;
+            color: white;
+            text-align: center;
+        }
+
+        .Imagen {
+            width: 35%;
+            /* position: relative;
+            left: 300px;
+            border: 1px black solid; */
+        }
+
+        tbody tr td {
+            /* border: 1px #0f59a0 solid; */
+
+            padding: 5px 5px;
+        }
+
+        tbody {
+            border: 1px #00446a solid;
+        }
+
+        .Tabla {
+            /*margin-top: 100px;
+            margin-left: 380PX; */
+            width: 550px;
+            background-color: white;
+
+        }
+    </style>
+    <div class="Tabla">
+        <table style="font-family:Calibri; border-collapse: collapse; width: 100%;">
+            <thead>
+                <tr style="background-color: #ffef11;">
+                    <td colspan="2"><img src="https://www.banpais.hn/images/logo.png" alt="" class="Imagen" align=left>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="background-color: #ffef11;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="TituloTbl"> Reporte Estados de Cuenta de Tarjeta de Cr&eacute;dito</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="2">
+                        Estimado(a):
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p>En adjunto encontrar&aacute; el reporte de estados de cuenta de tarjeta de cr&eacute;dito
+                            enviados/no enviados correspondientes al corte [FechaCorte].</p>
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
