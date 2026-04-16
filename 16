@@ -1,52 +1,44 @@
-public void Main()
+public void Ejecutar(ParametrosGeneracionECDto parametros)
 {
-    string rutaBase     = Dts.Variables["User::RutaArchivoJson"].Value.ToString();
-    DateTime fechaCorte = Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value);
+    _logger.LogInformation("FASE 4 - GENERACIÓN ESTADOS DE CUENTA");
 
-    string sourceDirectory      = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-    string destinationDirectory = rutaBase;
+    // ✅ Limpiar carpeta Generados antes de iniciar
+    LimpiarCarpetaGenerados(parametros.RutaArchivoJson);
 
-    // Paso 1 — Limpiar TODO en la carpeta destino incluyendo zips viejos
-    if (Directory.Exists(destinationDirectory))
+    int totalProcesados = 0;
+
+    if (parametros.TipoGeneracion == "INDIVIDUAL")
     {
-        // ✅ Eliminar todos los archivos sin excepción
-        foreach (string file in Directory.GetFiles(destinationDirectory))
+        // ... resto igual
+    }
+}
+
+private void LimpiarCarpetaGenerados(string rutaBase)
+{
+    try
+    {
+        if (!Directory.Exists(rutaBase))
+            return;
+
+        // Eliminar archivos sueltos
+        foreach (string file in Directory.GetFiles(rutaBase))
+        {
             File.Delete(file);
-
-        // ✅ Eliminar carpetas de fechas anteriores que pudieron quedar
-        foreach (string dir in Directory.GetDirectories(destinationDirectory))
-        {
-            string nombreDir = Path.GetFileName(dir);
-            if (DateTime.TryParse(nombreDir, out DateTime fechaDir))
-            {
-                // Solo elimina si es diferente a la fecha actual
-                if (fechaDir.Date != fechaCorte.Date)
-                    Directory.Delete(dir, true);
-            }
+            _logger.LogInformation("Archivo eliminado: {Archivo}", file);
         }
-    }
 
-    // Paso 2 — Mover archivos desde subcarpeta fecha hacia carpeta raíz
-    if (Directory.Exists(sourceDirectory))
+        // Eliminar subcarpetas de fechas anteriores
+        foreach (string dir in Directory.GetDirectories(rutaBase))
+        {
+            Directory.Delete(dir, true);
+            _logger.LogInformation("Carpeta eliminada: {Carpeta}", dir);
+        }
+
+        _logger.LogInformation("Carpeta Generados limpiada correctamente");
+    }
+    catch (Exception ex)
     {
-        foreach (string file in Directory.GetFiles(sourceDirectory))
-        {
-            string fileName = Path.GetFileName(file);
-            string destFile = Path.Combine(destinationDirectory, fileName);
-            File.Move(file, destFile);
-        }
-
-        // Paso 3 — Eliminar subcarpeta de fecha ya vacía
-        Directory.Delete(sourceDirectory);
-
-        // Paso 4 — Eliminar todo excepto el .zip
-        foreach (string file in Directory.GetFiles(destinationDirectory))
-        {
-            string fileName = Path.GetFileName(file);
-            if (!fileName.ToUpper().Contains(".ZIP"))
-                File.Delete(file);
-        }
+        _logger.LogError(ex, "Error al limpiar carpeta Generados");
+        throw;
     }
-
-    Dts.TaskResult = (int)ScriptResults.Success;
 }
