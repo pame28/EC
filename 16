@@ -1,17 +1,52 @@
-// Paso 1 — Eliminar archivos previos en la carpeta destino
-// incluyendo zips de ejecuciones anteriores
-if (Directory.Exists(destinationDirectory))
+public void Main()
 {
-    // Eliminar archivos sueltos en la raíz
-    foreach (string file in Directory.GetFiles(destinationDirectory))
-        File.Delete(file);
+    string rutaBase     = Dts.Variables["User::RutaArchivoJson"].Value.ToString();
+    DateTime fechaCorte = Convert.ToDateTime(Dts.Variables["User::FechaCorte"].Value);
 
-    // ✅ Eliminar también carpetas de fechas anteriores si quedaron
-    foreach (string dir in Directory.GetDirectories(destinationDirectory))
+    string sourceDirectory      = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+    string destinationDirectory = rutaBase;
+
+    // Paso 1 — Limpiar TODO en la carpeta destino incluyendo zips viejos
+    if (Directory.Exists(destinationDirectory))
     {
-        // Solo elimina carpetas con formato de fecha yyyy-MM-dd
-        string nombreDir = Path.GetFileName(dir);
-        if (DateTime.TryParse(nombreDir, out _))
-            Directory.Delete(dir, true);
+        // ✅ Eliminar todos los archivos sin excepción
+        foreach (string file in Directory.GetFiles(destinationDirectory))
+            File.Delete(file);
+
+        // ✅ Eliminar carpetas de fechas anteriores que pudieron quedar
+        foreach (string dir in Directory.GetDirectories(destinationDirectory))
+        {
+            string nombreDir = Path.GetFileName(dir);
+            if (DateTime.TryParse(nombreDir, out DateTime fechaDir))
+            {
+                // Solo elimina si es diferente a la fecha actual
+                if (fechaDir.Date != fechaCorte.Date)
+                    Directory.Delete(dir, true);
+            }
+        }
     }
+
+    // Paso 2 — Mover archivos desde subcarpeta fecha hacia carpeta raíz
+    if (Directory.Exists(sourceDirectory))
+    {
+        foreach (string file in Directory.GetFiles(sourceDirectory))
+        {
+            string fileName = Path.GetFileName(file);
+            string destFile = Path.Combine(destinationDirectory, fileName);
+            File.Move(file, destFile);
+        }
+
+        // Paso 3 — Eliminar subcarpeta de fecha ya vacía
+        Directory.Delete(sourceDirectory);
+
+        // Paso 4 — Eliminar todo excepto el .zip
+        foreach (string file in Directory.GetFiles(destinationDirectory))
+        {
+            string fileName = Path.GetFileName(file);
+            if (!fileName.ToUpper().Contains(".ZIP"))
+                File.Delete(file);
+        }
+    }
+
+    Dts.TaskResult = (int)ScriptResults.Success;
 }
