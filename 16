@@ -1,9 +1,6 @@
-Error de validación. Llenar BandejaEncabezado: Llenar BandejaEncabezado: An error occurred executing the provided SQL command: "SELECT * ...
-Error de validación. Llenar BandejaEncabezado Origen de ADO NET [162]: An error occurred executing the provided SQL command: "SELECT * ...
+E       Este query solo obtiene un registro?
 
-
-
-SELECT *
-        FROM dbo.HEstadoCuenta
-        WHERE Fecha_Corte =  '" + @[User::FechaCorte] + "'"
-        AND Mensaje_5 IN (2,3);
+SELECT TOP 1 WITH TIES * 
+FROM DEstadoCuenta  WITH(NOLOCK)
+WHERE ProcesadorOrigen='LOCAL'
+ORDER BY Fecha_Corte DESC;
