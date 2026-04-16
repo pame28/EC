@@ -1,15 +1,13 @@
-SELECT TOP 1 WITH TIES * 
+SELECT a.* 
 FROM DEstadoCuenta a WITH(NOLOCK)
-INNER JOIN HEstadoCuenta b ON  b.No_Cuenta = a.EC_DetalleNo_Cuenta AND b.Fecha_Corte = a.Fecha_Corte
-WHERE a.ProcesadorOrigen='LOCAL'
-AND b.Mensaje_5 IN (2,3)
-ORDER BY a.Fecha_Corte DESC;
-
-
-SELECT * FROM DEstadoCuenta WHERE ProcesadorOrigen = 'LOCAL'
-
-
-
-En el primer query me salen 20 registros mas donde ProcesadorOrigen es null, que estoy haciendo mal?
-
-Siento que la logica que estoy aplicando no es la correcta, estoy un poco confundida
+INNER JOIN HEstadoCuenta b WITH(NOLOCK) 
+    ON b.No_Cuenta = a.EC_DetalleNo_Cuenta 
+    AND b.Fecha_Corte = a.Fecha_Corte
+WHERE a.ProcesadorOrigen = 'LOCAL'
+  AND b.Mensaje_5 IN (2, 3)
+  AND a.Fecha_Corte = (
+      SELECT TOP 1 Fecha_Corte 
+      FROM DEstadoCuenta WITH(NOLOCK)
+      WHERE ProcesadorOrigen = 'LOCAL'
+      ORDER BY Fecha_Corte DESC
+  );
