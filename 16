@@ -1,4 +1,33 @@
-\\PU-SFTP\W:\SFTP-Site\Estados de cuenta JSON\
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[ParametrosGeneracionEC]    Script Date: 17/4/2026 18:12:52 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[ParametrosGeneracionEC](
+	[Id] [int] NOT NULL,
+	[FechaCorteProcesar] [date] NULL,
+	[DireccionReporte] [varchar](max) NULL,
+	[RutaArchivoJson] [varchar](200) NULL,
+	[RutaArchivoHistoricoJson] [varchar](200) NULL,
+	[LlaveEncripta] [varchar](100) NULL,
+	[TipoGeneracion] [varchar](100) NULL,
+	[RegistrosPorLote] [int] NULL,
+	[CantidadHilos] [int] NULL,
+	[NombreArchivo] [varchar](200) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
 
 
-Esta puede ser una ruta verdadera? 
+
+
+
+Quiero modificar el nombre de una columna 	[RutaArchivoHistoricoJson] [varchar](200) NULL, quiero que se llama RutaDestinoArchivoJson
