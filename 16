@@ -1,33 +1,471 @@
-USE [EstadosCuentaJSONProcesador]
-GO
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ocelot-configv2
+  namespace: pu-procesadortc-bp
+data:
+  ocelot.json: |
+    {
+	"Routes": [
+		{
+			"DownstreamPathTemplate": "/api/auth/login",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-authentication",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/login",
+			"UpstreamHttpMethod": [ "POST" ],
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/auth/login",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-authv1",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/loginv1",
+			"UpstreamHttpMethod": [ "POST" ],
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/auth/create",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-authentication",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/register",
+			"UpstreamHttpMethod": [ "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/v1/DivideloTodoTransactions",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-dividelotodo-transactions-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/dividelotodo/transactions",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/v1/DivideloTodoTerms",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-dividelotodo-terms-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/dividelotodo/terms",
+			"UpstreamHttpMethod": [ "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/v1/DivideloTodoApiFinancingApplication",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-dividelotodo-financing-application-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/dividelotodo/financingapplication",
+			"UpstreamHttpMethod": [ "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/transacciones-flotantes",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-transacciones-flotantes-procesador",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/flotantes/transacciones",
+			"UpstreamHttpMethod": [ "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/transactions/",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-bpnotifica-credito",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/notifications/transactions",
+			"UpstreamHttpMethod": [  "GET" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/transactions/",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-bpnotifica-credito",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/notifications/transactions",
+			"UpstreamHttpMethod": [  "POST" ],
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/graphql",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-saldos-tcv1",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/saldos",
+			"UpstreamHttpMethod": [  "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/reposicion-pin",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-reposicion-pin-tc",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/reposicion-pin",
+			"UpstreamHttpMethod": [  "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/auth/token",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-crypto",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/key-byte",
+			"UpstreamHttpMethod": [  "GET" ],			
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/periods",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-desembolso-periods-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/desembolso/periods",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/availables",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-desembolso-availables-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/desembolso/availables",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/Adelanto",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-desembolso-consulta-adelanto-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/desembolso/ConsultaAdelanto",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/FinancingApplication",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-desembolso-finnacing-application-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/desembolso/FinancingApplication",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/PaymentPlan",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-desembolso-payment-plan-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/desembolso/PaymentPlan",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+		{
+			"DownstreamPathTemplate": "/api/Terms",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-desembolso-terms-service",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/desembolso/terms",
+			"UpstreamHttpMethod": [ "GET" , "POST" ],
+			"AuthenticationOptions": {
+            "AuthenticationProviderKey": "JwtBearer",
+            "AllowedScopes": []
+        	},
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+        {
+			"DownstreamPathTemplate": "/api/OTP_NOTIFICATIONS",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-otp-notifica",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/otp-notifications",
+			"UpstreamHttpMethod": [ "POST" ],
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+        {
+			"DownstreamPathTemplate": "/api/TOKEN_NOTIFICATIONS",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-token-notifica",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/token-notifications",
+			"UpstreamHttpMethod": [ "POST" ],
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		},
+        {
+			"DownstreamPathTemplate": "/api/ABANDONED_TOKENS",
+			"DownstreamScheme": "http",
+			"DownstreamHostAndPorts": [
+				{
+					"Host": "api-abandoned-token",
+					"Port": 8080
+				}
+			],
+			"UpstreamPathTemplate": "/gateway/abandoned-tokens",
+			"UpstreamHttpMethod": [ "POST" ],
+			"RateLimitOptions": {
+				"EnableRateLimiting": false,
+				"Period": "10s",
+				"PeriodTimespan": 10,
+				"Limit": 5
+			}
+		}
 
-/****** Object:  Table [dbo].[ParametrosGeneracionEC]    Script Date: 17/4/2026 18:12:52 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE TABLE [dbo].[ParametrosGeneracionEC](
-	[Id] [int] NOT NULL,
-	[FechaCorteProcesar] [date] NULL,
-	[DireccionReporte] [varchar](max) NULL,
-	[RutaArchivoJson] [varchar](200) NULL,
-	[RutaArchivoHistoricoJson] [varchar](200) NULL,
-	[LlaveEncripta] [varchar](100) NULL,
-	[TipoGeneracion] [varchar](100) NULL,
-	[RegistrosPorLote] [int] NULL,
-	[CantidadHilos] [int] NULL,
-	[NombreArchivo] [varchar](200) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
+	],
+	"GlobalConfiguration": {
+		"BaseUrl": "http://0.0.0.0:8080",
+		"RateLimitOptions": {
+			"DisableRateLimitHeaders": false,
+			"ClientIdHeader": "X-ClientId",
+			"HttpStatusCode": 429,
+			"QuotaExceededMessage": "Too many requests, slow down!"
+		}
+	}
+}
 
 
 
 
 
-Quiero modificar el nombre de una columna 	[RutaArchivoHistoricoJson] [varchar](200) NULL, quiero que se llama RutaDestinoArchivoJson
+
+Necesito que me ayudes a corregir este yaml 
+
+
+
+
+
+
+[adm_80730@PU-OCPBAST1 LogForwarder]$ oc apply -f ocelot-configv2.yml
+error: error parsing ocelot-configv2.yml: error converting YAML to JSON: yaml: line 9: found a tab character where an indentation space is expected
+[adm_80730@PU-OCPBAST1 LogForwarder]$
