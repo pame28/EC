@@ -1,26 +1,12 @@
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: api-reposicion-pin-tcv1
-  namespace: pu-procesadortc-bp
-  labels:
-    app: api-reposicion-pin-tcv1
-    app.kubernetes.io/part-of: Reposicion-PIN-TC
-spec:
-  to:
-    kind: Service
-    name: api-reposicion-pin-tcv1
-    weight: 100
-  port:
-    targetPort: 8080-tcp
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect
-  wildcardPolicy: None
+
+
+using Project "pu-procesadortc-bp" on server"https://api.ocp4bppu.hn.bi-central.local:6443"
+
+y esto resultó para poder ver la url que brinda el openshift:
+
+api-reposicion-pin-tcv1-pu-procesadortc-bp.apps.ocp4bppu.hn.bi-central.local
 
 
 
 
-
-
-oc get route api-reposicion-pin-tcv1 -n pu-procesadortc-bp
+No se como es la url, ayudaaa, quiero hacer una prueba en postman
