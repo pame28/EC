@@ -1,380 +1,117 @@
-22-04-2026 21:58:06.437 [1] [Information] [] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
-22-04-2026 21:58:06.467 [1] [Information] [] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
-22-04-2026 21:58:06.468 [1] [Information] [] Microsoft.Hosting.Lifetime - Hosting environment: Production
-22-04-2026 21:58:06.468 [1] [Information] [] Microsoft.Hosting.Lifetime - Content root path: /app
-22-04-2026 21:59:16.639 [11] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-token-notificav1:8080/api/TOKEN_NOTIFICATIONS - application/json 151
-22-04-2026 21:59:16.693 [11] [Warning] [] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
-22-04-2026 21:59:16.705 [11] [Information] [30952d32-4617-4815-a91a-8e883474a748] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'api_token_notifica.Controllers.Notifications.TOKEN_NOTIFICATIONSController.Post (api_token_notifica)'
-22-04-2026 21:59:16.754 [11] [Information] [30952d32-4617-4815-a91a-8e883474a748] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "Post", controller = "TOKEN_NOTIFICATIONS"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Post(api_token_notifica.DTOs.Request.TokenRequestDto) on controller api_token_notifica.Controllers.Notifications.TOKEN_NOTIFICATIONSController (api_token_notifica).
-22-04-2026 21:59:16.962 [11] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Controllers.Notifications.TOKEN_NOTIFICATIONSController - ***** Petición de TOKEN_NOTIFICATIONS de token TRID TEST*****
-22-04-2026 21:59:16.971 [11] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Service.TokenNotificationService - Solicitud recibida: TOKEN_NOTIFICATIONS TRID TEST
-22-04-2026 21:59:17.531 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Infraestructure.Data.DBHelper - StoredProcedure usp_ExistTokenRequestor ejecutado correctamente con ExecuteScalarAsync(), resultado=1
-22-04-2026 21:59:17.538 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Repository.TokenRequestorRepository - Tird 50110030273 existe en DB flag 1
-22-04-2026 21:59:17.543 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Service.BPTarjetasService - Iniciando solicitud del equivalente de tarjeta 421004XXXXXX6001
-22-04-2026 21:59:18.064 [11] [Error] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Service.BPTarjetasService - Error de comunicación con servicio wsBPTarjetas para tarjeta 421004XXXXXX6001
-System.ServiceModel.Security.SecurityNegotiationException: Could not establish trust relationship for the SSL/TLS secure channel with authority 'wsbptarjetasde.banpais.hn'.
----> System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
----> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: PartialChain
-at System.Net.Security.SslStream.SendAuthResetSignal(ReadOnlySpan`1 alert, ExceptionDispatchInfo exception)
-at System.Net.Security.SslStream.CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
-at System.Net.Security.SslStream.ForceAuthenticationAsync[TIOAdapter](Boolean receiveFirst, Byte[] reAuthenticationData, CancellationToken cancellationToken)
-at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
---- End of inner exception stack trace ---
-at System.Net.Http.ConnectHelper.EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Boolean async, Stream stream, CancellationToken cancellationToken)
-at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-at System.Net.Http.HttpConnectionPool.CreateHttp11ConnectionAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-at System.Net.Http.HttpConnectionPool.InjectNewHttp11ConnectionAsync(QueueItem queueItem)
-at System.Threading.Tasks.TaskCompletionSourceWithCancellation`1.WaitWithCancellationAsync(CancellationToken cancellationToken)
-at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
-at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-at System.Net.Http.DecompressionHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
-at System.Net.Http.SocketsHttpHandler.<SendAsync>g__CreateHandlerAndSendAsync|115_0(HttpRequestMessage request, CancellationToken cancellationToken)
-at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
-at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.SendRequestAsync(Message message, TimeoutHelper timeoutHelper)
---- End of inner exception stack trace ---
-at System.Runtime.AsyncResult.End[TAsyncResult](IAsyncResult result)
-at System.ServiceModel.Channels.ServiceChannel.SendAsyncResult.End(SendAsyncResult result)
-at System.ServiceModel.Channels.ServiceChannel.EndCall(String action, Object[] outs, IAsyncResult result)
-at System.ServiceModel.Channels.ServiceChannelProxy.TaskCreator.<>c__DisplayClass1_0.<CreateGenericTask>b__0(IAsyncResult asyncResult)
---- End of stack trace from previous location ---
-at api_token_notifica.Service.BPTarjetasService.EquivalenteAsync(String cardNumber) in /src/Service/BPTarjetasService.cs:line 26
-22-04-2026 21:59:18.079 [11] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
-22-04-2026 21:59:18.121 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=13, Valor=Error de comunicación con servicio de tarjetas
-22-04-2026 21:59:18.123 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Service.ValidationServiceImp - Validación encontrada para la clave 13: Error de comunicación con servicio de tarjetas
-22-04-2026 21:59:18.132 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] api_token_notifica.Controllers.Notifications.TOKEN_NOTIFICATIONSController - ***** Respuesta de la petición {"Status":503,"Code":"13","Description":"Error de comunicaci\u00F3n con servicio de tarjetas"} *****
-22-04-2026 21:59:18.142 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'api_token_notifica.DTOs.Response.ResponseMessages'.
-22-04-2026 21:59:18.159 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_token_notifica.Controllers.Notifications.TOKEN_NOTIFICATIONSController.Post (api_token_notifica) in 1399.818ms
-22-04-2026 21:59:18.160 [6] [Information] [30952d32-4617-4815-a91a-8e883474a748] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_token_notifica.Controllers.Notifications.TOKEN_NOTIFICATIONSController.Post (api_token_notifica)'
-22-04-2026 21:59:18.166 [6] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-token-notificav1:8080/api/TOKEN_NOTIFICATIONS - 503 null application/json; charset=utf-8 1533.0315ms
+﻿using api_token_notifica.Repository;
+using api_token_notifica.Infraestructure.Data;
+using api_token_notifica.Repository.Interface;
+using api_token_notifica.Service;
+using api_token_notifica.Service.Interface;
+using api_token_notifica.Utils;
+using Microsoft.AspNetCore.Mvc;
+using Serilog;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+
+// DI SERVICIOS INTERNOS
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
+builder.Services.AddScoped<ICuentaRepository, CuentaRepository>();
+builder.Services.AddScoped<ICardRepository, CardRepository>();
+builder.Services.AddScoped<IServersRepository, ServersRepository>();
+builder.Services.AddScoped<IPlantillaRepository, PlantillaRepository>();
+builder.Services.AddScoped<ITokenRequestorRepository, TokenRequestorRepository>();
+
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<ITokenNotificationService, TokenNotificationService>();
+
+builder.Services.AddScoped<IParametrosService, ParametrosService>();
+builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
+builder.Services.AddScoped<ICuentaService, CuentaService>();
+builder.Services.AddScoped<ICardService, CardService>();
+builder.Services.AddScoped<IServerService, ServerService>();
+builder.Services.AddScoped<IPlantillaService, PlantillaService>();
+builder.Services.AddScoped<ITokenRequestorService, TokenRequestorService>();
+
+builder.Services.AddScoped<MessageResponseFn>();
+
+// Configuración de Serilog
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// Opciones del CorrelationId 
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+builder.Services.AddControllers(); 
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseCorrelationId();
+app.MapControllers();
+
+app.Run();
 
 
 
 
 
 
-Mira, tengo este error.Te voy a dar contexto del problema, 
-
-es 100% problema de certificado, antes, nosotros lo que haciamos era instalarlo en el contenedor por medio del dockerfile, pero, nos han dicho de que, por procesos de la empresa eso no es correcto, entonces, actualmente lo que estamos haciwndo es buscar otra alternativa, y lo que pasa es que, lo habiamos hecho mediante el dockerfile porque no tenemos acceso para instalar certificados, o algo por el estilo, pero es un problema de privilegios.
-
-Ahora, lo que estamos intentando es colocar el certificado en un secret, y luego en el deployment hacer esto: 
-
-  volumeMounts:
-        - name: certificates-volume
-          readOnly: true
-          mountPath: /etc/ssl/certs/wsbptarjetas.crt
-          subPath: wsbptarjetas.crt
-        - name: kube-api-access-jgtjn
-          readOnly: true
+Mira, asi está el program.cs 
 
 
 
+Y antes, el dockerfile .. se manejaba asi: FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
 
+COPY *.csproj ./
+COPY nuget.config ./
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
 
+RUN curl -I https://api.nuget.org/v3/index.json || echo "❌ No hay acceso a NuGet.org"
+RUN dotnet restore
 
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
 
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
 
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+COPY wsbptarjetasde.banpais.hn.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
 
-kind: Pod
-apiVersion: v1
-metadata:
-  generateName: api-token-notificav1-6cfbdcccd-
-  annotations:
-    k8s.ovn.org/pod-networks: '{"default":{"ip_addresses":["10.251.11.5/23"],"mac_address":"0a:58:0a:fb:0b:05","gateway_ips":["10.251.10.1"],"routes":[{"dest":"10.251.0.0/16","nextHop":"10.251.10.1"},{"dest":"10.250.0.0/16","nextHop":"10.251.10.1"},{"dest":"169.254.169.5/32","nextHop":"10.251.10.1"},{"dest":"100.64.0.0/16","nextHop":"10.251.10.1"}],"ip_address":"10.251.11.5/23","gateway_ip":"10.251.10.1","role":"primary"}}'
-    k8s.v1.cni.cncf.io/network-status: |-
-      [{
-          "name": "ovn-kubernetes",
-          "interface": "eth0",
-          "ips": [
-              "10.251.11.5"
-          ],
-          "mac": "0a:58:0a:fb:0b:05",
-          "default": true,
-          "dns": {}
-      }]
-    openshift.io/scc: restricted-v2
-    seccomp.security.alpha.kubernetes.io/pod: runtime/default
-  resourceVersion: '549140392'
-  name: api-token-notificav1-6cfbdcccd-9b5f9
-  uid: 6032c8b6-3e19-4cd9-9389-1a3276cde0ae
-  creationTimestamp: '2026-04-22T21:58:04Z'
-  managedFields:
-    - manager: PU-OCPNW1.ocp4bppu.hn.bi-central.local
-      operation: Update
-      apiVersion: v1
-      time: '2026-04-22T21:58:04Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:k8s.ovn.org/pod-networks': {}
-      subresource: status
-    - manager: kube-controller-manager
-      operation: Update
-      apiVersion: v1
-      time: '2026-04-22T21:58:04Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:generateName': {}
-          'f:labels':
-            .: {}
-            'f:app': {}
-            'f:deployment': {}
-            'f:pod-template-hash': {}
-          'f:ownerReferences':
-            .: {}
-            'k:{"uid":"2e55ead4-2ff7-488e-b7f3-922234c2f472"}': {}
-        'f:spec':
-          'f:containers':
-            'k:{"name":"api-token-notificav1"}':
-              'f:envFrom': {}
-              'f:image': {}
-              'f:volumeMounts':
-                .: {}
-                'k:{"mountPath":"/etc/ssl/certs/wsbptarjetas.crt"}':
-                  .: {}
-                  'f:mountPath': {}
-                  'f:name': {}
-                  'f:readOnly': {}
-                  'f:subPath': {}
-              'f:terminationMessagePolicy': {}
-              .: {}
-              'f:resources': {}
-              'f:env':
-                .: {}
-                'k:{"name":"CONNECTIONSTRINGS__DEFAULTCONNECTION"}':
-                  .: {}
-                  'f:name': {}
-                  'f:valueFrom':
-                    .: {}
-                    'f:secretKeyRef': {}
-              'f:terminationMessagePath': {}
-              'f:imagePullPolicy': {}
-              'f:name': {}
-          'f:dnsPolicy': {}
-          'f:enableServiceLinks': {}
-          'f:restartPolicy': {}
-          'f:schedulerName': {}
-          'f:securityContext': {}
-          'f:terminationGracePeriodSeconds': {}
-          'f:volumes':
-            .: {}
-            'k:{"name":"certificates-volume"}':
-              .: {}
-              'f:name': {}
-              'f:secret':
-                .: {}
-                'f:defaultMode': {}
-                'f:secretName': {}
-    - manager: multus-daemon
-      operation: Update
-      apiVersion: v1
-      time: '2026-04-22T21:58:05Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:metadata':
-          'f:annotations':
-            'f:k8s.v1.cni.cncf.io/network-status': {}
-      subresource: status
-    - manager: kubelet
-      operation: Update
-      apiVersion: v1
-      time: '2026-04-22T21:58:06Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:status':
-          'f:conditions':
-            'k:{"type":"ContainersReady"}':
-              .: {}
-              'f:lastProbeTime': {}
-              'f:lastTransitionTime': {}
-              'f:status': {}
-              'f:type': {}
-            'k:{"type":"Initialized"}':
-              .: {}
-              'f:lastProbeTime': {}
-              'f:lastTransitionTime': {}
-              'f:status': {}
-              'f:type': {}
-            'k:{"type":"PodReadyToStartContainers"}':
-              .: {}
-              'f:lastProbeTime': {}
-              'f:lastTransitionTime': {}
-              'f:status': {}
-              'f:type': {}
-            'k:{"type":"Ready"}':
-              .: {}
-              'f:lastProbeTime': {}
-              'f:lastTransitionTime': {}
-              'f:status': {}
-              'f:type': {}
-          'f:containerStatuses': {}
-          'f:hostIP': {}
-          'f:hostIPs': {}
-          'f:phase': {}
-          'f:podIP': {}
-          'f:podIPs':
-            .: {}
-            'k:{"ip":"10.251.11.5"}':
-              .: {}
-              'f:ip': {}
-          'f:startTime': {}
-      subresource: status
-  namespace: des-procesadortc-bp
-  ownerReferences:
-    - apiVersion: apps/v1
-      kind: ReplicaSet
-      name: api-token-notificav1-6cfbdcccd
-      uid: 2e55ead4-2ff7-488e-b7f3-922234c2f472
-      controller: true
-      blockOwnerDeletion: true
-  labels:
-    app: api-token-notificav1
-    deployment: api-token-notificav1
-    pod-template-hash: 6cfbdcccd
-spec:
-  restartPolicy: Always
-  serviceAccountName: default
-  imagePullSecrets:
-    - name: default-dockercfg-mj6hw
-  priority: 0
-  schedulerName: default-scheduler
-  enableServiceLinks: true
-  terminationGracePeriodSeconds: 30
-  preemptionPolicy: PreemptLowerPriority
-  nodeName: pu-ocpnw1.ocp4bppu.hn.bi-central.local
-  securityContext:
-    seLinuxOptions:
-      level: 's0:c30,c0'
-    fsGroup: 1000870000
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-    - resources: {}
-      terminationMessagePath: /dev/termination-log
-      name: api-token-notificav1
-      env:
-        - name: CONNECTIONSTRINGS__DEFAULTCONNECTION
-          valueFrom:
-            secretKeyRef:
-              name: tokenization-notify-secrets
-              key: CONNECTIONSTRINGS__DEFAULTCONNECTION
-      securityContext:
-        capabilities:
-          drop:
-            - ALL
-        runAsUser: 1000870000
-        runAsNonRoot: true
-        allowPrivilegeEscalation: false
-      imagePullPolicy: IfNotPresent
-      volumeMounts:
-        - name: certificates-volume
-          readOnly: true
-          mountPath: /etc/ssl/certs/wsbptarjetas.crt
-          subPath: wsbptarjetas.crt
-        - name: kube-api-access-jgtjn
-          readOnly: true
-          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      terminationMessagePolicy: File
-      envFrom:
-        - configMapRef:
-            name: configmap-api-token-notifica
-      image: 'image-registry.openshift-image-registry.svc:5000/des-procesadortc-bp/api_token_notification:v1.0'
-  serviceAccount: default
-  volumes:
-    - name: certificates-volume
-      secret:
-        secretName: certificates-secret
-        defaultMode: 420
-    - name: kube-api-access-jgtjn
-      projected:
-        sources:
-          - serviceAccountToken:
-              expirationSeconds: 3607
-              path: token
-          - configMap:
-              name: kube-root-ca.crt
-              items:
-                - key: ca.crt
-                  path: ca.crt
-          - downwardAPI:
-              items:
-                - path: namespace
-                  fieldRef:
-                    apiVersion: v1
-                    fieldPath: metadata.namespace
-          - configMap:
-              name: openshift-service-ca.crt
-              items:
-                - key: service-ca.crt
-                  path: service-ca.crt
-        defaultMode: 420
-  dnsPolicy: ClusterFirst
-  tolerations:
-    - key: node.kubernetes.io/not-ready
-      operator: Exists
-      effect: NoExecute
-      tolerationSeconds: 300
-    - key: node.kubernetes.io/unreachable
-      operator: Exists
-      effect: NoExecute
-      tolerationSeconds: 300
-status:
-  containerStatuses:
-    - restartCount: 0
-      started: true
-      ready: true
-      name: api-token-notificav1
-      state:
-        running:
-          startedAt: '2026-04-22T21:58:05Z'
-      volumeMounts:
-        - name: certificates-volume
-          mountPath: /etc/ssl/certs/wsbptarjetas.crt
-          readOnly: true
-          recursiveReadOnly: Disabled
-        - name: kube-api-access-jgtjn
-          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-          readOnly: true
-          recursiveReadOnly: Disabled
-      imageID: 'image-registry.openshift-image-registry.svc:5000/des-procesadortc-bp/api_token_notification@sha256:7a0d046ef4c74f8c0ad18aa51ecd8efc48ecb597b5c02643390c52223548a9c5'
-      image: 'image-registry.openshift-image-registry.svc:5000/des-procesadortc-bp/api_token_notification:v1.0'
-      lastState: {}
-      containerID: 'cri-o://5f006923eb69f54fc1e05da8983bf049df7e44b5cfce7f60b40a413aacb86063'
-  qosClass: BestEffort
-  hostIPs:
-    - ip: 10.100.204.66
-  podIPs:
-    - ip: 10.251.11.5
-  podIP: 10.251.11.5
-  hostIP: 10.100.204.66
-  startTime: '2026-04-22T21:58:04Z'
-  conditions:
-    - type: PodReadyToStartContainers
-      status: 'True'
-      lastProbeTime: null
-      lastTransitionTime: '2026-04-22T21:58:06Z'
-    - type: Initialized
-      status: 'True'
-      lastProbeTime: null
-      lastTransitionTime: '2026-04-22T21:58:04Z'
-    - type: Ready
-      status: 'True'
-      lastProbeTime: null
-      lastTransitionTime: '2026-04-22T21:58:06Z'
-    - type: ContainersReady
-      status: 'True'
-      lastProbeTime: null
-      lastTransitionTime: '2026-04-22T21:58:06Z'
-    - type: PodScheduled
-      status: 'True'
-      lastProbeTime: null
-      lastTransitionTime: '2026-04-22T21:58:04Z'
-  phase: Running
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "api_token_notifica.dll"]
 
 
 
 
-
-Pero igual.. tengo ese error que te mostré arriba, dime, ¿Como puedo solventarlo?
