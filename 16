@@ -1,5 +1,3 @@
-Ayudame a modificar el deployment
-
 kind: Deployment
 apiVersion: apps/v1
 metadata:
@@ -31,5 +29,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: configmap-api-token-notifica
-
-      restartPolicy: Always      
+          volumeMounts:
+            - name: certificates-volume
+              readOnly: true
+              mountPath: /app/certificates
+      volumes:
+        - name: certificates-volume
+          secret:
+            secretName: certificates-secret
+            defaultMode: 420
+      restartPolicy: Always
