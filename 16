@@ -88,7 +88,9 @@ Mira, asi está el program.cs
 
 
 
-Y antes, el dockerfile .. se manejaba asi: FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+Y antes, el dockerfile .. se manejaba asi: 
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY *.csproj ./
