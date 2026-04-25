@@ -1,102 +1,54 @@
-Red Hat OpenShift
-
-
-adm_80730
-
-Developer
-+Add
-Topology
-Observe
-Search
-Builds
-Helm
-Project
-ConfigMaps
-Secrets
-
-Project: pu-procesadortc-bp
-Pods
-Pod details
-Pod
-P
-api-reposicion-pin-tcv1-857bb76b84-zl5nw
-Running
-Details
-Metrics
-YAML
-Environment
-Logs
-Events
-Terminal
-Log stream paused.
-
-Container
-C
-api-reposicion-pin-tcv1
-
-Current log
-Search
-
-Show full log
-
-Wrap lines
-Raw
-Download
-451 lines
-at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
-at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
-at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSiteMain(ServiceCallSite callSite, TArgument argument)
-at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2.VisitCallSite(ServiceCallSite callSite, TArgument argument)
-at Microsoft.Extensions.DependencyInjection.ServiceLookup.DynamicServiceProviderEngine.<>c__DisplayClass2_0.<RealizeService>b__0(ServiceProviderEngineScope scope)
-at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
-at lambda_method8(Closure, IServiceProvider, Object[])
-at Microsoft.AspNetCore.Mvc.Controllers.ControllerFactoryProvider.<>c__DisplayClass6_0.<CreateControllerFactory>g__CreateController|0(ControllerContext controllerContext)
-at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
-at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+25-04-2026 06:20:43.016 [1] [Information] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
+25-04-2026 06:20:43.118 [1] [Information] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
+25-04-2026 06:20:43.119 [1] [Information] Microsoft.Hosting.Lifetime - Hosting environment: Production
+25-04-2026 06:20:43.120 [1] [Information] Microsoft.Hosting.Lifetime - Content root path: /app
+25-04-2026 14:41:17.019 [23] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-transacciones-flotantesv1:8080/api/transacciones-flotantes - application/json 67
+25-04-2026 14:41:17.228 [23] [Warning] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
+25-04-2026 14:41:17.304 [23] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController.Procesar (transacciones_flotantes)'
+25-04-2026 14:41:17.602 [23] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "Procesar", controller = "TransaccionesFlotantes"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Procesar(transacciones_flotantes.DTOs.TransaccionesFlotantes.TransaccionesFlotantesRequestDto) on controller transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController (transacciones_flotantes).
+25-04-2026 14:41:17.939 [23] [Information] transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController - Request recibido. CounterpartCard: 0381
+25-04-2026 14:41:18.005 [23] [Information] transacciones_flotantes.Service.TransaccionesFlotantesService - Inicio procesamiento
+25-04-2026 14:41:18.025 [23] [Information] transacciones_flotantes.Repository.TransaccionFlotanteRepository - Buscando datos del proveedor para tarjeta terminada en 0381
+25-04-2026 14:41:20.520 [23] [Fatal] transacciones_flotantes.Service.TransaccionesFlotantesService - Error no controlado en servicio
+Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user 'api_transaccionesFlotantes'.
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
 --- End of stack trace from previous location ---
-at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
-at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
-at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|7_0(Endpoint endpoint, Task requestTask, ILogger logger)
-at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
-at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
-at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpProtocol.ProcessRequests[TContext](IHttpApplication`1 application)
-24-04-2026 16:33:58.401 [15] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-reposicion-pin-tcv1-pu-procesadortc-bp.apps.ocp4bppu.hn.bi-central.local/api/reposicion-pin - 500 0 null 16.7324ms
-24-04-2026 16:37:57.695 [19] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-reposicion-pin-tcv1-pu-procesadortc-bp.apps.ocp4bppu.hn.bi-central.local/api/reposicion-pin - application/json 1132
-24-04-2026 16:37:57.695 [19] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'reposicion_pin.Controllers.ReposicionPinController.GenerarPin (reposicion_pin)'
-24-04-2026 16:37:57.696 [19] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "GenerarPin", controller = "ReposicionPin"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[reposicion_pin.DTOs.ReposicionPinResponseDto]] GenerarPin(reposicion_pin.DTOs.ReposicionPinRequestDto) on controller reposicion_pin.Controllers.ReposicionPinController (reposicion_pin).
-24-04-2026 16:37:57.715 [19] [Information] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (11ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
-EXEC usp_ObtenerConfigBiMovil
-24-04-2026 16:37:57.715 [19] [Error] Microsoft.EntityFrameworkCore.Query - An exception occurred while iterating over the results of a query for context type 'reposicion_pin.Infrastructure.Data.AppDbContext'.
-System.Data.SqlTypes.SqlNullValueException: Data is Null. This method or property cannot be called on Null values.
-at Microsoft.Data.SqlClient.SqlBuffer.ThrowIfNull()
-at Microsoft.Data.SqlClient.SqlBuffer.get_String()
-at Microsoft.Data.SqlClient.SqlDataReader.GetString(Int32 i)
-at lambda_method32(Closure, QueryContext, DbDataReader, Int32[])
-at Microsoft.EntityFrameworkCore.Query.Internal.FromSqlQueryingEnumerable`1.Enumerator.MoveNext()
-System.Data.SqlTypes.SqlNullValueException: Data is Null. This method or property cannot be called on Null values.
-at Microsoft.Data.SqlClient.SqlBuffer.ThrowIfNull()
-at Microsoft.Data.SqlClient.SqlBuffer.get_String()
-at Microsoft.Data.SqlClient.SqlDataReader.GetString(Int32 i)
-at lambda_method32(Closure, QueryContext, DbDataReader, Int32[])
-at Microsoft.EntityFrameworkCore.Query.Internal.FromSqlQueryingEnumerable`1.Enumerator.MoveNext()
-24-04-2026 16:37:57.716 [19] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action reposicion_pin.Controllers.ReposicionPinController.GenerarPin (reposicion_pin) in 19.4867ms
-24-04-2026 16:37:57.716 [19] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'reposicion_pin.Controllers.ReposicionPinController.GenerarPin (reposicion_pin)'
-24-04-2026 16:37:57.716 [19] [Error] Microsoft.AspNetCore.Server.Kestrel - Connection id "0HNL23OOPLKTV", Request id "0HNL23OOPLKTV:00000001": An unhandled exception was thrown by the application.
-System.Data.SqlTypes.SqlNullValueException: Data is Null. This method or property cannot be called on Null values.
-at Microsoft.Data.SqlClient.SqlBuffer.ThrowIfNull()
-at Microsoft.Data.SqlClient.SqlBuffer.get_String()
-at Microsoft.Data.SqlClient.SqlDataReader.GetString(Int32 i)
-at lambda_method32(Closure, QueryContext, DbDataReader, Int32[])
-at Microsoft.EntityFrameworkCore.Query.Internal.FromSqlQueryingEnumerable`1.Enumerator.MoveNext()
-at System.Linq.Enumerable.TryGetFirstNonIterator[TSource](IEnumerable`1 source, Boolean& found)
-at System.Linq.Enumerable.FirstOrDefault[TSource](IEnumerable`1 source)
-at reposicion_pin.Repository.EnvioSmsRepository..ctor(AppDbContext dbContext, IConfiguration configuration, ILogger`1 logger) in /src/Repository/EnvioSmsRepository.cs:line 33
-at InvokeStub_EnvioSmsRepository..ctor(Object, Span`1)
-at System.Reflection.RuntimeConstructorInfo.Invoke(BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-
-
-
-
-
-No se a donde comienza ni donde termina el ultimo log
+at Dapper.SqlMapper.QueryRowAsync[T](IDbConnection cnn, Row row, Type effectiveType, CommandDefinition command) in /_/Dapper/SqlMapper.Async.cs:line 488
+at transacciones_flotantes.Repository.TransaccionFlotanteRepository.ObtenerDatosProveedorAsync(String counterpartCard) in /src/Repository/TransaccionFlotanteRepository.cs:line 41
+at transacciones_flotantes.Service.TransaccionesFlotantesService.ProcesarAsync(TransaccionesFlotantesRequestDto request) in /src/Service/TransaccionesFlotantesService.cs:line 42
+ClientConnectionId:0cf0192d-9324-4a24-b08c-49c09f7e4986
+Error Number:18456,State:1,Class:14
+25-04-2026 14:41:20.652 [23] [Fatal] transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController - Error 500 no controlado
+Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user 'api_transaccionesFlotantes'.
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at Dapper.SqlMapper.QueryRowAsync[T](IDbConnection cnn, Row row, Type effectiveType, CommandDefinition command) in /_/Dapper/SqlMapper.Async.cs:line 488
+at transacciones_flotantes.Repository.TransaccionFlotanteRepository.ObtenerDatosProveedorAsync(String counterpartCard) in /src/Repository/TransaccionFlotanteRepository.cs:line 41
