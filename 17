@@ -1,54 +1,241 @@
-25-04-2026 06:20:43.016 [1] [Information] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
-25-04-2026 06:20:43.118 [1] [Information] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
-25-04-2026 06:20:43.119 [1] [Information] Microsoft.Hosting.Lifetime - Hosting environment: Production
-25-04-2026 06:20:43.120 [1] [Information] Microsoft.Hosting.Lifetime - Content root path: /app
-25-04-2026 14:41:17.019 [23] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-transacciones-flotantesv1:8080/api/transacciones-flotantes - application/json 67
-25-04-2026 14:41:17.228 [23] [Warning] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
-25-04-2026 14:41:17.304 [23] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController.Procesar (transacciones_flotantes)'
-25-04-2026 14:41:17.602 [23] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "Procesar", controller = "TransaccionesFlotantes"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Procesar(transacciones_flotantes.DTOs.TransaccionesFlotantes.TransaccionesFlotantesRequestDto) on controller transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController (transacciones_flotantes).
-25-04-2026 14:41:17.939 [23] [Information] transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController - Request recibido. CounterpartCard: 0381
-25-04-2026 14:41:18.005 [23] [Information] transacciones_flotantes.Service.TransaccionesFlotantesService - Inicio procesamiento
-25-04-2026 14:41:18.025 [23] [Information] transacciones_flotantes.Repository.TransaccionFlotanteRepository - Buscando datos del proveedor para tarjeta terminada en 0381
-25-04-2026 14:41:20.520 [23] [Fatal] transacciones_flotantes.Service.TransaccionesFlotantesService - Error no controlado en servicio
-Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user 'api_transaccionesFlotantes'.
-at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
-at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
---- End of stack trace from previous location ---
-at Dapper.SqlMapper.QueryRowAsync[T](IDbConnection cnn, Row row, Type effectiveType, CommandDefinition command) in /_/Dapper/SqlMapper.Async.cs:line 488
-at transacciones_flotantes.Repository.TransaccionFlotanteRepository.ObtenerDatosProveedorAsync(String counterpartCard) in /src/Repository/TransaccionFlotanteRepository.cs:line 41
-at transacciones_flotantes.Service.TransaccionesFlotantesService.ProcesarAsync(TransaccionesFlotantesRequestDto request) in /src/Service/TransaccionesFlotantesService.cs:line 42
-ClientConnectionId:0cf0192d-9324-4a24-b08c-49c09f7e4986
-Error Number:18456,State:1,Class:14
-25-04-2026 14:41:20.652 [23] [Fatal] transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController - Error 500 no controlado
-Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user 'api_transaccionesFlotantes'.
-at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
-at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
---- End of stack trace from previous location ---
-at Dapper.SqlMapper.QueryRowAsync[T](IDbConnection cnn, Row row, Type effectiveType, CommandDefinition command) in /_/Dapper/SqlMapper.Async.cs:line 488
-at transacciones_flotantes.Repository.TransaccionFlotanteRepository.ObtenerDatosProveedorAsync(String counterpartCard) in /src/Repository/TransaccionFlotanteRepository.cs:line 41
+Fijate que me estan solicitando que los logs tengan correlation id, pero no se si esto solo se configura desde program.cs o que
+
+Este es el ejemplo que me dieron y quieren que lo implemente igual: 
+
+EJEMPLO:
+
+﻿using api_authentication.Repository;
+using api_otp_notifica.Infraestructure.Data;
+using api_otp_notifica.Repository;
+using api_otp_notifica.Repository.Interface;
+using api_otp_notifica.Service;
+using api_otp_notifica.Service.Interface;
+using api_otp_notifica.Utils;
+using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using System.Security.Cryptography.X509Certificates;
+
+// Cargar certificados personalizados antes de iniciar la app
+LoadCustomCertificates();
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+
+// DI SERVICIOS INTERNOS
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<ICuentaRepository, CuentaRepository>();
+builder.Services.AddScoped<ICardRepository, CardRepository>();
+builder.Services.AddScoped<IServersRepository, ServersRepository>();
+builder.Services.AddScoped<IPlantillaRepository, PlantillaRepository>();
+
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<IOtpNotificationService, OtpNotificationService>();
+
+builder.Services.AddScoped<IParametrosService, ParametrosService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
+builder.Services.AddScoped<ICuentaService, CuentaService>();
+builder.Services.AddScoped<ICardService, CardService>();
+builder.Services.AddScoped<IServerService, ServerService>();
+builder.Services.AddScoped<IPlantillaService, PlantillaService>();
+
+builder.Services.AddScoped<MessageResponseFn>();
+
+// Configuración de Serilog
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// Opciones del CorrelationId 
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+builder.Services.AddControllers(); 
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
+app.UseHttpsRedirection();
+app.UseCorrelationId();
+app.MapControllers();
+
+app.Run();
+
+
+// Método para cargar certificados personalizados desde un directorio configurable
+static void LoadCustomCertificates()
+{
+    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR") ?? "/app/certificates";
+
+    if (!Directory.Exists(certDir))
+    {
+        Console.WriteLine($"[Certificados] Directorio no encontrado: {certDir}. Saltando carga.");
+        return;
+    }
+
+    var certFiles = Directory.GetFiles(certDir, "*.crt");
+
+    if (certFiles.Length == 0)
+    {
+        Console.WriteLine($"[Certificados] No se encontraron archivos .crt en {certDir}");
+        return;
+    }
+
+    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+    store.Open(OpenFlags.ReadWrite);
+
+    foreach (var certFile in certFiles)
+    {
+        try
+        {
+            var certificate = new X509Certificate2(certFile);
+            store.Add(certificate);
+            Console.WriteLine($"[Certificados] Cargado: {Path.GetFileName(certFile)} | Subject: {certificate.Subject} | Expira: {certificate.NotAfter:yyyy-MM-dd}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Certificados] Error al cargar {Path.GetFileName(certFile)}: {ex.Message}");
+        }
+    }
+
+    store.Close();
+    Console.WriteLine($"[Certificados] {certFiles.Length} certificado(s) procesado(s) desde {certDir}");
+}
+
+
+
+
+
+
+
+
+
+
+ESTE ES MI CODIGO:
+
+using Serilog;
+using System.Net.Http.Headers;
+using transacciones_flotantes.Infrastructure.Data;
+using transacciones_flotantes.Repository;
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service;
+using transacciones_flotantes.Service.Interface;
+using transacciones_flotantes.Utils;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------
+// Validaciones de configuración
+// -----------------------
+var baseAddressToken = builder.Configuration["ApiSettings:BaseAddressAccessToken"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressAccessToken");
+
+var baseAddressTransacciones = builder.Configuration["ApiSettings:BaseAddressTransaccionesFlotantes"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressTransaccionesFlotantes");
+
+var allowInvalidCertsStr = builder.Configuration["ApiSettings:AllowInvalidCerts"];
+var allowInvalidCerts = bool.TryParse(allowInvalidCertsStr, out var result) && result;
+
+// -----------------------
+// Configuración Serilog
+// -----------------------
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithThreadId()
+    .WriteTo.Console(
+        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+    )
+    .WriteTo.File(
+        "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+    )
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IProveedorTokenService, ProveedorTokenService>();
+builder.Services.AddTransient<AuthHandler>();
+builder.Services.AddHttpClient<IProveedorApiClient, ProveedorApiClient>(client =>
+{
+    client.BaseAddress = new Uri(baseAddressTransacciones);
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = allowInvalidCerts
+            ? (message, cert, chain, errors) => true
+            : null
+    };
+})
+.AddHttpMessageHandler<AuthHandler>();
+
+// -----------------------
+// Dependency Injection
+// -----------------------
+builder.Services.AddScoped<ICatalogoErroresRepository, CatalogoErroresRepository>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepositoryImp>();
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<ITransaccionFlotanteRepository, TransaccionFlotanteRepository>();
+builder.Services.AddScoped<ITransaccionesFlotantesService, TransaccionesFlotantesService>();
+builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+
+// -----------------------
+// Controllers
+// -----------------------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// -----------------------
+// Middleware
+// -----------------------
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
