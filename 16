@@ -1,20 +1,6 @@
-"Serilog": {
-  "Using": ["Serilog.Sinks.Console", "Serilog.Sinks.File"],
-  "Enrich": ["FromLogContext", "WithThreadId"],
-  "WriteTo": [
-    {
-      "Name": "Console",
-      "Args": {
-        "outputTemplate": "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] [{CorrelationId}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-      }
-    },
-    {
-      "Name": "File",
-      "Args": {
-        "path": "logs/log-.txt",
-        "rollingInterval": "Day",
-        "outputTemplate": "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] [{CorrelationId}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-      }
-    }
-  ]
-}
+docker pull carlosaguilardiaz24/api-desembolso-availables:20262804.1.0
+docker pull carlosaguilardiaz24/api-desembolso-consulta-adelanto:20262804.1.0
+docker pull carlosaguilardiaz24/api-desembolso-finnacing-application:20262804.1.0
+docker pull carlosaguilardiaz24/api-desembolso-payment-plan:20262804.1.0
+docker pull carlosaguilardiaz24/api-desembolso-periods:20262804.1.0
+docker pull carlosaguilardiaz24/api-desembolso-terms:20262804.1.0
