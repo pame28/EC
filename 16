@@ -1,36 +1,96 @@
-﻿using Microsoft.Extensions.Options;
-using Serilog.Context;
+using Serilog;
+using System.Net.Http.Headers;
+using transacciones_flotantes.Infrastructure.Data;
+using transacciones_flotantes.Repository;
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service;
+using transacciones_flotantes.Service.Interface;
+using transacciones_flotantes.Utils;
 
-namespace api_otp_notifica.Utils
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------
+// Validaciones de configuración
+// -----------------------
+var baseAddressToken = builder.Configuration["ApiSettings:BaseAddressAccessToken"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressAccessToken");
+
+var baseAddressTransacciones = builder.Configuration["ApiSettings:BaseAddressTransaccionesFlotantes"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressTransaccionesFlotantes");
+
+var allowInvalidCertsStr = builder.Configuration["ApiSettings:AllowInvalidCerts"];
+var allowInvalidCerts = bool.TryParse(allowInvalidCertsStr, out var result) && result;
+
+// -----------------------
+// Configuración Serilog
+// -----------------------
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// -----------------------
+// Opciones del CorrelationId
+// -----------------------
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+// -----------------------
+// Servicios HTTP
+// -----------------------
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IProveedorTokenService, ProveedorTokenService>();
+builder.Services.AddTransient<AuthHandler>();
+builder.Services.AddHttpClient<IProveedorApiClient, ProveedorApiClient>(client =>
 {
-    public class CorrelationIdOptions
+    client.BaseAddress = new Uri(baseAddressTransacciones);
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
     {
-        public string Header { get; set; } = "X-Correlation-Id";
-        public bool IncludeInResponse { get; set; } = true;
-    }
+        ServerCertificateCustomValidationCallback = allowInvalidCerts
+            ? (message, cert, chain, errors) => true
+            : null
+    };
+})
+.AddHttpMessageHandler<AuthHandler>();
 
-    public class CorrelationIdMiddleware(RequestDelegate next, IOptions<CorrelationIdOptions> options)
-    {
-        public async Task InvokeAsync(HttpContext context)
-        {
-            if (!context.Request.Headers.TryGetValue(options.Value.Header, out var correlationId))
-            {
-                correlationId = Guid.NewGuid().ToString();
-            }
-            if (options.Value.IncludeInResponse)
-            {
-                context.Response.Headers.TryAdd(options.Value.Header, correlationId);
-            }
-            using (LogContext.PushProperty("CorrelationId", correlationId.ToString()))
-            {
-                await next(context);
-            }
-        }
-    }
+// -----------------------
+// Dependency Injection
+// -----------------------
+builder.Services.AddScoped<ICatalogoErroresRepository, CatalogoErroresRepository>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepositoryImp>();
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<ITransaccionFlotanteRepository, TransaccionFlotanteRepository>();
+builder.Services.AddScoped<ITransaccionesFlotantesService, TransaccionesFlotantesService>();
+builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 
-    public static class CorrelationIdExtensions
-    {
-        public static IApplicationBuilder UseCorrelationId(this IApplicationBuilder app)
-            => app.UseMiddleware<CorrelationIdMiddleware>();
-    }
+// -----------------------
+// Controllers
+// -----------------------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// -----------------------
+// Middleware
+// -----------------------
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseCorrelationId();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
