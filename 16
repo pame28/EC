@@ -1,6 +1,38 @@
-docker pull carlosaguilardiaz24/api-desembolso-availables:20262804.1.0
-docker pull carlosaguilardiaz24/api-desembolso-consulta-adelanto:20262804.1.0
-docker pull carlosaguilardiaz24/api-desembolso-finnacing-application:20262804.1.0
-docker pull carlosaguilardiaz24/api-desembolso-payment-plan:20262804.1.0
-docker pull carlosaguilardiaz24/api-desembolso-periods:20262804.1.0
-docker pull carlosaguilardiaz24/api-desembolso-terms:20262804.1.0
+Estoy teniendo el siguiente error: 
+Pod unschedulable
+0/11 nodes are available: 2 Insufficient cpu, 3 node(s) had untolerated taint {node-role.kubernetes.io/infra: reserved}, 3 node(s) had untolerated taint {node-role.kubernetes.io/master: }, 3 node(s) had untolerated taint {node.ocs.openshift.io/storage: true}. preemption: 0/11 nodes are available: 2 No preemption victims found for incoming pod, 9 Preemption is not helpful for scheduling.
+
+
+Mi deployment lo tengo asi:
+       resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits: 
+              cpu: "300m"
+              memory: "256Mi"
+
+
+y mi hpa asi:
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+ name: api-transacciones-flotantesv1-hpa
+ namespace: pu-procesadortc-bp
+spec:
+ scaleTargetRef:
+   apiVersion: apps/v1
+   kind: Deployment
+   name: api-transacciones-flotantesv1
+ minReplicas: 2
+ maxReplicas: 6
+ metrics:
+ - type: Resource
+   resource:
+     name: cpu
+     target:
+       type: Utilization
+       averageUtilization: 70
+
+
+Como puedo solventarlo? la cosa es que se me quedaron dos pods como pending
