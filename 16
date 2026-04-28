@@ -1,47 +1,136 @@
-28-04-2026 08:37:35.187 [27] [Information] transacciones_flotantes.Service.AuthHandler - ***** Petición recibida AuthHandler.SendAsync() *****
-28-04-2026 08:37:35.190 [27] [Information] transacciones_flotantes.Service.AuthHandler - Token enviado en Authorization Header : eyJraWQiOiJhdXRoLXNlcnZlci1rZXktMSIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3NzczODY4ODksImlhdCI6MTc3NzM4NTk4OSwianRpIjoiYmI0ZDk2MTktNTNmNC00MmYyLWIwYjYtNWJkNWEzNGQyMTA4In0.q9u7M5el7RSTgRXaNvc9CJC1Q57M4L4Zk3lmfgBYUBteEk-q0jBMPN0PsYLBiIBKve3JXnyZEwO42F1O3noHlRC6P0gdEqjboMHQTNKo3sLf1sCsNHA_fDuOoxD6cd02a3P592OgpmOp1PCs9F4RVMo4o9GXBd5Wu6rsLlRRKgQOJAW8JGMpSA9jGwmykLaQYeDwHrwHKtFPw_QlNmNh6vAfs0JlxiHugQK6fHCfpdkq2zBpi92wSuRL6BuHOUCv2zlV8CCWOrRh__YKNvwOjf8O5EJtIWrmj_SaGtVjyPRJHxt-bS31AQ-YZHvlfF4uXtYrN_cCUnbzm78pS0F5eQ
-28-04-2026 08:37:35.196 [27] [Information] System.Net.Http.HttpClient.IProveedorApiClient.ClientHandler - Sending HTTP request POST https://apiprocesadortarjetasbytepu.banpais.hn/transaction-data-service/authorizations
-28-04-2026 08:37:35.391 [27] [Information] System.Net.Http.HttpClient.IProveedorApiClient.ClientHandler - Received HTTP response headers after 190.3259ms - 401
-28-04-2026 08:37:35.396 [27] [Warning] transacciones_flotantes.Service.AuthHandler - Token rechazado con 401. Invalidando y reintentando...
-28-04-2026 08:37:35.401 [27] [Information] transacciones_flotantes.Service.ProveedorTokenService - AccessToken Invalidado del cache
-28-04-2026 08:37:35.408 [27] [Information] transacciones_flotantes.Service.AuthHandler - Reintento con nuevo token: eyJraWQiOiJhdXRoLXNlcnZlci1rZXktMSIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3NzczODY4ODksImlhdCI6MTc3NzM4NTk4OSwianRpIjoiYmI0ZDk2MTktNTNmNC00MmYyLWIwYjYtNWJkNWEzNGQyMTA4In0.q9u7M5el7RSTgRXaNvc9CJC1Q57M4L4Zk3lmfgBYUBteEk-q0jBMPN0PsYLBiIBKve3JXnyZEwO42F1O3noHlRC6P0gdEqjboMHQTNKo3sLf1sCsNHA_fDuOoxD6cd02a3P592OgpmOp1PCs9F4RVMo4o9GXBd5Wu6rsLlRRKgQOJAW8JGMpSA9jGwmykLaQYeDwHrwHKtFPw_QlNmNh6vAfs0JlxiHugQK6fHCfpdkq2zBpi92wSuRL6BuHOUCv2zlV8CCWOrRh__YKNvwOjf8O5EJtIWrmj_SaGtVjyPRJHxt-bS31AQ-YZHvlfF4uXtYrN_cCUnbzm78pS0F5eQ
-28-04-2026 08:37:35.412 [27] [Information] System.Net.Http.HttpClient.IProveedorApiClient.ClientHandler - Sending HTTP request POST https://apiprocesadortarjetasbytepu.banpais.hn/transaction-data-service/authorizations
-28-04-2026 08:37:35.614 [27] [Information] System.Net.Http.HttpClient.IProveedorApiClient.ClientHandler - Received HTTP response headers after 197.4651ms - 401
-28-04-2026 08:37:35.621 [27] [Information] transacciones_flotantes.Service.AuthHandler - ***** Llamado completado con AuthHandler.SendAsync() *****
-28-04-2026 08:37:35.624 [27] [Information] System.Net.Http.HttpClient.IProveedorApiClient.LogicalHandler - End processing HTTP request after 443.1092ms - 401
-28-04-2026 08:37:35.629 [27] [Information] transacciones_flotantes.Service.ProveedorApiClient - Proveedor HTTP Unauthorized
-28-04-2026 08:37:35.633 [27] [Error] transacciones_flotantes.Service.ProveedorApiClient - Proveedor error HTTP Unauthorized - Body: {
-  "timestamp": "2026-04-28T14:37:35.592413025Z",
-  "status": 401,
-  "error": "UNAUTHORIZED",
-  "message": "Jwt expired at 2026-04-28T14:34:49Z",
-  "path": "/transaction-data-service/authorizations"
+using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using transacciones_flotantes.Models.AccessToken;
+using transacciones_flotantes.Service.Interface;
+
+namespace transacciones_flotantes.Service
+{
+    public class ProveedorTokenService : IProveedorTokenService
+    {
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMemoryCache _cache;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<ProveedorTokenService> _logger;
+
+        private static readonly SemaphoreSlim _lock = new(1, 1);
+
+        private const string CACHE_TOKEN = "ACCESS_TOKEN";
+        private const string CACHE_KEY = "BYTE_KEY";
+
+        public ProveedorTokenService(
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache,
+            IConfiguration configuration,
+            ILogger<ProveedorTokenService> logger)
+        {
+            _httpClientFactory = httpClientFactory;
+            _cache = cache;
+            _configuration = configuration;
+            _logger = logger;
+        }
+
+        public async Task<string> ObtenerAccessTokenAsync()
+        {
+            if (_cache.TryGetValue(CACHE_TOKEN, out string token))
+            {
+                return token;
+            }
+
+            await _lock.WaitAsync();
+
+            try
+            {
+                // Double check para evitar race conditions
+                if (_cache.TryGetValue(CACHE_TOKEN, out token))
+                {
+                    return token;
+                }
+
+                _logger.LogInformation("Generando nuevo accessToken...");
+
+                var key = await ObtenerKeyAsync();
+
+                var tokenResponse = await GenerarTokenAsync(key);
+
+                var expiration = DateTime.UtcNow.AddSeconds(tokenResponse.expiresIn - 60);
+
+                _cache.Set(
+                    CACHE_TOKEN,
+                    tokenResponse.accessToken,
+                    expiration
+                );
+
+                _logger.LogInformation("AccessToken generado y almacenado en cache");
+
+                return tokenResponse.accessToken;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        private async Task<string> ObtenerKeyAsync()
+        {
+            if (_cache.TryGetValue(CACHE_KEY, out string key))
+            {
+                return key;
+            }
+
+            _logger.LogInformation("Generando nuevo ByteKey...");
+
+            var client = _httpClientFactory.CreateClient();
+
+            var url = $"{_configuration["ApiSettings:BaseAddressByteKey"]}{_configuration["ApiSettings:EndpointByteKey"]}";
+
+            var response = await client.GetAsync(url);
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+            key = data["authorization"];
+
+            _cache.Set(
+                CACHE_KEY,
+                key,
+                TimeSpan.FromHours(24)
+            );
+
+            _logger.LogInformation("ByteKey almacenado en cache");
+
+            return key;
+        }
+
+        private async Task<AccessTokenResponse> GenerarTokenAsync(string key)
+        {
+            var client = _httpClientFactory.CreateClient();
+
+            var url = $"{_configuration["ApiSettings:BaseAddressAccessToken"]}{_configuration["ApiSettings:EndpointAccessToken"]}";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Basic", key.Replace("Basic ", ""));
+
+            var response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<AccessTokenResponse>(json);
+        }
+
+
+        public void InvalidarToken()
+        {
+            _cache.Remove(CACHE_KEY);
+            _logger.LogInformation($"AccessToken Invalidado del cache");
+        }
+    }
 }
-28-04-2026 08:37:35.697 [27] [Error] transacciones_flotantes.Service.ProveedorApiClient - Error enviando transacción al proveedor
-transacciones_flotantes.Service.ProveedorApiException: Proveedor respondió Unauthorized
-   at transacciones_flotantes.Service.ProveedorApiClient.EnviarTransaccionAsync(ProveedorTransaccionFlotanteRequestDto request) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Transacciones Flotantes\transacciones_flotantes\transacciones_flotantes\Service\ProveedorApiClient.cs:line 77
-28-04-2026 08:37:35.821 [27] [Warning] transacciones_flotantes.Service.TransaccionesFlotantesService - Error proveedor Unauthorized - {
-  "timestamp": "2026-04-28T14:37:35.592413025Z",
-  "status": 401,
-  "error": "UNAUTHORIZED",
-  "message": "Jwt expired at 2026-04-28T14:34:49Z",
-  "path": "/transaction-data-service/authorizations"
-}
-28-04-2026 08:37:35.827 [27] [Information] transacciones_flotantes.Repository.CatalogoErroresRepository - Consultando catálogo de errores. Código: 3
-28-04-2026 08:37:35.885 [27] [Information] transacciones_flotantes.Repository.CatalogoErroresRepository - Catálogo encontrado. Código:3 - Proveedor no disponible
-28-04-2026 08:37:35.895 [27] [Warning] transacciones_flotantes.Service.TransaccionesFlotantesService - Error controlado 3: Proveedor no disponible
-28-04-2026 08:37:35.901 [27] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing OkObjectResult, writing value of type 'transacciones_flotantes.DTOs.Response.ResponseDto+LegacyTransaccionesResponseDto'.
-28-04-2026 08:37:35.907 [27] [Information] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController.Procesar (transacciones_flotantes) in 1210.7ms
-28-04-2026 08:37:35.912 [27] [Information] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'transacciones_flotantes.Controllers.TransaccionesFlotantes.TransaccionesFlotantesController.Procesar (transacciones_flotantes)'
-28-04-2026 08:37:35.917 [27] [Information] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://localhost:5260/api/transacciones-flotantes - 200 null application/json; charset=utf-8 1239.0266ms
-
-
-
-
-
-Mira, tengo este problema :c 
-
-
-
-
-Eso nunca deberia de fallar, de hecho cuando esté proximo a vencerse .. deberia solicitar otro token y si reponde eso ... no deberia mostrarmelo sino simplmente ir a generar otro y ya 
