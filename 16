@@ -1,136 +1,93 @@
-using Microsoft.Extensions.Caching.Memory;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json;
-using transacciones_flotantes.Models.AccessToken;
 using transacciones_flotantes.Service.Interface;
 
 namespace transacciones_flotantes.Service
 {
-    public class ProveedorTokenService : IProveedorTokenService
+    public class AuthHandler : DelegatingHandler
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IMemoryCache _cache;
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<ProveedorTokenService> _logger;
+        private readonly IProveedorTokenService _tokenProvider;
+        private readonly ILogger<AuthHandler> _logger;
 
-        private static readonly SemaphoreSlim _lock = new(1, 1);
-
-        private const string CACHE_TOKEN = "ACCESS_TOKEN";
-        private const string CACHE_KEY = "BYTE_KEY";
-
-        public ProveedorTokenService(
-            IHttpClientFactory httpClientFactory,
-            IMemoryCache cache,
-            IConfiguration configuration,
-            ILogger<ProveedorTokenService> logger)
+        public AuthHandler(IProveedorTokenService tokenProvider, ILogger<AuthHandler> logger)
         {
-            _httpClientFactory = httpClientFactory;
-            _cache = cache;
-            _configuration = configuration;
+            _tokenProvider = tokenProvider;
             _logger = logger;
         }
 
-        public async Task<string> ObtenerAccessTokenAsync()
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (_cache.TryGetValue(CACHE_TOKEN, out string token))
-            {
-                return token;
-            }
-
-            await _lock.WaitAsync();
+            _logger.LogInformation("***** Petición recibida AuthHandler.SendAsync() *****");
 
             try
             {
-                // Double check para evitar race conditions
-                if (_cache.TryGetValue(CACHE_TOKEN, out token))
+                var token = await _tokenProvider.ObtenerAccessTokenAsync();
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                _logger.LogInformation("Token enviado en Authorization Header : {Token}", token);
+
+                var response = await base.SendAsync(request, cancellationToken);
+
+                // Si el proveedor rechaza el token, invalidar y reintentar una vez
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    return token;
+                    _logger.LogWarning("Token rechazado con 401. Invalidando y reintentando...");
+
+                    _tokenProvider.InvalidarToken();
+
+                    var nuevoToken = await _tokenProvider.ObtenerAccessTokenAsync();
+
+                    // Clonar el request porque HttpRequestMessage no se puede reusar
+                    var retryRequest = await CloneRequestAsync(request, nuevoToken);
+
+                    _logger.LogInformation(
+                        "Reintento con nuevo token: {Token}", nuevoToken);
+
+                    response = await base.SendAsync(retryRequest, cancellationToken);
                 }
 
-                _logger.LogInformation("Generando nuevo accessToken...");
+                _logger.LogInformation("***** Llamado completado con AuthHandler.SendAsync() *****");
 
-                var key = await ObtenerKeyAsync();
-
-                var tokenResponse = await GenerarTokenAsync(key);
-
-                var expiration = DateTime.UtcNow.AddSeconds(tokenResponse.expiresIn - 60);
-
-                _cache.Set(
-                    CACHE_TOKEN,
-                    tokenResponse.accessToken,
-                    expiration
-                );
-
-                _logger.LogInformation("AccessToken generado y almacenado en cache");
-
-                return tokenResponse.accessToken;
+                return response;
             }
-            finally
+            catch (Exception ex)
             {
-                _lock.Release();
+                _logger.LogError(ex,
+                    "Error en AuthHandler.SendAsync(). Descripcion: {Message}", ex.Message);
+
+                return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent($"Error en AuthHandler: {ex.Message}")
+                };
             }
         }
 
-        private async Task<string> ObtenerKeyAsync()
+        // HttpRequestMessage no se puede reenviar, hay que clonarlo
+        private static async Task<HttpRequestMessage> CloneRequestAsync(
+            HttpRequestMessage original, string nuevoToken)
         {
-            if (_cache.TryGetValue(CACHE_KEY, out string key))
+            var clone = new HttpRequestMessage(original.Method, original.RequestUri);
+
+            // Copiar headers excepto Authorization (se reemplaza con el nuevo token)
+            foreach (var header in original.Headers)
             {
-                return key;
+                if (!header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
 
-            _logger.LogInformation("Generando nuevo ByteKey...");
+            clone.Headers.Authorization = new AuthenticationHeaderValue("Bearer", nuevoToken);
 
-            var client = _httpClientFactory.CreateClient();
+            // Copiar el body si existe
+            if (original.Content != null)
+            {
+                var bodyBytes = await original.Content.ReadAsByteArrayAsync();
+                clone.Content = new ByteArrayContent(bodyBytes);
 
-            var url = $"{_configuration["ApiSettings:BaseAddressByteKey"]}{_configuration["ApiSettings:EndpointByteKey"]}";
+                foreach (var header in original.Content.Headers)
+                    clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
 
-            var response = await client.GetAsync(url);
-
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-
-            key = data["authorization"];
-
-            _cache.Set(
-                CACHE_KEY,
-                key,
-                TimeSpan.FromHours(24)
-            );
-
-            _logger.LogInformation("ByteKey almacenado en cache");
-
-            return key;
-        }
-
-        private async Task<AccessTokenResponse> GenerarTokenAsync(string key)
-        {
-            var client = _httpClientFactory.CreateClient();
-
-            var url = $"{_configuration["ApiSettings:BaseAddressAccessToken"]}{_configuration["ApiSettings:EndpointAccessToken"]}";
-
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue("Basic", key.Replace("Basic ", ""));
-
-            var response = await client.SendAsync(request);
-
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            return JsonSerializer.Deserialize<AccessTokenResponse>(json);
-        }
-
-
-        public void InvalidarToken()
-        {
-            _cache.Remove(CACHE_KEY);
-            _logger.LogInformation($"AccessToken Invalidado del cache");
+            return clone;
         }
     }
 }
