@@ -1,100 +1,11 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
-
-# =========================
-# CERTIFICADO PROXY
-# =========================
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates || true
-
-ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
-
-# =========================
-# INSTALAR ODBC + IBM
-# =========================
-COPY odbc-libraries/*.deb /tmp/odbc/
-
-RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
-    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
-    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc-common*.deb || true && \
-    dpkg -i /tmp/odbc/libodbc2*.deb || true && \
-    dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
-    dpkg -i /tmp/odbc/libodbccr2*.deb || true && \
-    dpkg -i /tmp/odbc/libreadline8*.deb || true && \
-    dpkg -i /tmp/odbc/odbcinst*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
-    dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
-    dpkg -i /tmp/odbc/wget*.deb || true && \
-    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
-    dpkg --configure -a || true
-
-ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64
-
-# =========================
-# BUILD APP
-# =========================
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
-
-# =========================
-# SNAPSHOT ODBC
-# =========================
-RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
-    find / -name "libodbc.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libodbcinst.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    find / -name "libltdl.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
-    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
-    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
-    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
-
-# =========================
-# RUNTIME STAGE
-# =========================
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
-WORKDIR /app
-
-# =========================
-# CERTIFICADO PROXY
-# =========================
-COPY proxy-root.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates
-
-# App
-COPY --from=build /app/publish .
-
-# ODBC
-COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
-COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
-COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
-COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
-
-# Permisos OpenShift
-RUN chmod -R a+r /opt/odbc || true && \
-    chmod -R a+rx /opt/odbc/bin || true && \
-    chmod -R a+r /opt/ibm || true
-
-# =========================
-# CONFIGURACIÓN DEL DRIVER
-# =========================
-RUN mkdir -p /opt/odbc && \
-    printf '%s\n' \
-    '[IBM i Access ODBC Driver]' \
-    'Description=IBM i Access for Linux ODBC Driver' \
-    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
-    'FileUsage=1' \
-    > /opt/odbc/odbcinst.ini
-
-# Registrar driver
-RUN /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true
-
-# Cache librerías
-RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
-
-# Variables
-ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64
-ENV ODBCSYSINI=/opt/odbc
-ENV ODBCINI=/opt/odbc/odbc.ini
-
-ENTRYPOINT ["dotnet", "DesembsoloEfectivoApiAvailables.dll"]
+You must install or update .NET to run this application.
+App: /app/DesembsoloEfectivoApiAvailables.dll
+Architecture: x64
+Framework: 'Microsoft.NETCore.App', version '10.0.0' (x64)
+.NET location: /usr/share/dotnet/
+The following frameworks were found:
+8.0.26 at [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+Learn more:
+https://aka.ms/dotnet/app-launch-failed
+To install missing framework, download:
+https://aka.ms/dotnet-core-applaunch?framework=Microsoft.NETCore.App&framework_version=10.0.0&arch=x64&rid=linux-x64&os=debian.12
