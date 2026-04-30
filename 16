@@ -1,4 +1,267 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+[+] Building 13.0s (11/23)                                                                                      docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                            0.0s
+ => => transferring dockerfile: 2.91kB                                                                                          0.0s
+ => [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:8.0                                                            0.8s
+ => [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                                              0.7s
+ => [internal] load .dockerignore                                                                                               0.0s
+ => => transferring context: 2B                                                                                                 0.0s
+ => [build 1/7] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666dc3982fc  0.0s
+ => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666dc3982fc        0.0s
+ => [final  1/11] FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:f88c77644f4c480a62d3b46dc74db8d5472a24e282df8b1e56195c689d35  0.0s
+ => => resolve mcr.microsoft.com/dotnet/aspnet:8.0@sha256:f88c77644f4c480a62d3b46dc74db8d5472a24e282df8b1e56195c689d35a6db      0.0s
+ => [internal] load build context                                                                                               0.3s
+ => => transferring context: 7.81MB                                                                                             0.3s
+ => CACHED [build 2/7] WORKDIR /src                                                                                             0.0s
+ => CACHED [final  2/11] WORKDIR /app                                                                                           0.0s
+ => [build 3/7] COPY odbc-libraries/*.deb /tmp/odbc/                                                                            0.1s
+ => ERROR [build 4/7] RUN dpkg -i /tmp/odbc/dpkg*.deb || true &&     dpkg -i /tmp/odbc/ca-certificates*.deb || true &&     dp  11.7s
+------
+ > [build 4/7] RUN dpkg -i /tmp/odbc/dpkg*.deb || true &&     dpkg -i /tmp/odbc/ca-certificates*.deb || true &&     dpkg -i /tmp/odbc/libltdl7*.deb || true &&     dpkg -i /tmp/odbc/libodbc2*.deb || true &&     dpkg -i /tmp/odbc/libodbcinst2*.deb || true &&     dpkg -i /tmp/odbc/unixodbc*.deb || true &&     dpkg -i /tmp/odbc/odbcinst*.deb || true &&     dpkg -i /tmp/odbc/unixodbc-dev*.deb || true &&     dpkg -i /tmp/odbc/wget*.deb || true &&     dpkg -i /tmp/odbc/ibm-iaccess*.deb || true &&     apt-get update &&     apt-get -y --fix-broken install:
+0.515 (Reading database ... 9370 files and directories currently installed.)
+0.516 Preparing to unpack .../dpkg_1.22.6ubuntu6.5_amd64.deb ...
+0.530 Unpacking dpkg (1.22.6ubuntu6.5) over (1.22.6ubuntu6.5) ...
+0.729 Setting up dpkg (1.22.6ubuntu6.5) ...
+0.984 (Reading database ... 9370 files and directories currently installed.)
+0.984 Preparing to unpack .../ca-certificates_20240203_all.deb ...
+0.999 Unpacking ca-certificates (20240203) over (20240203) ...
+1.504 Setting up ca-certificates (20240203) ...
+1.634 debconf: unable to initialize frontend: Dialog
+1.634 debconf: (TERM is not set, so the dialog frontend is not usable.)
+1.634 debconf: falling back to frontend: Readline
+1.643 debconf: unable to initialize frontend: Readline
+1.643 debconf: (This frontend requires a controlling tty.)
+1.643 debconf: falling back to frontend: Teletype
+2.670 Updating certificates in /etc/ssl/certs...
+3.134 0 added, 0 removed; done.
+3.159 Processing triggers for ca-certificates (20240203) ...
+3.167 Updating certificates in /etc/ssl/certs...
+3.546 0 added, 0 removed; done.
+3.546 Running hooks in /etc/ca-certificates/update.d...
+3.549 done.
+3.575 Selecting previously unselected package libltdl7:amd64.
+3.580 (Reading database ... 9370 files and directories currently installed.)
+3.580 Preparing to unpack .../libltdl7_2.4.7-7build1_amd64.deb ...
+3.588 Unpacking libltdl7:amd64 (2.4.7-7build1) ...
+3.610 Setting up libltdl7:amd64 (2.4.7-7build1) ...
+3.625 Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+3.792 Selecting previously unselected package libodbc2:amd64.
+3.797 (Reading database ... 9377 files and directories currently installed.)
+3.798 Preparing to unpack .../libodbc2_2.3.11-2+deb12u1_amd64.deb ...
+3.806 Unpacking libodbc2:amd64 (2.3.11-2+deb12u1) ...
+3.832 Setting up libodbc2:amd64 (2.3.11-2+deb12u1) ...
+3.842 Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+3.887 Selecting previously unselected package libodbcinst2:amd64.
+3.893 (Reading database ... 9382 files and directories currently installed.)
+3.894 Preparing to unpack .../libodbcinst2_2.3.11-2+deb12u1_amd64.deb ...
+3.905 Unpacking libodbcinst2:amd64 (2.3.11-2+deb12u1) ...
+3.929 Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+3.929 dpkg: dependency problems prevent configuration of libodbcinst2:amd64:
+3.929  libodbcinst2:amd64 depends on unixodbc-common (>= 2.3.11-2+deb12u1); however:
+3.929   Package unixodbc-common is not installed.
+3.929
+3.929 dpkg: error processing package libodbcinst2:amd64 (--install):
+3.929  dependency problems - leaving unconfigured
+3.955 Errors were encountered while processing:
+3.955  libodbcinst2:amd64
+3.969 Selecting previously unselected package unixodbc-dev:amd64.
+3.974 (Reading database ... 9387 files and directories currently installed.)
+3.974 Preparing to unpack .../unixodbc-dev_2.3.12-1ubuntu0.24.04.1_amd64.deb ...
+3.979 Unpacking unixodbc-dev:amd64 (2.3.12-1ubuntu0.24.04.1) ...
+4.020 Selecting previously unselected package unixodbc.
+4.021 Preparing to unpack .../unixodbc_2.3.12-1ubuntu0.24.04.1_amd64.deb ...
+4.025 Unpacking unixodbc (2.3.12-1ubuntu0.24.04.1) ...
+4.042 dpkg: dependency problems prevent configuration of unixodbc-dev:amd64:
+4.042  unixodbc-dev:amd64 depends on libodbc2 (= 2.3.12-1ubuntu0.24.04.1); however:
+4.042   Version of libodbc2:amd64 on system is 2.3.11-2+deb12u1.
+4.042  unixodbc-dev:amd64 depends on libodbccr2 (= 2.3.12-1ubuntu0.24.04.1); however:
+4.042   Package libodbccr2 is not installed.
+4.042  unixodbc-dev:amd64 depends on libodbcinst2 (= 2.3.12-1ubuntu0.24.04.1); however:
+4.042   Version of libodbcinst2:amd64 on system is 2.3.11-2+deb12u1.
+4.042
+4.042 dpkg: error processing package unixodbc-dev:amd64 (--install):
+4.042  dependency problems - leaving unconfigured
+4.042 dpkg: dependency problems prevent configuration of unixodbc:
+4.042  unixodbc depends on libodbcinst2 (>= 2.3.1); however:
+4.042   Package libodbcinst2:amd64 is not configured yet.
+4.042  unixodbc depends on libreadline8t64 (>= 6.0); however:
+4.042   Package libreadline8t64 is not installed.
+4.042
+4.042 dpkg: error processing package unixodbc (--install):
+4.042  dependency problems - leaving unconfigured
+4.049 Errors were encountered while processing:
+4.049  unixodbc-dev:amd64
+4.049  unixodbc
+4.061 Selecting previously unselected package odbcinst.
+4.065 (Reading database ... 9423 files and directories currently installed.)
+4.066 Preparing to unpack .../odbcinst_2.3.11-2+deb12u1_amd64.deb ...
+4.070 Unpacking odbcinst (2.3.11-2+deb12u1) ...
+4.086 dpkg: dependency problems prevent configuration of odbcinst:
+4.086  odbcinst depends on unixodbc-common (>= 2.3.11-2+deb12u1); however:
+4.086   Package unixodbc-common is not installed.
+4.086  odbcinst depends on libodbcinst2 (>= 2.3.1); however:
+4.086   Package libodbcinst2:amd64 is not configured yet.
+4.086
+4.086 dpkg: error processing package odbcinst (--install):
+4.086  dependency problems - leaving unconfigured
+4.094 Errors were encountered while processing:
+4.094  odbcinst
+4.112 (Reading database ... 9428 files and directories currently installed.)
+4.113 Preparing to unpack .../unixodbc-dev_2.3.12-1ubuntu0.24.04.1_amd64.deb ...
+4.118 Unpacking unixodbc-dev:amd64 (2.3.12-1ubuntu0.24.04.1) over (2.3.12-1ubuntu0.24.04.1) ...
+4.155 dpkg: dependency problems prevent configuration of unixodbc-dev:amd64:
+4.155  unixodbc-dev:amd64 depends on libodbc2 (= 2.3.12-1ubuntu0.24.04.1); however:
+4.155   Version of libodbc2:amd64 on system is 2.3.11-2+deb12u1.
+4.155  unixodbc-dev:amd64 depends on libodbccr2 (= 2.3.12-1ubuntu0.24.04.1); however:
+4.155   Package libodbccr2 is not installed.
+4.155  unixodbc-dev:amd64 depends on libodbcinst2 (= 2.3.12-1ubuntu0.24.04.1); however:
+4.155   Version of libodbcinst2:amd64 on system is 2.3.11-2+deb12u1.
+4.155
+4.155 dpkg: error processing package unixodbc-dev:amd64 (--install):
+4.155  dependency problems - leaving unconfigured
+4.164 Errors were encountered while processing:
+4.164  unixodbc-dev:amd64
+4.182 (Reading database ... 9428 files and directories currently installed.)
+4.182 Preparing to unpack .../wget_1.21.4-1ubuntu4.1_amd64.deb ...
+4.193 Unpacking wget (1.21.4-1ubuntu4.1) over (1.21.4-1ubuntu4.1) ...
+4.242 Setting up wget (1.21.4-1ubuntu4.1) ...
+4.296 Selecting previously unselected package ibm-iaccess.
+4.300 (Reading database ... 9428 files and directories currently installed.)
+4.301 Preparing to unpack .../ibm-iaccess-1.1.0.28-1.0.amd64.deb ...
+4.307 Unpacking ibm-iaccess (1.1.0.28-1.0) ...
+4.746 dpkg: dependency problems prevent configuration of ibm-iaccess:
+4.746  ibm-iaccess depends on libodbcinst2 | odbcinst1debian2; however:
+4.746   Package libodbcinst2:amd64 is not configured yet.
+4.746   Package odbcinst1debian2 is not installed.
+4.746  ibm-iaccess depends on odbcinst; however:
+4.746   Package odbcinst is not configured yet.
+4.746
+4.746 dpkg: error processing package ibm-iaccess (--install):
+4.746  dependency problems - leaving unconfigured
+4.756 Errors were encountered while processing:
+4.756  ibm-iaccess
+5.540 Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+5.592 Get:2 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]
+6.372 Get:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+6.604 Get:4 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [3491 kB]
+7.059 Get:5 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+7.638 Get:6 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages [331 kB]
+7.966 Ign:7 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+7.967 Ign:8 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
+7.988 Ign:9 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+7.989 Ign:10 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
+8.030 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
+8.077 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+8.128 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+8.156 Ign:14 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages
+8.187 Ign:15 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
+8.237 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
+8.276 Ign:7 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+8.327 Ign:8 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
+8.367 Ign:9 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+8.408 Ign:10 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
+8.458 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
+8.543 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+8.589 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+8.628 Ign:14 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages
+8.679 Ign:15 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
+8.717 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
+8.758 Ign:7 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+8.807 Ign:8 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
+8.846 Ign:9 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+8.887 Ign:10 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
+8.918 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
+8.970 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+9.019 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+9.070 Ign:14 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages
+9.107 Ign:15 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
+9.130 Get:17 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1985 kB]
+9.147 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
+9.188 Ign:7 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+9.229 Ign:8 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
+9.277 Ign:9 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+9.329 Ign:10 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
+9.369 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
+9.408 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+9.449 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+9.489 Ign:14 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages
+9.538 Ign:15 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
+9.577 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
+9.619 Ign:7 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+9.668 Ign:8 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
+9.707 Ign:9 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+9.779 Ign:10 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
+9.797 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
+9.840 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+9.888 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+9.918 Ign:14 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages
+9.959 Ign:15 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
+9.999 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
+10.06 Err:7 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages
+10.06   403  URLBlocked [IP: 91.189.92.24 80]
+10.10 Ign:8 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages
+10.15 Ign:9 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages
+10.19 Err:10 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages
+10.19   403  URLBlocked [IP: 91.189.92.24 80]
+10.25 Ign:11 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages
+10.28 Ign:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages
+10.30 Ign:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
+10.30 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
+10.31 Ign:13 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages
+10.37 Err:14 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages
+10.37   403  URLBlocked [IP: 91.189.92.24 80]
+10.40 Ign:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
+10.42 Ign:15 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages
+10.46 Ign:16 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages
+10.55 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
+10.68 Ign:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
+10.82 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
+10.95 Ign:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
+11.09 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
+11.20 Ign:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
+11.30 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
+11.43 Err:18 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages
+11.43   403  URLBlocked [IP: 91.189.92.23 80]
+11.57 Ign:19 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages
+11.58 Fetched 6441 kB in 7s (952 kB/s)
+11.58 Reading package lists...
+11.60 E: Failed to fetch http://security.ubuntu.com/ubuntu/dists/noble-security/universe/binary-amd64/Packages  403  URLBlocked [IP: 91.189.92.23 80]
+11.60 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/main/binary-amd64/Packages  403  URLBlocked [IP: 91.189.92.24 80]
+11.60 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/universe/binary-amd64/Packages  403  URLBlocked [IP: 91.189.92.24 80]
+11.60 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/main/binary-amd64/Packages  403  URLBlocked [IP: 91.189.92.24 80]
+11.60 E: Some index files failed to download. They have been ignored, or old ones used instead.
+------
+Dockerfile:9
+--------------------
+   8 |
+   9 | >>> RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
+  10 | >>>     dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
+  11 | >>>     dpkg -i /tmp/odbc/libltdl7*.deb || true && \
+  12 | >>>     dpkg -i /tmp/odbc/libodbc2*.deb || true && \
+  13 | >>>     dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
+  14 | >>>     dpkg -i /tmp/odbc/unixodbc*.deb || true && \
+  15 | >>>     dpkg -i /tmp/odbc/odbcinst*.deb || true && \
+  16 | >>>     dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
+  17 | >>>     dpkg -i /tmp/odbc/wget*.deb || true && \
+  18 | >>>     dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
+  19 | >>>     apt-get update && \
+  20 | >>>     apt-get -y --fix-broken install
+  21 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c dpkg -i /tmp/odbc/dpkg*.deb || true &&     dpkg -i /tmp/odbc/ca-certificates*.deb || true &&     dpkg -i /tmp/odbc/libltdl7*.deb || true &&     dpkg -i /tmp/odbc/libodbc2*.deb || true &&     dpkg -i /tmp/odbc/libodbcinst2*.deb || true &&     dpkg -i /tmp/odbc/unixodbc*.deb || true &&     dpkg -i /tmp/odbc/odbcinst*.deb || true &&     dpkg -i /tmp/odbc/unixodbc-dev*.deb || true &&     dpkg -i /tmp/odbc/wget*.deb || true &&     dpkg -i /tmp/odbc/ibm-iaccess*.deb || true &&     apt-get update &&     apt-get -y --fix-broken install" did not complete successfully: exit code: 100
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ujtkar8uq16dsrmy9mgi98tlz
+PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Desembolso-ApiAvailables\plantilla_microservicios_repository>
+
+
+
+
+
+
+
+
+
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # =========================
@@ -80,3 +343,7 @@ ENV ODBCSYSINI=/opt/odbc
 ENV ODBCINI=/opt/odbc/odbc.ini
 
 ENTRYPOINT ["dotnet", "DesembsoloEfectivoApiAvailables.dll"]
+
+
+
+
