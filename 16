@@ -1,259 +1,85 @@
-using api_otp_notifica.DTOs.Card;
-using api_otp_notifica.DTOs.Cuentas;
-using api_otp_notifica.DTOs.Mail;
-using api_otp_notifica.DTOs.Plantilla;
-using api_otp_notifica.DTOs.Report;
-using api_otp_notifica.DTOs.Request;
-using api_otp_notifica.DTOs.Response;
-using api_otp_notifica.DTOs.Sms;
-using api_otp_notifica.Service.Interface;
-using api_otp_notifica.Utils;
+Log streaming...
 
-namespace api_otp_notifica.Service
-{
-    public class OtpNotificationService : IOtpNotificationService
-    {
-        private readonly MessageResponseFn _messageResponseFn;
-        private readonly IReportService _reportService;
-        private readonly IMailService  _mailService;
-        private readonly ISmsService  _smsService;
-        private readonly IBPTarjetasService _bpTarjetaService;
-        private readonly ICuentaService _cuentaService;
-        private readonly ICardService _cardService;
-        private readonly IServerService _serverService;
-        private readonly IPlantillaService _plantillaService;
-        private readonly ILogger<OtpNotificationService> _logger;
+Container
+C
+api-abandoned-tokenv1
 
-        public OtpNotificationService(MessageResponseFn messageResponseFn, IReportService reportService, ILogger<OtpNotificationService> logger, IMailService mailService, ISmsService smsService, IBPTarjetasService bpTarjetaService, ICuentaService cuentaService, ICardService cardService, IServerService serverService, IPlantillaService plantillaService){
-            _messageResponseFn = messageResponseFn; 
-            _reportService = reportService; 
-            _mailService = mailService; 
-            _smsService = smsService;   
-            _bpTarjetaService = bpTarjetaService;
-            _cuentaService = cuentaService; 
-            _cardService = cardService; 
-            _serverService = serverService;
-            _plantillaService = plantillaService;   
-            _logger = logger;   
-        }
-        
-        public async Task<ResponseMessages> SendOtpAsync(OtpRequestDto requestDto)
-        {
-            _logger.LogInformation("Solicitud recibida: OTP_NOTIFICATIONS {token_reference_id}", requestDto.token_reference_id);
+Current log
+Search
 
-            ResponseServicesDto<string> bpTarjetaResponse = await _bpTarjetaService.EquivalenteAsync(requestDto.card_number);
-            if (bpTarjetaResponse.Code != Constantes.STATUS_OK)
-                return await _messageResponseFn.MessageResponse(bpTarjetaResponse.Code, bpTarjetaResponse.Value!);
-            string equivalente = bpTarjetaResponse.Value!;
+Show full log
 
-            CuentaDto cuentaDto = await _cuentaService.GetAccountAsync(equivalente);
+Wrap lines
+Raw
+Download
+78 lines
+30-04-2026 21:22:55.126 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
+30-04-2026 21:22:55.303 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_InsertAbandonedTokens ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas=1
+30-04-2026 21:22:55.305 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.AbandonedTokenRepository - Filas afectadas=1
+30-04-2026 21:22:55.307 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.AbandonedTokenService - Registro exitoso de la tarjeta 1000000001451042 del lote 5a134964-34d5-49a4-a1ec-648b705f43d2
+30-04-2026 21:22:55.313 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_ExistTokenRequestor ejecutado correctamente con ExecuteScalarAsync(), resultado=1
+30-04-2026 21:22:55.314 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.TokenRequestorRepository - Tird 40010030273 existe en DB flag 1
+30-04-2026 21:22:55.314 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.BPTarjetasService - Iniciando solicitud del equivalente de tarjeta 421004XXXXXX6001
+30-04-2026 21:22:55.331 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
+30-04-2026 21:22:55.337 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_InsertAbandonedTokens ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas=1
+30-04-2026 21:22:55.337 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.AbandonedTokenRepository - Filas afectadas=1
+30-04-2026 21:22:55.337 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.AbandonedTokenService - Registro exitoso de la tarjeta 1000000001451042 del lote 5a134964-34d5-49a4-a1ec-648b705f43d2
+30-04-2026 21:22:55.343 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
+30-04-2026 21:22:55.418 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=JobNameAbandoned, Valor=[CORETC]-[ENVIO]-[ABANDONED TOKENS]
+30-04-2026 21:22:55.420 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.ValidationServiceImp - Parametro encontrado para la clave JobNameAbandoned: [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+30-04-2026 21:22:55.508 [13] [Error] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.JobRespository - Error de DB al ejecutar el job [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+Microsoft.Data.SqlClient.SqlException (0x80131904): The specified @job_name ('[CORETC]-[ENVIO]-[ABANDONED TOKENS]') does not exist.
+at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteReader(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderInternal(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteReaderAsync>b__201_1(IAsyncResult asyncResult)
+at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location ---
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 85
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 20
+ClientConnectionId:b33a3469-8c3f-48ca-99c4-9fa503acbb0e
+Error Number:14262,State:1,Class:16
+30-04-2026 21:22:55.532 [13] [Error] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController - Error crítico no controlado en el controlador ABANDONED_TOKEN
+Microsoft.Data.SqlClient.SqlException (0x80131904): The specified @job_name ('[CORETC]-[ENVIO]-[ABANDONED TOKENS]') does not exist.
+at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteReader(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderInternal(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteReaderAsync>b__201_1(IAsyncResult asyncResult)
+at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- End of stack trace from previous location ---
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 85
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 20
+at api_abandoned_token.Service.JobService.ExecuteJobByJobNameAsync(String jobName) in /src/Service/JobService.cs:line 19
+at api_abandoned_token.Service.AbandonedTokenService.RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto) in /src/Service/AbandonedTokenService.cs:line 54
+at api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post(AbandonedTokenRequestDto request) in /src/Controllers/Notifications/ABANDONED_TOKENSController.cs:line 37
+ClientConnectionId:b33a3469-8c3f-48ca-99c4-9fa503acbb0e
+Error Number:14262,State:1,Class:16
+30-04-2026 21:22:55.614 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
+30-04-2026 21:22:55.814 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token) in 5769.9593ms
+30-04-2026 21:22:55.816 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token)'
+30-04-2026 21:22:55.826 [13] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-abandoned-tokenv1:8080/api/ABANDONED_TOKENS - 500 null application/problem+json; charset=utf-8 6207.9794ms
 
-            bool isValidCard = await _cardService.IsValidCardAsync(equivalente);
 
-            if (!isValidCard)
-            {
-                ReportDto report = new ReportDto
-                {
-                    CIF = cuentaDto.CIF,
-                    Nombre = cuentaDto.Nombre,
-                    Equivalente = equivalente,
-                    NoCuenta = cuentaDto.NoCuentaClaro,
-                    Otp_Method_Type = requestDto.otp_method_type,
-                    Contacto = string.Empty,
-                    FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                    FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                    Estado = "0",
-                    Error = "Tarjeta inactiva",
-                    Token_Requestor_Id = !string.IsNullOrWhiteSpace(requestDto.token_requestor_id)
-					 ? requestDto.token_requestor_id
-					 : "Generico",
-                    FechaRegistro = DateTime.Now,
-                };
-                await _reportService.InsertReportAsync(report);
-            }
 
-            if (!string.IsNullOrEmpty(equivalente) && !string.IsNullOrEmpty(cuentaDto.CIF) && isValidCard)
-            {
-                string serverSmtp = await _serverService.GetServerNameAsync();
 
-                PlantillaDto plantillaDto = await _plantillaService.GetPlantillaAsync("OTP", !string.IsNullOrWhiteSpace(requestDto.token_requestor_id)
-					 ? requestDto.token_requestor_id
-					 : "GENERICO");
-
-                if (requestDto.otp_method_type.Equals("email"))
-                {
-                    string emailAddress = await _cardService.GetEmailAddressAsync(equivalente);
-
-                    if (!string.IsNullOrEmpty(emailAddress))
-                    {
-                        _logger.LogInformation("Envio de Email con ServerMail: {0} - MailFrom: {1} - MailTo: {2}", serverSmtp, plantillaDto.MailFrom, emailAddress);
-
-                        MailDto mailDto = new MailDto
-                        {
-                            From = plantillaDto.MailFrom,
-                            SendTo = emailAddress,
-                            Subject = plantillaDto.MailSubject,
-                            Body = plantillaDto.MailBodyHtml.Replace("[TOKEN]", requestDto.otp_value),
-                            Server = serverSmtp,
-                            IsBodyHtml = true
-                        };
-
-                        ResponseServicesDto<string> smsServiceResponse = await _mailService.SendMailMessageAsync(mailDto);
-
-                        if (smsServiceResponse.Code.Equals(Constantes.STATUS_OK))
-                        {
-                            //Email enviado
-                            ReportDto reportSmsIsSend = new ReportDto
-                            {
-                                CIF = cuentaDto.CIF,
-                                Nombre = cuentaDto.Nombre,
-                                Equivalente = equivalente,
-                                NoCuenta = cuentaDto.NoCuentaClaro,
-                                Otp_Method_Type = requestDto.otp_method_type,
-                                Contacto = emailAddress,
-                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                                Estado = "1",
-                                Token_Requestor_Id = requestDto.token_requestor_id,
-                                FechaRegistro = DateTime.Now,
-                            };
-                            await _reportService.InsertReportAsync(reportSmsIsSend);
-                            _logger.LogInformation("Se completó el envio del otp de forma exitosa del trid {token_reference_id}", requestDto.token_reference_id);
-                            return await _messageResponseFn.MessageResponse(Constantes.STATUS_OK, "00");
-                        }
-                        else
-                        {
-                            //Email no enviado
-                            ReportDto reportSmsNoSend = new ReportDto
-                            {
-                                CIF = cuentaDto.CIF,
-                                Nombre = cuentaDto.Nombre,
-                                Equivalente = equivalente,
-                                NoCuenta = cuentaDto.NoCuentaClaro,
-                                Otp_Method_Type = requestDto.otp_method_type,
-                                Contacto = emailAddress,
-                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                                Estado = "0",
-                                Token_Requestor_Id = requestDto.token_requestor_id,
-                                FechaRegistro = DateTime.Now,
-                            };
-                            await _reportService.InsertReportAsync(reportSmsNoSend);
-                            _logger.LogInformation("No se completó el envio del otp por el servidor: {Server} al correo: {SendTo}", mailDto.Server, mailDto.SendTo);
-                            return await _messageResponseFn.MessageResponse(smsServiceResponse.Code, smsServiceResponse.Value!);
-                        }
-                    }
-                    else
-                    {
-                        //No se encontró informacion
-                        ReportDto reportSmsNoInfo = new ReportDto
-                        {
-                            CIF = cuentaDto.CIF,
-                            Nombre = cuentaDto.Nombre,
-                            Equivalente = equivalente,
-                            NoCuenta = cuentaDto.NoCuentaClaro,
-                            Otp_Method_Type = requestDto.otp_method_type,
-                            Contacto = emailAddress,
-                            FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                            FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                            Estado = string.Empty,
-                            Error = "No se encontró información",
-                            Token_Requestor_Id = requestDto.token_requestor_id,
-                            FechaRegistro = DateTime.Now,
-                        };
-                        await _reportService.InsertReportAsync(reportSmsNoInfo);
-
-                        return await _messageResponseFn.MessageResponse(Constantes.STATUS_NOT_FOUND, "02");
-                    }
-                }
-                else if(requestDto.otp_method_type.Equals("cell_phone"))
-                {
-                    _logger.LogInformation("Inicio envio de otp por sms de tarjeta {equivalente} por ISmsService", equivalente);
-                    PhoneAddressDto phoneInformation = await _cardService.GetPhoneAddressAsync(equivalente);
-
-                    if (!string.IsNullOrEmpty(phoneInformation.idOperator) && !string.IsNullOrEmpty(phoneInformation.phoneNumber))
-                    {
-                        string idOperatorBIMovil = await _cardService.GetIdOperatorBiMovilSmsAsync(phoneInformation.idOperator);
-
-                        SmsDto smsDto = new SmsDto
-                        {
-                            Telefono = phoneInformation.phoneNumber,
-                            Operador = idOperatorBIMovil,
-                            Mensaje = plantillaDto.SmsBody.Replace("[TOKEN]", requestDto.otp_value),
-                        };
-
-                        ResponseServicesDto<string> smsServiceResponse = await _smsService.SendSmsAsync(smsDto);
-                        if (smsServiceResponse.Code.Equals(Constantes.STATUS_OK))
-                        {
-                            //Sms fue enviado
-                            ReportDto reportIsSend = new ReportDto
-                            {
-                                CIF = cuentaDto.CIF,
-                                Nombre = cuentaDto.Nombre,
-                                Equivalente = equivalente,
-                                NoCuenta = cuentaDto.NoCuentaClaro,
-                                Otp_Method_Type = requestDto.otp_method_type,
-                                Contacto = phoneInformation.phoneNumber,
-                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                                Estado = "1",
-                                Token_Requestor_Id = requestDto.token_requestor_id,
-                                FechaRegistro = DateTime.Now,
-                            };
-                            await _reportService.InsertReportAsync(reportIsSend);
-
-                            _logger.LogInformation("Se completó el envio del otp de forma exitosa del trid {token_reference_id}", requestDto.token_reference_id);
-                            return await _messageResponseFn.MessageResponse(Constantes.STATUS_OK, "00");
-
-                        }
-                        else
-                        {
-                            //Sms no fue enviado
-                            ReportDto reportNoSend = new ReportDto
-                            {
-                                CIF = cuentaDto.CIF,
-                                Nombre = cuentaDto.Nombre,
-                                Equivalente = equivalente,
-                                NoCuenta = cuentaDto.NoCuentaClaro,
-                                Otp_Method_Type = requestDto.otp_method_type,
-                                Contacto = phoneInformation.phoneNumber,
-                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                                Estado = "0",
-                                Token_Requestor_Id = requestDto.token_requestor_id,
-                                FechaRegistro = DateTime.Now,
-                            };
-                            await _reportService.InsertReportAsync(reportNoSend);
-
-                            _logger.LogInformation("No se completó el envio del otp por el servicio BIMovil con phoneNumber: {Contacto}", reportNoSend.Contacto);
-                            return await _messageResponseFn.MessageResponse(smsServiceResponse.Code, smsServiceResponse.Value!);
-                        }
-                    }
-                    else
-                    {
-                        //No se encontró informacion
-                        ReportDto reportNoInfo = new ReportDto
-                        {
-                            CIF = cuentaDto.CIF,
-                            Nombre = cuentaDto.Nombre,
-                            Equivalente = equivalente,
-                            NoCuenta = cuentaDto.NoCuentaClaro,
-                            Otp_Method_Type = requestDto.otp_method_type,
-                            Contacto = phoneInformation.phoneNumber,
-                            FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
-                            FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
-                            Estado = string.Empty,
-                            Error = "No se encontró información",
-                            Token_Requestor_Id = requestDto.token_requestor_id,
-                            FechaRegistro = DateTime.Now,
-                        };
-                        await _reportService.InsertReportAsync(reportNoInfo);
-
-                        return await _messageResponseFn.MessageResponse(Constantes.STATUS_NOT_FOUND, "01");
-                    }
-                }
-            }
-            return await _messageResponseFn.MessageResponse(Constantes.STATUS_UNPROCESSABLE_ENTITY, "11");
-        }        
-    }
-}
+parece que sigue teniendo error, pero ya lo solucioné, será que tieen que ver con que la imagen no se actualizó correctamente ... 
