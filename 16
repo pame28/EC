@@ -1,88 +1,42 @@
-En efecto, tenias razon, el job está en otro servidor 
+using System.Data;
+using Microsoft.Data.SqlClient;
 
-Lo que he hecho hasta ahorita es... 
-agregar en el appsettings una cadena de conexión que es la que tiene el job
-
-
-  "ConnectionStrings": {
-    "DefaultConnection": "***",
-    "JobConnection": "****"
-
-  },
-
-
-
-Y tambien tengo que actualizar codigo para que tome esa conexión de JobConnection
-
-
-
-
-
-Este es el código:
-
-using api_abandoned_token.DTOs.Request;
-using api_abandoned_token.Service.Interface;
-using api_abandoned_token.DTOs.Response;
-using api_abandoned_token.Utils;
-using api_abandoned_token.Repository.Interface;
-using System.Text.Json;
-
-namespace api_abandoned_token.Service
+namespace api_abandoned_token.Infraestructure.Data
 {
-    public class AbandonedTokenService : IAbandonedTokenService
+    public class JobDBHelper
     {
-        private readonly MessageResponseFn _messageResponseFn;
-        private readonly IAbandonedTokenRepository _abandonedTokenService;
-        private readonly IBPTarjetasService _bpTarjetasService;
-        private readonly ITokenRequestorService _tokenRequestorService;
-        private readonly IJobService _jobService;
-        private readonly IParametrosService _parametrosService;
-        private readonly ILogger<AbandonedTokenService> _logger;
-        public AbandonedTokenService(MessageResponseFn messageResponseFn, IAbandonedTokenRepository abandonedTokenRepository, IBPTarjetasService bPTarjetasService, ITokenRequestorService tokenRequestorService, IJobService jobService,IParametrosService parametrosService, ILogger<AbandonedTokenService> logger) 
+        private readonly string _connectionString;
+        private readonly ILogger<JobDBHelper> _logger;
+
+        public JobDBHelper(IConfiguration configuration, ILogger<JobDBHelper> logger)
         {
-            _messageResponseFn = messageResponseFn;
-            _abandonedTokenService = abandonedTokenRepository;
-            _bpTarjetasService = bPTarjetasService; 
-            _tokenRequestorService = tokenRequestorService; 
-            _jobService = jobService;   
-            _parametrosService = parametrosService; 
-            _logger = logger;   
+            _connectionString = configuration.GetConnectionString("JobConnection")!;
+            _logger = logger;
         }
 
-        public async Task<ResponseMessages> RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto)
+        public async Task<int> ExecuteScalarAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
         {
-            List<TokenRequestDto> listAbandonedTokens = abandonedTokenRequestDto.abandoned_tokens;
+            await using SqlConnection conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
 
-            _logger.LogInformation(JsonSerializer.Serialize(listAbandonedTokens));
-            
-            string lote = Guid.NewGuid().ToString();                                   
-            foreach (TokenRequestDto item in listAbandonedTokens)
+            await using var cmd = new SqlCommand(storedProcedure, conn)
             {
-                if (!await _tokenRequestorService.TokenRequestorExistsAsync(item.token_requestor_id))
-                {
-                    _logger.LogWarning("No existe el token_requestor_id {token_requestor_id} para la tarjeta {card_number} del lote {lote}", item.token_requestor_id, item.card_number, lote);
-                    continue;
-                }
-                ResponseServicesDto<string> equivalentResponse = await _bpTarjetasService.EquivalenteAsync(item.card_number);
-                if (equivalentResponse.Code != Constantes.STATUS_OK)
-                {
-                    _logger.LogWarning("No existe el equivalente para la tarjeta {card_number} del lote {lote}",item.card_number, lote); 
-                    continue;
-                }
-                string equivalent = equivalentResponse.Value!;
-                await InsertAbandonedTokensAsync(lote, equivalent, item.token_requestor_id);
-            }
-            string jobName = await _parametrosService.GetParametro("JobNameAbandoned");
-            bool execute = await _jobService.ExecuteJobByJobNameAsync(jobName);
-            return await _messageResponseFn.MessageResponse(Constantes.STATUS_OK, "00");
-        }
+                CommandType = CommandType.StoredProcedure
+            };
 
-        private async Task InsertAbandonedTokensAsync(string lote, string cardNumber, string tokenRequestorId)
-        {
-            int affectedRows = await _abandonedTokenService.AddAsync(lote, cardNumber, tokenRequestorId);
-            if (affectedRows <= 0)
-                _logger.LogWarning("No se insertó la tarjeta {cardNumber} del lote {lote}", cardNumber, lote);
-            _logger.LogInformation("Registro exitoso de la tarjeta {cardNumber} del lote {lote}", cardNumber, lote);
+            if (parameters != null)
+            {
+                foreach (var param in parameters)
+                {
+                    cmd.Parameters.Add(new SqlParameter(param.Key, param.Value ?? DBNull.Value));
+                }
+            }
+
+            var result = await cmd.ExecuteScalarAsync();
+            int value = int.TryParse(result?.ToString(), out var parsed) ? parsed : 0;
+            _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado correctamente con ExecuteScalarAsync(), resultado={Result}", storedProcedure, value);
+
+            return value;
         }
     }
 }
@@ -90,37 +44,6 @@ namespace api_abandoned_token.Service
 
 
 
-
-using api_abandoned_token.Repository;
-using api_abandoned_token.Repository.Interface;
-using api_abandoned_token.Service.Interface;
-
-namespace api_abandoned_token.Service
-{
-    public class JobService : IJobService
-    {
-        private readonly IJobRespository _jobRespository;
-        private readonly ILogger<JobService> _logger;
-        public JobService(IJobRespository jobRespository, ILogger<JobService> logger) 
-        {
-            _jobRespository = jobRespository;   
-            _logger = logger;   
-        }
-
-        public async Task<bool> ExecuteJobByJobNameAsync(string jobName)
-        {
-            int? isExecute = await _jobRespository.GetStatusJobExecuteAsync(jobName);
-
-            if (!isExecute.HasValue || isExecute.Value != 1)
-            {
-                _logger.LogWarning("No se ejecutó el job: {jobName} de Abandoned Tokens restultado: {isExecute}", jobName, isExecute?.ToString() ?? "null");
-                return false;
-            }
-            _logger.LogInformation("Se ejuctó correctamente el job {jobName}",jobName);
-            return true;
-        }
-    }
-}
 
 
 
@@ -133,19 +56,20 @@ namespace api_abandoned_token.Repository
 {
     public class JobRespository : IJobRespository
     {
-        private readonly DBHelper _dbHelper;
+        private readonly JobDBHelper _jobDBHelper;
         private readonly ILogger<JobRespository> _logger;
-        public JobRespository(DBHelper dBHelper, ILogger<JobRespository> logger) 
+
+        public JobRespository(JobDBHelper jobDBHelper, ILogger<JobRespository> logger)
         {
-            _dbHelper = dBHelper;
-            _logger = logger;   
+            _jobDBHelper = jobDBHelper;
+            _logger = logger;
         }
 
         public async Task<int?> GetStatusJobExecuteAsync(string jobName)
         {
             try
             {
-                int? status = await _dbHelper.ExecuteScalarAsync("usp_ExecJobs",
+                int? status = await _jobDBHelper.ExecuteScalarAsync("usp_ExecJobs",
                     new Dictionary<string, object> { { "@JobName", jobName } });
 
                 if (status == null || Convert.ToInt32(status) <= 0)
@@ -172,27 +96,6 @@ namespace api_abandoned_token.Repository
 
 
 
-USE [Tokenizacion]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_ExecJobs]    Script Date: 30/4/2026 12:26:40 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[usp_ExecJobs](@JobName VARCHAR(200))
-AS
-BEGIN
-
-EXEC msdb.dbo.sp_start_job @JobName
-
-SELECT 1
-      FROM msdb.dbo.sysjobs J 
-      JOIN msdb.dbo.sysjobactivity A 
-          ON A.job_id=J.job_id 
-      WHERE J.name=@JobName
-      AND A.run_requested_date IS NOT NULL 
-      AND A.stop_execution_date IS NULL
-END
 
 
 
@@ -200,127 +103,12 @@ END
 
 
 
-using System.Data;
-using Microsoft.Data.SqlClient;
-
-namespace api_abandoned_token.Infraestructure.Data
-{
-    public class DBHelper
-    {
-        private readonly string _connectionString;
-        private readonly ILogger<DBHelper> _logger;
-
-        public DBHelper(IConfiguration configuration, ILogger<DBHelper> logger)
-        {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
-            _logger = logger;
-        }
 
 
-        // Ejecutar un stored procedure que devuelve un SqlDataReader (SELECT)
-        public async Task<SqlDataReader> ExecuteReaderAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
-        {
-            SqlConnection conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
+// Lo que ya tienes
+builder.Services.AddSingleton<DBHelper>();
 
-            await using SqlCommand cmd = new SqlCommand(storedProcedure, conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            if (parameters != null)
-            {
-                foreach (var param in parameters)
-                {
-                    cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-                }
-            }
-
-            _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado correctamente con ExecuteReaderAsync()", storedProcedure);
-            return await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection);
-        }
+// Agregar esto
+builder.Services.AddSingleton<JobDBHelper>();
 
 
-        // Ejecutar un stored procedure que no devuelve datos (INSERT, UPDATE, DELETE)
-        public async Task<int> ExecuteNonQueryAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
-        {
-            await using SqlConnection conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using SqlCommand cmd = new SqlCommand(storedProcedure, conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            if (parameters != null)
-            {
-                foreach (var param in parameters)
-                {
-                    cmd.Parameters.Add(new SqlParameter(param.Key, param.Value ?? DBNull.Value));
-                }
-            }
-
-            var result = await cmd.ExecuteNonQueryAsync();
-            _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas={Result}", storedProcedure, result);
-            return result;
-        }
-
-        // Ejecutar un query escalar (ej. COUNT(*))
-        public async Task<int> ExecuteScalarAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
-        {
-            await using SqlConnection conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-
-            await using var cmd = new SqlCommand(storedProcedure, conn)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            if (parameters != null)
-            {
-                foreach (var param in parameters)
-                {
-                    cmd.Parameters.Add(new SqlParameter(param.Key, param.Value ?? DBNull.Value));
-                }
-            }
-
-            var result = await cmd.ExecuteScalarAsync();
-            int value = int.TryParse(result?.ToString(), out var parsed) ? parsed : 0;
-            _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado correctamente con ExecuteScalarAsync(), resultado={Result}", storedProcedure, value);
-
-            return value;
-        }
-
-        // Ejecutar un query escalar con SQL directo
-        public async Task<object?> ExecuteScalarSqlAsync(string sql)
-        {
-            try
-            {
-                _logger.LogInformation("Ejecutando ExecuteScalarSqlAsync() - SQL={Sql}", sql);
-
-                await using var conn = new SqlConnection(_connectionString);
-                await conn.OpenAsync();
-
-                await using var cmd = new SqlCommand(sql, conn)
-                {
-                    CommandType = CommandType.Text
-                };
-
-                var result = await cmd.ExecuteScalarAsync();
-                _logger.LogInformation("SQL ejecutado correctamente con ExecuteScalarSqlAsync(), resultado={Result}", result);
-                return result;
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "Error en ExecuteScalarSqlAsync() - SQL={Sql}. Descripción: {Message}", sql, ex.Message);
-                throw;
-            }
-        }
-    }
-}
-
-
-
-
-
-Dime dónde exactamente tengo que hacer las modificaciones, brindame codigo completo, por favor
