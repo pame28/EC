@@ -2,7 +2,7 @@ Log streaming...
 
 Container
 C
-api-otp-notificav1
+api-abandoned-tokenv1
 
 Current log
 Search
@@ -12,70 +12,69 @@ Show full log
 Wrap lines
 Raw
 Download
-137 lines
-25-04-2026 08:24:42.203 [1] [Information] [] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
-25-04-2026 08:24:42.306 [1] [Information] [] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
-25-04-2026 08:24:42.308 [1] [Information] [] Microsoft.Hosting.Lifetime - Hosting environment: Production
-25-04-2026 08:24:42.308 [1] [Information] [] Microsoft.Hosting.Lifetime - Content root path: /app
-30-04-2026 16:28:07.907 [8] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-otp-notificav1:8080/api/OTP_NOTIFICATIONS - application/json 239
-30-04-2026 16:28:08.109 [8] [Warning] [] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
-30-04-2026 16:28:08.126 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController.Post (api_otp_notifica)'
-30-04-2026 16:28:08.401 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "Post", controller = "OTP_NOTIFICATIONS"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Post(api_otp_notifica.DTOs.Request.OtpRequestDto) on controller api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController (api_otp_notifica).
-30-04-2026 16:28:09.102 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController - ***** Petición de OTP_NOTIFICATIONS de token {"token_reference_id":"TRID TEST","card_number":"4210043068376001","otp_value":"otp_value Prueba","expiration_date":"2026-12-31T23:59:59.000Z","otp_method_type":"email","token_requestor_id":"40010030273"}*****
-30-04-2026 16:28:09.108 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Service.OtpNotificationService - Solicitud recibida: OTP_NOTIFICATIONS TRID TEST
-30-04-2026 16:28:09.111 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Service.BPTarjetasService - Iniciando solicitud del equivalente de tarjeta 421004XXXXXX6001
-30-04-2026 16:28:14.626 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
-30-04-2026 16:28:30.181 [8] [Error] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Repository.CuentaRepository - Error de base de datos al obtener cuenta con equivalente 1000000001451042
-Microsoft.Data.SqlClient.SqlException (0x80131904): A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 35 - An internal exception was caught)
----> System.Net.Sockets.SocketException (00000005, 0xFFFDFFFF): Name or service not known
-at System.Net.Dns.GetHostEntryOrAddressesCore(String hostName, Boolean justAddresses, AddressFamily addressFamily, Nullable`1 activityOrDefault)
-at System.Net.Dns.GetHostAddresses(String hostNameOrAddress, AddressFamily family)
-at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.GetHostAddressesSortedByPreference(String serverName, SqlConnectionIPAddressPreference ipPreference)+MoveNext()
-at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.Connect(String serverName, Int32 port, TimeoutTimer timeout, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo)
-at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle..ctor(String serverName, Int32 port, TimeoutTimer timeout, Boolean parallel, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo, Boolean tlsFirst, String hostNameInCertificate, String serverCertificateFilename)
+78 lines
+30-04-2026 17:11:02.519 [6] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
+30-04-2026 17:11:02.627 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_InsertAbandonedTokens ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas=1
+30-04-2026 17:11:02.629 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Repository.AbandonedTokenRepository - Filas afectadas=1
+30-04-2026 17:11:02.631 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Service.AbandonedTokenService - Registro exitoso de la tarjeta 1000000001451042 del lote cfb82a9c-fd94-48a6-9436-6514323172f1
+30-04-2026 17:11:02.634 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_ExistTokenRequestor ejecutado correctamente con ExecuteScalarAsync(), resultado=1
+30-04-2026 17:11:02.634 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Repository.TokenRequestorRepository - Tird 40010030273 existe en DB flag 1
+30-04-2026 17:11:02.634 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Service.BPTarjetasService - Iniciando solicitud del equivalente de tarjeta 421004XXXXXX6001
+30-04-2026 17:11:02.712 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
+30-04-2026 17:11:02.717 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_InsertAbandonedTokens ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas=1
+30-04-2026 17:11:02.718 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Repository.AbandonedTokenRepository - Filas afectadas=1
+30-04-2026 17:11:02.718 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Service.AbandonedTokenService - Registro exitoso de la tarjeta 1000000001451042 del lote cfb82a9c-fd94-48a6-9436-6514323172f1
+30-04-2026 17:11:02.725 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
+30-04-2026 17:11:02.806 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=JobNameAbandoned, Valor=[CORETC]-[ENVIO]-[ABANDONED TOKENS]
+30-04-2026 17:11:02.807 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Service.ValidationServiceImp - Parametro encontrado para la clave JobNameAbandoned: [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+30-04-2026 17:11:02.857 [8] [Error] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Repository.JobRespository - Error de DB al ejecutar el job [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+Microsoft.Data.SqlClient.SqlException (0x80131904): The specified @job_name ('[CORETC]-[ENVIO]-[ABANDONED TOKENS]') does not exist.
+at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
 at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
 at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
-at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteReader(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderInternal(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteReaderAsync>b__201_1(IAsyncResult asyncResult)
+at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
 --- End of stack trace from previous location ---
-at api_otp_notifica.Infraestructure.Data.DBHelper.ExecuteReaderAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 22
-at api_otp_notifica.Repository.CuentaRepository.GetAccountByEquivalent(String equivalente) in /src/Repository/CuentaRepository.cs:line 21
-ClientConnectionId:00000000-0000-0000-0000-000000000000
-Error Number:11001,State:0,Class:20
-30-04-2026 16:28:30.204 [8] [Error] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController - Error crítico no controlado en el controlador OTP
-Microsoft.Data.SqlClient.SqlException (0x80131904): A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 35 - An internal exception was caught)
----> System.Net.Sockets.SocketException (00000005, 0xFFFDFFFF): Name or service not known
-at System.Net.Dns.GetHostEntryOrAddressesCore(String hostName, Boolean justAddresses, AddressFamily addressFamily, Nullable`1 activityOrDefault)
-at System.Net.Dns.GetHostAddresses(String hostNameOrAddress, AddressFamily family)
-at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.GetHostAddressesSortedByPreference(String serverName, SqlConnectionIPAddressPreference ipPreference)+MoveNext()
-at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.Connect(String serverName, Int32 port, TimeoutTimer timeout, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo)
-at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle..ctor(String serverName, Int32 port, TimeoutTimer timeout, Boolean parallel, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo, Boolean tlsFirst, String hostNameInCertificate, String serverCertificateFilename)
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 85
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 20
+ClientConnectionId:e98ae478-535b-4c04-a399-605fcdf12b5c
+Error Number:14262,State:1,Class:16
+30-04-2026 17:11:02.872 [8] [Error] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController - Error crítico no controlado en el controlador ABANDONED_TOKEN
+Microsoft.Data.SqlClient.SqlException (0x80131904): The specified @job_name ('[CORETC]-[ENVIO]-[ABANDONED TOKENS]') does not exist.
+at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
 at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
 at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
-at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
+at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
+at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
+at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
+at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteReader(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderInternal(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
+at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteReaderAsync>b__201_1(IAsyncResult asyncResult)
+at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
 --- End of stack trace from previous location ---
-at api_otp_notifica.Infraestructure.Data.DBHelper.ExecuteReaderAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 22
-at api_otp_notifica.Repository.CuentaRepository.GetAccountByEquivalent(String equivalente) in /src/Repository/CuentaRepository.cs:line 21
-at api_otp_notifica.Service.CuentaService.GetAccountAsync(String equivalente) in /src/Service/CuentaService.cs:line 21
-at api_otp_notifica.Service.OtpNotificationService.SendOtpAsync(OtpRequestDto requestDto) in /src/Service/OtpNotificationService.cs:line 49
-at api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController.Post(OtpRequestDto request) in /src/Controllers/Notifications/OTP_NOTIFICATIONSController.cs:line 38
-ClientConnectionId:00000000-0000-0000-0000-000000000000
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 85
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 20
+at api_abandoned_token.Service.JobService.ExecuteJobByJobNameAsync(String jobName) in /src/Service/JobService.cs:line 19
+at api_abandoned_token.Service.AbandonedTokenService.RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto) in /src/Service/AbandonedTokenService.cs:line 54
+at api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post(AbandonedTokenRequestDto request) in /src/Controllers/Notifications/ABANDONED_TOKENSController.cs:line 37
+ClientConnectionId:e98ae478-535b-4c04-a399-605fcdf12b5c
+Error Number:14262,State:1,Class:16
+30-04-2026 17:11:02.915 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
+30-04-2026 17:11:03.107 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token) in 4902.0226ms
+30-04-2026 17:11:03.108 [8] [Information] [aa0b3aac-9fac-4716-ae59-07bf0088c1d4] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token)'
+30-04-2026 17:11:03.113 [8] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-abandoned-tokenv1:8080/api/ABANDONED_TOKENS - 500 null application/problem+json; charset=utf-8 5306.7069ms
