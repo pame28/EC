@@ -1,85 +1,13 @@
-Log streaming...
+Es que mira, yo creo que el problema es porque ... 
 
-Container
-C
-api-abandoned-tokenv1
-
-Current log
-Search
-
-Show full log
-
-Wrap lines
-Raw
-Download
-78 lines
-30-04-2026 21:22:55.126 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
-30-04-2026 21:22:55.303 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_InsertAbandonedTokens ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas=1
-30-04-2026 21:22:55.305 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.AbandonedTokenRepository - Filas afectadas=1
-30-04-2026 21:22:55.307 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.AbandonedTokenService - Registro exitoso de la tarjeta 1000000001451042 del lote 5a134964-34d5-49a4-a1ec-648b705f43d2
-30-04-2026 21:22:55.313 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_ExistTokenRequestor ejecutado correctamente con ExecuteScalarAsync(), resultado=1
-30-04-2026 21:22:55.314 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.TokenRequestorRepository - Tird 40010030273 existe en DB flag 1
-30-04-2026 21:22:55.314 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.BPTarjetasService - Iniciando solicitud del equivalente de tarjeta 421004XXXXXX6001
-30-04-2026 21:22:55.331 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
-30-04-2026 21:22:55.337 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_InsertAbandonedTokens ejecutado correctamente con ExecuteNonQueryAsync(), filas afectadas=1
-30-04-2026 21:22:55.337 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.AbandonedTokenRepository - Filas afectadas=1
-30-04-2026 21:22:55.337 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.AbandonedTokenService - Registro exitoso de la tarjeta 1000000001451042 del lote 5a134964-34d5-49a4-a1ec-648b705f43d2
-30-04-2026 21:22:55.343 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
-30-04-2026 21:22:55.418 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=JobNameAbandoned, Valor=[CORETC]-[ENVIO]-[ABANDONED TOKENS]
-30-04-2026 21:22:55.420 [3] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Service.ValidationServiceImp - Parametro encontrado para la clave JobNameAbandoned: [CORETC]-[ENVIO]-[ABANDONED TOKENS]
-30-04-2026 21:22:55.508 [13] [Error] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Repository.JobRespository - Error de DB al ejecutar el job [CORETC]-[ENVIO]-[ABANDONED TOKENS]
-Microsoft.Data.SqlClient.SqlException (0x80131904): The specified @job_name ('[CORETC]-[ENVIO]-[ABANDONED TOKENS]') does not exist.
-at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
-at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
-at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
-at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
-at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteReader(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
-at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderInternal(IAsyncResult asyncResult)
-at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
-at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteReaderAsync>b__201_1(IAsyncResult asyncResult)
-at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
---- End of stack trace from previous location ---
-at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 85
-at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
-at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
-at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 20
-ClientConnectionId:b33a3469-8c3f-48ca-99c4-9fa503acbb0e
-Error Number:14262,State:1,Class:16
-30-04-2026 21:22:55.532 [13] [Error] [e24b815a-2e9d-44be-a87e-bb3815643d0a] api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController - Error crítico no controlado en el controlador ABANDONED_TOKEN
-Microsoft.Data.SqlClient.SqlException (0x80131904): The specified @job_name ('[CORETC]-[ENVIO]-[ABANDONED TOKENS]') does not exist.
-at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-at Microsoft.Data.SqlClient.SqlDataReader.TryConsumeMetaData()
-at Microsoft.Data.SqlClient.SqlDataReader.get_MetaData()
-at Microsoft.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean shouldCacheForAlwaysEncrypted)
-at Microsoft.Data.SqlClient.SqlCommand.CompleteAsyncExecuteReader(Boolean isInternal, Boolean forDescribeParameterEncryption)
-at Microsoft.Data.SqlClient.SqlCommand.InternalEndExecuteReader(IAsyncResult asyncResult, Boolean isInternal, String endMethod)
-at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderInternal(IAsyncResult asyncResult)
-at Microsoft.Data.SqlClient.SqlCommand.EndExecuteReaderAsync(IAsyncResult asyncResult)
-at Microsoft.Data.SqlClient.SqlCommand.<>c.<InternalExecuteReaderAsync>b__201_1(IAsyncResult asyncResult)
-at System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
---- End of stack trace from previous location ---
-at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 85
-at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
-at api_abandoned_token.Infraestructure.Data.DBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 89
-at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 20
-at api_abandoned_token.Service.JobService.ExecuteJobByJobNameAsync(String jobName) in /src/Service/JobService.cs:line 19
-at api_abandoned_token.Service.AbandonedTokenService.RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto) in /src/Service/AbandonedTokenService.cs:line 54
-at api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post(AbandonedTokenRequestDto request) in /src/Controllers/Notifications/ABANDONED_TOKENSController.cs:line 37
-ClientConnectionId:b33a3469-8c3f-48ca-99c4-9fa503acbb0e
-Error Number:14262,State:1,Class:16
-30-04-2026 21:22:55.614 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
-30-04-2026 21:22:55.814 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token) in 5769.9593ms
-30-04-2026 21:22:55.816 [13] [Information] [e24b815a-2e9d-44be-a87e-bb3815643d0a] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token)'
-30-04-2026 21:22:55.826 [13] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-abandoned-tokenv1:8080/api/ABANDONED_TOKENS - 500 null application/problem+json; charset=utf-8 6207.9794ms
+la BD del microservicio está en un servidor, peroo, el job está montado en otro servidor.
 
 
+El microservicio consume el job ...
 
 
-parece que sigue teniendo error, pero ya lo solucioné, será que tieen que ver con que la imagen no se actualizó correctamente ... 
+esta dentro de sql server agent -> Jobs
+
+Ahi se encuentra .. 
+para acceder a el .. creé un usuario en msdb y le di los permisos, lo ejecuté manualmente con ese usuario y funcionó correctamente ...
+entonces parece que fue que no se actualizó la imagen 
