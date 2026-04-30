@@ -1,6 +1,161 @@
-CRYPTOSERVICE__AESKEY
-g36C7z2gphDPZdZoyjfWRTlw89EnCn6YHgKOFYvc9/U=
+﻿using Criptografia.Models;
+using Criptografia.Models.Response;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Criptografia.Services
+{
+    public class AuthService : IAuth
+    {
+        private readonly ILogger<AuthService> _logger;
+        private readonly int _tagSizeInBytes;
+
+        public AuthService(ILogger<AuthService> logger)
+        {
+            _logger = logger;
+            _tagSizeInBytes = 16;
+        }
+        public AesGcmResponse EncryptGCM(AesGcmRequestEncrypt request)
+        {
+            try
+            {
+                _logger.LogInformation("Intentando encriptar contenido");
+                //Generar llave de 32 bytes
+                byte[] key = GetKey(request.keyBase64);
+
+                // Generar iv de 12 bytes 
+                byte[] nonce = GetIv(request.ivBase64);
+
+                //Generar tag
+                _logger.LogInformation("Generando Tag de encriptación");
+                byte[] tag = RandomNumberGenerator.GetBytes(_tagSizeInBytes); // Tag de 128 bits (16 bytes)
+
+                // Crear buffer para el ciphertext y tag
+                byte[] plainText = Encoding.UTF8.GetBytes(request.value);
+                byte[] ciphertext = new byte[plainText.Length];
+
+                // Encriptar con AES-GCM
+                _logger.LogInformation("Encriptando contenido {Value}", request.value);
+                using var aesGcm = new AesGcm(key, _tagSizeInBytes);
+                aesGcm.Encrypt(nonce, plainText, ciphertext, tag);
+
+                _logger.LogInformation("Valor Encriptado exitosamente {ChiperText}", Convert.ToBase64String(ciphertext));
+                return new AesGcmResponse
+                {
+                    generalResponse = new GeneralResponse
+                    {
+                        responseCode = "00",
+                        message = "Success"
+                    },
+                    responseDetail = new ResponseDetail
+                    {
+                        key = Convert.ToBase64String(key),
+                        iv = Convert.ToBase64String(nonce),
+                        tag = Convert.ToBase64String(tag),
+                        encryptValue = Convert.ToBase64String(ciphertext)
+
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Error no controlado al momento de encriptar {Message}", ex.Message);
+                return new AesGcmResponse
+                {
+                    generalResponse = new GeneralResponse
+                    {
+                        responseCode = "99",
+                        message = ex.Message
+                    }
+                };
+            }
+        }
+
+        public AesGcmResponse DecryptGCM(AesGcmRequestDecrypt request)
+        {
+            try
+            {
+                _logger.LogInformation("Intentado desencriptar valor");
+
+                // Convertir los valores desde Base64 a byte[]
+                _logger.LogInformation("Obteniendo llave en base64");
+                byte[] key = Convert.FromBase64String(request.keyBase64); // Llave en base64
+
+                _logger.LogInformation("Obteniendo vector en base64");
+                byte[] nonce = Convert.FromBase64String(request.ivBase64); // Vector en base64
+
+                _logger.LogInformation("Obteniendo contenido en base64");
+                byte[] ciphertext = Convert.FromBase64String(request.valueBase64); // el texto cifrado
+
+                _logger.LogInformation("Obteniendo tag en base64");
+                byte[] tag = Convert.FromBase64String(request.tagBase64); // la etiqueta de autenticación
+                byte[] decryptedData = new byte[ciphertext.Length];
+                using var aesGcm = new AesGcm(key, _tagSizeInBytes);
+
+                _logger.LogInformation("Desencriptando contenido");
+                aesGcm.Decrypt(nonce, ciphertext, tag, decryptedData);
+                _logger.LogInformation("Valor desencriptado exitosamente...");
+
+                string textoOriginal = System.Text.Encoding.UTF8.GetString(decryptedData);
+
+                return new AesGcmResponse
+                {
+                    generalResponse = new GeneralResponse
+                    {
+                        responseCode = "00",
+                        message = "Success"
+                    },
+                    responseDetail = new ResponseDetail
+                    {
+                        key = request.keyBase64,
+                        iv = request.ivBase64,
+                        tag = request.tagBase64,
+                        encryptValue = textoOriginal
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Error no controlado al momento de desencriptar {Message}", ex.Message);
+                return new AesGcmResponse
+                {
+                    generalResponse = new GeneralResponse
+                    {
+                        responseCode = "99",
+                        message = ex.Message
+                    }
+                };
+            }
+        }        
+
+        public byte[] GetKey(string key)
+        {
+            if (String.IsNullOrEmpty(key))
+            {
+                _logger.LogInformation("Generando nueva llave");
+                return RandomNumberGenerator.GetBytes(32);
+            }
+
+            _logger.LogInformation("Convirtiendo llave a bytes desde base64");
+            return Convert.FromBase64String(key);
+        }
+
+        public byte[] GetIv(string iv)
+        {
+            if (String.IsNullOrEmpty(iv))
+            {
+                _logger.LogInformation("Generando nuevo vector");
+                return RandomNumberGenerator.GetBytes(12);
+            } 
+            _logger.LogInformation("Convirtiendo vector a bytes desde base64");
+            return Convert.FromBase64String(iv);
+        }
+    }
+}
 
 
 
-y con esta?
+
+
+
+que mas necesitas? para ayudarme
