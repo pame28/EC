@@ -1,42 +1,41 @@
-using System.Data;
-using Microsoft.Data.SqlClient;
+using api_otp_notifica.DTOs.Cuentas;
+using api_otp_notifica.Models.Entities;
+using api_otp_notifica.Repository.Interface;
+using api_otp_notifica.Service.Interface;
 
-namespace api_abandoned_token.Infraestructure.Data
+namespace api_otp_notifica.Service
 {
-    public class JobDBHelper
+    public class CuentaService : ICuentaService
     {
-        private readonly string _connectionString;
-        private readonly ILogger<JobDBHelper> _logger;
+        private readonly ICuentaRepository _cuentaRepository;
+        private readonly ILogger<CuentaService> _logger;
 
-        public JobDBHelper(IConfiguration configuration, ILogger<JobDBHelper> logger)
+        public CuentaService(ICuentaRepository cuentaRepository, ILogger<CuentaService> logger) 
         {
-            _connectionString = configuration.GetConnectionString("JobConnection")!;
-            _logger = logger;
+            _cuentaRepository = cuentaRepository;   
+            _logger = logger;   
         }
 
-        public async Task<int> ExecuteScalarAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
+        public async Task<CuentaDto> GetAccountAsync(string equivalente)
         {
-            await using SqlConnection conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
+            Cuenta? cuenta = await _cuentaRepository.GetAccountByEquivalent(equivalente);
 
-            await using var cmd = new SqlCommand(storedProcedure, conn)
+            if (cuenta == null)
             {
-                CommandType = CommandType.StoredProcedure
-            };
-
-            if (parameters != null)
-            {
-                foreach (var param in parameters)
-                {
-                    cmd.Parameters.Add(new SqlParameter(param.Key, param.Value ?? DBNull.Value));
-                }
+                _logger.LogWarning("No se encontró información de Cuenta para equivalente {equivalente}", equivalente);
+                return new CuentaDto();
             }
 
-            var result = await cmd.ExecuteScalarAsync();
-            int value = int.TryParse(result?.ToString(), out var parsed) ? parsed : 0;
-            _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado correctamente con ExecuteScalarAsync(), resultado={Result}", storedProcedure, value);
+            CuentaDto cuentaDto = new CuentaDto
+            {
+                NoCuentaClaro = cuenta.NoCuentaClaro ?? string.Empty,
+                CIF = cuenta.CIF ?? string.Empty,
+                Nombre = cuenta.Nombre ?? string.Empty,
+            };
 
-            return value;
+            _logger.LogInformation("Información de Cuenta encontrada => equivalente {equivalente}: CIF => {CIF}", equivalente, cuentaDto.CIF);
+
+            return cuentaDto;
         }
     }
 }
@@ -48,42 +47,48 @@ namespace api_abandoned_token.Infraestructure.Data
 
 
 
+using api_otp_notifica.Infraestructure.Data;
+using api_otp_notifica.Models.Entities;
+using api_otp_notifica.Repository.Interface;
 
-using api_abandoned_token.Infraestructure.Data;
-using api_abandoned_token.Repository.Interface;
-
-namespace api_abandoned_token.Repository
+namespace api_otp_notifica.Repository
 {
-    public class JobRespository : IJobRespository
+    public class CuentaRepository : ICuentaRepository
     {
-        private readonly JobDBHelper _jobDBHelper;
-        private readonly ILogger<JobRespository> _logger;
-
-        public JobRespository(JobDBHelper jobDBHelper, ILogger<JobRespository> logger)
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<CuentaRepository> _logger;
+        public CuentaRepository(DBHelper dBHelper, ILogger<CuentaRepository> logger) 
         {
-            _jobDBHelper = jobDBHelper;
-            _logger = logger;
+            _dbHelper = dBHelper;
+            _logger = logger;   
         }
 
-        public async Task<int?> GetStatusJobExecuteAsync(string jobName)
+        public async Task<Cuenta?> GetAccountByEquivalent(string equivalente)
         {
             try
             {
-                int? status = await _jobDBHelper.ExecuteScalarAsync("usp_ExecJobs",
-                    new Dictionary<string, object> { { "@JobName", jobName } });
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetCuenta",
+                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
 
-                if (status == null || Convert.ToInt32(status) <= 0)
+                if (!await reader.ReadAsync())
                 {
-                    _logger.LogWarning("No se inicializo correctamente el job {jobName} en DB", jobName);
+                    _logger.LogWarning("No se encontró cuenta para el equivalente {equivalente} en DB", equivalente);
                     return null;
                 }
 
-                _logger.LogInformation("Se inicializo correctamente el job {jobName} en DB", jobName);
-                return status;
+                var cuenta = new Cuenta
+                {
+                    NoCuentaClaro = reader["NoCuentaClaro"]?.ToString(),
+                    CIF = reader["CIF"]?.ToString(),
+                    Nombre = reader["Nombre"]?.ToString()
+                };
+
+                _logger.LogInformation("Cuenta encontrada en DB: equivalente={equivalente}, CIF={CIF}", equivalente, cuenta.CIF);
+                return cuenta;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error de DB al ejecutar el job {jobName}", jobName);
+                _logger.LogError(ex, "Error de base de datos al obtener cuenta con equivalente {equivalente}", equivalente);
                 throw;
             }
         }
@@ -93,22 +98,12 @@ namespace api_abandoned_token.Repository
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-// Lo que ya tienes
-builder.Services.AddSingleton<DBHelper>();
-
-// Agregar esto
-builder.Services.AddSingleton<JobDBHelper>();
-
-
+namespace api_otp_notifica.DTOs.Cuentas
+{
+    public class CuentaDto
+    {
+        public string NoCuentaClaro { get; set; } = string.Empty;
+        public string CIF { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+    }
+}
