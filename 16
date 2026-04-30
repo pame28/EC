@@ -1,2 +1,259 @@
-Message
-Non-SysAdmins have been denied permission to run CmdExec job steps without a proxy account.  The step failed.
+using api_otp_notifica.DTOs.Card;
+using api_otp_notifica.DTOs.Cuentas;
+using api_otp_notifica.DTOs.Mail;
+using api_otp_notifica.DTOs.Plantilla;
+using api_otp_notifica.DTOs.Report;
+using api_otp_notifica.DTOs.Request;
+using api_otp_notifica.DTOs.Response;
+using api_otp_notifica.DTOs.Sms;
+using api_otp_notifica.Service.Interface;
+using api_otp_notifica.Utils;
+
+namespace api_otp_notifica.Service
+{
+    public class OtpNotificationService : IOtpNotificationService
+    {
+        private readonly MessageResponseFn _messageResponseFn;
+        private readonly IReportService _reportService;
+        private readonly IMailService  _mailService;
+        private readonly ISmsService  _smsService;
+        private readonly IBPTarjetasService _bpTarjetaService;
+        private readonly ICuentaService _cuentaService;
+        private readonly ICardService _cardService;
+        private readonly IServerService _serverService;
+        private readonly IPlantillaService _plantillaService;
+        private readonly ILogger<OtpNotificationService> _logger;
+
+        public OtpNotificationService(MessageResponseFn messageResponseFn, IReportService reportService, ILogger<OtpNotificationService> logger, IMailService mailService, ISmsService smsService, IBPTarjetasService bpTarjetaService, ICuentaService cuentaService, ICardService cardService, IServerService serverService, IPlantillaService plantillaService){
+            _messageResponseFn = messageResponseFn; 
+            _reportService = reportService; 
+            _mailService = mailService; 
+            _smsService = smsService;   
+            _bpTarjetaService = bpTarjetaService;
+            _cuentaService = cuentaService; 
+            _cardService = cardService; 
+            _serverService = serverService;
+            _plantillaService = plantillaService;   
+            _logger = logger;   
+        }
+        
+        public async Task<ResponseMessages> SendOtpAsync(OtpRequestDto requestDto)
+        {
+            _logger.LogInformation("Solicitud recibida: OTP_NOTIFICATIONS {token_reference_id}", requestDto.token_reference_id);
+
+            ResponseServicesDto<string> bpTarjetaResponse = await _bpTarjetaService.EquivalenteAsync(requestDto.card_number);
+            if (bpTarjetaResponse.Code != Constantes.STATUS_OK)
+                return await _messageResponseFn.MessageResponse(bpTarjetaResponse.Code, bpTarjetaResponse.Value!);
+            string equivalente = bpTarjetaResponse.Value!;
+
+            CuentaDto cuentaDto = await _cuentaService.GetAccountAsync(equivalente);
+
+            bool isValidCard = await _cardService.IsValidCardAsync(equivalente);
+
+            if (!isValidCard)
+            {
+                ReportDto report = new ReportDto
+                {
+                    CIF = cuentaDto.CIF,
+                    Nombre = cuentaDto.Nombre,
+                    Equivalente = equivalente,
+                    NoCuenta = cuentaDto.NoCuentaClaro,
+                    Otp_Method_Type = requestDto.otp_method_type,
+                    Contacto = string.Empty,
+                    FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                    FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                    Estado = "0",
+                    Error = "Tarjeta inactiva",
+                    Token_Requestor_Id = !string.IsNullOrWhiteSpace(requestDto.token_requestor_id)
+					 ? requestDto.token_requestor_id
+					 : "Generico",
+                    FechaRegistro = DateTime.Now,
+                };
+                await _reportService.InsertReportAsync(report);
+            }
+
+            if (!string.IsNullOrEmpty(equivalente) && !string.IsNullOrEmpty(cuentaDto.CIF) && isValidCard)
+            {
+                string serverSmtp = await _serverService.GetServerNameAsync();
+
+                PlantillaDto plantillaDto = await _plantillaService.GetPlantillaAsync("OTP", !string.IsNullOrWhiteSpace(requestDto.token_requestor_id)
+					 ? requestDto.token_requestor_id
+					 : "GENERICO");
+
+                if (requestDto.otp_method_type.Equals("email"))
+                {
+                    string emailAddress = await _cardService.GetEmailAddressAsync(equivalente);
+
+                    if (!string.IsNullOrEmpty(emailAddress))
+                    {
+                        _logger.LogInformation("Envio de Email con ServerMail: {0} - MailFrom: {1} - MailTo: {2}", serverSmtp, plantillaDto.MailFrom, emailAddress);
+
+                        MailDto mailDto = new MailDto
+                        {
+                            From = plantillaDto.MailFrom,
+                            SendTo = emailAddress,
+                            Subject = plantillaDto.MailSubject,
+                            Body = plantillaDto.MailBodyHtml.Replace("[TOKEN]", requestDto.otp_value),
+                            Server = serverSmtp,
+                            IsBodyHtml = true
+                        };
+
+                        ResponseServicesDto<string> smsServiceResponse = await _mailService.SendMailMessageAsync(mailDto);
+
+                        if (smsServiceResponse.Code.Equals(Constantes.STATUS_OK))
+                        {
+                            //Email enviado
+                            ReportDto reportSmsIsSend = new ReportDto
+                            {
+                                CIF = cuentaDto.CIF,
+                                Nombre = cuentaDto.Nombre,
+                                Equivalente = equivalente,
+                                NoCuenta = cuentaDto.NoCuentaClaro,
+                                Otp_Method_Type = requestDto.otp_method_type,
+                                Contacto = emailAddress,
+                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                                Estado = "1",
+                                Token_Requestor_Id = requestDto.token_requestor_id,
+                                FechaRegistro = DateTime.Now,
+                            };
+                            await _reportService.InsertReportAsync(reportSmsIsSend);
+                            _logger.LogInformation("Se completó el envio del otp de forma exitosa del trid {token_reference_id}", requestDto.token_reference_id);
+                            return await _messageResponseFn.MessageResponse(Constantes.STATUS_OK, "00");
+                        }
+                        else
+                        {
+                            //Email no enviado
+                            ReportDto reportSmsNoSend = new ReportDto
+                            {
+                                CIF = cuentaDto.CIF,
+                                Nombre = cuentaDto.Nombre,
+                                Equivalente = equivalente,
+                                NoCuenta = cuentaDto.NoCuentaClaro,
+                                Otp_Method_Type = requestDto.otp_method_type,
+                                Contacto = emailAddress,
+                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                                Estado = "0",
+                                Token_Requestor_Id = requestDto.token_requestor_id,
+                                FechaRegistro = DateTime.Now,
+                            };
+                            await _reportService.InsertReportAsync(reportSmsNoSend);
+                            _logger.LogInformation("No se completó el envio del otp por el servidor: {Server} al correo: {SendTo}", mailDto.Server, mailDto.SendTo);
+                            return await _messageResponseFn.MessageResponse(smsServiceResponse.Code, smsServiceResponse.Value!);
+                        }
+                    }
+                    else
+                    {
+                        //No se encontró informacion
+                        ReportDto reportSmsNoInfo = new ReportDto
+                        {
+                            CIF = cuentaDto.CIF,
+                            Nombre = cuentaDto.Nombre,
+                            Equivalente = equivalente,
+                            NoCuenta = cuentaDto.NoCuentaClaro,
+                            Otp_Method_Type = requestDto.otp_method_type,
+                            Contacto = emailAddress,
+                            FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                            FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                            Estado = string.Empty,
+                            Error = "No se encontró información",
+                            Token_Requestor_Id = requestDto.token_requestor_id,
+                            FechaRegistro = DateTime.Now,
+                        };
+                        await _reportService.InsertReportAsync(reportSmsNoInfo);
+
+                        return await _messageResponseFn.MessageResponse(Constantes.STATUS_NOT_FOUND, "02");
+                    }
+                }
+                else if(requestDto.otp_method_type.Equals("cell_phone"))
+                {
+                    _logger.LogInformation("Inicio envio de otp por sms de tarjeta {equivalente} por ISmsService", equivalente);
+                    PhoneAddressDto phoneInformation = await _cardService.GetPhoneAddressAsync(equivalente);
+
+                    if (!string.IsNullOrEmpty(phoneInformation.idOperator) && !string.IsNullOrEmpty(phoneInformation.phoneNumber))
+                    {
+                        string idOperatorBIMovil = await _cardService.GetIdOperatorBiMovilSmsAsync(phoneInformation.idOperator);
+
+                        SmsDto smsDto = new SmsDto
+                        {
+                            Telefono = phoneInformation.phoneNumber,
+                            Operador = idOperatorBIMovil,
+                            Mensaje = plantillaDto.SmsBody.Replace("[TOKEN]", requestDto.otp_value),
+                        };
+
+                        ResponseServicesDto<string> smsServiceResponse = await _smsService.SendSmsAsync(smsDto);
+                        if (smsServiceResponse.Code.Equals(Constantes.STATUS_OK))
+                        {
+                            //Sms fue enviado
+                            ReportDto reportIsSend = new ReportDto
+                            {
+                                CIF = cuentaDto.CIF,
+                                Nombre = cuentaDto.Nombre,
+                                Equivalente = equivalente,
+                                NoCuenta = cuentaDto.NoCuentaClaro,
+                                Otp_Method_Type = requestDto.otp_method_type,
+                                Contacto = phoneInformation.phoneNumber,
+                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                                Estado = "1",
+                                Token_Requestor_Id = requestDto.token_requestor_id,
+                                FechaRegistro = DateTime.Now,
+                            };
+                            await _reportService.InsertReportAsync(reportIsSend);
+
+                            _logger.LogInformation("Se completó el envio del otp de forma exitosa del trid {token_reference_id}", requestDto.token_reference_id);
+                            return await _messageResponseFn.MessageResponse(Constantes.STATUS_OK, "00");
+
+                        }
+                        else
+                        {
+                            //Sms no fue enviado
+                            ReportDto reportNoSend = new ReportDto
+                            {
+                                CIF = cuentaDto.CIF,
+                                Nombre = cuentaDto.Nombre,
+                                Equivalente = equivalente,
+                                NoCuenta = cuentaDto.NoCuentaClaro,
+                                Otp_Method_Type = requestDto.otp_method_type,
+                                Contacto = phoneInformation.phoneNumber,
+                                FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                                FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                                Estado = "0",
+                                Token_Requestor_Id = requestDto.token_requestor_id,
+                                FechaRegistro = DateTime.Now,
+                            };
+                            await _reportService.InsertReportAsync(reportNoSend);
+
+                            _logger.LogInformation("No se completó el envio del otp por el servicio BIMovil con phoneNumber: {Contacto}", reportNoSend.Contacto);
+                            return await _messageResponseFn.MessageResponse(smsServiceResponse.Code, smsServiceResponse.Value!);
+                        }
+                    }
+                    else
+                    {
+                        //No se encontró informacion
+                        ReportDto reportNoInfo = new ReportDto
+                        {
+                            CIF = cuentaDto.CIF,
+                            Nombre = cuentaDto.Nombre,
+                            Equivalente = equivalente,
+                            NoCuenta = cuentaDto.NoCuentaClaro,
+                            Otp_Method_Type = requestDto.otp_method_type,
+                            Contacto = phoneInformation.phoneNumber,
+                            FechaAprovicionamiento = DateOnly.FromDateTime(DateTime.Now),
+                            FechaVencimiento = DateOnly.FromDateTime(Convert.ToDateTime(requestDto.expiration_date)),
+                            Estado = string.Empty,
+                            Error = "No se encontró información",
+                            Token_Requestor_Id = requestDto.token_requestor_id,
+                            FechaRegistro = DateTime.Now,
+                        };
+                        await _reportService.InsertReportAsync(reportNoInfo);
+
+                        return await _messageResponseFn.MessageResponse(Constantes.STATUS_NOT_FOUND, "01");
+                    }
+                }
+            }
+            return await _messageResponseFn.MessageResponse(Constantes.STATUS_UNPROCESSABLE_ENTITY, "11");
+        }        
+    }
+}
