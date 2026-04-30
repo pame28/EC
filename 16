@@ -2,6 +2,14 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # =========================
+# CERTIFICADO PROXY
+# =========================
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates || true
+
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+
+# =========================
 # INSTALAR ODBC + IBM
 # =========================
 COPY odbc-libraries/*.deb /tmp/odbc/
@@ -46,6 +54,12 @@ RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
 # =========================
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+
+# =========================
+# CERTIFICADO PROXY
+# =========================
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
 
 # App
 COPY --from=build /app/publish .
