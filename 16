@@ -1,2 +1,81 @@
-El presente documento describe de manera detallada el diseño, funcionamiento y responsabilidades del proceso de Generación de Estados de Cuenta JSON para tarjetas de crédito de Banco País; desarrollado como parte del proyecto BH-24138, el proceso ha sido construido sobre una arquitectura orientada a la automatización y parametrización, con el objetivo de garantizar la escalabilidad, trazabilidad y el aislamiento de responsabilidades entre sus componentes.
-En las siguientes secciones se detallan los aspectos técnicos, flujo funcional, tablas de parametrización, tipos de generación soportados y las consideraciones necesarias para comprender y operar correctamente el proceso en ambiente de producción.
+Log streaming...
+
+Container
+C
+api-otp-notificav1
+
+Current log
+Search
+
+Show full log
+
+Wrap lines
+Raw
+Download
+137 lines
+25-04-2026 08:24:42.203 [1] [Information] [] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
+25-04-2026 08:24:42.306 [1] [Information] [] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
+25-04-2026 08:24:42.308 [1] [Information] [] Microsoft.Hosting.Lifetime - Hosting environment: Production
+25-04-2026 08:24:42.308 [1] [Information] [] Microsoft.Hosting.Lifetime - Content root path: /app
+30-04-2026 16:28:07.907 [8] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-otp-notificav1:8080/api/OTP_NOTIFICATIONS - application/json 239
+30-04-2026 16:28:08.109 [8] [Warning] [] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
+30-04-2026 16:28:08.126 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController.Post (api_otp_notifica)'
+30-04-2026 16:28:08.401 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "Post", controller = "OTP_NOTIFICATIONS"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Post(api_otp_notifica.DTOs.Request.OtpRequestDto) on controller api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController (api_otp_notifica).
+30-04-2026 16:28:09.102 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController - ***** Petición de OTP_NOTIFICATIONS de token {"token_reference_id":"TRID TEST","card_number":"4210043068376001","otp_value":"otp_value Prueba","expiration_date":"2026-12-31T23:59:59.000Z","otp_method_type":"email","token_requestor_id":"40010030273"}*****
+30-04-2026 16:28:09.108 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Service.OtpNotificationService - Solicitud recibida: OTP_NOTIFICATIONS TRID TEST
+30-04-2026 16:28:09.111 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Service.BPTarjetasService - Iniciando solicitud del equivalente de tarjeta 421004XXXXXX6001
+30-04-2026 16:28:14.626 [8] [Information] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Service.BPTarjetasService - Equivalente de tarjeta 421004XXXXXX6001 es 1000000001451042
+30-04-2026 16:28:30.181 [8] [Error] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Repository.CuentaRepository - Error de base de datos al obtener cuenta con equivalente 1000000001451042
+Microsoft.Data.SqlClient.SqlException (0x80131904): A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 35 - An internal exception was caught)
+---> System.Net.Sockets.SocketException (00000005, 0xFFFDFFFF): Name or service not known
+at System.Net.Dns.GetHostEntryOrAddressesCore(String hostName, Boolean justAddresses, AddressFamily addressFamily, Nullable`1 activityOrDefault)
+at System.Net.Dns.GetHostAddresses(String hostNameOrAddress, AddressFamily family)
+at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.GetHostAddressesSortedByPreference(String serverName, SqlConnectionIPAddressPreference ipPreference)+MoveNext()
+at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.Connect(String serverName, Int32 port, TimeoutTimer timeout, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo)
+at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle..ctor(String serverName, Int32 port, TimeoutTimer timeout, Boolean parallel, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo, Boolean tlsFirst, String hostNameInCertificate, String serverCertificateFilename)
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at api_otp_notifica.Infraestructure.Data.DBHelper.ExecuteReaderAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 22
+at api_otp_notifica.Repository.CuentaRepository.GetAccountByEquivalent(String equivalente) in /src/Repository/CuentaRepository.cs:line 21
+ClientConnectionId:00000000-0000-0000-0000-000000000000
+Error Number:11001,State:0,Class:20
+30-04-2026 16:28:30.204 [8] [Error] [11a8e43f-7b77-4dda-8fdf-e9287d40de25] api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController - Error crítico no controlado en el controlador OTP
+Microsoft.Data.SqlClient.SqlException (0x80131904): A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: TCP Provider, error: 35 - An internal exception was caught)
+---> System.Net.Sockets.SocketException (00000005, 0xFFFDFFFF): Name or service not known
+at System.Net.Dns.GetHostEntryOrAddressesCore(String hostName, Boolean justAddresses, AddressFamily addressFamily, Nullable`1 activityOrDefault)
+at System.Net.Dns.GetHostAddresses(String hostNameOrAddress, AddressFamily family)
+at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.GetHostAddressesSortedByPreference(String serverName, SqlConnectionIPAddressPreference ipPreference)+MoveNext()
+at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle.Connect(String serverName, Int32 port, TimeoutTimer timeout, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo)
+at Microsoft.Data.SqlClient.ManagedSni.SniTcpHandle..ctor(String serverName, Int32 port, TimeoutTimer timeout, Boolean parallel, SqlConnectionIPAddressPreference ipPreference, String cachedFQDN, SQLDNSInfo& pendingDNSInfo, Boolean tlsFirst, String hostNameInCertificate, String serverCertificateFilename)
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.Connect(ServerInfo serverInfo, SqlInternalConnectionTds connHandler, TimeoutTimer timeout, SqlConnectionString connectionOptions, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at api_otp_notifica.Infraestructure.Data.DBHelper.ExecuteReaderAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/DBHelper.cs:line 22
+at api_otp_notifica.Repository.CuentaRepository.GetAccountByEquivalent(String equivalente) in /src/Repository/CuentaRepository.cs:line 21
+at api_otp_notifica.Service.CuentaService.GetAccountAsync(String equivalente) in /src/Service/CuentaService.cs:line 21
+at api_otp_notifica.Service.OtpNotificationService.SendOtpAsync(OtpRequestDto requestDto) in /src/Service/OtpNotificationService.cs:line 49
+at api_otp_notifica.Controllers.Notifications.OTP_NOTIFICATIONSController.Post(OtpRequestDto request) in /src/Controllers/Notifications/OTP_NOTIFICATIONSController.cs:line 38
+ClientConnectionId:00000000-0000-0000-0000-000000000000
