@@ -1,7 +1,2 @@
-El presente documento describe de manera detallada el diseño, funcionamiento y responsabilidades del microservicio Reposición de Pin de TC; ha sido desarrollado siguiendo una arquitectura basada en microservicios, con el objetivo de garantizar la escalabilidad y aislamiento de responsabilidades.
-En las siguientes secciones se detallan los aspectos técnicos, flujos funcionales, manejo de errores, configuraciones y consideraciones necesarias para comprender y operar correctamente el microservicio.
-
-
-
-
-Esperaba algo como esto
+El presente documento describe de manera detallada el diseño, funcionamiento y responsabilidades del proceso de Generación de Estados de Cuenta JSON para tarjetas de crédito de Banco País; desarrollado como parte del proyecto BH-24138, el proceso ha sido construido sobre una arquitectura orientada a la automatización y parametrización, con el objetivo de garantizar la escalabilidad, trazabilidad y el aislamiento de responsabilidades entre sus componentes.
+En las siguientes secciones se detallan los aspectos técnicos, flujo funcional, tablas de parametrización, tipos de generación soportados y las consideraciones necesarias para comprender y operar correctamente el proceso en ambiente de producción.
