@@ -1,13 +1,16 @@
-Es que mira, yo creo que el problema es porque ... 
+CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC2
+(
+  INOUT pTramaMQRcv CHAR(81)
+)
+LANGUAGE SQL
+BEGIN
+     CALL BPPGM.REIMQ07RC(pTramaMQRcv);
+END
 
-la BD del microservicio está en un servidor, peroo, el job está montado en otro servidor.
 
 
-El microservicio consume el job ...
 
 
-esta dentro de sql server agent -> Jobs
+Mira, tengo que agregar esto 
 
-Ahi se encuentra .. 
-para acceder a el .. creé un usuario en msdb y le di los permisos, lo ejecuté manualmente con ese usuario y funcionó correctamente ...
-entonces parece que fue que no se actualizó la imagen 
+STATEMENT TEXT CCSID 65535
