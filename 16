@@ -1,8 +1,10 @@
-CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3
+2026-05-05	STARTED	(null)	(null)	(null)	(null)	Executing for: 'ASDES01' [Generic], Database: SBP720P, Schema: BPPGM	(null)
+2026-05-05	FAILED	CREATE	0.214	(null)	0	[Code: -104, SQL State: 42601]  [SQL0104] Símbolo <FIN DE SENTENCIA> no válido. Símbolos válidos: ;.	CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3
 (
   INOUT pTramaMQRcv CHAR(81) CCSID 65535
 )
 LANGUAGE SQL
 BEGIN
-     CALL BPPGM.REIMQ07RC(pTramaMQRcv);
-END
+     CALL BPPGM.REIMQ07RC(pTramaMQRcv)
+2026-05-05	FAILED	END	0.19	(null)	0	[Code: -104, SQL State: 42601]  [SQL0104] Símbolo <FIN DE SENTENCIA> no válido. Símbolos válidos: DECLARE.	END
+2026-05-05	FINISHED	(null)	0.404	0.0	0	Success: 0 Failed: 2	(null)
