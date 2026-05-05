@@ -1,18 +1,8 @@
-DECLARE counter INTEGER 
-DECLARE var1 CHAR(10) CCSID 65535; 
-DECLARE var2 CHAR(10) CCSID 65535; 
-DECLARE var3 CHAR(10) CCSID 65535; 
-SET counter = 0; 
-xLoop: 
-REPEAT 
-  SET counter = counter + 1; 
-  SET var1 = 'ABCDEFG';  
-  SET var2 = 'HIJKLMNOP';  
-  SET var3 = 'QRSTUV’;  
-until counter = 1000 
-END REPEAT xLoop; 
-
-
-
-
-Mira, creo que es al momento deee lavariable
+CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3
+(
+  INOUT pTramaMQRcv CHAR(81) CCSID 65535
+)
+LANGUAGE SQL
+BEGIN
+     CALL BPPGM.REIMQ07RC(pTramaMQRcv);
+END
