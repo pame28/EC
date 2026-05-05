@@ -1,7 +1,29 @@
-	
-Response body
-Download
-{
-  "codigo": "09",
-  "descripcion": "Error en servicio AZ7: ��� �������@��@������@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-}
+--  Generar SQL 
+--  Versión:                   	V7R5M0 220415 
+--  Generado en:              	05/05/26 15:53:56 
+--  Base de datos relacional:       	SBP720P 
+--  Opción de estándares:          	Db2 for i 
+SET PATH "QSYS","QSYS2","SYSPROC","SYSIBMADM","CONSOLA_DC" ; 
+  
+CREATE PROCEDURE BPPGM.OBTPINTC2 ( 
+	INOUT PTRAMAMQRCV CHAR(81) FOR BIT DATA ) 
+	LANGUAGE SQL 
+	SPECIFIC BPPGM.OBTPINTC2 
+	NOT DETERMINISTIC 
+	MODIFIES SQL DATA 
+	CALLED ON NULL INPUT 
+	SET OPTION  ALWBLK = *ALLREAD , 
+	ALWCPYDTA = *OPTIMIZE , 
+	COMMIT = *NONE , 
+	DECRESULT = (31, 31, 00) , 
+	DYNDFTCOL = *NO , 
+	DYNUSRPRF = *USER , 
+	SRTSEQ = *HEX   
+	BEGIN 
+  
+CALL BPPGM . REIMQ07RC ( PTRAMAMQRCV ) ; 
+END  ; 
+  
+GRANT ALTER , EXECUTE   
+ON SPECIFIC PROCEDURE BPPGM.OBTPINTC2 
+TO CONSOLA_DC WITH GRANT OPTION ;
