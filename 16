@@ -1,13 +1,5 @@
-Se ha conectado con la base de datos relacional SBP720P en Asdes01 como Consola_dc - 290971/Quser/Qzdasoinit
-
-
-[ Tue May 05 10:50:13 GMT-06:00 2026 ]  Ejecutar Todo
-
-> CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3 (   INOUT pTramaMQRcv CHAR(81) ) LANGUAGE SQL BEGIN      SET OPTION SQLCCSID = 65535;      CALL BPPGM.REIMQ07RC(pTramaMQRcv); END
+ CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3 (   INOUT pTramaMQRcv CHAR(81) ) LANGUAGE SQL      SET OPTION SQLCCSID = 65535
 
 Estado de SQL: 42601
 Código de proveedor: -104
-Mensaje: [SQL0104] Símbolo SQLCCSID no válido. Símbolos válidos: =. Causa . . . . . :   Se ha detectado un error de sintaxis en el símbolo SQLCCSID. El símbolo SQLCCSID no es un símbolo válido. Una lista parcial de símbolos válidos es =. Esta lista presupone que la sentencia es correcta hasta el símbolo. El error puede estar anteriormente en la sentencia, pero la sintaxis de la sentencia aparece como válida hasta este punto. Recuperación . . . :   Efectúe una o más de las siguientes acciones y vuelva a intentar la petición: -- Verifique la sentencia SQL en el área del símbolo SQLCCSID. Corrija la sentencia. El error podría ser la omisión de una coma o comillas; podría tratarse de una palabra con errores ortográficos, o podría estar relacionado con el orden de las cláusulas. -- Si el símbolo de error es <FIN DE SENTENCIA>, corrija la sentencia SQL porque no finaliza con una cláusula válida.
-
-El proceso ha finalizado porque la sentencia resaltada no se ha completado satisfactoriamente
-
+Mensaje: [SQL0104] Símbolo 65535 no válido. Símbolos válidos: ( * <CHARSTRING> <IDENTIFIER>. Causa . . . . . :   Se ha detectado un error de sintaxis en el símbolo 65535. El símbolo 65535 no es un símbolo válido. Una lista parcial de símbolos válidos es ( * <CHARSTRING> <IDENTIFIER>. Esta lista presupone que la sentencia es correcta hasta el símbolo. El error puede estar anteriormente en la sentencia, pero la sintaxis de la sentencia aparece como válida hasta este punto. Recuperación . . . :   Efectúe una o más de las siguientes acciones y vuelva a intentar la petición: -- Verifique la sentencia SQL en el área del símbolo 65535. Corrija la sentencia. El error podría ser la omisión de una coma o comillas; podría tratarse de una palabra con errores ortográficos, o podría estar relacionado con el orden de las cláusulas. -- Si el símbolo de error es <FIN DE SENTENCIA>, corrija la sentencia SQL porque no finaliza con una cláusula válida.
