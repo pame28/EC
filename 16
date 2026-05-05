@@ -1,53 +1,7 @@
-public async Task<AS400ResponseDto> EjecutarProgramaAsync(AS400RequestDto request)
+	
+Response body
+Download
 {
-    try
-    {
-        using var conn = new OdbcConnection(_as400connectionString);
-        await conn.OpenAsync();
-
-        var config = await _configAs400Repository.ObtenerConfiguracionAsync(1);
-        await ConfigurarLibraryListAsync(conn, config.librerias);
-       
-        string trama =
-            request.NumeroTarjeta.PadRight(16) +
-            request.FechaVencimiento.PadRight(8) +
-            new string(' ', 57);
-
-        _logger.LogInformation("Trama enviada AS400: {Trama}", trama);
-
-        using var cmd = conn.CreateCommand();
-        cmd.CommandType = CommandType.Text;
-        cmd.CommandTimeout = 300;
-
-        cmd.CommandText = config.call;
-
-        var pTrama = new OdbcParameter
-        {
-            OdbcType = OdbcType.Binary,
-            Size = 81,
-            Direction = ParameterDirection.InputOutput,
-            Value = System.Text.Encoding.Default.GetBytes(trama)
-        };
-        cmd.Parameters.Add(pTrama);
-
-        await cmd.ExecuteNonQueryAsync();
-
-        string tramaRespuesta = pTrama.Value is byte[] bytes
-            ? System.Text.Encoding.Default.GetString(bytes)
-            : pTrama.Value?.ToString() ?? string.Empty;
-
-        _logger.LogInformation("Trama respuesta AS400: {Trama}", EnmascararPinEnTrama(tramaRespuesta));
-
-        return ParsearRespuesta(tramaRespuesta);
-    }
-    catch (OdbcException ex)
-    {
-        _logger.LogError(ex, "Error ODBC AS400");
-        return new AS400ResponseDto { CodigoError = "P98", DescripcionError = ex.Message };
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error general AS400");
-        return new AS400ResponseDto { CodigoError = "P99", DescripcionError = ex.Message };
-    }
+  "codigo": "09",
+  "descripcion": "Error en servicio AZ7: ��� �������@��@������@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
 }
