@@ -1,4 +1,18 @@
-CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3
+05-05-2026 17:26:41.903 [85] [Information] reposicion_pin.Repository.AS400Repository - Trama enviada AS400: 100000000170446820271130
+05-05-2026 17:26:41.912 [85] [Error] reposicion_pin.Repository.AS400Repository - Error ODBC AS400
+System.Data.Odbc.OdbcException (0x80131937): ERROR [22018] [IBM][System i Access ODBC Driver]Error in assignment.
+at System.Data.Odbc.OdbcCommand.ExecuteReaderObject(CommandBehavior behavior, String method, Boolean needReader, Object[] methodArguments, SQL_API odbcApiMethod)
+at System.Data.Common.DbCommand.ExecuteNonQueryAsync(CancellationToken cancellationToken)
+--- End of stack trace from previous location ---
+at reposicion_pin.Repository.AS400Repository.EjecutarProgramaAsync(AS400RequestDto request) in /src/Repository/AS400Repository.cs:line 65
+05-05-2026 17:26:41.927 [85] [Information] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (15ms) [Parameters=[@codigo='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT TOP(1) [c].[Descripcion]
+FROM [CatalogoRespuestas] AS [c]
+
+
+
+
+CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC2
 (
   INOUT pTramaMQRcv CHAR(81) CCSID 65535
 )
@@ -6,3 +20,186 @@ LANGUAGE SQL
 BEGIN
      CALL BPPGM.REIMQ07RC(pTramaMQRcv);
 END
+
+
+
+
+
+using Microsoft.Extensions.Configuration;
+using reposicion_pin.DTOs;
+using reposicion_pin.Repository.Interface;
+using System.Configuration;
+using System.Data;
+using System.Data.Odbc;
+
+
+namespace reposicion_pin.Repository
+{
+    public class AS400Repository : IAS400Repository
+    {
+        private readonly string _as400connectionString;
+        private readonly ILogger<AS400Repository> _logger;
+        private readonly IConfiguracionAs400Repository _configAs400Repository;
+        private readonly IConfiguration _configuration;
+
+        public AS400Repository(
+            IConfiguration configuration,
+            ILogger<AS400Repository> logger,
+            IConfiguracionAs400Repository configAs400Repository
+            )
+        {
+            _as400connectionString = configuration.GetConnectionString("AS400Connection")!;
+            _logger = logger;
+            _configAs400Repository = configAs400Repository;
+            _configuration = configuration;
+        }
+
+
+        public async Task<AS400ResponseDto> EjecutarProgramaAsync(AS400RequestDto request)
+        {
+            try
+            {
+                using var conn = new OdbcConnection(_as400connectionString);
+                await conn.OpenAsync();
+
+
+                var config = await _configAs400Repository.ObtenerConfiguracionAsync(1);
+                await ConfigurarLibraryListAsync(conn, config.librerias);
+               
+                string trama =
+                    request.NumeroTarjeta.PadRight(16) +
+                    request.FechaVencimiento.PadRight(8) +
+                    new string(' ', 57);
+
+                _logger.LogInformation("Trama enviada AS400: {Trama}", trama);
+
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandType = CommandType.Text;
+                cmd.CommandTimeout = 300;
+
+                cmd.CommandText = config.call;
+
+
+                var pTrama = new OdbcParameter
+                {
+                    OdbcType = OdbcType.Char,
+                    Size = 81,
+                    Direction = ParameterDirection.InputOutput,
+                    Value = trama
+                };
+                cmd.Parameters.Add(pTrama);
+
+                await cmd.ExecuteNonQueryAsync();
+
+               
+                string tramaRespuesta = pTrama.Value?.ToString() ?? string.Empty;
+              //  _logger.LogInformation("Trama respuesta AS400: {Trama}", tramaRespuesta);
+                _logger.LogInformation("Trama respuesta AS400: {Trama}", EnmascararPinEnTrama(tramaRespuesta));
+
+                return ParsearRespuesta(tramaRespuesta);
+            }
+            catch (OdbcException ex)
+            {
+                _logger.LogError(ex, "Error ODBC AS400");
+                return new AS400ResponseDto { CodigoError = "P98", DescripcionError = ex.Message };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general AS400");
+                return new AS400ResponseDto { CodigoError = "P99", DescripcionError = ex.Message };
+            }
+        }
+
+
+        private async Task ConfigurarLibraryListAsync(OdbcConnection conn, List<string> librerias)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandTimeout = 300;
+
+            cmd.CommandText = "CALL QSYS2.QCMDEXC(?, ?)";
+
+            //  Limpia LIBL
+            string limpiar = "CHGLIBL LIBL(*NONE)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.VarChar, Value = limpiar });
+            cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.Decimal, Value = limpiar.Length });
+            await cmd.ExecuteNonQueryAsync();
+
+            //  Agrega librerías
+            foreach (var lib in librerias)
+            {
+                string comando = $"ADDLIBLE LIB({lib})";
+
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.VarChar, Value = comando });
+                cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.Decimal, Value = comando.Length });
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        private static AS400ResponseDto ParsearRespuesta(string trama)
+        {
+            if (string.IsNullOrWhiteSpace(trama))
+            {
+                return new AS400ResponseDto
+                {
+                    CodigoError = "99",
+                    DescripcionError = "TRAMA RESPUESTA VACIA"
+                };
+            }
+
+            trama = trama.PadRight(81);
+
+            string pin = trama.Substring(24, 4).Trim();
+            string codigoError = trama.Substring(28, 3).Trim();
+            string descripcionError = trama.Substring(31, 50).Trim();
+
+            //  CASO EXITOSO: solo viene PIN
+            if (!string.IsNullOrWhiteSpace(pin) &&
+                string.IsNullOrWhiteSpace(codigoError) &&
+                string.IsNullOrWhiteSpace(descripcionError))
+            {
+                return new AS400ResponseDto
+                {
+                    Pin = pin,
+                    CodigoError = "00",
+                    DescripcionError = "Pin generado exitosamente"
+                };
+            }
+
+            //  CASO ERROR
+            if (!string.IsNullOrWhiteSpace(codigoError))
+            {
+                return new AS400ResponseDto
+                {
+                    Pin = null,
+                    CodigoError = codigoError,
+                    DescripcionError = descripcionError
+                };
+            }
+
+            return new AS400ResponseDto
+            {
+                CodigoError = "99",
+                DescripcionError = "Respuesta desconocida AS400"
+            };
+        }
+
+        private string EnmascararPinEnTrama(string trama)
+        {
+            bool enmascararPin = _configuration.GetValue<bool>("ApiSettings:EnmascararPinEnLogs", true );
+            if (!enmascararPin ||
+                string.IsNullOrWhiteSpace(trama) ||
+                trama.Length < 28)
+                return trama;
+
+            return trama.Substring(0, 24) +
+                   "****" +
+                   trama.Substring(28);
+        }
+
+    }
+}
