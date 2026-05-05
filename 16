@@ -1,6 +1,18 @@
+DECLARE counter INTEGER 
+DECLARE var1 CHAR(10) CCSID 65535; 
+DECLARE var2 CHAR(10) CCSID 65535; 
+DECLARE var3 CHAR(10) CCSID 65535; 
+SET counter = 0; 
+xLoop: 
+REPEAT 
+  SET counter = counter + 1; 
+  SET var1 = 'ABCDEFG';  
+  SET var2 = 'HIJKLMNOP';  
+  SET var3 = 'QRSTUV’;  
+until counter = 1000 
+END REPEAT xLoop; 
 
-> CREATE OR REPLACE PROCEDURE BPPGM.OBTPINTC3 (   INOUT pTramaMQRcv CHAR(81) ) LANGUAGE SQL SET OPTION SQLCCSID = *JOB BEGIN      CALL BPPGM.REIMQ07RC(pTramaMQRcv); END
 
-Estado de SQL: 42601
-Código de proveedor: -104
-Mensaje: [SQL0104] Símbolo SQLCCSID no válido. Símbolos válidos: COMMIT NAMING DECMPT DATFMT TIMFMT DATSEP TIMSEP SRTSEQ LANGID DFTRDBCOL RDBCNNMTH ALWBLK ALWCPYDTA DLYPRP DYNUSRPRF USRPRF CLOSQLCSR OPTLOB DYNDFTCOL SQLPATH SQLCURRULE COMPILEOPT DECRESULT CNULRQD CNULIGN SYSTIME OUTPUT DBGVIEW TGTRLS EVENTF. Causa . . . . . :   Se ha detectado un error de sintaxis en el símbolo SQLCCSID. El símbolo SQLCCSID no es un símbolo válido. Una lista parcial de símbolos válidos es COMMIT NAMING DECMPT DATFMT TIMFMT DATSEP TIMSEP SRTSEQ LANGID DFTRDBCOL RDBCNNMTH ALWBLK ALWCPYDTA DLYPRP DYNUSRPRF USRPRF CLOSQLCSR OPTLOB DYNDFTCOL SQLPATH SQLCURRULE COMPILEOPT DECRESULT CNULRQD CNULIGN SYSTIME OUTPUT DBGVIEW TGTRLS EVENTF. Esta lista presupone que la sentencia es correcta hasta el símbolo. El error puede estar anteriormente en la sentencia, pero la sintaxis de la sentencia aparece como válida hasta este punto. Recuperación . . . :   Efectúe una o más de las siguientes acciones y vuelva a intentar la petición: -- Verifique la sentencia SQL en el área del símbolo SQLCCSID. Corrija la sentencia. El error podría ser la omisión de una coma o comillas; podría tratarse de una palabra con errores ortográficos, o podría estar relacionado con el orden de las cláusulas. -- Si el símbolo de error es <FIN DE SENTENCIA>, corrija la sentencia SQL porque no finaliza con una cláusula válida.
+
+
+Mira, creo que es al momento deee lavariable
