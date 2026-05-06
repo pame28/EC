@@ -1,24 +1,103 @@
 PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin> docker build -t api-reposicion-pin-tc:v1 .
-[+] Building 0.6s (3/3) FINISHED                                                                   docker:desktop-linux
+[+] Building 2.6s (15/31)                                                                          docker:desktop-linux
  => [internal] load build definition from Dockerfile                                                               0.0s
- => => transferring dockerfile: 3.33kB                                                                             0.0s
- => CANCELED [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                     0.5s
- => ERROR [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                           0.5s
+ => => transferring dockerfile: 3.42kB                                                                             0.0s
+ => [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                              1.1s
+ => [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                                 1.1s
+ => [internal] load .dockerignore                                                                                  0.0s
+ => => transferring context: 464B                                                                                  0.0s
+ => [build  1/12] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d  0.1s
+ => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666d  0.1s
+ => [final  1/14] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e206  0.1s
+ => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e20647704bc1  0.1s
+ => [internal] load build context                                                                                  0.1s
+ => => transferring context: 6.46kB                                                                                0.0s
+ => CACHED [final  2/14] WORKDIR /app                                                                              0.0s
+ => ERROR [final  3/14] RUN apt-get update && apt-get install -y curl openssl                                      1.1s
+ => CACHED [build  2/12] WORKDIR /src                                                                              0.0s
+ => CACHED [build  3/12] COPY *.csproj ./                                                                          0.0s
+ => CACHED [build  4/12] COPY nuget.config ./                                                                      0.0s
+ => CACHED [build  5/12] COPY proxy-root.crt /usr/local/share/ca-certificates/                                     0.0s
+ => CACHED [build  6/12] RUN update-ca-certificates || true                                                        0.0s
+ => CANCELED [build  7/12] RUN dotnet restore                                                                      1.0s
 ------
- > [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0:
+ > [final  3/14] RUN apt-get update && apt-get install -y curl openssl:
+0.966 Err:1 http://archive.ubuntu.com/ubuntu noble InRelease
+0.966   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
+0.966 Err:2 http://security.ubuntu.com/ubuntu noble-security InRelease
+0.966   500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 104.20.28.246 80]
+0.981 Err:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+0.981   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
+0.998 Err:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+0.998   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
+1.010 Reading package lists...
+1.023 E: The repository 'http://archive.ubuntu.com/ubuntu noble InRelease' is not signed.
+1.023 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
+1.023 E: The repository 'http://security.ubuntu.com/ubuntu noble-security InRelease' is not signed.
+1.023 E: Failed to fetch http://security.ubuntu.com/ubuntu/dists/noble-security/InRelease  500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 104.20.28.246 80]
+1.023 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
+1.023 E: The repository 'http://archive.ubuntu.com/ubuntu noble-updates InRelease' is not signed.
+1.023 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
+1.023 E: The repository 'http://archive.ubuntu.com/ubuntu noble-backports InRelease' is not signed.
 ------
-Dockerfile:4
+Dockerfile:62
 --------------------
-   2 |     # BUILD STAGE
-   3 |     # =========================
-   4 | >>> FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-   5 |     WORKDIR /src
-   6 |
+  60 |
+  61 |     #  Instalar herramientas de debug SSL
+  62 | >>> RUN apt-get update && apt-get install -y curl openssl
+  63 |
+  64 |     #  Certificados en runtime
 --------------------
-ERROR: failed to build: failed to solve: mcr.microsoft.com/dotnet/sdk:10.0: failed to resolve source metadata for mcr.microsoft.com/dotnet/sdk:10.0: failed to do request: Head "https://mcr.microsoft.com/v2/dotnet/sdk/manifests/10.0": http: server gave HTTP response to HTTPS client
-
-View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/8gb3q2wsz9oj63be16cftw5h0
+ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y curl openssl" did not complete successfully: exit code: 100
+PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin> docker build -t api-reposicion-pin-tc:v1 .
+[+] Building 64.9s (15/31)                                                                         docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                               0.0s
+ => => transferring dockerfile: 3.42kB                                                                             0.0s
+ => [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                              0.8s
+ => [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                                 0.8s
+ => [internal] load .dockerignore                                                                                  0.0s
+ => => transferring context: 464B                                                                                  0.0s
+ => [build  1/12] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d  0.1s
+ => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666d  0.1s
+ => [internal] load build context                                                                                  0.0s
+ => => transferring context: 6.46kB                                                                                0.0s
+ => [final  1/14] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e206  0.1s
+ => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e20647704bc1  0.1s
+ => CACHED [final  2/14] WORKDIR /app                                                                              0.0s
+ => ERROR [final  3/14] RUN apt-get update && apt-get install -y curl openssl                                     63.8s
+ => CACHED [build  2/12] WORKDIR /src                                                                              0.0s
+ => CACHED [build  3/12] COPY *.csproj ./                                                                          0.0s
+ => CACHED [build  4/12] COPY nuget.config ./                                                                      0.0s
+ => CACHED [build  5/12] COPY proxy-root.crt /usr/local/share/ca-certificates/                                     0.0s
+ => CACHED [build  6/12] RUN update-ca-certificates || true                                                        0.0s
+ => CANCELED [build  7/12] RUN dotnet restore                                                                     63.8s
+------
+ > [final  3/14] RUN apt-get update && apt-get install -y curl openssl:
+21.58 Err:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+21.58   500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido respond [IP: 172.66.152.176 80]
+21.58 Err:2 http://archive.ubuntu.com/ubuntu noble InRelease
+21.58   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
+42.63 Err:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+42.63   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
+63.73 Err:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+63.73   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
+63.74 Reading package lists...
+63.76 E: The repository 'http://security.ubuntu.com/ubuntu noble-security InRelease' is not signed.
+63.76 E: Failed to fetch http://security.ubuntu.com/ubuntu/dists/noble-security/InRelease  500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido respond [IP: 172.66.152.176 80]
+63.76 E: The repository 'http://archive.ubuntu.com/ubuntu noble InRelease' is not signed.
+63.76 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
+63.76 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
+63.76 E: The repository 'http://archive.ubuntu.com/ubuntu noble-updates InRelease' is not signed.
+63.76 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
+63.76 E: The repository 'http://archive.ubuntu.com/ubuntu noble-backports InRelease' is not signed.
+------
+Dockerfile:62
+--------------------
+  60 |
+  61 |     #  Instalar herramientas de debug SSL
+  62 | >>> RUN apt-get update && apt-get install -y curl openssl
+  63 |
+  64 |     #  Certificados en runtime
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y curl openssl" did not complete successfully: exit code: 100
 PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin>
-
-
-Si lo quito obtengo este error 
