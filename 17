@@ -1,7 +1,3 @@
-Necesito que me ayudes a arreglar mis logs, o sea .. que concuerden con lo que de verdad hace el codigo ...
-
-y agrega mas si es necesario, me pidieron que agregara logs .. para saber qué es lo que está haciendo el servicio 
-
 using Microsoft.Extensions.Configuration;
 using reposicion_pin.DTOs;
 using reposicion_pin.Repository.Interface;
@@ -36,27 +32,35 @@ namespace reposicion_pin.Repository
         {
             try
             {
-                using var conn = new OdbcConnection(_as400connectionString);
-                _logger.LogInformation("Conectando con AS400...");
-                await conn.OpenAsync();
-                _logger.LogInformation("Conexión con AS400 establecida");
+                _logger.LogInformation("Iniciando ejecución de programa AS400 para tarjeta terminada en {UltimosDigitos}",
+                    request.NumeroTarjeta?.Length >= 4 ? request.NumeroTarjeta[^4..] : "****");
 
+                using var conn = new OdbcConnection(_as400connectionString);
+                _logger.LogInformation("Abriendo conexión con AS400...");
+                await conn.OpenAsync();
+                _logger.LogInformation("Conexión con AS400 establecida exitosamente");
+
+                _logger.LogInformation("Obteniendo configuración AS400 (ID: 1)...");
                 var config = await _configAs400Repository.ObtenerConfiguracionAsync(1);
+                _logger.LogInformation("Configuración obtenida. Comando: {Call} | Librerías: {Librerias}",
+                    config.call, string.Join(", ", config.librerias));
+
+                _logger.LogInformation("Configurando library list con {CantidadLibrerias} librería(s)...", config.librerias.Count);
                 await ConfigurarLibraryListAsync(conn, config.librerias);
-                _logger.LogInformation("Cargando librerias de AS400...");
+                _logger.LogInformation("Library list configurada exitosamente");
 
                 string trama =
                     request.NumeroTarjeta.PadRight(16) +
                     request.FechaVencimiento.PadRight(8) +
                     new string(' ', 57);
 
-                _logger.LogInformation("Armando la trama para enviar ...");
-               
+                _logger.LogInformation("Trama de entrada armada (81 bytes). Tarjeta: {UltimosDigitos}, Vencimiento: {FechaVencimiento}",
+                    request.NumeroTarjeta?.Length >= 4 ? request.NumeroTarjeta[^4..] : "****",
+                    request.FechaVencimiento);
 
                 using var cmd = conn.CreateCommand();
                 cmd.CommandType = CommandType.Text;
                 cmd.CommandTimeout = 300;
-
                 cmd.CommandText = config.call;
 
                 var ebcdic = System.Text.Encoding.GetEncoding(37);
@@ -70,29 +74,35 @@ namespace reposicion_pin.Repository
                 };
                 cmd.Parameters.Add(pTrama);
 
-                _logger.LogInformation("Trama enviada AS400: {Trama}", trama);
-
+                _logger.LogInformation("Ejecutando programa AS400: {Comando}", config.call);
                 await cmd.ExecuteNonQueryAsync();
-       
+                _logger.LogInformation("Programa AS400 ejecutado. Procesando respuesta...");
 
                 string tramaRespuesta = pTrama.Value is byte[] bytes
                     ? ebcdic.GetString(bytes)
                     : pTrama.Value?.ToString() ?? string.Empty;
 
-                
+                _logger.LogInformation("Trama respuesta AS400 recibida: {Trama}", EnmascararPinEnTrama(tramaRespuesta));
 
-                _logger.LogInformation("Trama respuesta AS400: {Trama}", EnmascararPinEnTrama(tramaRespuesta));
+                var resultado = ParsearRespuesta(tramaRespuesta);
 
-                return ParsearRespuesta(tramaRespuesta);
+                _logger.LogInformation("Respuesta parseada. CodigoError: {CodigoError} | Descripcion: {Descripcion} | PIN obtenido: {TienePin}",
+                    resultado.CodigoError,
+                    resultado.DescripcionError,
+                    !string.IsNullOrWhiteSpace(resultado.Pin) ? "Sí" : "No");
+
+                return resultado;
             }
             catch (OdbcException ex)
             {
-                _logger.LogError(ex, "Error ODBC AS400");
+                _logger.LogError(ex, "Error ODBC al comunicarse con AS400. SQLState: {SQLState} | NativeError: {NativeError}",
+                    ex.Errors.Count > 0 ? ex.Errors[0].SQLState : "N/A",
+                    ex.Errors.Count > 0 ? ex.Errors[0].NativeError : -1);
                 return new AS400ResponseDto { CodigoError = "-", DescripcionError = ex.Message };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error general AS400");
+                _logger.LogError(ex, "Error inesperado al ejecutar programa AS400: {TipoError}", ex.GetType().Name);
                 return new AS400ResponseDto { CodigoError = "-", DescripcionError = ex.Message };
             }
         }
@@ -103,17 +113,17 @@ namespace reposicion_pin.Repository
             using var cmd = conn.CreateCommand();
             cmd.CommandType = CommandType.Text;
             cmd.CommandTimeout = 300;
-
             cmd.CommandText = "CALL QSYS2.QCMDEXC(?, ?)";
 
-            //  Limpia LIBL
+            // Limpia LIBL
             string limpiar = "CHGLIBL LIBL(*NONE)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.VarChar, Value = limpiar });
             cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.Decimal, Value = limpiar.Length });
             await cmd.ExecuteNonQueryAsync();
+            _logger.LogDebug("Library list limpiada (CHGLIBL LIBL(*NONE))");
 
-            //  Agrega librerías
+            // Agrega librerías
             foreach (var lib in librerias)
             {
                 string comando = $"ADDLIBLE LIB({lib})";
@@ -123,7 +133,10 @@ namespace reposicion_pin.Repository
                 cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.Decimal, Value = comando.Length });
 
                 await cmd.ExecuteNonQueryAsync();
+                _logger.LogDebug("Librería agregada a LIBL: {Libreria}", lib);
             }
+
+            _logger.LogDebug("Library list final configurada con: {Librerias}", string.Join(", ", librerias));
         }
 
         private static AS400ResponseDto ParsearRespuesta(string trama)
@@ -143,7 +156,7 @@ namespace reposicion_pin.Repository
             string codigoError = trama.Substring(28, 3).Trim();
             string descripcionError = trama.Substring(31, 50).Trim();
 
-            //  CASO EXITOSO: Viene con codigo 200 
+            // CASO EXITOSO: Viene con codigo 200
             if (!string.IsNullOrWhiteSpace(pin) && codigoError == "200")
             {
                 return new AS400ResponseDto
@@ -154,7 +167,7 @@ namespace reposicion_pin.Repository
                 };
             }
 
-            //  CASO ERROR
+            // CASO ERROR
             if (!string.IsNullOrWhiteSpace(codigoError))
             {
                 return new AS400ResponseDto
@@ -174,7 +187,7 @@ namespace reposicion_pin.Repository
 
         private string EnmascararPinEnTrama(string trama)
         {
-            bool enmascararPin = _configuration.GetValue<bool>("ApiSettings:EnmascararPinEnLogs", true );
+            bool enmascararPin = _configuration.GetValue<bool>("ApiSettings:EnmascararPinEnLogs", true);
             if (!enmascararPin ||
                 string.IsNullOrWhiteSpace(trama) ||
                 trama.Length < 28)
@@ -184,6 +197,5 @@ namespace reposicion_pin.Repository
                    "****" +
                    trama.Substring(28);
         }
-
     }
 }
