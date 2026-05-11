@@ -1,241 +1,189 @@
-Fijate que me estan solicitando que los logs tengan correlation id, pero no se si esto solo se configura desde program.cs o que
+Necesito que me ayudes a arreglar mis logs, o sea .. que concuerden con lo que de verdad hace el codigo ...
 
-Este es el ejemplo que me dieron y quieren que lo implemente igual: 
+y agrega mas si es necesario, me pidieron que agregara logs .. para saber qué es lo que está haciendo el servicio 
 
-EJEMPLO:
-
-﻿using api_authentication.Repository;
-using api_otp_notifica.Infraestructure.Data;
-using api_otp_notifica.Repository;
-using api_otp_notifica.Repository.Interface;
-using api_otp_notifica.Service;
-using api_otp_notifica.Service.Interface;
-using api_otp_notifica.Utils;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
-using System.Security.Cryptography.X509Certificates;
-
-// Cargar certificados personalizados antes de iniciar la app
-LoadCustomCertificates();
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+using Microsoft.Extensions.Configuration;
+using reposicion_pin.DTOs;
+using reposicion_pin.Repository.Interface;
+using System.Configuration;
+using System.Data;
+using System.Data.Odbc;
 
 
-builder.Services.Configure<ApiBehaviorOptions>(options =>
+namespace reposicion_pin.Repository
 {
-    options.SuppressModelStateInvalidFilter = true;
-});
-
-
-// DI SERVICIOS INTERNOS
-builder.Services.AddScoped<DBHelper>();
-builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
-builder.Services.AddScoped<IReportRepository, ReportRepository>();
-builder.Services.AddScoped<ICuentaRepository, CuentaRepository>();
-builder.Services.AddScoped<ICardRepository, CardRepository>();
-builder.Services.AddScoped<IServersRepository, ServersRepository>();
-builder.Services.AddScoped<IPlantillaRepository, PlantillaRepository>();
-
-builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
-builder.Services.AddScoped<IOtpNotificationService, OtpNotificationService>();
-
-builder.Services.AddScoped<IParametrosService, ParametrosService>();
-builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IMailService, MailService>();
-builder.Services.AddScoped<ISmsService, SmsService>();
-builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
-builder.Services.AddScoped<ICuentaService, CuentaService>();
-builder.Services.AddScoped<ICardService, CardService>();
-builder.Services.AddScoped<IServerService, ServerService>();
-builder.Services.AddScoped<IPlantillaService, PlantillaService>();
-
-builder.Services.AddScoped<MessageResponseFn>();
-
-// Configuración de Serilog
-builder.Host.UseSerilog((context, services, config) =>
-    config.ReadFrom.Configuration(context.Configuration)
-          .ReadFrom.Services(services));
-
-// Opciones del CorrelationId 
-builder.Services.Configure<CorrelationIdOptions>(
-    builder.Configuration.GetSection("CorrelationIdOptions"));
-
-builder.Services.AddControllers(); 
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    public class AS400Repository : IAS400Repository
     {
-        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+        private readonly string _as400connectionString;
+        private readonly ILogger<AS400Repository> _logger;
+        private readonly IConfiguracionAs400Repository _configAs400Repository;
+        private readonly IConfiguration _configuration;
 
-app.UseHttpsRedirection();
-app.UseCorrelationId();
-app.MapControllers();
-
-app.Run();
-
-
-// Método para cargar certificados personalizados desde un directorio configurable
-static void LoadCustomCertificates()
-{
-    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR") ?? "/app/certificates";
-
-    if (!Directory.Exists(certDir))
-    {
-        Console.WriteLine($"[Certificados] Directorio no encontrado: {certDir}. Saltando carga.");
-        return;
-    }
-
-    var certFiles = Directory.GetFiles(certDir, "*.crt");
-
-    if (certFiles.Length == 0)
-    {
-        Console.WriteLine($"[Certificados] No se encontraron archivos .crt en {certDir}");
-        return;
-    }
-
-    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
-    store.Open(OpenFlags.ReadWrite);
-
-    foreach (var certFile in certFiles)
-    {
-        try
+        public AS400Repository(
+            IConfiguration configuration,
+            ILogger<AS400Repository> logger,
+            IConfiguracionAs400Repository configAs400Repository
+            )
         {
-            var certificate = new X509Certificate2(certFile);
-            store.Add(certificate);
-            Console.WriteLine($"[Certificados] Cargado: {Path.GetFileName(certFile)} | Subject: {certificate.Subject} | Expira: {certificate.NotAfter:yyyy-MM-dd}");
+            _as400connectionString = configuration.GetConnectionString("AS400Connection")!;
+            _logger = logger;
+            _configAs400Repository = configAs400Repository;
+            _configuration = configuration;
         }
-        catch (Exception ex)
+
+
+        public async Task<AS400ResponseDto> EjecutarProgramaAsync(AS400RequestDto request)
         {
-            Console.WriteLine($"[Certificados] Error al cargar {Path.GetFileName(certFile)}: {ex.Message}");
+            try
+            {
+                using var conn = new OdbcConnection(_as400connectionString);
+                _logger.LogInformation("Conectando con AS400...");
+                await conn.OpenAsync();
+                _logger.LogInformation("Conexión con AS400 establecida");
+
+                var config = await _configAs400Repository.ObtenerConfiguracionAsync(1);
+                await ConfigurarLibraryListAsync(conn, config.librerias);
+                _logger.LogInformation("Cargando librerias de AS400...");
+
+                string trama =
+                    request.NumeroTarjeta.PadRight(16) +
+                    request.FechaVencimiento.PadRight(8) +
+                    new string(' ', 57);
+
+                _logger.LogInformation("Armando la trama para enviar ...");
+               
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandType = CommandType.Text;
+                cmd.CommandTimeout = 300;
+
+                cmd.CommandText = config.call;
+
+                var ebcdic = System.Text.Encoding.GetEncoding(37);
+
+                var pTrama = new OdbcParameter
+                {
+                    OdbcType = OdbcType.Binary,
+                    Size = 81,
+                    Direction = ParameterDirection.InputOutput,
+                    Value = ebcdic.GetBytes(trama)
+                };
+                cmd.Parameters.Add(pTrama);
+
+                _logger.LogInformation("Trama enviada AS400: {Trama}", trama);
+
+                await cmd.ExecuteNonQueryAsync();
+       
+
+                string tramaRespuesta = pTrama.Value is byte[] bytes
+                    ? ebcdic.GetString(bytes)
+                    : pTrama.Value?.ToString() ?? string.Empty;
+
+                
+
+                _logger.LogInformation("Trama respuesta AS400: {Trama}", EnmascararPinEnTrama(tramaRespuesta));
+
+                return ParsearRespuesta(tramaRespuesta);
+            }
+            catch (OdbcException ex)
+            {
+                _logger.LogError(ex, "Error ODBC AS400");
+                return new AS400ResponseDto { CodigoError = "-", DescripcionError = ex.Message };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error general AS400");
+                return new AS400ResponseDto { CodigoError = "-", DescripcionError = ex.Message };
+            }
         }
+
+
+        private async Task ConfigurarLibraryListAsync(OdbcConnection conn, List<string> librerias)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandTimeout = 300;
+
+            cmd.CommandText = "CALL QSYS2.QCMDEXC(?, ?)";
+
+            //  Limpia LIBL
+            string limpiar = "CHGLIBL LIBL(*NONE)";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.VarChar, Value = limpiar });
+            cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.Decimal, Value = limpiar.Length });
+            await cmd.ExecuteNonQueryAsync();
+
+            //  Agrega librerías
+            foreach (var lib in librerias)
+            {
+                string comando = $"ADDLIBLE LIB({lib})";
+
+                cmd.Parameters.Clear();
+                cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.VarChar, Value = comando });
+                cmd.Parameters.Add(new OdbcParameter { OdbcType = OdbcType.Decimal, Value = comando.Length });
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        private static AS400ResponseDto ParsearRespuesta(string trama)
+        {
+            if (string.IsNullOrWhiteSpace(trama))
+            {
+                return new AS400ResponseDto
+                {
+                    CodigoError = "99",
+                    DescripcionError = "TRAMA RESPUESTA VACIA"
+                };
+            }
+
+            trama = trama.PadRight(81);
+
+            string pin = trama.Substring(24, 4).Trim();
+            string codigoError = trama.Substring(28, 3).Trim();
+            string descripcionError = trama.Substring(31, 50).Trim();
+
+            //  CASO EXITOSO: Viene con codigo 200 
+            if (!string.IsNullOrWhiteSpace(pin) && codigoError == "200")
+            {
+                return new AS400ResponseDto
+                {
+                    Pin = pin,
+                    CodigoError = "00",
+                    DescripcionError = "Pin generado exitosamente"
+                };
+            }
+
+            //  CASO ERROR
+            if (!string.IsNullOrWhiteSpace(codigoError))
+            {
+                return new AS400ResponseDto
+                {
+                    Pin = null,
+                    CodigoError = codigoError,
+                    DescripcionError = descripcionError
+                };
+            }
+
+            return new AS400ResponseDto
+            {
+                CodigoError = "99",
+                DescripcionError = "Respuesta desconocida AS400"
+            };
+        }
+
+        private string EnmascararPinEnTrama(string trama)
+        {
+            bool enmascararPin = _configuration.GetValue<bool>("ApiSettings:EnmascararPinEnLogs", true );
+            if (!enmascararPin ||
+                string.IsNullOrWhiteSpace(trama) ||
+                trama.Length < 28)
+                return trama;
+
+            return trama.Substring(0, 24) +
+                   "****" +
+                   trama.Substring(28);
+        }
+
     }
-
-    store.Close();
-    Console.WriteLine($"[Certificados] {certFiles.Length} certificado(s) procesado(s) desde {certDir}");
 }
-
-
-
-
-
-
-
-
-
-
-ESTE ES MI CODIGO:
-
-using Serilog;
-using System.Net.Http.Headers;
-using transacciones_flotantes.Infrastructure.Data;
-using transacciones_flotantes.Repository;
-using transacciones_flotantes.Repository.Interface;
-using transacciones_flotantes.Service;
-using transacciones_flotantes.Service.Interface;
-using transacciones_flotantes.Utils;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// -----------------------
-// Validaciones de configuración
-// -----------------------
-var baseAddressToken = builder.Configuration["ApiSettings:BaseAddressAccessToken"]
-    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressAccessToken");
-
-var baseAddressTransacciones = builder.Configuration["ApiSettings:BaseAddressTransaccionesFlotantes"]
-    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressTransaccionesFlotantes");
-
-var allowInvalidCertsStr = builder.Configuration["ApiSettings:AllowInvalidCerts"];
-var allowInvalidCerts = bool.TryParse(allowInvalidCertsStr, out var result) && result;
-
-// -----------------------
-// Configuración Serilog
-// -----------------------
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .Enrich.WithThreadId()
-    .WriteTo.Console(
-        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-    )
-    .WriteTo.File(
-        "logs/log-.txt",
-        rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-    )
-    .CreateLogger();
-
-builder.Host.UseSerilog();
-builder.Services.AddMemoryCache();
-builder.Services.AddHttpClient();
-builder.Services.AddScoped<IProveedorTokenService, ProveedorTokenService>();
-builder.Services.AddTransient<AuthHandler>();
-builder.Services.AddHttpClient<IProveedorApiClient, ProveedorApiClient>(client =>
-{
-    client.BaseAddress = new Uri(baseAddressTransacciones);
-    client.DefaultRequestHeaders.Accept.Add(
-        new MediaTypeWithQualityHeaderValue("application/json"));
-})
-.ConfigurePrimaryHttpMessageHandler(() =>
-{
-    return new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = allowInvalidCerts
-            ? (message, cert, chain, errors) => true
-            : null
-    };
-})
-.AddHttpMessageHandler<AuthHandler>();
-
-// -----------------------
-// Dependency Injection
-// -----------------------
-builder.Services.AddScoped<ICatalogoErroresRepository, CatalogoErroresRepository>();
-builder.Services.AddScoped<IParametrosRepository, ParametrosRepositoryImp>();
-builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
-builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
-builder.Services.AddScoped<DBHelper>();
-builder.Services.AddScoped<ITransaccionFlotanteRepository, TransaccionFlotanteRepository>();
-builder.Services.AddScoped<ITransaccionesFlotantesService, TransaccionesFlotantesService>();
-builder.Services.AddScoped<ICurrencyService, CurrencyService>();
-
-// -----------------------
-// Controllers
-// -----------------------
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// -----------------------
-// Middleware
-// -----------------------
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
