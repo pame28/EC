@@ -1,55 +1,128 @@
-using reposicion_pin.DTOs;
-using reposicion_pin.Models;
-using reposicion_pin.Service.Interface;
-using Microsoft.Extensions.Logging;
 
-namespace reposicion_pin.Service
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+Índice
+Descripción General	2
+Base de datos	2
+Parametrización	4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+Descripción General
+Generación de XML de encabezado, detalle y financiamientos de estados de cuenta de tarjeta de crédito. 
+Base de datos
+Nombre del Objeto	Tipo de Objeto	Descripción
+ufn_RemoveInvalidXMLCharacters	SQL SCALAR FUNCTION	Reemplaza caracteres antes de generar el archivo XML
+ufn_ValidChars	SQL SCALAR FUNCTION	Realizar la limpieza y normalización de cadenas de texto
+usp_ActualizaEstadoLote	SQL STORED PROCEDURE	Update al estado del lote en la tabla MaestroEstadosCuentaXML
+usp_GeneraDetalleXML	SQL STORED PROCEDURE	Genera el XML de detalle de acuerdo con el Id de lote consultado
+usp_GeneraEncabezadoXML	SQL STORED PROCEDURE	Genera el XML de encabezado de acuerdo con el Id de lote consultado
+usp_GeneraFinanciamientosXML	SQL STORED PROCEDURE	Genera el XML de detalle de acuerdo con el Id de lote consultado
+usp_GetLotes	SQL STORED PROCEDURE	Obtiene el listado de lotes a procesar
+usp_GetParametros	SQL STORED PROCEDURE	Obtiene los parámetros generales del proceso.
+usp_ObtenerResumenJSON	SQL STORED PROCEDURE	Obtiene JSON con resumen de ejecución del proceso.
+usp_ObtieneMaestroEstadosCuentaXML	SQL STORED PROCEDURE	Obtiene las tarjetas que cumplen con las validaciones para ser consideradas en el procesamiento del XML
+usp_RebuildIndicesEstadoCuenta	SQL STORED PROCEDURE	Reconstruye los índices de las tablas relacionadas con el procesamiento de EC
+usp_ReporteHistoricoPorFecha	SQL STORED PROCEDURE	Obtiene los registros para generar el reporte de ejecución del proceso. 
+DetalleEstadoCuenta	TABLE	Bandeja de transacciones realizadas dentro del corte
+EncabezadoEstadoCuenta	TABLE	Bandeja de datos del encabezado de estados de cuenta
+FinanciamientosEstadoCuenta	TABLE	Bandeja con los saldos de los financiamientos a la fecha de corte
+HistoricoMaestroEstadosCuentaXML	TABLE	Histórico de ejecución, origen del reporte de Estados de Cuenta XML
+LogEjecucionProcesos	TABLE	Tabla con el detalle de cuentas procesadas por corte y contenidas dentro de los XML
+MaestroEstadosCuentaXML	TABLE	Maestro de tarjetas que cumplen con las validaciones de negocio y a las cuales se les generará EC XML
+MovimientosEstadoCuenta	TABLE	Transacciones de estados de cuenta separas por débitos y créditos en dólares y lempiras. Así como totales y subtotales separados por tarjetas titulares y adicionales.
+Parametros	TABLE	Parametrización general del proceso de generación.
+ParametrosProducto	TABLE	Parametrización de productos
+ParametrosRutas	TABLE	Parametrización de rutas para envío en físico. 
+TiposMovimientos	TABLE	Parametrización de tipos de movimientos para clasificación de débitos y créditos. 
+uvw_SubTotalesEstadoCuenta	VIEW	Vista para obtener los subtotales por tarjeta titular y adiciones para ser insertados en la tabla MovimientosEstadoCuenta.
+uvw_TotalesEstadoCuenta	VIEW	Vista para obtener los totales por tarjeta titular y adiciones para ser insertados en la tabla MovimientosEstadoCuenta.
+uvw_TransaccionesEstadoCuenta	VIEW	Vista para obtener las transacciones por tarjeta titular y adiciones como débitos y créditos para ser insertados en la tabla MovimientosEstadoCuenta.
+
+Parametrización
+Clave	Valor	
+Descripción
+CARPETA_ORIGEN	C:\ECXML\	Carpeta donde se generarán los XML, debe de ser propia del servidor donde se ejecute el proceso
+CARPETA_DESTINO	\\PRD-FILESERVER\In_Tec_act\ Carlos Elvir\ECXML\	Carpeta destino donde se colocarán los XML
+CORREO_REMITENTE	Estados Cuenta XML <EstadosCuentaXML@banpais.hn>	Correo desde el cual se enviará la notificación de finalización del proceso. 
+CORREO_PLANTILLA	<!DOCTYPE html> <html lang="es"> <head> <meta charset="UTF-8"> <title>Confirmacion EC XML</title> </head> <body> <h1>Confirmacion de EC XML</h1> </body> </html>	HTML plantilla para envío de correo de confirmación de finalización del proceso.
+CORREO_ASUNTO	Estados de Cuenta XML QA Procesador Regional corte [FechaCorteProcesar]	Asunto del correo de notificación de finalización del proceso.
+CORREOS_DESTINO	carlosen@banpais.hn	Correos a los cuales se enviará la notificación de finalización del proceso. Puede contener varios registros separados por punto y coma.
+FECHA_CORTE_PROCESAR	6/3/2026	Fecha de corte para la ejecución del proceso, su actualización es automática. 
+REGISTROS_POR_LOTE	3000	Cantidad de registros que se incluirán por iteración en la ejecución del proceso. Su objetivo es particionar los datos.
+NOMBRE_CARPETA_ HISTORICO	Historico	Carpeta donde se colocará una copia de los XML procesados, con el objetivo de mantener un histórico. 
+NombreXMLDetalle	Detalle_[FechaProceso].xml	Nombre del archivo XML de detalle de EC.
+NombreXMLEncabezado	Encabezado_[FechaProceso].xml	Nombre del archivo XML de encabezado de EC.
+NombreXMLFinanciamientos	Financiamientos_[FechaProceso]
+.xml	Nombre del archivo XML de financimientos de EC.
+NombreJSONResumen	Resumen.json	Archivo JSON donde se compartirá detalle de la ejecución de estados de cuentaXML: 
+
 {
-    public class ReposicionPinService
-    {
-        private readonly ITarjetaValidationService _tarjetaValidationService;
-        private readonly IAs400Service _as400Service;
-        private readonly INotificacionService _notificacionService;
-        private readonly ILogger<ReposicionPinService> _logger;
-
-        public ReposicionPinService(
-            ITarjetaValidationService tarjetaValidationService,
-            IAs400Service as400Service,
-            INotificacionService notificacionService,
-            ILogger<ReposicionPinService> logger)
-        {
-            _tarjetaValidationService = tarjetaValidationService;
-            _as400Service = as400Service;
-            _notificacionService = notificacionService;
-            _logger = logger;
-        }
-
-        public async Task<ReposicionPinResponseDto> ReposicionPinAsync(ReposicionPinRequestDto request)
-        {
-            var validacion = await _tarjetaValidationService.ValidarTarjetaAsync(request);
-            if (validacion.CodigoInt != 0)
-                return validacion;
-
-            var tarjeta = await _tarjetaValidationService.ObtenerTarjetaAsync(request.CIF, request.UltimosDigitosTC);
-            if (tarjeta == null)
-                return validacion;
-
-            var respuestaAs400 = await _as400Service.ConsumirAs400Async(tarjeta, request);
-            if (!string.IsNullOrWhiteSpace(respuestaAs400.Pin))
-            {
-                var resultadoNotificacion = await _notificacionService.EnviarNotificacionAsync(tarjeta, request, respuestaAs400.Pin);
-                if (resultadoNotificacion.CodigoInt != 0)
-                    return resultadoNotificacion;
-            }
-
-            return respuestaAs400;
-        }
+    "Resumen": {
+"TotalProcesos": 0,
+"TotalCuentasProceso1": 0,
+"TotalCuentasProceso2": 0,
+"EstadoEjecucion": "F"
     }
 }
+MaximoHilos	3	Cantidad de hilos paralelos para la ejecución del proceso. 
+RutaConsola	C:\Users\66510\
+Desktop\publish\ GeneradorEstadosCuentaXML.exe	Ruta del servidor donde se encuentra la consola generadora de los EC XML
 
 
 
 
+Mira, tengo esta documentación técnica, pero tengo que agregarle ciertas cosas 
 
+Le hace falta ponerle que se crean 3 XML y un json de resumen de cuentas(voy a adjuntar una imagen)
+Tambien que creamos un historico
+ 
+Y que se van generando estas carpetas(voy a adjuntar una imagen)
 
-Aqui tambien me gustaria agregar logs
+Al final el proceso pasamos la carpeta a la carpeta del PU-SFTP para que Corporacion CM venga, mandamos un correo de confirmación al terminar
+ 
+ 
