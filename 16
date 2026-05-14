@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using reposicion_pin.Infrastructure.Data;
 using reposicion_pin.Repository;
 using reposicion_pin.Repository.Interface;
@@ -5,51 +6,37 @@ using reposicion_pin.Service;
 using reposicion_pin.Service.Interface;
 using reposicion_pin.Utils;
 using Serilog;
-using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 
 // -----------------------
 // Configuración Serilog
 // -----------------------
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .Enrich.WithThreadId()
-    .Enrich.WithProperty("CorrelationId", "N/A") // valor por defecto antes del middleware
-    .WriteTo.Console(
-        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{CorrelationId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-    )
-    .WriteTo.File(
-        "logs/log-.txt",
-        rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{CorrelationId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
-    )
-    .CreateLogger();
-
-builder.Host.UseSerilog();
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
 
 // -----------------------
-// CorrelationId Options
+// Opciones del CorrelationId
 // -----------------------
 builder.Services.Configure<CorrelationIdOptions>(
     builder.Configuration.GetSection("CorrelationIdOptions"));
 
-// -----------------------
-// Controllers
-// -----------------------
+
+
 builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// -----------------------
-// DbContext
-// -----------------------
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ReposicionPinConnection")));
 
-// -----------------------
-// Repositories
-// -----------------------
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ReposicionPinConnection"))
+    );
+//REPOSITORIES
 builder.Services.AddScoped<ITarjetaRepository, TarjetaRepository>();
 builder.Services.AddScoped<ICatalogoRespuestaRepository, CatalogoRespuestaRepository>();
 builder.Services.AddScoped<IAS400Repository, AS400Repository>();
@@ -60,19 +47,19 @@ builder.Services.AddScoped<IBandejaEnvioSmsRepository, BandejaEnvioSmsRepository
 builder.Services.AddScoped<IBandejaEnvioEmailRepository, BandejaEnvioEmailRepository>();
 builder.Services.AddScoped<IEnvioEmailRepository, EnvioEmailRepository>();
 
-// -----------------------
-// Services
-// -----------------------
-builder.Services.AddScoped<ITarjetaValidationService, TarjetaValidationService>();
+
+
+
+//SERVICIOS
+builder.Services.AddScoped <ITarjetaValidationService, TarjetaValidationService>();
 builder.Services.AddScoped<IAs400Service, As400Service>();
 builder.Services.AddScoped<INotificacionService, NotificacionService>();
 builder.Services.AddScoped<ReposicionPinService>();
 
+
 var app = builder.Build();
 
-// -----------------------
-// Middleware
-// -----------------------
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -80,8 +67,130 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCorrelationId(); // <-- aquí, antes de Authorization
+app.UseCorrelationId();
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "ReposicionPinConnection": "",
+    "AS400Connection": ""
+  },
+
+  "ApiSettings": {
+    "AllowInvalidCerts": "",
+    "EnmascararPinEnLogs": ""
+  },
+
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.File", "Serilog.Enrichers.Thread" ],
+    "MinimumLevel": "Information",
+    "Enrich": [ "FromLogContext", "WithThreadId" ],
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] [{CorrelationId}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "logs/log-.txt",
+          "rollingInterval": "Day",
+          "outputTemplate": "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] [{CorrelationId}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+        }
+      }
+    ]
+  },
+  "CorrelationIdOptions": {
+    "Header": "X-Correlation-Id",
+    "IncludeInResponse": true
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using Microsoft.Extensions.Options;
+using Serilog.Context;
+
+namespace reposicion_pin.Utils
+{
+    public class CorrelationIdOptions
+    {
+        public string Header { get; set; } = "X-Correlation-Id";
+        public bool IncludeInResponse { get; set; } = true;
+    }
+
+    public class CorrelationIdMiddleware(RequestDelegate next, IOptions<CorrelationIdOptions> options)
+    {
+        public async Task InvokeAsync(HttpContext context)
+        {
+            if (!context.Request.Headers.TryGetValue(options.Value.Header, out var correlationId))
+            {
+                correlationId = Guid.NewGuid().ToString();
+            }
+            if (options.Value.IncludeInResponse)
+            {
+                context.Response.Headers.TryAdd(options.Value.Header, correlationId);
+            }
+            using (LogContext.PushProperty("CorrelationId", correlationId.ToString()))
+            {
+                await next(context);
+            }
+        }
+    }
+
+    public static class CorrelationIdExtensions
+    {
+        public static IApplicationBuilder UseCorrelationId(this IApplicationBuilder app)
+            => app.UseMiddleware<CorrelationIdMiddleware>();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+que te parece? si funciona verdad
