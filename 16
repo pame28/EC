@@ -1,3 +1,75 @@
+
+
+Current log
+Search
+
+Show full log
+
+Wrap lines
+Raw
+Download
+179 lines
+14-05-2026 13:31:07.401 [1] [Information] [] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
+14-05-2026 13:31:07.440 [1] [Information] [] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
+14-05-2026 13:31:07.442 [1] [Information] [] Microsoft.Hosting.Lifetime - Hosting environment: Production
+14-05-2026 13:31:07.442 [1] [Information] [] Microsoft.Hosting.Lifetime - Content root path: /app
+14-05-2026 13:31:12.352 [8] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request starting HTTP/1.1 POST http://api-reposicion-pin-tc:8080/api/reposicion-pin - application/json 634
+14-05-2026 13:31:12.390 [8] [Warning] [] Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware - Failed to determine the https port for redirect.
+14-05-2026 13:31:12.402 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executing endpoint 'reposicion_pin.Controllers.ReposicionPinController.GenerarPin (reposicion_pin)'
+14-05-2026 13:31:12.479 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Route matched with {action = "GenerarPin", controller = "ReposicionPin"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.ActionResult`1[reposicion_pin.DTOs.ReposicionPinResponseDto]] GenerarPin(reposicion_pin.DTOs.ReposicionPinRequestDto) on controller reposicion_pin.Controllers.ReposicionPinController (reposicion_pin).
+14-05-2026 13:31:14.415 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (40ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+EXEC usp_ObtenerConfigBiMovil
+14-05-2026 13:31:14.645 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT TOP(1) [p].[IdRow], [p].[Ambiente], [p].[Correo], [p].[Estado], [p].[IdOperador], [p].[Telefono]
+FROM [ParamAmbiente] AS [p]
+WHERE [p].[Estado] = 1
+ORDER BY [p].[IdRow]
+14-05-2026 13:31:14.735 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+EXEC usp_ObtenerConfigEmail
+14-05-2026 13:31:14.748 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (2ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+SELECT TOP(1) [p].[IdRow], [p].[Ambiente], [p].[Correo], [p].[Estado], [p].[IdOperador], [p].[Telefono]
+FROM [ParamAmbiente] AS [p]
+WHERE [p].[Estado] = 1
+ORDER BY [p].[IdRow]
+14-05-2026 13:31:14.848 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Controllers.ReposicionPinController - REQUEST reposicion-pin: {"CIF":"2148503","DNI":"0510199401090","Cliente":"GUSTA GOMEZ MURILLO","MetodoEnvio":2,"Telefono":"96423295","OperadorTelefono":"D","Correo":"pamelas@banpais.hn","UltimosDigitosTC":"9227","ContenidoSMS":"Su pin es @PIN Estimado cliente de Grupo Financiero del Pa\u00EDs","ContenidoCorreo":"Estimado cliente de Grupo Financiero del Pa\u00EDs: \u003Cbr\u003E\u003Cbr\u003EAprovechamos la oportunidad para agradecer su confianza, lealtad y preferencia por los productos y servicios que le ofrece Grupo Financiero del Pa\u00EDs. Le informamos que su gesti\u00F3n ha sido procesada exitosamente y su PIN es @PIN \u003Cbr\u003E\u003Cbr\u003E."}
+14-05-2026 13:31:14.851 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.ReposicionPinService - [ReposicionPin] Iniciando validación de tarjeta | CIF: 2148503
+14-05-2026 13:31:14.854 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Iniciando validación de campos del request
+14-05-2026 13:31:14.854 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Campos básicos OK | MetodoEnvio: 2
+14-05-2026 13:31:14.854 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Validando campos para envío por Correo
+14-05-2026 13:31:14.854 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Campos Correo OK
+14-05-2026 13:31:14.854 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Consultando tarjeta | CIF: 2148503 | UltimosDigitos: 9227
+14-05-2026 13:31:15.040 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Tarjeta encontrada | EstadoTarjeta: 20 | FechaFinVigencia: 2027-05-31 | EstadoHabilitar: ' '
+14-05-2026 13:31:15.040 [8] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] Validación completada exitosamente | CIF: 2148503
+14-05-2026 13:31:15.095 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (12ms) [Parameters=[@codigo='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT TOP(1) [c].[Descripcion]
+FROM [CatalogoRespuestas] AS [c]
+WHERE [c].[Codigo] = @codigo
+14-05-2026 13:31:15.107 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.ReposicionPinService - [ReposicionPin] Validación OK, obteniendo tarjeta...
+14-05-2026 13:31:15.109 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] ObtenerTarjetaAsync | CIF: 2148503 | UltimosDigitos: 9227
+14-05-2026 13:31:15.127 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.TarjetaValidationService - [Validacion] ObtenerTarjetaAsync retornó tarjeta correctamente | CIF: 2148503
+14-05-2026 13:31:15.140 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Iniciando ejecución de programa AS400 para tarjeta terminada en 5874
+14-05-2026 13:31:15.154 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Abriendo conexión con AS400...
+14-05-2026 13:31:15.207 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Conexión con AS400 establecida exitosamente
+14-05-2026 13:31:15.207 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Obteniendo configuración AS400...
+14-05-2026 13:31:15.224 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Configurando library list con 9 librería(s)...
+14-05-2026 13:31:15.272 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Library list configurada: BPPGM, DP053DAT, CLIDAT, BPDAT, EQUIVALENP, TDBI20DAT, TARJETA, KEYSTORE, CRYPTO
+14-05-2026 13:31:15.275 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Library list configurada exitosamente
+14-05-2026 13:31:15.276 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Trama de entrada armada (81 bytes). Tarjeta: 5874, Vencimiento: 20270531
+14-05-2026 13:31:15.277 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Ejecutando programa AS400: {CALL BPPGM.OBTPINTC(?)}
+14-05-2026 13:31:19.373 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Programa AS400 ejecutado. Procesando respuesta...
+14-05-2026 13:31:19.375 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Trama respuesta AS400 recibida: 1000000002845874202705316953200PIN GENERADO CORRECTAMENTE
+14-05-2026 13:31:19.376 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.AS400Repository - Respuesta parseada. CodigoError: 00 | Descripcion: Pin generado exitosamente | PIN obtenido: Sí
+14-05-2026 13:31:19.388 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (3ms) [Parameters=[@codigo='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+SELECT TOP(1) [c].[Descripcion]
+FROM [CatalogoRespuestas] AS [c]
+WHERE [c].[Codigo] = @codigo
+14-05-2026 13:31:19.393 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Service.ReposicionPinService - [ReposicionPin] Enviando notificación | MetodoEnvio: 2
+14-05-2026 13:31:19.520 [6] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] reposicion_pin.Repository.EnvioEmailRepository - Correo enviado Ref:1778765479396 Destino:pamelas@banpais.hn
+14-05-2026 13:31:19.825 [10] [Information] [7c069933-c022-4a1d-b1ba-bec7a6d5c03a] Microsoft.EntityFrameworkCore.Database.Command - Executed DbCommand (7ms) [Parameters=[@p0='?' (Size = 4000), @p1='?' (Size = -1), @p2='?' (Size = 4000), @p3='?' (DbType = Int32), @p4='?' (DbType = DateTime2), @p5='?' (DbType = DateTime2), @p6='?' (Size = 4000), @p7='?' (Size = 4000), @p8='?' (Size = 4000), @p9='?' (Size = 4000)], CommandType='Text', CommandTimeout='30']
+
+
+
+
 using Microsoft.Extensions.Configuration;
 using reposicion_pin.DTOs;
 using reposicion_pin.Repository.Interface;
