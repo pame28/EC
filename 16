@@ -1,200 +1,181 @@
-using reposicion_pin.DTOs;
-using reposicion_pin.Models;
-using reposicion_pin.Repository.Interface;
-using reposicion_pin.Service.Interface;
-using Microsoft.Extensions.Logging;
+Mira este ejemplo:
+using Serilog;
+using System.Net.Http.Headers;
+using transacciones_flotantes.Infrastructure.Data;
+using transacciones_flotantes.Repository;
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service;
+using transacciones_flotantes.Service.Interface;
+using transacciones_flotantes.Utils;
 
-namespace reposicion_pin.Service
+var builder = WebApplication.CreateBuilder(args);
+
+// -----------------------
+// Validaciones de configuración
+// -----------------------
+var baseAddressToken = builder.Configuration["ApiSettings:BaseAddressAccessToken"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressAccessToken");
+
+var baseAddressTransacciones = builder.Configuration["ApiSettings:BaseAddressTransaccionesFlotantes"]
+    ?? throw new InvalidOperationException("No se configuró ApiSettings:BaseAddressTransaccionesFlotantes");
+
+var allowInvalidCertsStr = builder.Configuration["ApiSettings:AllowInvalidCerts"];
+var allowInvalidCerts = bool.TryParse(allowInvalidCertsStr, out var result) && result;
+
+// -----------------------
+// Configuración Serilog
+// -----------------------
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// -----------------------
+// Opciones del CorrelationId
+// -----------------------
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+// -----------------------
+// Servicios HTTP
+// -----------------------
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IProveedorTokenService, ProveedorTokenService>();
+builder.Services.AddTransient<AuthHandler>();
+builder.Services.AddHttpClient<IProveedorApiClient, ProveedorApiClient>(client =>
 {
-    public class TarjetaValidationService : ITarjetaValidationService
+    client.BaseAddress = new Uri(baseAddressTransacciones);
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+})
+.ConfigurePrimaryHttpMessageHandler(() =>
+{
+    return new HttpClientHandler
     {
-        private readonly ITarjetaRepository _tarjetaRepository;
-        private readonly ICatalogoRespuestaRepository _catalogoRepository;
-        private readonly IOperadorRepository _operadorRepository;
-        private readonly ILogger<TarjetaValidationService> _logger;
+        ServerCertificateCustomValidationCallback = allowInvalidCerts
+            ? (message, cert, chain, errors) => true
+            : null
+    };
+})
+.AddHttpMessageHandler<AuthHandler>();
 
-        public TarjetaValidationService(
-            ITarjetaRepository tarjetaRepository,
-            ICatalogoRespuestaRepository catalogoRepository,
-            IOperadorRepository operadorRepository,
-            ILogger<TarjetaValidationService> logger)
-        {
-            _tarjetaRepository = tarjetaRepository;
-            _catalogoRepository = catalogoRepository;
-            _operadorRepository = operadorRepository;
-            _logger = logger;
-        }
+// -----------------------
+// Dependency Injection
+// -----------------------
+builder.Services.AddScoped<ICatalogoErroresRepository, CatalogoErroresRepository>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepositoryImp>();
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<ITransaccionFlotanteRepository, TransaccionFlotanteRepository>();
+builder.Services.AddScoped<ITransaccionesFlotantesService, TransaccionesFlotantesService>();
+builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 
-        public async Task<ReposicionPinResponseDto> ValidarTarjetaAsync(ReposicionPinRequestDto request)
-        {
-            _logger.LogInformation("[Validacion] Iniciando validación de campos del request");
+// -----------------------
+// Controllers
+// -----------------------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-            try
-            {
-                // Validaciones de campos básicos
-                if (string.IsNullOrWhiteSpace(request.CIF))
-                {
-                    _logger.LogWarning("[Validacion] CIF vacío o inválido");
-                    return await ObtenerRespuestaDinamicaAsync(10, "CIF", "Se encuentra vacío o inválido");
-                }
+var app = builder.Build();
 
-                if (string.IsNullOrWhiteSpace(request.UltimosDigitosTC))
-                {
-                    _logger.LogWarning("[Validacion] UltimosDigitosTC vacío o inválido");
-                    return await ObtenerRespuestaDinamicaAsync(10, "UltimosDigitosTC", "Se encuentra vacío o inválido");
-                }
-
-                if (request.MetodoEnvio != 1 && request.MetodoEnvio != 2)
-                {
-                    _logger.LogWarning("[Validacion] MetodoEnvio inválido | Valor recibido: {MetodoEnvio}", request.MetodoEnvio);
-                    return await ObtenerRespuestaDinamicaAsync(10, "MetodoEnvio", "Debe ser 1 (SMS) o 2 (Correo)");
-                }
-
-                _logger.LogInformation("[Validacion] Campos básicos OK | MetodoEnvio: {MetodoEnvio}", request.MetodoEnvio);
-
-                // Validaciones según método de envío
-                if (request.MetodoEnvio == 1) // SMS
-                {
-                    _logger.LogInformation("[Validacion] Validando campos para envío por SMS");
-
-                    if (string.IsNullOrWhiteSpace(request.Telefono))
-                    {
-                        _logger.LogWarning("[Validacion] Teléfono vacío para MetodoEnvio=1 (SMS)");
-                        return await ObtenerRespuestaDinamicaAsync(10, "Telefono", "Es obligatorio para MetodoEnvio=1 (SMS)");
-                    }
-
-                    if (string.IsNullOrWhiteSpace(request.ContenidoSMS))
-                    {
-                        _logger.LogWarning("[Validacion] ContenidoSMS vacío para MetodoEnvio=1 (SMS)");
-                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido SMS", "Es obligatorio para MetodoEnvio=1 (SMS)");
-                    }
-
-                    _logger.LogInformation("[Validacion] Verificando operador de teléfono | Operador: {Operador}", request.OperadorTelefono);
-                    var operadorValido = await _operadorRepository.ExisteOperadorAsync(request.OperadorTelefono);
-                    if (!operadorValido)
-                    {
-                        _logger.LogWarning("[Validacion] Operador de teléfono no válido | Operador: {Operador}", request.OperadorTelefono);
-                        return await ObtenerRespuestaDinamicaAsync(10, "Operador de Teléfono", "No es válido");
-                    }
-
-                    _logger.LogInformation("[Validacion] Campos SMS OK | Operador: {Operador}", request.OperadorTelefono);
-                }
-                else if (request.MetodoEnvio == 2) // Correo
-                {
-                    _logger.LogInformation("[Validacion] Validando campos para envío por Correo");
-
-                    if (string.IsNullOrWhiteSpace(request.Correo) || !request.Correo.Contains("@"))
-                    {
-                        _logger.LogWarning("[Validacion] Correo inválido o vacío | Correo: {Correo}", request.Correo);
-                        return await ObtenerRespuestaDinamicaAsync(10, "Correo", "Es obligatorio y debe ser válido para MetodoEnvio=2 (Correo)");
-                    }
-
-                    if (string.IsNullOrWhiteSpace(request.ContenidoCorreo))
-                    {
-                        _logger.LogWarning("[Validacion] ContenidoCorreo vacío para MetodoEnvio=2 (Correo)");
-                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
-                    }
-
-                    _logger.LogInformation("[Validacion] Campos Correo OK");
-                }
-
-                // Consulta de tarjeta
-                _logger.LogInformation("[Validacion] Consultando tarjeta | CIF: {CIF} | UltimosDigitos: {Digitos}",
-                    request.CIF, request.UltimosDigitosTC);
-
-                var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(request.CIF, request.UltimosDigitosTC);
-
-                if (tarjeta == null)
-                {
-                    _logger.LogWarning("[Validacion] Tarjeta no encontrada | CIF: {CIF} | UltimosDigitos: {Digitos}",
-                        request.CIF, request.UltimosDigitosTC);
-                    return await ObtenerRespuestaAsync(5);
-                }
-
-                _logger.LogInformation("[Validacion] Tarjeta encontrada | EstadoTarjeta: {Estado} | FechaFinVigencia: {Fecha} | EstadoHabilitar: '{EstadoHabilitar}'",
-                    tarjeta.EstadoTarjeta, tarjeta.FechaFinVigencia.ToString("yyyy-MM-dd"), tarjeta.EstadoHabilitar);
-
-                // Validaciones de estado de tarjeta
-                if (tarjeta.EstadoTarjeta != 20)
-                {
-                    _logger.LogWarning("[Validacion] Tarjeta inactiva | EstadoTarjeta: {Estado} (se esperaba 20)",
-                        tarjeta.EstadoTarjeta);
-                    return await ObtenerRespuestaAsync(1);
-                }
-
-                if (tarjeta.FechaFinVigencia < DateTime.Today)
-                {
-                    _logger.LogWarning("[Validacion] Tarjeta vencida | FechaFinVigencia: {Fecha} | Hoy: {Hoy}",
-                        tarjeta.FechaFinVigencia.ToString("yyyy-MM-dd"), DateTime.Today.ToString("yyyy-MM-dd"));
-                    return await ObtenerRespuestaAsync(2);
-                }
-
-                if (!string.IsNullOrWhiteSpace(tarjeta.EstadoHabilitar))
-                {
-                    _logger.LogWarning("[Validacion] EstadoHabilitar no está vacío | Valor: '{EstadoHabilitar}'",
-                        tarjeta.EstadoHabilitar);
-                    return await ObtenerRespuestaDinamicaAsync(10, "EstadoHabilitar", "debe estar vacío");
-                }
-
-                _logger.LogInformation("[Validacion] Validación completada exitosamente | CIF: {CIF}", request.CIF);
-                return await ObtenerRespuestaAsync(0);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[Validacion] Error inesperado en ValidarTarjetaAsync | CIF: {CIF}", request.CIF);
-                return await ObtenerRespuestaDinamicaAsync(99, "Excepción", ex.Message);
-            }
-        }
-
-        public async Task<TarjetaModel?> ObtenerTarjetaAsync(string cif, string ultimosDigitos)
-        {
-            _logger.LogInformation("[Validacion] ObtenerTarjetaAsync | CIF: {CIF} | UltimosDigitos: {Digitos}",
-                cif, ultimosDigitos);
-
-            var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(cif, ultimosDigitos);
-
-            if (tarjeta == null)
-                _logger.LogWarning("[Validacion] ObtenerTarjetaAsync no encontró tarjeta | CIF: {CIF}", cif);
-            else
-                _logger.LogInformation("[Validacion] ObtenerTarjetaAsync retornó tarjeta correctamente | CIF: {CIF}", cif);
-
-            return tarjeta;
-        }
-
-        #region Helpers
-        private async Task<ReposicionPinResponseDto> ObtenerRespuestaAsync(int codigo, string? fallbackDescripcion = null)
-        {
-            string? descripcion = fallbackDescripcion;
-            try
-            {
-                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
-                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
-                    descripcion = catalogoDescripcion;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[Validacion] Fallo consultando catálogo para código {Codigo}", codigo);
-            }
-            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = descripcion };
-        }
-
-        private async Task<ReposicionPinResponseDto> ObtenerRespuestaDinamicaAsync(int codigo, string campo, string detalle, string? fallbackDescripcion = null)
-        {
-            string? descripcion = fallbackDescripcion;
-            try
-            {
-                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
-                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
-                    descripcion = catalogoDescripcion;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[Validacion] Fallo consultando catálogo para código {Codigo}", codigo);
-            }
-
-            string mensajeFinal = $"{descripcion ?? "Error"} {campo}: {detalle}";
-            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = mensajeFinal };
-        }
-        #endregion
-    }
+// -----------------------
+// Middleware
+// -----------------------
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseCorrelationId();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+
+
+
+
+Necesito que agreguemos lo del CorrelationId a mi program.cs al igual que el ejemplo, te dejo mi codigo:
+
+using reposicion_pin.Infrastructure.Data;
+using reposicion_pin.Repository;
+using reposicion_pin.Repository.Interface;
+using reposicion_pin.Service;
+using Serilog;
+using Microsoft.EntityFrameworkCore;
+using reposicion_pin.Service.Interface;
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+
+
+// Configuración de Serilog
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithThreadId() // agrega hilo de ejecución
+    .WriteTo.Console(
+        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+    )
+    .WriteTo.File(
+        "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:dd-MM-yyyy HH:mm:ss.fff} [{ThreadId}] [{Level,-5}] {SourceContext} - {Message:lj}{NewLine}{Exception}"
+    )
+    .CreateLogger();
+
+
+builder.Host.UseSerilog();
+
+
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ReposicionPinConnection"))
+    );
+//REPOSITORIES
+builder.Services.AddScoped<ITarjetaRepository, TarjetaRepository>();
+builder.Services.AddScoped<ICatalogoRespuestaRepository, CatalogoRespuestaRepository>();
+builder.Services.AddScoped<IAS400Repository, AS400Repository>();
+builder.Services.AddScoped<IConfiguracionAs400Repository, ConfiguracionAs400Repository>();
+builder.Services.AddScoped<IOperadorRepository, OperadorRepository>();
+builder.Services.AddScoped<IEnvioSmsRepository, EnvioSmsRepository>();
+builder.Services.AddScoped<IBandejaEnvioSmsRepository, BandejaEnvioSmsRepository>();
+builder.Services.AddScoped<IBandejaEnvioEmailRepository, BandejaEnvioEmailRepository>();
+builder.Services.AddScoped<IEnvioEmailRepository, EnvioEmailRepository>();
+
+
+
+
+//SERVICIOS
+builder.Services.AddScoped <ITarjetaValidationService, TarjetaValidationService>();
+builder.Services.AddScoped<IAs400Service, As400Service>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<ReposicionPinService>();
+
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
