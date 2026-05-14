@@ -1,103 +1,328 @@
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin> docker build -t api-reposicion-pin-tc:v1 .
-[+] Building 2.6s (15/31)                                                                          docker:desktop-linux
- => [internal] load build definition from Dockerfile                                                               0.0s
- => => transferring dockerfile: 3.42kB                                                                             0.0s
- => [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                              1.1s
- => [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                                 1.1s
- => [internal] load .dockerignore                                                                                  0.0s
- => => transferring context: 464B                                                                                  0.0s
- => [build  1/12] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d  0.1s
- => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666d  0.1s
- => [final  1/14] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e206  0.1s
- => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e20647704bc1  0.1s
- => [internal] load build context                                                                                  0.1s
- => => transferring context: 6.46kB                                                                                0.0s
- => CACHED [final  2/14] WORKDIR /app                                                                              0.0s
- => ERROR [final  3/14] RUN apt-get update && apt-get install -y curl openssl                                      1.1s
- => CACHED [build  2/12] WORKDIR /src                                                                              0.0s
- => CACHED [build  3/12] COPY *.csproj ./                                                                          0.0s
- => CACHED [build  4/12] COPY nuget.config ./                                                                      0.0s
- => CACHED [build  5/12] COPY proxy-root.crt /usr/local/share/ca-certificates/                                     0.0s
- => CACHED [build  6/12] RUN update-ca-certificates || true                                                        0.0s
- => CANCELED [build  7/12] RUN dotnet restore                                                                      1.0s
-------
- > [final  3/14] RUN apt-get update && apt-get install -y curl openssl:
-0.966 Err:1 http://archive.ubuntu.com/ubuntu noble InRelease
-0.966   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
-0.966 Err:2 http://security.ubuntu.com/ubuntu noble-security InRelease
-0.966   500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 104.20.28.246 80]
-0.981 Err:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
-0.981   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
-0.998 Err:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
-0.998   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
-1.010 Reading package lists...
-1.023 E: The repository 'http://archive.ubuntu.com/ubuntu noble InRelease' is not signed.
-1.023 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
-1.023 E: The repository 'http://security.ubuntu.com/ubuntu noble-security InRelease' is not signed.
-1.023 E: Failed to fetch http://security.ubuntu.com/ubuntu/dists/noble-security/InRelease  500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 104.20.28.246 80]
-1.023 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
-1.023 E: The repository 'http://archive.ubuntu.com/ubuntu noble-updates InRelease' is not signed.
-1.023 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:: dial tcp 10.40.30.45:0: connectex: La direccin solicitada no es vlida en este contexto. [IP: 172.66.152.176 80]
-1.023 E: The repository 'http://archive.ubuntu.com/ubuntu noble-backports InRelease' is not signed.
-------
-Dockerfile:62
---------------------
-  60 |
-  61 |     #  Instalar herramientas de debug SSL
-  62 | >>> RUN apt-get update && apt-get install -y curl openssl
-  63 |
-  64 |     #  Certificados en runtime
---------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y curl openssl" did not complete successfully: exit code: 100
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin> docker build -t api-reposicion-pin-tc:v1 .
-[+] Building 64.9s (15/31)                                                                         docker:desktop-linux
- => [internal] load build definition from Dockerfile                                                               0.0s
- => => transferring dockerfile: 3.42kB                                                                             0.0s
- => [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                              0.8s
- => [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                                 0.8s
- => [internal] load .dockerignore                                                                                  0.0s
- => => transferring context: 464B                                                                                  0.0s
- => [build  1/12] FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d  0.1s
- => => resolve mcr.microsoft.com/dotnet/sdk:10.0@sha256:8a90a473da5205a16979de99d2fc20975e922c68304f5c79d564e666d  0.1s
- => [internal] load build context                                                                                  0.0s
- => => transferring context: 6.46kB                                                                                0.0s
- => [final  1/14] FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e206  0.1s
- => => resolve mcr.microsoft.com/dotnet/aspnet:10.0@sha256:55e37c7795bfaf6b9cc5d77c155811d9569f529d86e20647704bc1  0.1s
- => CACHED [final  2/14] WORKDIR /app                                                                              0.0s
- => ERROR [final  3/14] RUN apt-get update && apt-get install -y curl openssl                                     63.8s
- => CACHED [build  2/12] WORKDIR /src                                                                              0.0s
- => CACHED [build  3/12] COPY *.csproj ./                                                                          0.0s
- => CACHED [build  4/12] COPY nuget.config ./                                                                      0.0s
- => CACHED [build  5/12] COPY proxy-root.crt /usr/local/share/ca-certificates/                                     0.0s
- => CACHED [build  6/12] RUN update-ca-certificates || true                                                        0.0s
- => CANCELED [build  7/12] RUN dotnet restore                                                                     63.8s
-------
- > [final  3/14] RUN apt-get update && apt-get install -y curl openssl:
-21.58 Err:1 http://security.ubuntu.com/ubuntu noble-security InRelease
-21.58   500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido respond [IP: 172.66.152.176 80]
-21.58 Err:2 http://archive.ubuntu.com/ubuntu noble InRelease
-21.58   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
-42.63 Err:3 http://archive.ubuntu.com/ubuntu noble-updates InRelease
-42.63   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
-63.73 Err:4 http://archive.ubuntu.com/ubuntu noble-backports InRelease
-63.73   500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
-63.74 Reading package lists...
-63.76 E: The repository 'http://security.ubuntu.com/ubuntu noble-security InRelease' is not signed.
-63.76 E: Failed to fetch http://security.ubuntu.com/ubuntu/dists/noble-security/InRelease  500  writing response to security.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido respond [IP: 172.66.152.176 80]
-63.76 E: The repository 'http://archive.ubuntu.com/ubuntu noble InRelease' is not signed.
-63.76 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
-63.76 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-updates/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
-63.76 E: The repository 'http://archive.ubuntu.com/ubuntu noble-updates InRelease' is not signed.
-63.76 E: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/noble-backports/InRelease  500  writing response to archive.ubuntu.com:80: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexin ya que la parte conectada no respondi adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexin establecida ya que el host conectado no ha podido responde [IP: 172.66.152.176 80]
-63.76 E: The repository 'http://archive.ubuntu.com/ubuntu noble-backports InRelease' is not signed.
-------
-Dockerfile:62
---------------------
-  60 |
-  61 |     #  Instalar herramientas de debug SSL
-  62 | >>> RUN apt-get update && apt-get install -y curl openssl
-  63 |
-  64 |     #  Certificados en runtime
---------------------
-ERROR: failed to build: failed to solve: process "/bin/sh -c apt-get update && apt-get install -y curl openssl" did not complete successfully: exit code: 100
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin>
+using Microsoft.AspNetCore.Mvc;
+using reposicion_pin.DTOs;
+using reposicion_pin.Service;
+
+namespace reposicion_pin.Controllers
+{
+    [Route("api")]
+    [ApiController]
+    public class ReposicionPinController : ControllerBase
+    {
+        private readonly ReposicionPinService _service;
+        private readonly ILogger<ReposicionPinController> _logger;
+
+        public ReposicionPinController(
+            ReposicionPinService service,
+            ILogger<ReposicionPinController> logger)
+        {
+            _service = service;
+            _logger = logger;
+        }
+
+        [HttpPost]
+        [Route("reposicion-pin")]
+        public async Task<ActionResult<ReposicionPinResponseDto>> GenerarPin([FromBody] ReposicionPinRequestDto request)
+        {
+            try
+            {
+              
+                var response = await _service.ReposicionPinAsync(request);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado en GenerarPin");
+
+                // Código 99 para errores no controlados
+                return Ok(new ReposicionPinResponseDto
+                {
+                    CodigoInt = 99,
+                    Descripcion = $"Error inesperado: {ex.Message}"
+                });
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+using reposicion_pin.DTOs;
+using reposicion_pin.Models;
+using reposicion_pin.Repository.Interface;
+using reposicion_pin.Service.Interface;
+using Microsoft.Extensions.Logging;
+
+namespace reposicion_pin.Service
+{
+    public class TarjetaValidationService : ITarjetaValidationService
+    {
+        private readonly ITarjetaRepository _tarjetaRepository;
+        private readonly ICatalogoRespuestaRepository _catalogoRepository;
+        private readonly IOperadorRepository _operadorRepository;
+        private readonly ILogger<TarjetaValidationService> _logger;
+
+        public TarjetaValidationService(
+            ITarjetaRepository tarjetaRepository,
+            ICatalogoRespuestaRepository catalogoRepository,
+            IOperadorRepository operadorRepository,
+            ILogger<TarjetaValidationService> logger)
+        {
+            _tarjetaRepository = tarjetaRepository;
+            _catalogoRepository = catalogoRepository;
+            _operadorRepository = operadorRepository;
+            _logger = logger;
+        }
+
+        public async Task<ReposicionPinResponseDto> ValidarTarjetaAsync(ReposicionPinRequestDto request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.CIF))
+                    return await ObtenerRespuestaDinamicaAsync(10, "CIF", "Se encuentra vacío o inválido");
+
+                if (string.IsNullOrWhiteSpace(request.UltimosDigitosTC))
+                    return await ObtenerRespuestaDinamicaAsync(10, "UltimosDigitosTC", " Se encuentra vacío o inválido");
+
+                if (request.MetodoEnvio != 1 && request.MetodoEnvio != 2)
+                    return await ObtenerRespuestaDinamicaAsync(10, "MetodoEnvio", "Debe ser 1 (SMS) o 2 (Correo)");
+
+                if (request.MetodoEnvio == 1) // SMS
+                {
+                    var operadorValido = await _operadorRepository.ExisteOperadorAsync(request.OperadorTelefono);
+                    if (string.IsNullOrWhiteSpace(request.Telefono))
+                        return await ObtenerRespuestaDinamicaAsync(10, "Telefono", "Es obligatorio para MetodoEnvio=1 (SMS)");
+                    else if (string.IsNullOrWhiteSpace(request.ContenidoSMS))
+                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido SMS", "Es obligatorio para MetodoEnvio=1 (SMS)");
+                    else if (!operadorValido)
+                        return await ObtenerRespuestaDinamicaAsync(10, "Operador de Teléfono", "No es válido");
+                }
+                else if (request.MetodoEnvio == 2) // Correo
+                {
+                    if (string.IsNullOrWhiteSpace(request.Correo) || !request.Correo.Contains("@"))
+                        return await ObtenerRespuestaDinamicaAsync(10, "Correo", "Es obligatorio y debe ser válido para MetodoEnvio=2 (Correo)");
+                    else if (string.IsNullOrWhiteSpace(request.ContenidoCorreo))
+                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
+                }
+
+                var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(request.CIF, request.UltimosDigitosTC);
+                if (tarjeta == null)
+                    return await ObtenerRespuestaAsync(5); // No se encontró tarjeta
+
+                if (tarjeta.EstadoTarjeta != 20)
+                    return await ObtenerRespuestaAsync(1); // Tarjeta inactiva
+
+                if (tarjeta.FechaFinVigencia < DateTime.Today)
+                    return await ObtenerRespuestaAsync(2); // Tarjeta vencida
+
+                if (!string.IsNullOrWhiteSpace(tarjeta.EstadoHabilitar))
+                    return await ObtenerRespuestaDinamicaAsync(10, "EstadoHabilitar", "debe estar vacío");
+
+                return await ObtenerRespuestaAsync(0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado en ValidarTarjetaAsync");
+                return await ObtenerRespuestaDinamicaAsync(99, "Excepción", ex.Message);
+            }
+        }
+
+        public async Task<TarjetaModel?> ObtenerTarjetaAsync(string cif, string ultimosDigitos)
+        {
+            return await _tarjetaRepository.ObtenerTarjetaAsync(cif, ultimosDigitos);
+        }
+
+        #region Helpers
+        private async Task<ReposicionPinResponseDto> ObtenerRespuestaAsync(int codigo, string? fallbackDescripcion = null)
+        {
+            string? descripcion = fallbackDescripcion;
+            try
+            {
+                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
+                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
+                    descripcion = catalogoDescripcion;
+            }
+            catch (Exception ex) {
+                _logger.LogWarning(ex, "Fallo consultando catálogo para código {Codigo}", codigo);
+            }
+            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = descripcion };
+        }
+
+        private async Task<ReposicionPinResponseDto> ObtenerRespuestaDinamicaAsync(int codigo, string campo, string detalle, string? fallbackDescripcion = null)
+        {
+            string? descripcion = fallbackDescripcion;
+            try
+            {
+                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
+                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
+                    descripcion = catalogoDescripcion;
+            }
+            catch { }
+
+            string mensajeFinal = $"{descripcion ?? "Error"} {campo}: {detalle}";
+            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = mensajeFinal };
+        }
+        #endregion
+    }
+}
+
+
+
+
+using reposicion_pin.DTOs;
+using reposicion_pin.Models;
+using reposicion_pin.Service.Interface;
+using Microsoft.Extensions.Logging;
+
+namespace reposicion_pin.Service
+{
+    public class ReposicionPinService
+    {
+        private readonly ITarjetaValidationService _tarjetaValidationService;
+        private readonly IAs400Service _as400Service;
+        private readonly INotificacionService _notificacionService;
+        private readonly ILogger<ReposicionPinService> _logger;
+
+        public ReposicionPinService(
+            ITarjetaValidationService tarjetaValidationService,
+            IAs400Service as400Service,
+            INotificacionService notificacionService,
+            ILogger<ReposicionPinService> logger)
+        {
+            _tarjetaValidationService = tarjetaValidationService;
+            _as400Service = as400Service;
+            _notificacionService = notificacionService;
+            _logger = logger;
+        }
+
+        public async Task<ReposicionPinResponseDto> ReposicionPinAsync(ReposicionPinRequestDto request)
+        {
+            var validacion = await _tarjetaValidationService.ValidarTarjetaAsync(request);
+            if (validacion.CodigoInt != 0)
+                return validacion;
+
+            var tarjeta = await _tarjetaValidationService.ObtenerTarjetaAsync(request.CIF, request.UltimosDigitosTC);
+            if (tarjeta == null)
+                return validacion;
+
+            var respuestaAs400 = await _as400Service.ConsumirAs400Async(tarjeta, request);
+            if (!string.IsNullOrWhiteSpace(respuestaAs400.Pin))
+            {
+                var resultadoNotificacion = await _notificacionService.EnviarNotificacionAsync(tarjeta, request, respuestaAs400.Pin);
+                if (resultadoNotificacion.CodigoInt != 0)
+                    return resultadoNotificacion;
+            }
+
+            return respuestaAs400;
+        }
+    }
+}
+
+
+
+
+using reposicion_pin.DTOs;
+using reposicion_pin.Models;
+using reposicion_pin.Repository.Interface;
+using reposicion_pin.Service.Interface;
+using Microsoft.Extensions.Logging;
+
+namespace reposicion_pin.Service
+{
+    public class As400Service : IAs400Service
+    {
+        private readonly IAS400Repository _as400Repository;
+        private readonly ICatalogoRespuestaRepository _catalogoRepository;
+        private readonly ILogger<As400Service> _logger;
+
+        public As400Service(
+            IAS400Repository as400Repository,
+            ICatalogoRespuestaRepository catalogoRepository,
+            ILogger<As400Service> logger)
+        {
+            _as400Repository = as400Repository;
+            _catalogoRepository = catalogoRepository;
+            _logger = logger;
+        }
+
+        public async Task<ReposicionPinResponseDto> ConsumirAs400Async(TarjetaModel tarjeta, ReposicionPinRequestDto request)
+        {
+            try
+            {
+                var as400Request = new AS400RequestDto
+                {
+                    NumeroTarjeta = tarjeta.NumeroTarjeta.PadLeft(16, ' '),
+                    FechaVencimiento = tarjeta.FechaFinVigencia.ToString("yyyyMMdd")
+                };
+
+                var as400Response = await _as400Repository.EjecutarProgramaAsync(as400Request);
+
+                var codigoAs400 = as400Response.CodigoError?.Trim();
+
+                if (!string.IsNullOrWhiteSpace(codigoAs400) && codigoAs400 != "00")
+                    return await MapearErrorAs400Async(as400Response);
+
+                var respuesta = await ObtenerRespuestaAsync(0);
+                respuesta.Pin = as400Response.Pin;
+                return respuesta;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado al consumir AS400");
+                return await ObtenerRespuestaDinamicaAsync(99, "Excepción", ex.Message);
+            }
+        }
+
+        #region Helpers
+        private async Task<ReposicionPinResponseDto> MapearErrorAs400Async(AS400ResponseDto as400)
+        {
+            var respuesta = await ObtenerRespuestaAsync(9);
+            string codigoAs400 = as400.CodigoError?.Trim() ?? "";
+            string descripcionAs400 = as400.DescripcionError?.Trim() ?? "";
+
+            respuesta.Descripcion = $"{respuesta.Descripcion} {codigoAs400} {descripcionAs400}".Trim();
+            respuesta.Pin = null;
+            return respuesta;
+        }
+
+        private async Task<ReposicionPinResponseDto> ObtenerRespuestaAsync(int codigo, string? fallbackDescripcion = null)
+        {
+            string? descripcion = fallbackDescripcion;
+            try
+            {
+                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
+                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
+                    descripcion = catalogoDescripcion;
+            }
+            catch { }
+            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = descripcion };
+        }
+
+        private async Task<ReposicionPinResponseDto> ObtenerRespuestaDinamicaAsync(int codigo, string campo, string detalle, string? fallbackDescripcion = null)
+        {
+            string? descripcion = fallbackDescripcion;
+            try
+            {
+                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
+                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
+                    descripcion = catalogoDescripcion;
+            }
+            catch { }
+
+            string mensajeFinal = $"{descripcion ?? "Error"} {campo}: {detalle}";
+            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = mensajeFinal };
+        }
+        #endregion
+    }
+}
+
+
+
+
+Mira que necesito imprimir el request que recibe el api 
+
+y necesito agregar más logs de lo que está haciendo el servicio, no sobrecargarlo pero si que podamos ver porque paso va .. o identificar donde fue que falló .. comprendes?
