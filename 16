@@ -1,11 +1,168 @@
-# =========================
-# CONFIGURACIÓN DEL DRIVER
-# =========================
-RUN mkdir -p /opt/odbc && \
-    printf '%s\n' \
-    '[IBM i Access ODBC Driver]' \
-    'Description=IBM i Access for Linux ODBC Driver' \
-    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
-    'FileUsage=1' \
-    'Pooling=No' \
-    > /opt/odbc/odbcinst.ini
+Mira, tengo un problema con un logforwarding, en Openshoft, nunca he creado uno y al parecer está dando problemas, esto se está haciendo en un ambiente de QA por eso no se cual es el error:
+
+
+Mira, esto fue lo que yo mandé a crear en el ambiente de  Pruebas:
+
+
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: logcollector
+  namespace: pu-procesadortc-bp
+
+
+
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: forward-pu-procesadortc-bp
+  namespace: pu-procesadortc-bp
+
+spec:
+  serviceAccount:
+    name: logcollector
+
+  filters:
+    - name: detect-java-multiline
+      type: detectMultilineException
+
+  inputs:
+    - name: application-logs
+      type: application
+      application:
+        includes:
+          - namespace: pu-procesadortc-bp
+
+  outputs:
+    - name: syslog-procesador
+      type: syslog
+      syslog:
+        url: udp://10.100.206.87:514
+        rfc: RFC5424
+        facility: local3
+        severity: informational
+        enrichment: KubernetesMinimal
+
+  pipelines:
+    - name: pipeline-procesador
+      inputRefs:
+        - application-logs
+      filterRefs:
+        - detect-java-multiline
+      outputRefs:
+        - syslog-procesador
+
+
+
+
+15. Asignar permisos para leer logs del cluster
+oc adm policy add-cluster-role-to-user \
+cluster-logging-collector \-z logcollector \-n pu-procesadortc-bp
+
+
+
+
+
+Pero falló ... a mi, me dieron uno de ejemplo:
+
+apiVersion: v1
+items:
+- apiVersion: observability.openshift.io/v1
+  kind: ClusterLogForwarder
+  metadata:
+    creationTimestamp: "2025-11-25T16:43:39Z"
+    generation: 1
+    name: forward-pu-bpenlinea-02
+    namespace: openshift-logging
+    resourceVersion: "447863580"
+    uid: c37d24d9-2c22-44ca-8a92-929b7721cd8b
+  spec:
+    filters:
+    - name: detect-java-multiline
+      type: detectMultilineException
+    inputs:
+    - application:
+        includes:
+        - namespace: pu-bpenlinea-02
+      name: pu-bpenlinea-02-logs
+      type: application
+    managementState: Managed
+    outputs:
+    - name: rsyslog-pu-bpenlinea-02
+      syslog:
+        enrichment: KubernetesMinimal
+        facility: local3
+        payloadKey: '{.message}'
+        rfc: RFC5424
+        severity: info
+        url: udp://10.100.206.87:514
+      type: syslog
+    pipelines:
+    - filterRefs:
+      - detect-java-multiline
+      inputRefs:
+      - pu-bpenlinea-02-logs
+      name: pipeline-pu-bpenlinea-02-to-local3-full
+      outputRefs:
+      - rsyslog-pu-bpenlinea-02
+    serviceAccount:
+      name: logcollector
+  status:
+    conditions:
+    - lastTransitionTime: "2025-11-25T16:43:45Z"
+      message: 'permitted to collect log types: [application]'
+      reason: ClusterRolesExist
+      status: "True"
+      type: observability.openshift.io/Authorized
+    - lastTransitionTime: "2025-11-25T16:43:45Z"
+      message: ""
+      reason: ValidationSuccess
+      status: "True"
+      type: observability.openshift.io/Valid
+    - lastTransitionTime: "2025-11-25T17:01:27Z"
+      message: ""
+      reason: ReconciliationComplete
+      status: "True"
+      type: Ready
+    filterConditions:
+    - lastTransitionTime: "2025-11-25T16:43:45Z"
+      message: filter "detect-java-multiline" is valid
+      reason: ValidationSuccess
+      status: "True"
+      type: observability.openshift.io/ValidFilter-detect-java-multiline
+    inputConditions:
+    - lastTransitionTime: "2025-11-25T16:43:45Z"
+      message: input "pu-bpenlinea-02-logs" is valid
+      reason: ValidationSuccess
+      status: "True"
+      type: observability.openshift.io/ValidInput-pu-bpenlinea-02-logs
+    outputConditions:
+    - lastTransitionTime: "2025-11-25T16:43:45Z"
+      message: output "rsyslog-pu-bpenlinea-02" is valid
+      reason: ValidationSuccess
+      status: "True"
+      type: observability.openshift.io/ValidOutput-rsyslog-pu-bpenlinea-02
+    pipelineConditions:
+    - lastTransitionTime: "2025-11-25T16:43:45Z"
+      message: pipeline "pipeline-pu-bpenlinea-02-to-local3-full" is valid
+      reason: ValidationSuccess
+      status: "True"
+      type: observability.openshift.io/ValidPipeline-pipeline-pu-bpenlinea-02-to-local3-full
+kind: List
+metadata:
+  resourceVersion: ""
+
+
+
+
+Me puedes ayudar, por favor, creo que tengo muchas cosas mal. 
+
+yo esperaba que se guardara asi:
+
+Carpeta Transacciones Flotantes -> log fecha 01
+                                    log decha 02
+Carpeta Reposición de PIN  -> log fecha 01
+                                    log decha 02
+
+Y que cada que hibiese un nuevo aplicativo no fuese necesario ... actualizar estos archivos, me comprendes, pero dime si esto es posible
