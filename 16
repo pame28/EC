@@ -1,48 +1,104 @@
-# 1. ServiceAccount — este SÍ va en el namespace de la app
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: logcollector
-  namespace: pu-procesadortc-bp
----
-# 2. ClusterLogForwarder — va en openshift-logging
-apiVersion: observability.openshift.io/v1
-kind: ClusterLogForwarder
-metadata:
-  name: forward-pu-procesadortc-bp
-  namespace: openshift-logging       # ← CAMBIO CLAVE
-spec:
-  managementState: Managed
-  serviceAccount:
-    name: logcollector
+# =========================
+# BUILD STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
 
-  filters:
-    - name: detect-java-multiline
-      type: detectMultilineException
+# Copiar proyecto
+COPY *.csproj ./
+COPY nuget.config ./
 
-  inputs:
-    - name: application-logs
-      type: application
-      application:
-        includes:
-          - namespace: pu-procesadortc-bp
+# Certificado para proxy
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates || true
 
-  outputs:
-    - name: syslog-procesador
-      type: syslog
-      syslog:
-        url: udp://10.100.206.87:514
-        rfc: RFC5424
-        facility: local3
-        severity: info                 # ← CAMBIO
-        enrichment: KubernetesMinimal
-        payloadKey: '{.message}'       # ← AGREGADO
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
 
-  pipelines:
-    - name: pipeline-procesador
-      inputRefs:
-        - application-logs
-      filterRefs:
-        - detect-java-multiline
-      outputRefs:
-        - syslog-procesador
+RUN dotnet restore
+
+# =========================
+# INSTALAR ODBC + IBM
+# =========================
+COPY odbc-libraries/*.deb /tmp/odbc/
+
+RUN dpkg -i /tmp/odbc/dpkg*.deb || true && \
+    dpkg -i /tmp/odbc/ca-certificates*.deb || true && \
+    dpkg -i /tmp/odbc/libltdl7*.deb || true && \
+    dpkg -i /tmp/odbc/libodbc2*.deb || true && \
+    dpkg -i /tmp/odbc/libodbcinst2*.deb || true && \
+    dpkg -i /tmp/odbc/unixodbc*.deb || true && \
+    dpkg -i /tmp/odbc/odbcinst*.deb || true && \
+    dpkg -i /tmp/odbc/unixodbc-dev*.deb || true && \
+    dpkg -i /tmp/odbc/wget*.deb || true && \
+    dpkg -i /tmp/odbc/ibm-iaccess*.deb || true && \
+    apt-get update && \
+    apt-get -y --fix-broken install
+
+ENV LD_LIBRARY_PATH=/opt/ibm/iaccess/lib64
+
+# Copiar código
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+# =========================
+# SNAPSHOT ODBC
+# =========================
+RUN mkdir -p /odbc-snapshot/lib /odbc-snapshot/bin /odbc-snapshot/etc && \
+    find / -name "libodbc.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
+    find / -name "libodbcinst.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
+    find / -name "libltdl.so*" -exec cp -v {} /odbc-snapshot/lib/ \; || true && \
+    cp -a /usr/bin/odbcinst /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /usr/bin/isql /odbc-snapshot/bin/ 2>/dev/null || true && \
+    cp -a /etc/odbcinst.ini /odbc-snapshot/etc/ 2>/dev/null || true && \
+    if [ -d /opt/ibm/iaccess ]; then cp -a /opt/ibm/iaccess /odbc-snapshot/; fi || true
+
+# =========================
+# RUNTIME STAGE
+# =========================
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+#  Instalar herramientas de debug SSL
+RUN apt-get update && apt-get install -y curl openssl
+
+#  Certificados en runtime
+COPY proxy-root.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
+# App
+COPY --from=build /app/publish .
+
+# ODBC
+COPY --from=build /odbc-snapshot/lib /opt/odbc/lib
+COPY --from=build /odbc-snapshot/bin /opt/odbc/bin
+COPY --from=build /odbc-snapshot/etc /opt/odbc/etc
+COPY --from=build /odbc-snapshot/iaccess /opt/ibm/iaccess
+
+# Permisos OpenShift
+RUN chmod -R a+r /opt/odbc || true && \
+    chmod -R a+rx /opt/odbc/bin || true && \
+    chmod -R a+r /opt/ibm || true
+
+# =========================
+# CONFIGURACIÓN DEL DRIVER
+# =========================
+RUN mkdir -p /opt/odbc && \
+    printf '%s\n' \
+    '[IBM i Access ODBC Driver]' \
+    'Description=IBM i Access for Linux ODBC Driver' \
+    'Driver=/opt/ibm/iaccess/lib64/libcwbodbc.so' \
+    'FileUsage=1' \
+    'Pooling=No' \
+    > /opt/odbc/odbcinst.ini
+
+# Registrar driver
+RUN /opt/odbc/bin/odbcinst -i -d -f /opt/odbc/odbcinst.ini || true
+
+# Cache librerías
+RUN echo "/opt/odbc/lib" > /etc/ld.so.conf.d/odbc.conf && ldconfig || true
+
+# VARIABLES
+ENV LD_LIBRARY_PATH=/opt/odbc/lib:/opt/ibm/iaccess/lib64
+ENV ODBCSYSINI=/opt/odbc
+ENV ODBCINI=/opt/odbc/odbc.ini
+ENTRYPOINT ["dotnet", "reposicion_pin.dll"]
