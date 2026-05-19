@@ -1,179 +1,53 @@
 using APIBPTarjetas.Models;
 using APIBPTarjetas.Models.Dtos;
-using APIBPTarjetas.Repository;
-using APIBPTarjetas.Repository.IRepository;
-using APIBPTarjetas.Services;
-using AutoMapper;
-using log4net;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
+using System.Text;
 
-namespace APIBPTarjetas.Controllers
+namespace APIBPTarjetas.Services
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class RegistrosCongeladosController : ControllerBase
+    public class MicroservicioClient
     {
-        private readonly IAuthorizationResponseRepository _repo;
-        private readonly IMapper _mapper;
-        private readonly ILog _logger;
-        private string _uuid;
-        private readonly MicroservicioClient _microservicioClient;
+        private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private System.Runtime.Caching.MemoryCache memoryCache = System.Runtime.Caching.MemoryCache.Default;
+        private readonly GatewayTokenService _gatewayTokenService;
 
-        public RegistrosCongeladosController(IAuthorizationResponseRepository repo,IConfiguration configuration, IMapper mapper, ILog logger, MicroservicioClient microservicioClient)
+        public MicroservicioClient(HttpClient httpClient, IConfiguration configuration, GatewayTokenService gatewayTokenService)
         {
-            _repo = repo;
-            _mapper = mapper;
-            _logger = logger;
-            _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-            _uuid = Guid.NewGuid().ToString();
-            _microservicioClient = microservicioClient;
+            _httpClient = httpClient;
             _configuration = configuration;
+            _gatewayTokenService = gatewayTokenService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> BXIRegistrosCongeladosAsync([FromBody] RequestDto requestDto)
+        public async Task<IActionResult> ConsultarAsync(object request)
         {
-            LogicalThreadContext.Properties["activityid"] = _uuid;
-            CatalogoResponseDto catalogoResponseDto = new CatalogoResponseDto();
-            List<AuthorizationResponseDto> lstAuthorizationDto = new List<AuthorizationResponseDto>();
+            var url = _configuration["MicroservicioTransacFlotantes:Url"];
 
-            _logger.Info("***** BXIRegistrosCongeladosAsync *****");
-            _logger.Info($"Equivalente: {requestDto.counterpart_card} | Canal: {requestDto.channel}");
+            // Obtener token vigente (desde caché o renovado automáticamente)
+            var token = await _gatewayTokenService.GetTokenAsync();
+
+            var json = JsonConvert.SerializeObject(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
 
-            bool modoMicroservicio =
-                _configuration.GetValue<bool>("Migracion:ModoMicroservicio");
+            // Inyectar el Bearer token en el header
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
 
-            _logger.Info($"ModoMicroservicio ={modoMicroservicio}");
+            var response = await _httpClient.PostAsync(url, content);
+            var result = await response.Content.ReadAsStringAsync();
 
-            if (modoMicroservicio)
+            // throw new Exception($"Raw RESPONSE: { result }");
+
+            return new ContentResult
             {
-                _logger.Info("ModoMicroservicio ACTIVO -> consumiendo microservicio directamente");
+                Content = result,
+                ContentType = "application/json",
+                StatusCode = (int)response.StatusCode
+            };
 
-                // var microResponse =
-                return await _microservicioClient.ConsultarAsync(requestDto);
-                // return Ok(microResponse);
-
-            }
-
-            bool esMigrada = _repo.EsTarjetaMigrada(requestDto.counterpart_card);
-
-            if (esMigrada)
-            {
-                _logger.Info("Tarjeta MIGRADA, consumiendo microservicio");
-
-                // var microResponse =
-                return await _microservicioClient.ConsultarAsync(requestDto);
-
-            }
-
-
-
-            _logger.Info("Tarjeta NO migrada, usando flujo normal(PRISMA) ");
-
-            CatalogoResponse catalogoResponse = new CatalogoResponse();
-
-
-            try
-            {
-
-
-                //Obtener los datos del cliente
-                Client cliente = _repo.GetClient(requestDto.counterpart_card);
-                if (cliente.document_number == "-1")
-                {
-                    _logger.Debug("No se encontró informacion");
-                    catalogoResponse = _repo.GetCatalogoResponse(2);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    var response = new Response<int>(catalogoResponseDto, 0);
-                    _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
-                    return StatusCode(StatusCodes.Status200OK, response);
-                }
-
-                //Obtener los datos de la tarjeta
-                Card card = _repo.GetCard(requestDto.counterpart_card);
-                if (card.bin == "-1")
-                {
-                    _logger.Debug("No se encontró informacion");
-                    catalogoResponse = _repo.GetCatalogoResponse(2);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    var response = new Response<int>(catalogoResponseDto, 0);
-
-                    _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
-                    return StatusCode(StatusCodes.Status200OK, response);
-                }
-
-                //Obtener el token
-                _logger.Info("Obtener el token ");
-
-                Token token = new Token();
-
-                _logger.Debug("Consultando si existe un token en cache");
-                if (memoryCache.Contains("BearerCache"))
-                {
-                    _logger.Debug("Existe un token en cache");
-                    token.access_token = memoryCache.Get("BearerCache").ToString() ?? string.Empty;
-                }
-
-                if (string.IsNullOrEmpty(token.access_token) || string.IsNullOrWhiteSpace(token.access_token))
-                {
-                    _logger.Debug("No existe un token en cache");
-                    token = await _repo.GetToken();
-                    apiPrismaMemoryCacheOAUTH(token.access_token, Convert.ToInt32(token.expires_in));
-                }
-
-                TokenDto tokenDto = _mapper.Map<TokenDto>(token);
-
-                //Obtener los registros 
-                var lstRegistros = await _repo.GetAll(card, cliente, tokenDto.access_token);
-
-                if (!lstRegistros.IsNullOrEmpty())
-                {
-                    catalogoResponse = _repo.GetCatalogoResponse(1);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    foreach (var item in lstRegistros)
-                    {
-                        lstAuthorizationDto.Add(_mapper.Map<AuthorizationResponseDto>(item));
-                    }
-
-                    Response<List<AuthorizationResponseDto>> response = new Response<List<AuthorizationResponseDto>>(catalogoResponseDto, lstAuthorizationDto);
-                    _logger.Debug($"Respuesta: {Ok(response)}");
-                    _logger.Info("Ejecucion exitosa");
-                    return Ok(response);
-                }
-                else
-                {
-                    catalogoResponse = _repo.GetCatalogoResponse(2);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    var response = new Response<int>(catalogoResponseDto, 0);
-                    _logger.Debug($"Respuesta: {Ok(response)}");
-                    _logger.Info("Ejecucion exitosa");
-                    return Ok(response);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error en BXIRegistrosCongeladosAsync: ", ex);
-                return BadRequest(ex.Message);
-            }
-        }
-
-        private void apiPrismaMemoryCacheOAUTH(string BearerOAUTH, int BearerOAUTHExpira)
-        {
-            int OAUTHExpira = BearerOAUTHExpira - 1;
-            _logger.Debug($"OAUTHExpira: {OAUTHExpira}");
-
-            memoryCache.Add("BearerCache", BearerOAUTH, DateTimeOffset.Now.AddSeconds(OAUTHExpira));
+            // return JsonConvert.DeserializeObject<Response<List<AuthorizationResponseDto>>>(result);
         }
     }
 }
@@ -181,8 +55,87 @@ namespace APIBPTarjetas.Controllers
 
 
 
+using APIBPTarjetas.Models;
+using Newtonsoft.Json;
+using System.Text;
+
+namespace APIBPTarjetas.Services
+{
+
+    public class GatewayTokenService
+    {
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<GatewayTokenService> _logger;
+
+        private string _cachedToken = string.Empty;
+        private DateTime _tokenExpiry = DateTime.MinValue;
+
+        // Lock para evitar múltiples renovaciones simultáneas
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+
+        public GatewayTokenService(
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            ILogger<GatewayTokenService> logger)
+        {
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
+            _logger = logger;
+        }
+
+        public async Task<string> GetTokenAsync()
+        {
+            // Si el token aún es válido (con margen de 30s), lo retornamos directo
+            if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
+            {
+                _logger.LogDebug("Token de gateway vigente, usando caché");
+                return _cachedToken;
+            }
+
+            // Solo un hilo entra a renovar
+            await _lock.WaitAsync();
+            try
+            {
+                // Double-check: otro hilo pudo haber renovado mientras esperábamos
+                if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
+                    return _cachedToken;
+
+                _logger.LogInformation("Renovando token del gateway...");
+                await RenovarTokenAsync();
+                return _cachedToken;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        private async Task RenovarTokenAsync()
+        {
+            var urlGateway = _configuration["MicroservicioTransacFlotantes:UrlGateway"];
+            var username = _configuration["MicroservicioTransacFlotantes:UserGateway"];
+            var password = _configuration["MicroservicioTransacFlotantes:PasswordGateway"];
+
+            var body = JsonConvert.SerializeObject(new { username, password });
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
+
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PostAsync(urlGateway, content);
+            response.EnsureSuccessStatusCode();
+
+            var raw = await response.Content.ReadAsStringAsync();
+            var resultado = JsonConvert.DeserializeObject<GatewayTokenResponse>(raw);
+
+            if (resultado?.Data == null || string.IsNullOrEmpty(resultado.Data.AccessToken))
+                throw new Exception("La respuesta del gateway no contiene un token válido");
+
+            _cachedToken = resultado.Data.AccessToken;
 
 
+            _tokenExpiry = DateTime.Parse(resultado.Data.ExpiresIn);
 
-Mira que tengo un problema y es que tengo dos modos diferentes ...
-uno que va a prisma y otro a un microservicio, la cuestión es .. que ambos guardan cosas en cache, la cuestion ess que .. se me cruzan los token en cache, eso parece .. me sugieren que les cre una llave en cache, para diferenciarlas, me ayudas, porfis
+            _logger.LogInformation($"Token de gateway renovado. Expira: {_tokenExpiry}");
+        }
+    }
+}
