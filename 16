@@ -1,19 +1,188 @@
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin> docker build -t api-reposicion-pin-tc:v1 .
-[+] Building 21.6s (3/3) FINISHED                                                                  docker:desktop-linux
- => [internal] load build definition from Dockerfile                                                               0.0s
- => => transferring dockerfile: 3.44kB                                                                             0.0s
- => ERROR [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0                                       21.4s
- => CANCELED [internal] load metadata for mcr.microsoft.com/dotnet/sdk:10.0                                       21.4s
-------
- > [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:10.0:
-------
-Dockerfile:58
---------------------
-  56 |     # RUNTIME STAGE
-  57 |     # =========================
-  58 | >>> FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
-  59 |     WORKDIR /app
-  60 |
---------------------
-ERROR: failed to build: failed to solve: mcr.microsoft.com/dotnet/aspnet:10.0: failed to resolve source metadata for mcr.microsoft.com/dotnet/aspnet:10.0: failed to do request: Head "https://mcr.microsoft.com/v2/dotnet/aspnet/manifests/10.0": writing response to mcr.microsoft.com:443: connecting to pxhn.corporacionbi.com:9090: dial tcp 10.40.30.45:9090: connectex: Se produjo un error durante el intento de conexión ya que la parte conectada no respondió adecuadamente tras un periodo de tiempo, o bien se produjo un error en la conexión establecida ya que el host conectado no ha podido responder.
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin>
+using APIBPTarjetas.Models;
+using APIBPTarjetas.Models.Dtos;
+using APIBPTarjetas.Repository;
+using APIBPTarjetas.Repository.IRepository;
+using APIBPTarjetas.Services;
+using AutoMapper;
+using log4net;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.IdentityModel.Tokens;
+
+namespace APIBPTarjetas.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class RegistrosCongeladosController : ControllerBase
+    {
+        private readonly IAuthorizationResponseRepository _repo;
+        private readonly IMapper _mapper;
+        private readonly ILog _logger;
+        private string _uuid;
+        private readonly MicroservicioClient _microservicioClient;
+        private readonly IConfiguration _configuration;
+        private System.Runtime.Caching.MemoryCache memoryCache = System.Runtime.Caching.MemoryCache.Default;
+
+        public RegistrosCongeladosController(IAuthorizationResponseRepository repo,IConfiguration configuration, IMapper mapper, ILog logger, MicroservicioClient microservicioClient)
+        {
+            _repo = repo;
+            _mapper = mapper;
+            _logger = logger;
+            _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+            _uuid = Guid.NewGuid().ToString();
+            _microservicioClient = microservicioClient;
+            _configuration = configuration;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BXIRegistrosCongeladosAsync([FromBody] RequestDto requestDto)
+        {
+            LogicalThreadContext.Properties["activityid"] = _uuid;
+            CatalogoResponseDto catalogoResponseDto = new CatalogoResponseDto();
+            List<AuthorizationResponseDto> lstAuthorizationDto = new List<AuthorizationResponseDto>();
+
+            _logger.Info("***** BXIRegistrosCongeladosAsync *****");
+            _logger.Info($"Equivalente: {requestDto.counterpart_card} | Canal: {requestDto.channel}");
+
+
+            bool modoMicroservicio =
+                _configuration.GetValue<bool>("Migracion:ModoMicroservicio");
+
+            _logger.Info($"ModoMicroservicio ={modoMicroservicio}");
+
+            if (modoMicroservicio)
+            {
+                _logger.Info("ModoMicroservicio ACTIVO -> consumiendo microservicio directamente");
+
+                // var microResponse =
+                return await _microservicioClient.ConsultarAsync(requestDto);
+                // return Ok(microResponse);
+
+            }
+
+            bool esMigrada = _repo.EsTarjetaMigrada(requestDto.counterpart_card);
+
+            if (esMigrada)
+            {
+                _logger.Info("Tarjeta MIGRADA, consumiendo microservicio");
+
+                // var microResponse =
+                return await _microservicioClient.ConsultarAsync(requestDto);
+
+            }
+
+
+
+            _logger.Info("Tarjeta NO migrada, usando flujo normal(PRISMA) ");
+
+            CatalogoResponse catalogoResponse = new CatalogoResponse();
+
+
+            try
+            {
+
+
+                //Obtener los datos del cliente
+                Client cliente = _repo.GetClient(requestDto.counterpart_card);
+                if (cliente.document_number == "-1")
+                {
+                    _logger.Debug("No se encontró informacion");
+                    catalogoResponse = _repo.GetCatalogoResponse(2);
+                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
+
+                    var response = new Response<int>(catalogoResponseDto, 0);
+                    _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
+                    return StatusCode(StatusCodes.Status200OK, response);
+                }
+
+                //Obtener los datos de la tarjeta
+                Card card = _repo.GetCard(requestDto.counterpart_card);
+                if (card.bin == "-1")
+                {
+                    _logger.Debug("No se encontró informacion");
+                    catalogoResponse = _repo.GetCatalogoResponse(2);
+                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
+
+                    var response = new Response<int>(catalogoResponseDto, 0);
+
+                    _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
+                    return StatusCode(StatusCodes.Status200OK, response);
+                }
+
+                //Obtener el token
+                _logger.Info("Obtener el token ");
+
+                Token token = new Token();
+
+                _logger.Debug("Consultando si existe un token en cache");
+                if (memoryCache.Contains("BearerCache"))
+                {
+                    _logger.Debug("Existe un token en cache");
+                    token.access_token = memoryCache.Get("BearerCache").ToString() ?? string.Empty;
+                }
+
+                if (string.IsNullOrEmpty(token.access_token) || string.IsNullOrWhiteSpace(token.access_token))
+                {
+                    _logger.Debug("No existe un token en cache");
+                    token = await _repo.GetToken();
+                    apiPrismaMemoryCacheOAUTH(token.access_token, Convert.ToInt32(token.expires_in));
+                }
+
+                TokenDto tokenDto = _mapper.Map<TokenDto>(token);
+
+                //Obtener los registros 
+                var lstRegistros = await _repo.GetAll(card, cliente, tokenDto.access_token);
+
+                if (!lstRegistros.IsNullOrEmpty())
+                {
+                    catalogoResponse = _repo.GetCatalogoResponse(1);
+                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
+
+                    foreach (var item in lstRegistros)
+                    {
+                        lstAuthorizationDto.Add(_mapper.Map<AuthorizationResponseDto>(item));
+                    }
+
+                    Response<List<AuthorizationResponseDto>> response = new Response<List<AuthorizationResponseDto>>(catalogoResponseDto, lstAuthorizationDto);
+                    _logger.Debug($"Respuesta: {Ok(response)}");
+                    _logger.Info("Ejecucion exitosa");
+                    return Ok(response);
+                }
+                else
+                {
+                    catalogoResponse = _repo.GetCatalogoResponse(2);
+                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
+
+                    var response = new Response<int>(catalogoResponseDto, 0);
+                    _logger.Debug($"Respuesta: {Ok(response)}");
+                    _logger.Info("Ejecucion exitosa");
+                    return Ok(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error en BXIRegistrosCongeladosAsync: ", ex);
+                return BadRequest(ex.Message);
+            }
+        }
+
+        private void apiPrismaMemoryCacheOAUTH(string BearerOAUTH, int BearerOAUTHExpira)
+        {
+            int OAUTHExpira = BearerOAUTHExpira - 1;
+            _logger.Debug($"OAUTHExpira: {OAUTHExpira}");
+
+            memoryCache.Add("BearerCache", BearerOAUTH, DateTimeOffset.Now.AddSeconds(OAUTHExpira));
+        }
+    }
+}
+
+
+
+
+
+
+
+Mira que tengo un problema y es que tengo dos modos diferentes ...
+uno que va a prisma y otro a un microservicio, la cuestión es .. que ambos guardan cosas en cache, la cuestion ess que .. se me cruzan los token en cache, eso parece .. me sugieren que les cre una llave en cache, para diferenciarlas, me ayudas, porfis
