@@ -1,179 +1,62 @@
 using APIBPTarjetas.Models;
 using APIBPTarjetas.Models.Dtos;
-using APIBPTarjetas.Repository;
-using APIBPTarjetas.Repository.IRepository;
-using APIBPTarjetas.Services;
-using AutoMapper;
-using log4net;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
+using System.Text;
 
-namespace APIBPTarjetas.Controllers
+namespace APIBPTarjetas.Services
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class RegistrosCongeladosController : ControllerBase
+    public class MicroservicioClient
     {
-        private readonly IAuthorizationResponseRepository _repo;
-        private readonly IMapper _mapper;
-        private readonly ILog _logger;
-        private string _uuid;
-        private readonly MicroservicioClient _microservicioClient;
+        private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private System.Runtime.Caching.MemoryCache memoryCache = System.Runtime.Caching.MemoryCache.Default;
+        private readonly GatewayTokenService _gatewayTokenService;
 
-        // ✅ CORRECCIÓN: llave específica para el caché de Prisma,
-        //    evita cruce con el token del microservicio/gateway.
-        private const string CACHE_KEY_PRISMA = "BearerCache_Prisma";
-
-        public RegistrosCongeladosController(
-            IAuthorizationResponseRepository repo,
+        public MicroservicioClient(
+            HttpClient httpClient,
             IConfiguration configuration,
-            IMapper mapper,
-            ILog logger,
-            MicroservicioClient microservicioClient)
+            GatewayTokenService gatewayTokenService)
         {
-            _repo = repo;
-            _mapper = mapper;
-            _logger = logger;
-            _logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-            _uuid = Guid.NewGuid().ToString();
-            _microservicioClient = microservicioClient;
+            _httpClient = httpClient;
             _configuration = configuration;
+            _gatewayTokenService = gatewayTokenService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> BXIRegistrosCongeladosAsync([FromBody] RequestDto requestDto)
+        public async Task<IActionResult> ConsultarAsync(object request)
         {
-            LogicalThreadContext.Properties["activityid"] = _uuid;
-            CatalogoResponseDto catalogoResponseDto = new CatalogoResponseDto();
-            List<AuthorizationResponseDto> lstAuthorizationDto = new List<AuthorizationResponseDto>();
+            var url = _configuration["MicroservicioTransacFlotantes:Url"];
 
-            _logger.Info("***** BXIRegistrosCongeladosAsync *****");
-            _logger.Info($"Equivalente: {requestDto.counterpart_card} | Canal: {requestDto.channel}");
+            var token = await _gatewayTokenService.GetTokenAsync();
+            var response = await EnviarRequestAsync(url, token, request);
 
-            bool modoMicroservicio =
-                _configuration.GetValue<bool>("Migracion:ModoMicroservicio");
-
-            _logger.Info($"ModoMicroservicio ={modoMicroservicio}");
-
-            if (modoMicroservicio)
+            // ✅ Si el gateway rechaza el token, lo invalidamos y reintentamos una sola vez
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                _logger.Info("ModoMicroservicio ACTIVO -> consumiendo microservicio directamente");
-                return await _microservicioClient.ConsultarAsync(requestDto);
+                _gatewayTokenService.InvalidarToken();
+                token = await _gatewayTokenService.GetTokenAsync();
+                response = await EnviarRequestAsync(url, token, request);
             }
 
-            bool esMigrada = _repo.EsTarjetaMigrada(requestDto.counterpart_card);
+            var result = await response.Content.ReadAsStringAsync();
 
-            if (esMigrada)
+            return new ContentResult
             {
-                _logger.Info("Tarjeta MIGRADA, consumiendo microservicio");
-                return await _microservicioClient.ConsultarAsync(requestDto);
-            }
-
-            _logger.Info("Tarjeta NO migrada, usando flujo normal (PRISMA)");
-
-            CatalogoResponse catalogoResponse = new CatalogoResponse();
-
-            try
-            {
-                // Obtener los datos del cliente
-                Client cliente = _repo.GetClient(requestDto.counterpart_card);
-                if (cliente.document_number == "-1")
-                {
-                    _logger.Debug("No se encontró informacion");
-                    catalogoResponse = _repo.GetCatalogoResponse(2);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    var response = new Response<int>(catalogoResponseDto, 0);
-                    _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
-                    return StatusCode(StatusCodes.Status200OK, response);
-                }
-
-                // Obtener los datos de la tarjeta
-                Card card = _repo.GetCard(requestDto.counterpart_card);
-                if (card.bin == "-1")
-                {
-                    _logger.Debug("No se encontró informacion");
-                    catalogoResponse = _repo.GetCatalogoResponse(2);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    var response = new Response<int>(catalogoResponseDto, 0);
-                    _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
-                    return StatusCode(StatusCodes.Status200OK, response);
-                }
-
-                // Obtener el token de Prisma
-                _logger.Info("Obtener el token de Prisma");
-
-                Token token = new Token();
-
-                // ✅ CORRECCIÓN: se usa CACHE_KEY_PRISMA en lugar de "BearerCache"
-                _logger.Debug("Consultando si existe un token Prisma en cache");
-                if (memoryCache.Contains(CACHE_KEY_PRISMA))
-                {
-                    _logger.Debug("Existe un token Prisma en cache");
-                    token.access_token = memoryCache.Get(CACHE_KEY_PRISMA).ToString() ?? string.Empty;
-                }
-
-                if (string.IsNullOrEmpty(token.access_token) || string.IsNullOrWhiteSpace(token.access_token))
-                {
-                    _logger.Debug("No existe un token Prisma en cache, renovando...");
-                    token = await _repo.GetToken();
-                    apiPrismaMemoryCacheOAUTH(token.access_token, Convert.ToInt32(token.expires_in));
-                }
-
-                TokenDto tokenDto = _mapper.Map<TokenDto>(token);
-
-                // Obtener los registros
-                var lstRegistros = await _repo.GetAll(card, cliente, tokenDto.access_token);
-
-                if (!lstRegistros.IsNullOrEmpty())
-                {
-                    catalogoResponse = _repo.GetCatalogoResponse(1);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    foreach (var item in lstRegistros)
-                    {
-                        lstAuthorizationDto.Add(_mapper.Map<AuthorizationResponseDto>(item));
-                    }
-
-                    Response<List<AuthorizationResponseDto>> response =
-                        new Response<List<AuthorizationResponseDto>>(catalogoResponseDto, lstAuthorizationDto);
-
-                    _logger.Debug($"Respuesta: {Ok(response)}");
-                    _logger.Info("Ejecucion exitosa");
-                    return Ok(response);
-                }
-                else
-                {
-                    catalogoResponse = _repo.GetCatalogoResponse(2);
-                    catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-                    var response = new Response<int>(catalogoResponseDto, 0);
-                    _logger.Debug($"Respuesta: {Ok(response)}");
-                    _logger.Info("Ejecucion exitosa");
-                    return Ok(response);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error en BXIRegistrosCongeladosAsync: ", ex);
-                return BadRequest(ex.Message);
-            }
+                Content = result,
+                ContentType = "application/json",
+                StatusCode = (int)response.StatusCode
+            };
         }
 
-        // ✅ CORRECCIÓN: se guarda con CACHE_KEY_PRISMA, aislado del token del gateway
-        private void apiPrismaMemoryCacheOAUTH(string BearerOAUTH, int BearerOAUTHExpira)
+        private async Task<HttpResponseMessage> EnviarRequestAsync(string url, string token, object request)
         {
-            int OAUTHExpira = BearerOAUTHExpira - 1;
-            _logger.Debug($"OAUTHExpira: {OAUTHExpira}");
+            var json = JsonConvert.SerializeObject(request);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            memoryCache.Add(CACHE_KEY_PRISMA, BearerOAUTH,
-                DateTimeOffset.Now.AddSeconds(OAUTHExpira));
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            return await _httpClient.PostAsync(url, content);
         }
     }
 }
