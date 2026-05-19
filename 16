@@ -1,62 +1,87 @@
 using APIBPTarjetas.Models;
-using APIBPTarjetas.Models.Dtos;
-using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Net.Http.Headers;
 using System.Text;
 
 namespace APIBPTarjetas.Services
 {
-    public class MicroservicioClient
+    public class GatewayTokenService
     {
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
-        private readonly GatewayTokenService _gatewayTokenService;
+        private readonly ILogger<GatewayTokenService> _logger;
 
-        public MicroservicioClient(
-            HttpClient httpClient,
+        private string _cachedToken = string.Empty;
+        private DateTime _tokenExpiry = DateTime.MinValue;
+
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+
+        public GatewayTokenService(
+            IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            GatewayTokenService gatewayTokenService)
+            ILogger<GatewayTokenService> logger)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _configuration = configuration;
-            _gatewayTokenService = gatewayTokenService;
+            _logger = logger;
         }
 
-        public async Task<IActionResult> ConsultarAsync(object request)
+        public async Task<string> GetTokenAsync()
         {
-            var url = _configuration["MicroservicioTransacFlotantes:Url"];
-
-            var token = await _gatewayTokenService.GetTokenAsync();
-            var response = await EnviarRequestAsync(url, token, request);
-
-            // ✅ Si el gateway rechaza el token, lo invalidamos y reintentamos una sola vez
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
             {
-                _gatewayTokenService.InvalidarToken();
-                token = await _gatewayTokenService.GetTokenAsync();
-                response = await EnviarRequestAsync(url, token, request);
+                _logger.LogDebug("Token de gateway vigente, usando caché");
+                return _cachedToken;
             }
 
-            var result = await response.Content.ReadAsStringAsync();
-
-            return new ContentResult
+            await _lock.WaitAsync();
+            try
             {
-                Content = result,
-                ContentType = "application/json",
-                StatusCode = (int)response.StatusCode
-            };
+                // Double-check: otro hilo pudo haber renovado mientras esperábamos
+                if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
+                    return _cachedToken;
+
+                _logger.LogInformation("Renovando token del gateway...");
+                await RenovarTokenAsync();
+                return _cachedToken;
+            }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
-        private async Task<HttpResponseMessage> EnviarRequestAsync(string url, string token, object request)
+        // ✅ Permite forzar la renovación del token si el gateway devuelve 401,
+        //    evitando tener que reiniciar el servicio para recuperarse.
+        public void InvalidarToken()
         {
-            var json = JsonConvert.SerializeObject(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            _logger.LogWarning("Token de gateway invalidado manualmente (posible 401). Se renovará en el próximo request.");
+            _cachedToken = string.Empty;
+            _tokenExpiry = DateTime.MinValue;
+        }
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+        private async Task RenovarTokenAsync()
+        {
+            var urlGateway = _configuration["MicroservicioTransacFlotantes:UrlGateway"];
+            var username   = _configuration["MicroservicioTransacFlotantes:UserGateway"];
+            var password   = _configuration["MicroservicioTransacFlotantes:PasswordGateway"];
 
-            return await _httpClient.PostAsync(url, content);
+            var body    = JsonConvert.SerializeObject(new { username, password });
+            var content = new StringContent(body, Encoding.UTF8, "application/json");
+
+            var client   = _httpClientFactory.CreateClient();
+            var response = await client.PostAsync(urlGateway, content);
+            response.EnsureSuccessStatusCode();
+
+            var raw       = await response.Content.ReadAsStringAsync();
+            var resultado = JsonConvert.DeserializeObject<GatewayTokenResponse>(raw);
+
+            if (resultado?.Data == null || string.IsNullOrEmpty(resultado.Data.AccessToken))
+                throw new Exception("La respuesta del gateway no contiene un token válido");
+
+            _cachedToken = resultado.Data.AccessToken;
+            _tokenExpiry = DateTime.Parse(resultado.Data.ExpiresIn);
+
+            _logger.LogInformation($"Token de gateway renovado. Expira: {_tokenExpiry}");
         }
     }
 }
