@@ -1,87 +1,11 @@
-using APIBPTarjetas.Models;
-using Newtonsoft.Json;
-using System.Text;
-
-namespace APIBPTarjetas.Services
 {
-    public class GatewayTokenService
-    {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<GatewayTokenService> _logger;
-
-        private string _cachedToken = string.Empty;
-        private DateTime _tokenExpiry = DateTime.MinValue;
-
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-
-        public GatewayTokenService(
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration,
-            ILogger<GatewayTokenService> logger)
-        {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
-            _logger = logger;
-        }
-
-        public async Task<string> GetTokenAsync()
-        {
-            if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
-            {
-                _logger.LogDebug("Token de gateway vigente, usando caché");
-                return _cachedToken;
-            }
-
-            await _lock.WaitAsync();
-            try
-            {
-                // Double-check: otro hilo pudo haber renovado mientras esperábamos
-                if (!string.IsNullOrEmpty(_cachedToken) && DateTime.Now < _tokenExpiry.AddSeconds(-30))
-                    return _cachedToken;
-
-                _logger.LogInformation("Renovando token del gateway...");
-                await RenovarTokenAsync();
-                return _cachedToken;
-            }
-            finally
-            {
-                _lock.Release();
-            }
-        }
-
-        // ✅ Permite forzar la renovación del token si el gateway devuelve 401,
-        //    evitando tener que reiniciar el servicio para recuperarse.
-        public void InvalidarToken()
-        {
-            _logger.LogWarning("Token de gateway invalidado manualmente (posible 401). Se renovará en el próximo request.");
-            _cachedToken = string.Empty;
-            _tokenExpiry = DateTime.MinValue;
-        }
-
-        private async Task RenovarTokenAsync()
-        {
-            var urlGateway = _configuration["MicroservicioTransacFlotantes:UrlGateway"];
-            var username   = _configuration["MicroservicioTransacFlotantes:UserGateway"];
-            var password   = _configuration["MicroservicioTransacFlotantes:PasswordGateway"];
-
-            var body    = JsonConvert.SerializeObject(new { username, password });
-            var content = new StringContent(body, Encoding.UTF8, "application/json");
-
-            var client   = _httpClientFactory.CreateClient();
-            var response = await client.PostAsync(urlGateway, content);
-            response.EnsureSuccessStatusCode();
-
-            var raw       = await response.Content.ReadAsStringAsync();
-            var resultado = JsonConvert.DeserializeObject<GatewayTokenResponse>(raw);
-
-            if (resultado?.Data == null || string.IsNullOrEmpty(resultado.Data.AccessToken))
-                throw new Exception("La respuesta del gateway no contiene un token válido");
-
-            _cachedToken = resultado.Data.AccessToken;
-            _tokenExpiry = DateTime.Parse(resultado.Data.ExpiresIn);
-
-            _logger.LogInformation($"Token de gateway renovado. Expira: {_tokenExpiry}");
-        }
-    }
+    "accessToken": "eyJraWQiOiJhdXRoLXNlcnZlci1rZXktMSIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3NzkyMDgzNzQsImlhdCI6MTc3OTIwNzQ3NCwianRpIjoiZWMzYjMwNmQtMDlmZS00ZDQwLWE3NDItZmU3MmQ3NmRmY2EzIn0.YpjUBHTAa3ihahvBDYun9Y4EUD6ZiSCuI9YmxnFhgK5xC8HLwUX0Glhzn8ArkY_Pk5SjeRNtjQ1EsugtOFAy61HpvQKasE9NaEuqWvs0W2K22S1yIgF3HV90Nm5DL4rLH5dl2rTTyg1jlUPS9yjeEqa-knbbdJSElHsCglj_VqTss3BuyY5HZaBIMNP-ZHAdIHm2UA26AbiPG6s4AldUleMUKuz_LzKtOaODwT34qlrEgL6THPxVpwLiQVbUcfXgw4Bv5czWD0-xTwMjuyQcQ5dyDJYySMJ7nyfF4Mk8z9eGEVDCqsmwTT1aZ7Xn_09xsd6o5zQ_FED8It71KN1Fhw",
+    "expiresIn": 900000,
+    "tokenType": "Bearer",
+    "refreshToken": "eyJraWQiOiJhdXRoLXNlcnZlci1rZXktMSIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3NzkyOTM4NzQsImlhdCI6MTc3OTIwNzQ3NCwianRpIjoiYWQ2ZWFiYzAtMTBlNy00ODRlLTk2MDItZWQ0ZGZhZWMzMGEyIn0.ez4cOw6uMDLjAp7rD5J-UDmo-RDx5aI1B3PQMM4cZLz-vqJ8mE9EEMKv5ejfLqAnQaNrujj6es8z1tFyt8nnj8uWmHxAJGgQuVSkm5X6rAVRDzfj4kcBxfIosiTywxoDpiLCScPXjgQF5-JYlrm3m7I7tGCZATq6V911f_a2cwpmNJlwXP5Hv-usagov_L02DDwf1Yyt9Shqtd4AbGNENyyk89iQf6daVQV335ZW17RY4c-dOHA7T6Y0uqovtWYWEPs0_xMqWame-PmZqNibqYLLy8sKhQaXEoBEHDUMqv_QGP0G94OuwhxOV2JDYaaWAHwPHNrk1p8_9cRFBg-VFA",
+    "scope": "read:messages"
 }
+
+
+
+segun esto ... cuando vence?
