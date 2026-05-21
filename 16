@@ -1,304 +1,334 @@
-kind: Deployment
-apiVersion: apps/v1
+kind: Pod
+apiVersion: v1
 metadata:
-  name: api-abandoned-tokenv1
-  namespace: pu-procesadortc-bp
-  labels:
-    app: api-abandoned-tokenv1
-    app.kubernetes.io/part-of: Tokenization
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: api-abandoned-tokenv1
-  template:
-    metadata:
-      labels:
-        app: api-abandoned-tokenv1
-        deployment: api-abandoned-tokenv1
-    spec:
-      hostAliases:
-        - ip: 10.100.84.21
-          hostnames:
-            - pci-cl1thbe02pu
-        - ip: 10.100.84.20
-          hostnames:
-            - pci-cl1thbe01pu
-        - ip: 10.100.203.52
-          hostnames:
-            - pu-mailservbp
-      containers:
-        - name: api-abandoned-tokenv1
-          image: image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-abandoned-token:20260520        
-          env:
-            - name: CONNECTIONSTRINGS__DEFAULTCONNECTION
-              valueFrom:
-                secretKeyRef:
-                  name: tokenization-notify-secrets
-                  key: CONNECTIONSTRINGS__DEFAULTCONNECTION
-            - name: CONNECTIONSTRINGS__JOBCONNECTION
-              valueFrom:
-                secretKeyRef:
-                  name: tokenization-notify-secrets
-                  key: CONNECTIONSTRINGS__JOBCONNECTION
-          envFrom:
-            - configMapRef:
-                name: configmap-certificates
-          volumeMounts:
-            - name: certificates-volume
-              readOnly: true
-              mountPath: /app/certificates
-      volumes:
-        - name: certificates-volume
-          secret:
-            secretName: certificates-secret
-            defaultMode: 420
-      restartPolicy: Always
-
-
-
-
-
-
-
-
-kind: Deployment
-apiVersion: apps/v1
-metadata:
+  generateName: api-abandoned-tokenv1-7df4699c5c-
   annotations:
-    alpha.image.policy.openshift.io/resolve-names: '*'
-    app.openshift.io/route-disabled: 'false'
-    app.openshift.io/vcs-ref: master
-    app.openshift.io/vcs-uri: >-
-      http://gitlabde.banpais.hn/procesadorregional/microservicios/api_abandoned_token.git
-    deployment.kubernetes.io/revision: '13'
-    image.openshift.io/triggers: >-
-      [{"from":{"kind":"ImageStreamTag","name":"api-abandoned-token:latest","namespace":"des-procesadortc-bp"},"fieldPath":"spec.template.spec.containers[?(@.name==\"api-abandoned-token\")].image","paused":false}]
-    openshift.io/generated-by: OpenShiftWebConsole
-  resourceVersion: '571592832'
-  name: api-abandoned-token
-  uid: 348645d9-bd60-4ba8-873f-db28b85fb53d
-  creationTimestamp: '2026-03-19T03:20:40Z'
-  generation: 19
+    k8s.ovn.org/pod-networks: '{"default":{"ip_addresses":["10.251.10.161/23"],"mac_address":"0a:58:0a:fb:0a:a1","gateway_ips":["10.251.10.1"],"routes":[{"dest":"10.251.0.0/16","nextHop":"10.251.10.1"},{"dest":"10.250.0.0/16","nextHop":"10.251.10.1"},{"dest":"169.254.169.5/32","nextHop":"10.251.10.1"},{"dest":"100.64.0.0/16","nextHop":"10.251.10.1"}],"ip_address":"10.251.10.161/23","gateway_ip":"10.251.10.1","role":"primary"}}'
+    k8s.v1.cni.cncf.io/network-status: |-
+      [{
+          "name": "ovn-kubernetes",
+          "interface": "eth0",
+          "ips": [
+              "10.251.10.161"
+          ],
+          "mac": "0a:58:0a:fb:0a:a1",
+          "default": true,
+          "dns": {}
+      }]
+    kubectl.kubernetes.io/restartedAt: '2026-05-21T15:07:09-06:00'
+    openshift.io/scc: restricted-v2
+    seccomp.security.alpha.kubernetes.io/pod: runtime/default
+  resourceVersion: '571546504'
+  name: api-abandoned-tokenv1-7df4699c5c-7qgf6
+  uid: da7a310d-a230-42c1-b541-eeb8ece8467f
+  creationTimestamp: '2026-05-21T21:02:55Z'
   managedFields:
-    - manager: Mozilla
+    - manager: PU-OCPNW1.ocp4bppu.hn.bi-central.local
       operation: Update
-      apiVersion: apps/v1
-      time: '2026-05-21T22:26:48Z'
+      apiVersion: v1
+      time: '2026-05-21T21:02:55Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            'f:k8s.ovn.org/pod-networks': {}
+      subresource: status
+    - manager: kube-controller-manager
+      operation: Update
+      apiVersion: v1
+      time: '2026-05-21T21:02:55Z'
       fieldsType: FieldsV1
       fieldsV1:
         'f:metadata':
           'f:annotations':
             .: {}
-            'f:alpha.image.policy.openshift.io/resolve-names': {}
-            'f:app.openshift.io/route-disabled': {}
-            'f:app.openshift.io/vcs-ref': {}
-            'f:app.openshift.io/vcs-uri': {}
-            'f:image.openshift.io/triggers': {}
-            'f:openshift.io/generated-by': {}
+            'f:kubectl.kubernetes.io/restartedAt': {}
+          'f:generateName': {}
           'f:labels':
             .: {}
             'f:app': {}
-            'f:app.kubernetes.io/component': {}
-            'f:app.kubernetes.io/instance': {}
-            'f:app.kubernetes.io/name': {}
-            'f:app.kubernetes.io/part-of': {}
+            'f:deployment': {}
+            'f:pod-template-hash': {}
+          'f:ownerReferences':
+            .: {}
+            'k:{"uid":"f3e37e3f-8f48-4cc9-9f8f-1db67307e0eb"}': {}
         'f:spec':
-          'f:progressDeadlineSeconds': {}
-          'f:revisionHistoryLimit': {}
-          'f:selector': {}
-          'f:strategy':
-            'f:rollingUpdate':
+          'f:hostAliases':
+            .: {}
+            'k:{"ip":"10.100.203.52"}':
               .: {}
-              'f:maxSurge': {}
-              'f:maxUnavailable': {}
-            'f:type': {}
-          'f:template':
-            'f:metadata':
-              'f:labels':
+              'f:hostnames': {}
+              'f:ip': {}
+            'k:{"ip":"10.100.84.20"}':
+              .: {}
+              'f:hostnames': {}
+              'f:ip': {}
+            'k:{"ip":"10.100.84.21"}':
+              .: {}
+              'f:hostnames': {}
+              'f:ip': {}
+          'f:volumes':
+            .: {}
+            'k:{"name":"certificates-volume"}':
+              .: {}
+              'f:name': {}
+              'f:secret':
                 .: {}
-                'f:app': {}
-                'f:app.kubernetes.io/component': {}
-                'f:app.kubernetes.io/name': {}
-                'f:deployment': {}
-            'f:spec':
-              'f:containers':
-                'k:{"name":"api-abandoned-token"}':
-                  'f:envFrom': {}
-                  'f:image': {}
-                  'f:volumeMounts':
-                    .: {}
-                    'k:{"mountPath":"/app/certificates"}':
-                      .: {}
-                      'f:mountPath': {}
-                      'f:name': {}
-                      'f:readOnly': {}
-                  'f:terminationMessagePolicy': {}
+                'f:defaultMode': {}
+                'f:secretName': {}
+          'f:containers':
+            'k:{"name":"api-abandoned-tokenv1"}':
+              'f:envFrom': {}
+              'f:image': {}
+              'f:volumeMounts':
+                .: {}
+                'k:{"mountPath":"/app/certificates"}':
                   .: {}
-                  'f:resources': {}
-                  'f:env':
-                    .: {}
-                    'k:{"name":"CONNECTIONSTRINGS__DEFAULTCONNECTION"}':
-                      .: {}
-                      'f:name': {}
-                      'f:valueFrom':
-                        .: {}
-                        'f:secretKeyRef': {}
-                    'k:{"name":"CONNECTIONSTRINGS__JOBCONNECTION"}':
-                      .: {}
-                      'f:name': {}
-                      'f:valueFrom':
-                        .: {}
-                        'f:secretKeyRef': {}
-                  'f:terminationMessagePath': {}
-                  'f:imagePullPolicy': {}
+                  'f:mountPath': {}
                   'f:name': {}
-              'f:dnsPolicy': {}
-              'f:hostAliases':
+                  'f:readOnly': {}
+              'f:terminationMessagePolicy': {}
+              .: {}
+              'f:resources': {}
+              'f:env':
                 .: {}
-                'k:{"ip":"10.100.88.17"}':
-                  .: {}
-                  'f:hostnames': {}
-                  'f:ip': {}
-              'f:restartPolicy': {}
-              'f:schedulerName': {}
-              'f:securityContext': {}
-              'f:terminationGracePeriodSeconds': {}
-              'f:volumes':
-                .: {}
-                'k:{"name":"certificates-volume"}':
+                'k:{"name":"CONNECTIONSTRINGS__DEFAULTCONNECTION"}':
                   .: {}
                   'f:name': {}
-                  'f:secret':
+                  'f:valueFrom':
                     .: {}
-                    'f:defaultMode': {}
-                    'f:secretName': {}
-    - manager: kube-controller-manager
+                    'f:secretKeyRef': {}
+                'k:{"name":"CONNECTIONSTRINGS__JOBCONNECTION"}':
+                  .: {}
+                  'f:name': {}
+                  'f:valueFrom':
+                    .: {}
+                    'f:secretKeyRef': {}
+              'f:terminationMessagePath': {}
+              'f:imagePullPolicy': {}
+              'f:name': {}
+          'f:dnsPolicy': {}
+          'f:restartPolicy': {}
+          'f:schedulerName': {}
+          'f:terminationGracePeriodSeconds': {}
+          'f:enableServiceLinks': {}
+          'f:securityContext': {}
+    - manager: multus-daemon
       operation: Update
-      apiVersion: apps/v1
-      time: '2026-05-21T22:27:39Z'
+      apiVersion: v1
+      time: '2026-05-21T21:02:56Z'
       fieldsType: FieldsV1
       fieldsV1:
         'f:metadata':
           'f:annotations':
-            'f:deployment.kubernetes.io/revision': {}
-        'f:status':
-          'f:availableReplicas': {}
-          'f:conditions':
-            .: {}
-            'k:{"type":"Available"}':
-              .: {}
-              'f:lastTransitionTime': {}
-              'f:lastUpdateTime': {}
-              'f:message': {}
-              'f:reason': {}
-              'f:status': {}
-              'f:type': {}
-            'k:{"type":"Progressing"}':
-              .: {}
-              'f:lastTransitionTime': {}
-              'f:lastUpdateTime': {}
-              'f:message': {}
-              'f:reason': {}
-              'f:status': {}
-              'f:type': {}
-          'f:observedGeneration': {}
-          'f:readyReplicas': {}
-          'f:replicas': {}
-          'f:updatedReplicas': {}
+            'f:k8s.v1.cni.cncf.io/network-status': {}
       subresource: status
-  namespace: des-procesadortc-bp
+    - manager: kubelet
+      operation: Update
+      apiVersion: v1
+      time: '2026-05-21T21:02:57Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:status':
+          'f:conditions':
+            'k:{"type":"ContainersReady"}':
+              .: {}
+              'f:lastProbeTime': {}
+              'f:lastTransitionTime': {}
+              'f:status': {}
+              'f:type': {}
+            'k:{"type":"Initialized"}':
+              .: {}
+              'f:lastProbeTime': {}
+              'f:lastTransitionTime': {}
+              'f:status': {}
+              'f:type': {}
+            'k:{"type":"PodReadyToStartContainers"}':
+              .: {}
+              'f:lastProbeTime': {}
+              'f:lastTransitionTime': {}
+              'f:status': {}
+              'f:type': {}
+            'k:{"type":"Ready"}':
+              .: {}
+              'f:lastProbeTime': {}
+              'f:lastTransitionTime': {}
+              'f:status': {}
+              'f:type': {}
+          'f:containerStatuses': {}
+          'f:hostIP': {}
+          'f:hostIPs': {}
+          'f:phase': {}
+          'f:podIP': {}
+          'f:podIPs':
+            .: {}
+            'k:{"ip":"10.251.10.161"}':
+              .: {}
+              'f:ip': {}
+          'f:startTime': {}
+      subresource: status
+  namespace: pu-procesadortc-bp
+  ownerReferences:
+    - apiVersion: apps/v1
+      kind: ReplicaSet
+      name: api-abandoned-tokenv1-7df4699c5c
+      uid: f3e37e3f-8f48-4cc9-9f8f-1db67307e0eb
+      controller: true
+      blockOwnerDeletion: true
   labels:
-    app: api-abandoned-token
-    app.kubernetes.io/component: api-abandoned-token
-    app.kubernetes.io/instance: api-abandoned-token
-    app.kubernetes.io/name: api-abandoned-token
-    app.kubernetes.io/part-of: Tokenization
+    app: api-abandoned-tokenv1
+    deployment: api-abandoned-tokenv1
+    pod-template-hash: 7df4699c5c
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: api-abandoned-token
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: api-abandoned-token
-        app.kubernetes.io/component: api-abandoned-token
-        app.kubernetes.io/name: api-abandoned-token
-        deployment: api-abandoned-token
-    spec:
-      volumes:
+  restartPolicy: Always
+  serviceAccountName: default
+  imagePullSecrets:
+    - name: default-dockercfg-thr8q
+  priority: 0
+  schedulerName: default-scheduler
+  enableServiceLinks: true
+  terminationGracePeriodSeconds: 30
+  preemptionPolicy: PreemptLowerPriority
+  nodeName: pu-ocpnw1.ocp4bppu.hn.bi-central.local
+  securityContext:
+    seLinuxOptions:
+      level: 's0:c31,c5'
+    fsGroup: 1000940000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - resources: {}
+      terminationMessagePath: /dev/termination-log
+      name: api-abandoned-tokenv1
+      env:
+        - name: CONNECTIONSTRINGS__DEFAULTCONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: tokenization-notify-secrets
+              key: CONNECTIONSTRINGS__DEFAULTCONNECTION
+        - name: CONNECTIONSTRINGS__JOBCONNECTION
+          valueFrom:
+            secretKeyRef:
+              name: tokenization-notify-secrets
+              key: CONNECTIONSTRINGS__JOBCONNECTION
+      securityContext:
+        capabilities:
+          drop:
+            - ALL
+        runAsUser: 1000940000
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
         - name: certificates-volume
-          secret:
-            secretName: certificates-secret
-            defaultMode: 420
-      containers:
-        - resources: {}
-          terminationMessagePath: /dev/termination-log
-          name: api-abandoned-token
-          env:
-            - name: CONNECTIONSTRINGS__DEFAULTCONNECTION
-              valueFrom:
-                secretKeyRef:
-                  name: tokenization-notify-secrets
-                  key: CONNECTIONSTRINGS__DEFAULTCONNECTION
-            - name: CONNECTIONSTRINGS__JOBCONNECTION
-              valueFrom:
-                secretKeyRef:
-                  name: tokenization-notify-secrets
-                  key: CONNECTIONSTRINGS__JOBCONNECTION
-          imagePullPolicy: IfNotPresent
-          volumeMounts:
-            - name: certificates-volume
-              readOnly: true
-              mountPath: /app/certificates
-          terminationMessagePolicy: File
-          envFrom:
-            - configMapRef:
-                name: configmap-certificates
-          image: >-
-            image-registry.openshift-image-registry.svc:5000/des-procesadortc-bp/api-abandoned-token@sha256:1ab47c44e5ddc05ebec9b825bafc3c03d155955b73e096dc50a5b9ae8abf3198
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 30
-      dnsPolicy: ClusterFirst
-      securityContext: {}
-      schedulerName: default-scheduler
-      hostAliases:
-        - ip: 10.100.88.17
-          hostnames:
-            - pci-thbe01de
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600
+          readOnly: true
+          mountPath: /app/certificates
+        - name: kube-api-access-2pxjc
+          readOnly: true
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      terminationMessagePolicy: File
+      envFrom:
+        - configMapRef:
+            name: configmap-certificates
+      image: 'image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-abandoned-token:20260520'
+  hostAliases:
+    - ip: 10.100.84.21
+      hostnames:
+        - pci-cl1thbe02pu
+    - ip: 10.100.84.20
+      hostnames:
+        - pci-cl1thbe01pu
+    - ip: 10.100.203.52
+      hostnames:
+        - pu-mailservbp
+  serviceAccount: default
+  volumes:
+    - name: certificates-volume
+      secret:
+        secretName: certificates-secret
+        defaultMode: 420
+    - name: kube-api-access-2pxjc
+      projected:
+        sources:
+          - serviceAccountToken:
+              expirationSeconds: 3607
+              path: token
+          - configMap:
+              name: kube-root-ca.crt
+              items:
+                - key: ca.crt
+                  path: ca.crt
+          - downwardAPI:
+              items:
+                - path: namespace
+                  fieldRef:
+                    apiVersion: v1
+                    fieldPath: metadata.namespace
+          - configMap:
+              name: openshift-service-ca.crt
+              items:
+                - key: service-ca.crt
+                  path: service-ca.crt
+        defaultMode: 420
+  dnsPolicy: ClusterFirst
+  tolerations:
+    - key: node.kubernetes.io/not-ready
+      operator: Exists
+      effect: NoExecute
+      tolerationSeconds: 300
+    - key: node.kubernetes.io/unreachable
+      operator: Exists
+      effect: NoExecute
+      tolerationSeconds: 300
 status:
-  observedGeneration: 19
-  replicas: 1
-  updatedReplicas: 1
-  readyReplicas: 1
-  availableReplicas: 1
+  containerStatuses:
+    - restartCount: 0
+      started: true
+      ready: true
+      name: api-abandoned-tokenv1
+      state:
+        running:
+          startedAt: '2026-05-21T21:02:56Z'
+      volumeMounts:
+        - name: certificates-volume
+          mountPath: /app/certificates
+          readOnly: true
+          recursiveReadOnly: Disabled
+        - name: kube-api-access-2pxjc
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+          recursiveReadOnly: Disabled
+      imageID: 'image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-abandoned-token@sha256:ef0196704e4ba51606d7073b5630536e7caf69a5e5472964a1ed5ed856a02c2c'
+      image: 'image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-abandoned-token:20260520'
+      lastState: {}
+      containerID: 'cri-o://de0c105f2fc3ed6d4437ca64b44256b6319a83a824eee03c6b7ff3ec957b3de8'
+  qosClass: BestEffort
+  hostIPs:
+    - ip: 10.100.204.66
+  podIPs:
+    - ip: 10.251.10.161
+  podIP: 10.251.10.161
+  hostIP: 10.100.204.66
+  startTime: '2026-05-21T21:02:55Z'
   conditions:
-    - type: Progressing
+    - type: PodReadyToStartContainers
       status: 'True'
-      lastUpdateTime: '2026-05-21T22:26:50Z'
-      lastTransitionTime: '2026-03-19T03:20:40Z'
-      reason: NewReplicaSetAvailable
-      message: ReplicaSet "api-abandoned-token-5c78dfcb7c" has successfully progressed.
-    - type: Available
+      lastProbeTime: null
+      lastTransitionTime: '2026-05-21T21:02:57Z'
+    - type: Initialized
       status: 'True'
-      lastUpdateTime: '2026-05-21T22:27:39Z'
-      lastTransitionTime: '2026-05-21T22:27:39Z'
-      reason: MinimumReplicasAvailable
-      message: Deployment has minimum availability.
-
-
-
-
-
-
-
-No se que tengo de diferente que me tira ..e ste error No se encontraron archivos .crt en 
+      lastProbeTime: null
+      lastTransitionTime: '2026-05-21T21:02:55Z'
+    - type: Ready
+      status: 'True'
+      lastProbeTime: null
+      lastTransitionTime: '2026-05-21T21:02:57Z'
+    - type: ContainersReady
+      status: 'True'
+      lastProbeTime: null
+      lastTransitionTime: '2026-05-21T21:02:57Z'
+    - type: PodScheduled
+      status: 'True'
+      lastProbeTime: null
+      lastTransitionTime: '2026-05-21T21:02:55Z'
+  phase: Running
