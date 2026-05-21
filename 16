@@ -1,3 +1,241 @@
-docker build -t api-reposicion-pin-tc:v2 .
- 
-docker save -o "C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\api-reposicion-pin-tc.tar"api-reposicion-pin-tc
+using api_abandoned_token.Infraestructure.Data;
+using api_abandoned_token.Repository;
+using api_abandoned_token.Repository.Interface;
+using api_abandoned_token.Service;
+using api_abandoned_token.Service.Interface;
+using api_abandoned_token.Utils;
+using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using System.Security.Cryptography.X509Certificates;
+
+// Cargar certificados personalizados antes de iniciar la app
+LoadCustomCertificates();
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+// DI SERVICIOS INTERNOS
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddSingleton<JobDBHelper>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
+builder.Services.AddScoped<ITokenRequestorRepository, TokenRequestorRepository>();
+builder.Services.AddScoped<IAbandonedTokenRepository, AbandonedTokenRepository>();
+builder.Services.AddScoped<IJobRespository, JobRespository>();
+
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<IParametrosService, ParametrosService>();
+builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
+builder.Services.AddScoped<ITokenRequestorService, TokenRequestorService>();
+builder.Services.AddScoped<IAbandonedTokenService, AbandonedTokenService>();
+builder.Services.AddScoped<IJobService, JobService>();
+
+builder.Services.AddScoped<MessageResponseFn>();
+
+// Configuración de Serilog
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// Opciones del CorrelationId 
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+builder.Services.AddControllers(); 
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseCorrelationId();
+app.MapControllers();
+
+app.Run();
+
+
+// Método para cargar certificados personalizados desde un directorio configurable
+static void LoadCustomCertificates()
+{
+    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR") ?? "/app/certificates";
+
+    if (!Directory.Exists(certDir))
+    {
+        Console.WriteLine($"[Certificados] Directorio no encontrado: {certDir}. Saltando carga.");
+        return;
+    }
+
+    var certFiles = Directory.GetFiles(certDir, "*.crt");
+
+    if (certFiles.Length == 0)
+    {
+        Console.WriteLine($"[Certificados] No se encontraron archivos .crt en {certDir}");
+        return;
+    }
+
+    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+    store.Open(OpenFlags.ReadWrite);
+
+    foreach (var certFile in certFiles)
+    {
+        try
+        {
+            var certificate = new X509Certificate2(certFile);
+            store.Add(certificate);
+            Console.WriteLine($"[Certificados] Cargado: {Path.GetFileName(certFile)} | Subject: {certificate.Subject} | Expira: {certificate.NotAfter:yyyy-MM-dd}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Certificados] Error al cargar {Path.GetFileName(certFile)}: {ex.Message}");
+        }
+    }
+
+    store.Close();
+    Console.WriteLine($"[Certificados] {certFiles.Length} certificado(s) procesado(s) desde {certDir}");
+}
+
+
+
+
+
+No se que fucking hace eso jajajajaj lo del certificado 
+
+
+kind: Secret
+apiVersion: v1
+metadata:
+  name: certificates-secret
+  namespace: pu-procesadortc-bp
+type: Opaque
+stringData:
+  wsbptarjetas: |
+    -----BEGIN CERTIFICATE-----
+    MIIFFDCCA/ygAwIBAgITEQAAAvqZuzcHKOF3IQADAAAC+jANBgkqhkiG9w0BAQsF
+    ADBtMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxGjAYBgoJkiaJk/IsZAEZFgpiaS1j
+    ZW50cmFsMRIwEAYKCZImiZPyLGQBGRYCaG4xJDAiBgNVBAMTG0JhbmNvIGRlbCBQ
+    YWlzIFNBIDI1U3ViMDFDQTAeFw0yNjA0MjIxNjQ0MzNaFw0zMTA0MjIxNjU0MzNa
+    MIGbMQswCQYDVQQGEwJITjEPMA0GA1UECBMGQ29ydGVzMRcwFQYDVQQHEw5TYW4g
+    UGVkcm8gU3VsYTEbMBkGA1UEChMSQmFuY28gZGVsIFBhaXMgUy5BMR8wHQYDVQQL
+    ExZEaXZpc2lvbiBkZSBUZWNub2xvZ2lhMSQwIgYDVQQDExt3c2JwdGFyamV0YXNu
+    cHB1LmJhbnBhaXMuaG4wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDK
+    HiEgLcb6rgieC9/ApeNkymQyE/+m7xjQbHolKic+nlO/2S07vX7Lz8Cbu5kyKk+I
+    zmo1+q6/KjZTWHmZEfRVR1qtXqn1D3zyd5VKNSxjHfi3pFCbWfRhWqpvmUsizLNn
+    c+akHS5yt4Va1OMJBchBozCuDqugiajZtXF0P+GYOR0E/wO/l24AWflU9AQjbLUF
+    lXAg3QN3/H/rCB0aOOYpszRA2Yk6juHGEVzR9LVaigy6ix1q7sW2zjJ0ndiuMy6c
+    JMIXNhAgCqqiNLlScRT0iV3is2UZWO1+ro8tbjZNipH1Hg5k4nURYUB31iDjtElk
+    0hh1r2OI4AH4ooolOQgnAgMBAAGjggF8MIIBeDAOBgNVHQ8BAf8EBAMCBaAwHQYD
+    VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBSB0fbHYiNPG7Pm
+    QivMqScUcx0ssjAfBgNVHSMEGDAWgBR8ySwOAQ2B/mYfSzJ+MRD0QNuhmjBiBgNV
+    HR8EWzBZMFegVaBThlFodHRwOi8vdjFwa2kuaG4uYmktY2VudHJhbC5sb2NhbC9z
+    dWJjYS9CYW5jbyUyMGRlbCUyMFBhaXMlMjBTQSUyMDI1U3ViMDFDQSgyKS5jcmww
+    bQYIKwYBBQUHAQEEYTBfMF0GCCsGAQUFBzAChlFodHRwOi8vdjFwa2kuaG4uYmkt
+    Y2VudHJhbC5sb2NhbC9zdWJjYS9CYW5jbyUyMGRlbCUyMFBhaXMlMjBTQSUyMDI1
+    U3ViMDFDQSgzKS5jcnQwDAYDVR0TAQH/BAIwADAmBgNVHREEHzAdght3c2JwdGFy
+    amV0YXNucHB1LmJhbnBhaXMuaG4wDQYJKoZIhvcNAQELBQADggEBABSVv2/uCeMP
+    lqwKPKm3NeVGLPJjsrLAZTsqDsMOIGrQ92wxLVk9UZXm0ld7WIwdtBR5sUq6QTg5
+    mzeczakVWe2/VlQCPuoba2g6hXlMtihyq9FVmLR0vrlXRQIX+7ZVpUum0saf7q/w
+    EqRPv9rgirGk9OC8L10pG5fyk9H+ZeySKFbYGCCkkMjoTbHMc/Flhd8thURZmadi
+    sbDsPRIa1BXnu+Quta8HgbHVR7Rs1nCm+H+ZrQe4aHBp+30Dq4unt/Ea6yAR0XiZ
+    6gY5/OmZqW8rKS8eR6ec76LWAt16crnnmLYHn/1NFsBMyO06K5uJyMirIHVcMJd3
+    tOnXYaCGgLw=
+    -----END CERTIFICATE-----
+
+
+
+
+
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: configmap-certificates
+data:
+  CUSTOM_CERTS_DIR: "/app/certificates"
+
+
+
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: api-token-notificav1
+  namespace: pu-procesadortc-bp
+  labels:
+    app: api-token-notificav1
+    app.kubernetes.io/part-of: Tokenization
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-token-notificav1
+  template:
+    metadata:
+      labels:
+        app: api-token-notificav1
+        deployment: api-token-notificav1
+    spec:
+      hostAliases:
+        - ip: 10.100.84.21
+          hostnames:
+            - pci-cl1thbe02pu
+        - ip: 10.100.203.52
+          hostnames:
+            - pu-mailservbp
+      containers:
+        - name: api-token-notificav1
+          image: image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-token-notifica:20260520        
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits: 
+              cpu: "300m"
+              memory: "256Mi"
+          env:
+            - name: CONNECTIONSTRINGS__DEFAULTCONNECTION
+              valueFrom:
+                secretKeyRef:
+                  name: tokenization-notify-secrets
+                  key: CONNECTIONSTRINGS__DEFAULTCONNECTION
+          envFrom:
+            - configMapRef:
+                name: configmap-api-token-notifica
+            - configMapRef:
+                name: configmap-certificates
+          volumeMounts:
+            - name: certificates-volume
+              readOnly: true
+              mountPath: /app/certificates
+      volumes:
+        - name: certificates-volume
+          secret:
+            secretName: certificates-secret
+            defaultMode: 420
+      restartPolicy: Always
+
+
+
+
+Explicame snecillo de como es el flujo
