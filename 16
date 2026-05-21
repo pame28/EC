@@ -1,39 +1,12 @@
-kind: Secret
-apiVersion: v1
-metadata:
-  name: certificates-secret
-  namespace: pu-procesadortc-bp
-type: Opaque
-stringData:
-  wsbptarjetas: |
-    -----BEGIN CERTIFICATE-----
-    MIIFFDCCA/ygAwIBAgITEQAAAvqZuzcHKOF3IQADAAAC+jANBgkqhkiG9w0BAQsF
-    ADBtMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxGjAYBgoJkiaJk/IsZAEZFgpiaS1j
-    ZW50cmFsMRIwEAYKCZImiZPyLGQBGRYCaG4xJDAiBgNVBAMTG0JhbmNvIGRlbCBQ
-    YWlzIFNBIDI1U3ViMDFDQTAeFw0yNjA0MjIxNjQ0MzNaFw0zMTA0MjIxNjU0MzNa
-    MIGbMQswCQYDVQQGEwJITjEPMA0GA1UECBMGQ29ydGVzMRcwFQYDVQQHEw5TYW4g
-    UGVkcm8gU3VsYTEbMBkGA1UEChMSQmFuY28gZGVsIFBhaXMgUy5BMR8wHQYDVQQL
-    ExZEaXZpc2lvbiBkZSBUZWNub2xvZ2lhMSQwIgYDVQQDExt3c2JwdGFyamV0YXNu
-    cHB1LmJhbnBhaXMuaG4wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDK
-    HiEgLcb6rgieC9/ApeNkymQyE/+m7xjQbHolKic+nlO/2S07vX7Lz8Cbu5kyKk+I
-    zmo1+q6/KjZTWHmZEfRVR1qtXqn1D3zyd5VKNSxjHfi3pFCbWfRhWqpvmUsizLNn
-    c+akHS5yt4Va1OMJBchBozCuDqugiajZtXF0P+GYOR0E/wO/l24AWflU9AQjbLUF
-    lXAg3QN3/H/rCB0aOOYpszRA2Yk6juHGEVzR9LVaigy6ix1q7sW2zjJ0ndiuMy6c
-    JMIXNhAgCqqiNLlScRT0iV3is2UZWO1+ro8tbjZNipH1Hg5k4nURYUB31iDjtElk
-    0hh1r2OI4AH4ooolOQgnAgMBAAGjggF8MIIBeDAOBgNVHQ8BAf8EBAMCBaAwHQYD
-    VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBSB0fbHYiNPG7Pm
-    QivMqScUcx0ssjAfBgNVHSMEGDAWgBR8ySwOAQ2B/mYfSzJ+MRD0QNuhmjBiBgNV
-    HR8EWzBZMFegVaBThlFodHRwOi8vdjFwa2kuaG4uYmktY2VudHJhbC5sb2NhbC9z
-    dWJjYS9CYW5jbyUyMGRlbCUyMFBhaXMlMjBTQSUyMDI1U3ViMDFDQSgyKS5jcmww
-    bQYIKwYBBQUHAQEEYTBfMF0GCCsGAQUFBzAChlFodHRwOi8vdjFwa2kuaG4uYmkt
-    Y2VudHJhbC5sb2NhbC9zdWJjYS9CYW5jbyUyMGRlbCUyMFBhaXMlMjBTQSUyMDI1
-    U3ViMDFDQSgzKS5jcnQwDAYDVR0TAQH/BAIwADAmBgNVHREEHzAdght3c2JwdGFy
-    amV0YXNucHB1LmJhbnBhaXMuaG4wDQYJKoZIhvcNAQELBQADggEBABSVv2/uCeMP
-    lqwKPKm3NeVGLPJjsrLAZTsqDsMOIGrQ92wxLVk9UZXm0ld7WIwdtBR5sUq6QTg5
-    mzeczakVWe2/VlQCPuoba2g6hXlMtihyq9FVmLR0vrlXRQIX+7ZVpUum0saf7q/w
-    EqRPv9rgirGk9OC8L10pG5fyk9H+ZeySKFbYGCCkkMjoTbHMc/Flhd8thURZmadi
-    sbDsPRIa1BXnu+Quta8HgbHVR7Rs1nCm+H+ZrQe4aHBp+30Dq4unt/Ea6yAR0XiZ
-    6gY5/OmZqW8rKS8eR6ec76LWAt16crnnmLYHn/1NFsBMyO06K5uJyMirIHVcMJd3
-    tOnXYaCGgLw=
-    -----END CERTIFICATE-----
-    
+$ ls -la /app/certificates
+total 0
+drwxrwsrwt. 3 root 1000870000 100 May 21 22:38 .
+drwxr-xr-x. 1 root root        26 May 21 22:37 ..
+drwxr-sr-x. 2 root 1000870000  60 May 21 22:38 ..2026_05_21_22_38_44.2012211624
+lrwxrwxrwx. 1 root 1000870000  32 May 21 22:38 ..data -> ..2026_05_21_22_38_44.2012211624
+lrwxrwxrwx. 1 root 1000870000  19 May 21 22:38 wsbptarjetas -> ..data/wsbptarjetas
+$ echo $CUSTOM_CERTS_DIR
+/app/certificates
+$ ^C
+$ 
+
