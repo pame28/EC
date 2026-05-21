@@ -1,12 +1,127 @@
-$ ls -la /app/certificates
-total 0
-drwxrwsrwt. 3 root 1000870000 100 May 21 22:38 .
-drwxr-xr-x. 1 root root        26 May 21 22:37 ..
-drwxr-sr-x. 2 root 1000870000  60 May 21 22:38 ..2026_05_21_22_38_44.2012211624
-lrwxrwxrwx. 1 root 1000870000  32 May 21 22:38 ..data -> ..2026_05_21_22_38_44.2012211624
-lrwxrwxrwx. 1 root 1000870000  19 May 21 22:38 wsbptarjetas -> ..data/wsbptarjetas
-$ echo $CUSTOM_CERTS_DIR
-/app/certificates
-$ ^C
-$ 
+[Certificados] Error al cargar wsbptarjetas.crt: The X509 certificate could not be added to the store.
+[Certificados] 1 certificado(s) procesado(s) desde /app/certificates
+21-05-2026 23:13:37.044 [1] [Information] [] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
+21-05-2026 23:13:37.078 [1] [Information] [] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
+21-05-2026 23:13:37.079 [1] [Information] [] Microsoft.Hosting.Lifetime - Hosting environment: Production
+21-05-2026 23:13:37.079 [1] [Information] [] Microsoft.Hosting.Lifetime - Content root path: /app
 
+
+
+
+using api_abandoned_token.Infraestructure.Data;
+using api_abandoned_token.Repository;
+using api_abandoned_token.Repository.Interface;
+using api_abandoned_token.Service;
+using api_abandoned_token.Service.Interface;
+using api_abandoned_token.Utils;
+using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using System.Security.Cryptography.X509Certificates;
+
+// Cargar certificados personalizados antes de iniciar la app
+LoadCustomCertificates();
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+// DI SERVICIOS INTERNOS
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddSingleton<JobDBHelper>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
+builder.Services.AddScoped<ITokenRequestorRepository, TokenRequestorRepository>();
+builder.Services.AddScoped<IAbandonedTokenRepository, AbandonedTokenRepository>();
+builder.Services.AddScoped<IJobRespository, JobRespository>();
+
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<IParametrosService, ParametrosService>();
+builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
+builder.Services.AddScoped<ITokenRequestorService, TokenRequestorService>();
+builder.Services.AddScoped<IAbandonedTokenService, AbandonedTokenService>();
+builder.Services.AddScoped<IJobService, JobService>();
+
+builder.Services.AddScoped<MessageResponseFn>();
+
+// Configuración de Serilog
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// Opciones del CorrelationId 
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+builder.Services.AddControllers(); 
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseCorrelationId();
+app.MapControllers();
+
+app.Run();
+
+
+// Método para cargar certificados personalizados desde un directorio configurable
+static void LoadCustomCertificates()
+{
+    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR") ?? "/app/certificates";
+
+    if (!Directory.Exists(certDir))
+    {
+        Console.WriteLine($"[Certificados] Directorio no encontrado: {certDir}. Saltando carga.");
+        return;
+    }
+
+    var certFiles = Directory.GetFiles(certDir, "*.crt");
+
+    if (certFiles.Length == 0)
+    {
+        Console.WriteLine($"[Certificados] No se encontraron archivos .crt en {certDir}");
+        return;
+    }
+
+    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+    store.Open(OpenFlags.ReadWrite);
+
+    foreach (var certFile in certFiles)
+    {
+        try
+        {
+            var certificate = new X509Certificate2(certFile);
+            store.Add(certificate);
+            Console.WriteLine($"[Certificados] Cargado: {Path.GetFileName(certFile)} | Subject: {certificate.Subject} | Expira: {certificate.NotAfter:yyyy-MM-dd}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Certificados] Error al cargar {Path.GetFileName(certFile)}: {ex.Message}");
+        }
+    }
+
+    store.Close();
+    Console.WriteLine($"[Certificados] {certFiles.Length} certificado(s) procesado(s) desde {certDir}");
+}
