@@ -1,127 +1,80 @@
-[Certificados] Error al cargar wsbptarjetas.crt: The X509 certificate could not be added to the store.
-[Certificados] 1 certificado(s) procesado(s) desde /app/certificates
-21-05-2026 23:13:37.044 [1] [Information] [] Microsoft.Hosting.Lifetime - Now listening on: http://[::]:8080
-21-05-2026 23:13:37.078 [1] [Information] [] Microsoft.Hosting.Lifetime - Application started. Press Ctrl+C to shut down.
-21-05-2026 23:13:37.079 [1] [Information] [] Microsoft.Hosting.Lifetime - Hosting environment: Production
-21-05-2026 23:13:37.079 [1] [Information] [] Microsoft.Hosting.Lifetime - Content root path: /app
+Log streaming...
 
+Container
+C
+api-abandoned-tokenv1
 
+Current log
+Search
 
+Show full log
 
-using api_abandoned_token.Infraestructure.Data;
-using api_abandoned_token.Repository;
-using api_abandoned_token.Repository.Interface;
-using api_abandoned_token.Service;
-using api_abandoned_token.Service.Interface;
-using api_abandoned_token.Utils;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
-using System.Security.Cryptography.X509Certificates;
-
-// Cargar certificados personalizados antes de iniciar la app
-LoadCustomCertificates();
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.SuppressModelStateInvalidFilter = true;
-});
-
-// DI SERVICIOS INTERNOS
-builder.Services.AddScoped<DBHelper>();
-builder.Services.AddSingleton<JobDBHelper>();
-builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
-builder.Services.AddScoped<ITokenRequestorRepository, TokenRequestorRepository>();
-builder.Services.AddScoped<IAbandonedTokenRepository, AbandonedTokenRepository>();
-builder.Services.AddScoped<IJobRespository, JobRespository>();
-
-builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
-builder.Services.AddScoped<IParametrosService, ParametrosService>();
-builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
-builder.Services.AddScoped<ITokenRequestorService, TokenRequestorService>();
-builder.Services.AddScoped<IAbandonedTokenService, AbandonedTokenService>();
-builder.Services.AddScoped<IJobService, JobService>();
-
-builder.Services.AddScoped<MessageResponseFn>();
-
-// Configuración de Serilog
-builder.Host.UseSerilog((context, services, config) =>
-    config.ReadFrom.Configuration(context.Configuration)
-          .ReadFrom.Services(services));
-
-// Opciones del CorrelationId 
-builder.Services.Configure<CorrelationIdOptions>(
-    builder.Configuration.GetSection("CorrelationIdOptions"));
-
-builder.Services.AddControllers(); 
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
-        c.RoutePrefix = "swagger";
-    });
-}
-
-app.UseHttpsRedirection();
-
-app.UseCorrelationId();
-app.MapControllers();
-
-app.Run();
-
-
-// Método para cargar certificados personalizados desde un directorio configurable
-static void LoadCustomCertificates()
-{
-    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR") ?? "/app/certificates";
-
-    if (!Directory.Exists(certDir))
-    {
-        Console.WriteLine($"[Certificados] Directorio no encontrado: {certDir}. Saltando carga.");
-        return;
-    }
-
-    var certFiles = Directory.GetFiles(certDir, "*.crt");
-
-    if (certFiles.Length == 0)
-    {
-        Console.WriteLine($"[Certificados] No se encontraron archivos .crt en {certDir}");
-        return;
-    }
-
-    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
-    store.Open(OpenFlags.ReadWrite);
-
-    foreach (var certFile in certFiles)
-    {
-        try
-        {
-            var certificate = new X509Certificate2(certFile);
-            store.Add(certificate);
-            Console.WriteLine($"[Certificados] Cargado: {Path.GetFileName(certFile)} | Subject: {certificate.Subject} | Expira: {certificate.NotAfter:yyyy-MM-dd}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Certificados] Error al cargar {Path.GetFileName(certFile)}: {ex.Message}");
-        }
-    }
-
-    store.Close();
-    Console.WriteLine($"[Certificados] {certFiles.Length} certificado(s) procesado(s) desde {certDir}");
-}
+Wrap lines
+Raw
+Download
+99 lines
+at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.SendRequestAsync(Message message, TimeoutHelper timeoutHelper)
+--- End of inner exception stack trace ---
+at System.Runtime.AsyncResult.End[TAsyncResult](IAsyncResult result)
+at System.ServiceModel.Channels.ServiceChannel.SendAsyncResult.End(SendAsyncResult result)
+at System.ServiceModel.Channels.ServiceChannel.EndCall(String action, Object[] outs, IAsyncResult result)
+at System.ServiceModel.Channels.ServiceChannelProxy.TaskCreator.<>c__DisplayClass1_0.<CreateGenericTask>b__0(IAsyncResult asyncResult)
+--- End of stack trace from previous location ---
+at api_abandoned_token.Service.BPTarjetasService.EquivalenteAsync(String cardNumber) in /src/Service/BPTarjetasService.cs:line 39
+22-05-2026 11:07:16.946 [12] [Warning] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Service.AbandonedTokenService - No existe el equivalente para la tarjeta 4040418129610604 del lote 29bb72de-947d-4ad8-8f46-dbc7c7a68fc6
+22-05-2026 11:07:16.952 [12] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
+22-05-2026 11:07:16.969 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=JobNameAbandoned, Valor=[CORETC]-[ENVIO]-[ABANDONED TOKENS]
+22-05-2026 11:07:16.970 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Service.ValidationServiceImp - Parametro encontrado para la clave JobNameAbandoned: [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+22-05-2026 11:07:17.030 [6] [Error] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Repository.JobRespository - Error de DB al ejecutar el job [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user ''.
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 20
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 39
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 21
+ClientConnectionId:2cb12dd1-b91a-44e4-b4b7-0e720964cb61
+Error Number:18456,State:1,Class:14
+22-05-2026 11:07:17.040 [6] [Error] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController - Error crítico no controlado en el controlador ABANDONED_TOKEN
+Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user ''.
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 20
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 39
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 21
+at api_abandoned_token.Service.JobService.ExecuteJobByJobNameAsync(String jobName) in /src/Service/JobService.cs:line 19
+at api_abandoned_token.Service.AbandonedTokenService.RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto) in /src/Service/AbandonedTokenService.cs:line 54
+at api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post(AbandonedTokenRequestDto request) in /src/Controllers/Notifications/ABANDONED_TOKENSController.cs:line 37
+ClientConnectionId:2cb12dd1-b91a-44e4-b4b7-0e720964cb61
+Error Number:18456,State:1,Class:14
+22-05-2026 11:07:17.055 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
+22-05-2026 11:07:17.096 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token) in 1803.6437ms
+22-05-2026 11:07:17.097 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token)'
+22-05-2026 11:07:17.100 [6] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-abandoned-tokenv1:8080/api/ABANDONED_TOKENS - 500 null application/problem+json; charset=utf-8 1934.9008ms
