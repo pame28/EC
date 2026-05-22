@@ -1,5 +1,80 @@
-El nombre del tipo o del espacio de nombres 'X509Certificate2' no se encontró (¿falta una directiva using o una referencia de ensamblado?)
-El nombre del tipo o del espacio de nombres 'X509Certificate2' no se encontró (¿falta una directiva using o una referencia de ensamblado?)
-El nombre 'client' no existe en el contexto actual
-El nombre 'client' no existe en el contexto actual
-El nombre 'X509CertificateValidationMode' no existe en el contexto actual
+Log streaming...
+
+Container
+C
+api-abandoned-tokenv1
+
+Current log
+Search
+
+Show full log
+
+Wrap lines
+Raw
+Download
+102 lines
+at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.SendRequestAsync(Message message, TimeoutHelper timeoutHelper)
+--- End of inner exception stack trace ---
+at System.Runtime.AsyncResult.End[TAsyncResult](IAsyncResult result)
+at System.ServiceModel.Channels.ServiceChannel.SendAsyncResult.End(SendAsyncResult result)
+at System.ServiceModel.Channels.ServiceChannel.EndCall(String action, Object[] outs, IAsyncResult result)
+at System.ServiceModel.Channels.ServiceChannelProxy.TaskCreator.<>c__DisplayClass1_0.<CreateGenericTask>b__0(IAsyncResult asyncResult)
+--- End of stack trace from previous location ---
+at api_abandoned_token.Service.BPTarjetasService.EquivalenteAsync(String cardNumber) in /src/Service/BPTarjetasService.cs:line 52
+22-05-2026 15:20:54.246 [6] [Warning] [e537ee74-d06e-4244-a326-81f0857d1b74] api_abandoned_token.Service.AbandonedTokenService - No existe el equivalente para la tarjeta 4040418129610604 del lote 2507fe4f-93e2-48e5-a4a5-b455878fd087
+22-05-2026 15:20:54.253 [6] [Information] [e537ee74-d06e-4244-a326-81f0857d1b74] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
+22-05-2026 15:20:54.268 [10] [Information] [e537ee74-d06e-4244-a326-81f0857d1b74] api_abandoned_token.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=JobNameAbandoned, Valor=[CORETC]-[ENVIO]-[ABANDONED TOKENS]
+22-05-2026 15:20:54.272 [10] [Information] [e537ee74-d06e-4244-a326-81f0857d1b74] api_abandoned_token.Service.ValidationServiceImp - Parametro encontrado para la clave JobNameAbandoned: [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+22-05-2026 15:20:54.343 [10] [Error] [e537ee74-d06e-4244-a326-81f0857d1b74] api_abandoned_token.Repository.JobRespository - Error de DB al ejecutar el job [CORETC]-[ENVIO]-[ABANDONED TOKENS]
+Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user ''.
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 20
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 39
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 21
+ClientConnectionId:44d865fe-a306-4535-89b9-b9095785964c
+Error Number:18456,State:1,Class:14
+22-05-2026 15:20:54.351 [10] [Error] [e537ee74-d06e-4244-a326-81f0857d1b74] api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController - Error crítico no controlado en el controlador ABANDONED_TOKEN
+Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user ''.
+at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
+at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
+at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
+at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
+at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
+at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
+--- End of stack trace from previous location ---
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 20
+at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 39
+at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 21
+at api_abandoned_token.Service.JobService.ExecuteJobByJobNameAsync(String jobName) in /src/Service/JobService.cs:line 19
+at api_abandoned_token.Service.AbandonedTokenService.RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto) in /src/Service/AbandonedTokenService.cs:line 54
+at api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post(AbandonedTokenRequestDto request) in /src/Controllers/Notifications/ABANDONED_TOKENSController.cs:line 37
+ClientConnectionId:44d865fe-a306-4535-89b9-b9095785964c
+Error Number:18456,State:1,Class:14
+22-05-2026 15:20:54.366 [10] [Information] [e537ee74-d06e-4244-a326-81f0857d1b74] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
+22-05-2026 15:20:54.407 [10] [Information] [e537ee74-d06e-4244-a326-81f0857d1b74] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token) in 1725.2839ms
+22-05-2026 15:20:54.408 [10] [Information] [e537ee74-d06e-4244-a326-81f0857d1b74] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token)'
+22-05-2026 15:20:54.414 [10] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-abandoned-tokenv1:8080/api/ABANDONED_TOKENS - 500 null application/problem+json; charset=utf-8 1834.9473ms
