@@ -1,114 +1,90 @@
-using api_abandoned_token.Infraestructure.Data;
-using api_abandoned_token.Repository;
-using api_abandoned_token.Repository.Interface;
-using api_abandoned_token.Service;
+using api_abandoned_token.DTOs.Response;
 using api_abandoned_token.Service.Interface;
 using api_abandoned_token.Utils;
-using Microsoft.AspNetCore.Mvc;
-using Serilog;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
+using System.ServiceModel;
+using wsBPTarjetas;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.Configure<ApiBehaviorOptions>(options =>
+namespace api_abandoned_token.Service
 {
-    options.SuppressModelStateInvalidFilter = true;
-});
-
-// DI SERVICIOS INTERNOS
-builder.Services.AddScoped<DBHelper>();
-builder.Services.AddSingleton<JobDBHelper>();
-builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
-builder.Services.AddScoped<ITokenRequestorRepository, TokenRequestorRepository>();
-builder.Services.AddScoped<IAbandonedTokenRepository, AbandonedTokenRepository>();
-builder.Services.AddScoped<IJobRespository, JobRespository>();
-
-builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
-builder.Services.AddScoped<IParametrosService, ParametrosService>();
-builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
-builder.Services.AddScoped<ITokenRequestorService, TokenRequestorService>();
-builder.Services.AddScoped<IAbandonedTokenService, AbandonedTokenService>();
-builder.Services.AddScoped<IJobService, JobService>();
-
-builder.Services.AddScoped<MessageResponseFn>();
-
-// HttpClient con validación de certificados corporativos desde el volumen
-builder.Services.AddHttpClient("Seguras")
-    .ConfigurePrimaryHttpMessageHandler(() =>
+    public class BPTarjetasService : IBPTarjetasService
     {
-        var handler = new SocketsHttpHandler();
-
-        handler.SslOptions = new SslClientAuthenticationOptions
+        private readonly List<X509Certificate2> _serverCerts;
+        
+        private readonly string _endpointUrl;
+        private readonly TCGeneralesSoapClient _tCGeneralesSoapClient;
+        private readonly ILogger<BPTarjetasService> _logger;
+        public BPTarjetasService(IConfiguration configuration, MessageResponseFn messageResponseFn, ILogger<BPTarjetasService> logger, List<X509Certificate2> serverCerts)
         {
-            RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            var binding = new BasicHttpBinding
             {
-                try
+                Security = new BasicHttpSecurity
                 {
-                    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR")
-                                  ?? "/app/certificates";
+                    Mode = BasicHttpSecurityMode.Transport
+                },
+                MaxReceivedMessageSize = 65536
+            };
 
-                    var certFiles = Directory.EnumerateFiles(certDir)
-                        .Where(f => f.EndsWith(".crt", StringComparison.OrdinalIgnoreCase)
-                                 || f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase))
-                        .ToList();
+            _endpointUrl = configuration["ServiceEndpoints:WsBPTarjetasTcGenerales"] ?? throw new InvalidOperationException("Endpoint URL no configurado");
 
-                    if (certFiles.Count == 0)
+            var endpointAddress = new EndpointAddress(_endpointUrl);
+            _tCGeneralesSoapClient = new TCGeneralesSoapClient(binding, endpointAddress);
+            _logger = logger;
+             _serverCerts = serverCerts;
+        }
+
+        public async Task<ResponseServicesDto<string>> EquivalenteAsync(string cardNumber)
+        {
+            string truncatedCardNumber = cardNumber.Substring(0, 6) + "XXXXXX" + cardNumber.Substring(12, 4);
+            try
+            {
+                _logger.LogInformation("Iniciando solicitud del equivalente de tarjeta {truncatedCardNumber}", truncatedCardNumber);
+            
+             if (_serverCerts.Any())
                     {
-                        Console.WriteLine($"[Certificados] No se encontró ningún certificado en {certDir}");
-                        return false;
+                        client.ClientCredentials.ServiceCertificate.DefaultCertificate = _serverCerts.First();
+                        client.ClientCredentials.ServiceCertificate.Authentication.CertificateValidationMode =
+                            X509CertificateValidationMode.PeerOrChainTrust;
                     }
 
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
-                    foreach (var certFile in certFiles)
-                        chain.ChainPolicy.CustomTrustStore.Add(new X509Certificate2(certFile));
+                long equivalente = await _tCGeneralesSoapClient.Equivalente_TarjetaAsync(cardNumber);
 
-                    return chain.Build(new X509Certificate2(cert));
-                }
-                catch (Exception ex)
+                if (equivalente <= 0)
                 {
-                    Console.WriteLine($"[Certificados] Error en validación SSL: {ex.Message}");
-                    return false;
+                    _logger.LogError("No se encontró Equivalente de tarjeta {truncatedCardNumber}", truncatedCardNumber);
+                    return new ResponseServicesDto<string>
+                    {
+                        Code = Constantes.STATUS_NOT_FOUND,
+                        Value = "12"
+                    };
                 }
+                _logger.LogInformation("Equivalente de tarjeta {truncatedCardNumber} es {equivalente}", truncatedCardNumber, equivalente);
+
+                return new ResponseServicesDto<string>
+                {
+                    Code = Constantes.STATUS_OK,
+                    Value = equivalente.ToString()
+                };
             }
-        };
-
-        return handler;
-    });
-
-// Configuración de Serilog
-builder.Host.UseSerilog((context, services, config) =>
-    config.ReadFrom.Configuration(context.Configuration)
-          .ReadFrom.Services(services));
-
-// Opciones del CorrelationId
-builder.Services.Configure<CorrelationIdOptions>(
-    builder.Configuration.GetSection("CorrelationIdOptions"));
-
-builder.Services.AddControllers();
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
-        c.RoutePrefix = "swagger";
-    });
+            catch (CommunicationException ex)
+            {
+                _logger.LogError(ex, "Error de comunicación con servicio wsBPTarjetas para tarjeta {truncatedCardNumber}", truncatedCardNumber);
+                return new ResponseServicesDto<string>
+                {
+                    Code = Constantes.STATUS_SERVICE_UNAVAILABLE,
+                    Value = "13"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al consumir servicio wsBPTarjetas");
+                throw;
+            }
+        }
+    }
 }
 
-app.UseHttpsRedirection();
-app.UseCorrelationId();
-app.MapControllers();
 
-app.Run();
+
+
+y aqui como iria?
