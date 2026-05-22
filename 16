@@ -1,80 +1,259 @@
-Log streaming...
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: api-token-notificav1
+  namespace: pu-procesadortc-bp
+  labels:
+    app: api-token-notificav1
+    app.kubernetes.io/part-of: Tokenization
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-token-notificav1
+  template:
+    metadata:
+      labels:
+        app: api-token-notificav1
+        deployment: api-token-notificav1
+    spec:
+      hostAliases:
+        - ip: 10.100.84.21
+          hostnames:
+            - pci-cl1thbe02pu
+        - ip: 10.100.203.52
+          hostnames:
+            - pu-mailservbp
+      containers:
+        - name: api-token-notificav1
+          image: image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-token-notifica:20260520        
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits: 
+              cpu: "300m"
+              memory: "256Mi"
+          env:
+            - name: CONNECTIONSTRINGS__DEFAULTCONNECTION
+              valueFrom:
+                secretKeyRef:
+                  name: tokenization-notify-secrets
+                  key: CONNECTIONSTRINGS__DEFAULTCONNECTION
+            - name: SERVICEENDPOINTS__WSBPTARJETASTCGENERALES
+              valueFrom:
+                secretKeyRef:
+                  name: tokenization-notify-secrets
+                  key: SERVICEENDPOINTS__WSBPTARJETASTCGENERALES
+            - name: SERVICEENDPOINTS__WSBIMOVILMENSAJES
+              valueFrom:
+                secretKeyRef:
+                  name: tokenization-notify-secrets
+                  key: SERVICEENDPOINTS__WSBIMOVILMENSAJES
+            - name: TZ
+              value: America/Tegucigalpa
+          envFrom:
+            - configMapRef:
+                name: configmap-api-token-notifica
+            - configMapRef:
+                name: configmap-certificates
+          volumeMounts:
+            - name: certificates-volume
+              readOnly: true
+              mountPath: /app/certificates
+      volumes:
+        - name: certificates-volume
+          secret:
+            secretName: certificates-secret
+            defaultMode: 420
+      restartPolicy: Always
 
-Container
-C
-api-abandoned-tokenv1
 
-Current log
-Search
 
-Show full log
 
-Wrap lines
-Raw
-Download
-99 lines
-at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.SendRequestAsync(Message message, TimeoutHelper timeoutHelper)
---- End of inner exception stack trace ---
-at System.Runtime.AsyncResult.End[TAsyncResult](IAsyncResult result)
-at System.ServiceModel.Channels.ServiceChannel.SendAsyncResult.End(SendAsyncResult result)
-at System.ServiceModel.Channels.ServiceChannel.EndCall(String action, Object[] outs, IAsyncResult result)
-at System.ServiceModel.Channels.ServiceChannelProxy.TaskCreator.<>c__DisplayClass1_0.<CreateGenericTask>b__0(IAsyncResult asyncResult)
---- End of stack trace from previous location ---
-at api_abandoned_token.Service.BPTarjetasService.EquivalenteAsync(String cardNumber) in /src/Service/BPTarjetasService.cs:line 39
-22-05-2026 11:07:16.946 [12] [Warning] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Service.AbandonedTokenService - No existe el equivalente para la tarjeta 4040418129610604 del lote 29bb72de-947d-4ad8-8f46-dbc7c7a68fc6
-22-05-2026 11:07:16.952 [12] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Infraestructure.Data.DBHelper - StoredProcedure usp_GetParametroByClave ejecutado correctamente con ExecuteReaderAsync()
-22-05-2026 11:07:16.969 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Infraestructure.Data.DBHelper - Parámetro encontrado en DB: Clave=JobNameAbandoned, Valor=[CORETC]-[ENVIO]-[ABANDONED TOKENS]
-22-05-2026 11:07:16.970 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Service.ValidationServiceImp - Parametro encontrado para la clave JobNameAbandoned: [CORETC]-[ENVIO]-[ABANDONED TOKENS]
-22-05-2026 11:07:17.030 [6] [Error] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Repository.JobRespository - Error de DB al ejecutar el job [CORETC]-[ENVIO]-[ABANDONED TOKENS]
-Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user ''.
-at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
-at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
---- End of stack trace from previous location ---
-at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 20
-at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 39
-at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 21
-ClientConnectionId:2cb12dd1-b91a-44e4-b4b7-0e720964cb61
-Error Number:18456,State:1,Class:14
-22-05-2026 11:07:17.040 [6] [Error] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController - Error crítico no controlado en el controlador ABANDONED_TOKEN
-Microsoft.Data.SqlClient.SqlException (0x80131904): Login failed for user ''.
-at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
-at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, SqlCommand command, Boolean callerHasConnectionLock, Boolean asyncClose)
-at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
-at Microsoft.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.CompleteLogin(Boolean enlistOK)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.AttemptOneLogin(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, TimeoutTimer timeout, Boolean withFailover)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.LoginNoFailover(ServerInfo serverInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString connectionOptions, SqlCredential credential, TimeoutTimer timeout)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds.OpenLoginEnlist(TimeoutTimer timeout, SqlConnectionString connectionOptions, SqlCredential credential, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance)
-at Microsoft.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, Boolean applyTransientFaultHandling, String accessToken, IDbConnectionPool pool, Func`3 accessTokenCallback)
-at Microsoft.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionPoolGroupProviderInfo poolGroupProviderInfo, IDbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)
-at Microsoft.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(IDbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal& connection)
-at Microsoft.Data.SqlClient.ConnectionPool.WaitHandleDbConnectionPool.WaitForPendingOpen()
---- End of stack trace from previous location ---
-at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 20
-at api_abandoned_token.Infraestructure.Data.JobDBHelper.ExecuteScalarAsync(String storedProcedure, Dictionary`2 parameters) in /src/Infraestructure/Data/JobDBHelper.cs:line 39
-at api_abandoned_token.Repository.JobRespository.GetStatusJobExecuteAsync(String jobName) in /src/Repository/JobRespository.cs:line 21
-at api_abandoned_token.Service.JobService.ExecuteJobByJobNameAsync(String jobName) in /src/Service/JobService.cs:line 19
-at api_abandoned_token.Service.AbandonedTokenService.RegisterAbandonedTokensAsync(AbandonedTokenRequestDto abandonedTokenRequestDto) in /src/Service/AbandonedTokenService.cs:line 54
-at api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post(AbandonedTokenRequestDto request) in /src/Controllers/Notifications/ABANDONED_TOKENSController.cs:line 37
-ClientConnectionId:2cb12dd1-b91a-44e4-b4b7-0e720964cb61
-Error Number:18456,State:1,Class:14
-22-05-2026 11:07:17.055 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor - Executing ObjectResult, writing value of type 'Microsoft.AspNetCore.Mvc.ProblemDetails'.
-22-05-2026 11:07:17.096 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker - Executed action api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token) in 1803.6437ms
-22-05-2026 11:07:17.097 [6] [Information] [ed8a20af-265e-4bd6-8ef4-e7c83e088761] Microsoft.AspNetCore.Routing.EndpointMiddleware - Executed endpoint 'api_abandoned_token.Controllers.Notifications.ABANDONED_TOKENSController.Post (api_abandoned_token)'
-22-05-2026 11:07:17.100 [6] [Information] [] Microsoft.AspNetCore.Hosting.Diagnostics - Request finished HTTP/1.1 POST http://api-abandoned-tokenv1:8080/api/ABANDONED_TOKENS - 500 null application/problem+json; charset=utf-8 1934.9008ms
+
+
+
+
+
+kind: Secret
+apiVersion: v1
+metadata:
+  name: certificates-secret
+  namespace: pu-procesadortc-bp
+type: Opaque
+stringData:
+  wsbptarjetas.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIFFDCCA/ygAwIBAgITEQAAAvqZuzcHKOF3IQADAAAC+jANBgkqhkiG9w0BAQsF
+    ADBtMRUwEwYKCZImiZPyLGQBGRYFbG9jYWwxGjAYBgoJkiaJk/IsZAEZFgpiaS1j
+    ZW50cmFsMRIwEAYKCZImiZPyLGQBGRYCaG4xJDAiBgNVBAMTG0JhbmNvIGRlbCBQ
+    YWlzIFNBIDI1U3ViMDFDQTAeFw0yNjA0MjIxNjQ0MzNaFw0zMTA0MjIxNjU0MzNa
+    MIGbMQswCQYDVQQGEwJITjEPMA0GA1UECBMGQ29ydGVzMRcwFQYDVQQHEw5TYW4g
+    UGVkcm8gU3VsYTEbMBkGA1UEChMSQmFuY28gZGVsIFBhaXMgUy5BMR8wHQYDVQQL
+    ExZEaXZpc2lvbiBkZSBUZWNub2xvZ2lhMSQwIgYDVQQDExt3c2JwdGFyamV0YXNu
+    cHB1LmJhbnBhaXMuaG4wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDK
+    HiEgLcb6rgieC9/ApeNkymQyE/+m7xjQbHolKic+nlO/2S07vX7Lz8Cbu5kyKk+I
+    zmo1+q6/KjZTWHmZEfRVR1qtXqn1D3zyd5VKNSxjHfi3pFCbWfRhWqpvmUsizLNn
+    c+akHS5yt4Va1OMJBchBozCuDqugiajZtXF0P+GYOR0E/wO/l24AWflU9AQjbLUF
+    lXAg3QN3/H/rCB0aOOYpszRA2Yk6juHGEVzR9LVaigy6ix1q7sW2zjJ0ndiuMy6c
+    JMIXNhAgCqqiNLlScRT0iV3is2UZWO1+ro8tbjZNipH1Hg5k4nURYUB31iDjtElk
+    0hh1r2OI4AH4ooolOQgnAgMBAAGjggF8MIIBeDAOBgNVHQ8BAf8EBAMCBaAwHQYD
+    VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB0GA1UdDgQWBBSB0fbHYiNPG7Pm
+    QivMqScUcx0ssjAfBgNVHSMEGDAWgBR8ySwOAQ2B/mYfSzJ+MRD0QNuhmjBiBgNV
+    HR8EWzBZMFegVaBThlFodHRwOi8vdjFwa2kuaG4uYmktY2VudHJhbC5sb2NhbC9z
+    dWJjYS9CYW5jbyUyMGRlbCUyMFBhaXMlMjBTQSUyMDI1U3ViMDFDQSgyKS5jcmww
+    bQYIKwYBBQUHAQEEYTBfMF0GCCsGAQUFBzAChlFodHRwOi8vdjFwa2kuaG4uYmkt
+    Y2VudHJhbC5sb2NhbC9zdWJjYS9CYW5jbyUyMGRlbCUyMFBhaXMlMjBTQSUyMDI1
+    U3ViMDFDQSgzKS5jcnQwDAYDVR0TAQH/BAIwADAmBgNVHREEHzAdght3c2JwdGFy
+    amV0YXNucHB1LmJhbnBhaXMuaG4wDQYJKoZIhvcNAQELBQADggEBABSVv2/uCeMP
+    lqwKPKm3NeVGLPJjsrLAZTsqDsMOIGrQ92wxLVk9UZXm0ld7WIwdtBR5sUq6QTg5
+    mzeczakVWe2/VlQCPuoba2g6hXlMtihyq9FVmLR0vrlXRQIX+7ZVpUum0saf7q/w
+    EqRPv9rgirGk9OC8L10pG5fyk9H+ZeySKFbYGCCkkMjoTbHMc/Flhd8thURZmadi
+    sbDsPRIa1BXnu+Quta8HgbHVR7Rs1nCm+H+ZrQe4aHBp+30Dq4unt/Ea6yAR0XiZ
+    6gY5/OmZqW8rKS8eR6ec76LWAt16crnnmLYHn/1NFsBMyO06K5uJyMirIHVcMJd3
+    tOnXYaCGgLw=
+    -----END CERTIFICATE-----
+    
+
+
+
+
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: configmap-certificates
+data:
+  CUSTOM_CERTS_DIR: "/app/certificates"
+
+
+
+
+
+﻿using api_abandoned_token.Infraestructure.Data;
+using api_abandoned_token.Repository;
+using api_abandoned_token.Repository.Interface;
+using api_abandoned_token.Service;
+using api_abandoned_token.Service.Interface;
+using api_abandoned_token.Utils;
+using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using System.Security.Cryptography.X509Certificates;
+
+// Cargar certificados personalizados antes de iniciar la app
+LoadCustomCertificates();
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
+// DI SERVICIOS INTERNOS
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddSingleton<JobDBHelper>();
+builder.Services.AddScoped<IParametrosRepository, ParametrosRepository>();
+builder.Services.AddScoped<ITokenRequestorRepository, TokenRequestorRepository>();
+builder.Services.AddScoped<IAbandonedTokenRepository, AbandonedTokenRepository>();
+builder.Services.AddScoped<IJobRespository, JobRespository>();
+
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+builder.Services.AddScoped<IParametrosService, ParametrosService>();
+builder.Services.AddScoped<IBPTarjetasService, BPTarjetasService>();
+builder.Services.AddScoped<ITokenRequestorService, TokenRequestorService>();
+builder.Services.AddScoped<IAbandonedTokenService, AbandonedTokenService>();
+builder.Services.AddScoped<IJobService, JobService>();
+
+builder.Services.AddScoped<MessageResponseFn>();
+
+// Configuración de Serilog
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// Opciones del CorrelationId 
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+builder.Services.AddControllers(); 
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "api_autentication v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseCorrelationId();
+app.MapControllers();
+
+app.Run();
+
+
+// Método para cargar certificados personalizados desde un directorio configurable
+static void LoadCustomCertificates()
+{
+    var certDir = Environment.GetEnvironmentVariable("CUSTOM_CERTS_DIR") ?? "/app/certificates";
+
+    if (!Directory.Exists(certDir))
+    {
+        Console.WriteLine($"[Certificados] Directorio no encontrado: {certDir}. Saltando carga.");
+        return;
+    }
+
+    //var certFiles = Directory.GetFiles(certDir, "*.crt");
+    var certFiles = Directory.EnumerateFiles(certDir)
+        .Where(f => f.EndsWith(".crt", StringComparison.OrdinalIgnoreCase)
+        || f.EndsWith(".cer", StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+
+    if (certFiles.Length == 0)
+    {
+        Console.WriteLine($"[Certificados] No se encontraron archivos .crt en {certDir}");
+        return;
+    }
+
+    using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+    store.Open(OpenFlags.ReadWrite);
+
+    foreach (var certFile in certFiles)
+    {
+        try
+        {
+            var certificate = new X509Certificate2(certFile);
+            store.Add(certificate);
+            Console.WriteLine($"[Certificados] Cargado: {Path.GetFileName(certFile)} | Subject: {certificate.Subject} | Expira: {certificate.NotAfter:yyyy-MM-dd}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Certificados] Error al cargar {Path.GetFileName(certFile)}: {ex.Message}");
+        }
+    }
+
+    store.Close();
+    Console.WriteLine($"[Certificados] {certFiles.Length} certificado(s) procesado(s) desde {certDir}");
+}
+
+
+
+
+
