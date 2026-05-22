@@ -1,3 +1,209 @@
-System.ServiceModel.Security.SecurityNegotiationException: Could not establish trust relationship for the SSL/TLS secure channel with authority 'wsbptarjetasnppu.banpais.hn'.
----> System.Net.Http.HttpRequestException: The SSL connection could not be established, see inner exception.
----> System.Security.Authentication.AuthenticationException: The remote certificate is invalid because of errors in the certificate chain: UntrustedRoot
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  For more information on how to configure your ASP.NET application, please visit
+  http://go.microsoft.com/fwlink/?LinkId=169433
+  -->
+<configuration>
+  <configSections>
+    <sectionGroup name="devExpress">
+      <section name="compression" type="DevExpress.Web.ASPxClasses.CompressionConfigurationSection, DevExpress.Web.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940cfcde86f32efd" requirePermission="false" />
+      <section name="themes" type="DevExpress.Web.ASPxClasses.ThemesConfigurationSection, DevExpress.Web.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940cfcde86f32efd" requirePermission="false" />
+      <section name="errors" type="DevExpress.Web.ASPxClasses.ErrorsConfigurationSection, DevExpress.Web.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940cfcde86f32efd" requirePermission="false" />
+    </sectionGroup>
+    <sectionGroup name="applicationSettings" type="System.Configuration.ApplicationSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+      <section name="SistemaCobranzasBP.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false" />
+      <section name="SistemaCobranzasBP_PU.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false" />
+    </sectionGroup>
+  </configSections>
+  <connectionStrings>
+    <add name="ApplicationServices" connectionString="data source=.\SQLEXPRESS;Integrated Security=SSPI;AttachDBFilename=|DataDirectory|\aspnetdb.mdf;User Instance=true" providerName="System.Data.SqlClient" />
+    <add name="Mantenimientos" connectionString="Data Source=PU-APLICABE07;Initial Catalog=CobranzasBP;User ID=app_cobranzas;Password=app_cobranzas" />
+    <add name="SistemaCobranzasBP_PU.Properties.Settings.cnxAS400" connectionString="Provider=IBMDA400.DataSource.1;Data Source=ASPRB04;Persist Security Info=True;Password=CONSOLA_DC;User ID=CONSOLA_DC;" providerName="System.Data.OleDb" />
+    <add name="SistemaCobranzasBP_PU.Properties.Settings.cnxConCliente" connectionString="Data Source=PU-APLICABE07;Initial Catalog=ConsultaClientes;Persist Security Info=True;User ID=appConsultaClientes;Password=appConsultaClientes" providerName="System.Data.SqlClient" />
+    <add name="CobranzasBP_PUConnectionString" connectionString="Data Source=PU-APLICABE07;Initial Catalog=CobranzasBP;User ID=app_cobranzas;Password=app_cobranzas" providerName="System.Data.SqlClient" />
+    <add name="CobranzasBP_PUConnectionString2" connectionString="Data Source=PU-APLICABE07;Initial Catalog=CobranzasBP;User ID=app_cobranzas;Password=app_cobranzas" providerName="System.Data.SqlClient" />
+    <add name="SistemaCobranzasBP.Properties.Settings.cnxAS400" connectionString="Provider=IBMDA400.DataSource.1;Data Source=ASPRB04;Persist Security Info=True;Password=CONSOLA_DC;User ID=CONSOLA_DC;" providerName="System.Data.OleDb" />
+    <add name="SistemaCobranzasBP.Properties.Settings.cnxConCliente" connectionString="Data Source=PU-APLICABE07;Initial Catalog=ConsultaClientes;Persist Security Info=True;User ID=appConsultaClientes;Password=appConsultaClientes" providerName="System.Data.SqlClient" />
+  </connectionStrings>
+  <system.web>
+    <httpRuntime executionTimeout="300" maxRequestLength="31457280" />
+    <customErrors mode="Off" />
+    <httpHandlers>
+      <add path="Reserved.ReportViewerWebControl.axd" verb="*" type="Microsoft.Reporting.WebForms.HttpHandler, Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" validate="false" />
+    </httpHandlers>
+    <compilation targetFramework="4.0">
+      <assemblies>
+        <add assembly="DevExpress.Web.ASPxEditors.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="DevExpress.Web.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B77A5C561934E089" />
+        <add assembly="System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+        <add assembly="DevExpress.Data.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="DevExpress.Web.ASPxGridView.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="System.Speech, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31BF3856AD364E35" />
+        <add assembly="DevExpress.XtraCharts.v10.1.Web, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="DevExpress.XtraCharts.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="DevExpress.Charts.v10.1.Core, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="DevExpress.Utils.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="DevExpress.XtraEditors.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940CFCDE86F32EFD" />
+        <add assembly="Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+        <add assembly="Microsoft.ReportViewer.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+        <add assembly="Microsoft.Build.Framework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=B03F5F7F11D50A3A" />
+      </assemblies>
+      <buildProviders>
+        <add extension=".rdlc" type="Microsoft.Reporting.RdlBuildProvider, Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+      </buildProviders>
+    </compilation>
+    <authentication mode="Forms">
+      <forms loginUrl="~/Seguridad/Login.aspx" timeout="2880" />
+    </authentication>
+    <membership>
+      <providers>
+        <clear />
+        <add name="AspNetSqlMembershipProvider" type="System.Web.Security.SqlMembershipProvider" connectionStringName="ApplicationServices" enablePasswordRetrieval="false" enablePasswordReset="true" requiresQuestionAndAnswer="false" requiresUniqueEmail="false" maxInvalidPasswordAttempts="5" minRequiredPasswordLength="6" minRequiredNonalphanumericCharacters="0" passwordAttemptWindow="10" applicationName="/" />
+      </providers>
+    </membership>
+    <profile>
+      <providers>
+        <clear />
+        <add name="AspNetSqlProfileProvider" type="System.Web.Profile.SqlProfileProvider" connectionStringName="ApplicationServices" applicationName="/" />
+      </providers>
+    </profile>
+    <roleManager enabled="false">
+      <providers>
+        <clear />
+        <add name="AspNetSqlRoleProvider" type="System.Web.Security.SqlRoleProvider" connectionStringName="ApplicationServices" applicationName="/" />
+        <add name="AspNetWindowsTokenRoleProvider" type="System.Web.Security.WindowsTokenRoleProvider" applicationName="/" />
+      </providers>
+    </roleManager>
+    <httpModules>
+      <add type="DevExpress.Web.ASPxClasses.ASPxHttpHandlerModule, DevExpress.Web.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940cfcde86f32efd" name="ASPxHttpHandlerModule" />
+    </httpModules>
+  </system.web>
+  <system.webServer>
+    <modules runAllManagedModulesForAllRequests="true">
+      <add type="DevExpress.Web.ASPxClasses.ASPxHttpHandlerModule, DevExpress.Web.v10.1, Version=10.1.5.0, Culture=neutral, PublicKeyToken=940cfcde86f32efd" name="ASPxHttpHandlerModule" />
+    </modules>
+    <validation validateIntegratedModeConfiguration="false" />
+    <defaultDocument>
+      <files>
+        <add value="Seguridad/Login.aspx" />
+      </files>
+    </defaultDocument>
+    <handlers>
+      <add name="Reserved-ReportViewerWebControl-axd" path="Reserved.ReportViewerWebControl.axd" verb="*" type="Microsoft.Reporting.WebForms.HttpHandler" resourceType="Unspecified" preCondition="integratedMode" />
+      <add name="ReportViewerWebControlHandler" preCondition="integratedMode" verb="*" path="Reserved.ReportViewerWebControl.axd" type="Microsoft.Reporting.WebForms.HttpHandler, Microsoft.ReportViewer.WebForms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+    </handlers>
+    <security>
+      <requestFiltering>
+        <requestLimits maxAllowedContentLength="31457280" />
+      </requestFiltering>
+    </security>
+  </system.webServer>
+  <devExpress>
+    <compression enableHtmlCompression="false" enableCallbackCompression="true" enableResourceCompression="true" enableResourceMerging="false" />
+    <themes enableThemesAssembly="true" />
+    <errors callbackErrorRedirectUrl="" />
+  </devExpress>
+  <appSettings>
+    <add key="AD_Usr" value="BuzonCobranzasBP_PU" />
+    <add key="AD_Pwd" value="C0br@nz@1nt3" />
+    <add key="AD_Dom" value="banpais.hn" />
+  </appSettings>
+  <applicationSettings>
+    <SistemaCobranzasBP.Properties.Settings>
+	   <setting name="ApiCobranzasBP" serializeAs="String">
+ <value>https://apicobranzasbppu.banpais.hn</value>
+ </setting>
+ <setting name="ClientidApiCobranzasBP" serializeAs="String">
+ <value>e5094f4b5f571df6</value>
+ </setting>
+ <setting name="ClientSecretApiCobranzasBP" serializeAs="String">
+ <value>AcNTtwJS9MfN4hLKewZzdD46FrCzJqN4rXYn11gEkdzcOGNBEo142wubYehWpgrIOrsKnQiIO12O44lwgQlw</value>
+ </setting>
+      <setting name="GrupoAD" serializeAs="String">
+        <value>app_SistemaCobranza</value>
+      </setting>
+      <setting name="CommandTimeOut" serializeAs="String">
+        <value>300</value>
+      </setting>
+      <setting name="ServerEmail" serializeAs="String">
+        <value>PU-MAILSERVBP</value>
+      </setting>
+      <setting name="tarj" serializeAs="String">
+        <value>Data Source=PCI-THBEU;Initial Catalog=BPTarjetas;User ID=appCobranzas;Password=appCobranzas</value>
+      </setting>
+      <setting name="wsActive" serializeAs="String">
+        <value>https://wsactivedirectorypu.banpais.hn/xmlwsAD.asmx</value>
+      </setting>
+      <setting name="wsBPTarjetasFaseII" serializeAs="String">
+        <value>https://wstarjetaspu.banpais.hn/TCFaseII.asmx</value>
+      </setting>
+      <setting name="wsBPTarjetas" serializeAs="String">
+        <value>https://wstarjetaspu.banpais.hn/TCgenerales.asmx</value>
+      </setting>
+      <setting name="cnc" serializeAs="String">
+        <value>Data Source=PU-APLICABE07;Initial Catalog=CobranzasBP;User ID=app_cobranzas;Password=app_cobranzas</value>
+      </setting>
+    </SistemaCobranzasBP.Properties.Settings>
+    <SistemaCobranzasBP_PU.Properties.Settings>
+      <setting name="GrupoAD" serializeAs="String">
+        <value>app_SistemaCobranza</value>
+      </setting>
+      <setting name="CommandTimeOut" serializeAs="String">
+        <value>300</value>
+      </setting>
+      <setting name="ServerEmail" serializeAs="String">
+        <value>PU-MAILSERVBP</value>
+      </setting>
+      <setting name="wsActive" serializeAs="String">
+        <value>https://wsactivedirectoryde.banpais.hn/xmlwsAD.asmx</value>
+      </setting>
+      <setting name="wsBPTarjetasFaseII" serializeAs="String">
+        <value>https://wsbptarjetas.banpais.hn/TCFaseII.asmx</value>
+      </setting>
+      <setting name="cnc" serializeAs="String">
+        <value>Data Source=PU-APLICABE07;Initial Catalog=CobranzasBP;User ID=app_cobranzas;Password=app_cobranzas</value>
+      </setting>
+      <setting name="tarj" serializeAs="String">
+        <value>Data Source=PCI-THBEU;Initial Catalog=BPTarjetas;User ID=appCobranzas;Password=appCobranzas</value>
+      </setting>
+      <setting name="wsBPTarjetas" serializeAs="String">
+        <value>https://wsbptarjetas.banpais.hn/TCgenerales.asmx</value>
+      </setting>
+    </SistemaCobranzasBP_PU.Properties.Settings>
+  </applicationSettings>
+  <system.serviceModel>
+    <bindings>
+      <basicHttpBinding>
+        <binding name="wsBPAutenticacionSoap">
+          <security mode="Transport" />
+        </binding>
+        <binding name="wsBPAutenticacionSoap1" />
+        <binding name="wsSaldoMoraTDCSoap">
+          <security mode="Transport" />
+        </binding>
+        <binding name="wsSaldoMoraTDCSoap1" />
+      </basicHttpBinding>
+      <customBinding>
+        <binding name="wsSaldoMoraTDCSoap12">
+          <textMessageEncoding messageVersion="Soap12" />
+          <httpsTransport />
+        </binding>
+      </customBinding>
+    </bindings>
+    <client>
+      <endpoint address="https://wsbpautenticacionpu.banpais.hn/wsBPAutenticacion.asmx" binding="basicHttpBinding" bindingConfiguration="wsBPAutenticacionSoap" contract="wsBPAutenticacion.wsBPAutenticacionSoap" name="wsBPAutenticacionSoap" />
+      <endpoint address="https://wssaldomoratdcpu.banpais.hn/wsSaldoMoraTDC.asmx" binding="customBinding" bindingConfiguration="wsSaldoMoraTDCSoap12" contract="wsSaldoMoraTDC.wsSaldoMoraTDCSoap" name="wsSaldoMoraTDCSoap12" />
+    </client>
+  </system.serviceModel>
+</configuration>
+<!--ProjectGuid: AC7905FE-FEFD-4100-90C7-C83AFAE40E3C-->
+
+
+
+
+
+
+
+
+Fijate que, necesito sacar el listado de los servicios de los que necesito tener acceso para poder consumirlos
