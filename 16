@@ -1,1 +1,58 @@
-docker save -o C:\Users\80730.HN\Desktop\api-reposicion-pin-tc-v2.tar giancarlo47/api-reposicion-pin-tc:v2
+Ayudame a agregar esta parte         - name: TZ
+          value: America/Tegucigalpa
+
+
+
+a este deployment:
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: api-reposicion-pin-tcv1
+  namespace: pu-procesadortc-bp
+  labels:
+    app: api-reposicion-pin-tcv1
+    app.kubernetes.io/part-of: Reposicion-PIN-TC
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-reposicion-pin-tcv1
+  template:
+    metadata:
+      labels:
+        app: api-reposicion-pin-tcv1
+        deployment: api-reposicion-pin-tcv1
+    spec:
+      hostAliases:
+        - ip: 10.100.84.21
+          hostnames:
+            - pci-cl1thbe02pu
+        - ip: 10.100.203.52
+          hostnames:
+            - pu-mailservbp
+      containers:
+        - name: api-reposicion-pin-tcv1
+          image: image-registry.openshift-image-registry.svc:5000/pj-repositorybp-is/api-reposicion-pin-tcv1:latest        
+          env:
+            - name: CONNECTIONSTRINGS__REPOSICIONPINCONNECTION
+              valueFrom:
+                secretKeyRef:
+                  name: secret-api-reposicion-pin-tc
+                  key: CONNECTIONSTRINGS__REPOSICIONPINCONNECTION
+            - name: CONNECTIONSTRINGS__AS400CONNECTION
+              valueFrom:
+                secretKeyRef:
+                  name: secret-api-reposicion-pin-tc
+                  key: CONNECTIONSTRINGS__AS400CONNECTION
+            - name: APISETTINGS__ALLOWINVALIDCERTS
+              valueFrom:
+                configMapKeyRef:
+                  name: configmap-api-reposicion-pin-tc
+                  key: APISETTINGS__ALLOWINVALIDCERTS
+            - name: APISETTINGS__ENMASCARARPINENLOGS
+              valueFrom:
+                configMapKeyRef:
+                  name: configmap-api-reposicion-pin-tc
+                  key: APISETTINGS__ENMASCARARPINENLOGS
+      restartPolicy: Always
