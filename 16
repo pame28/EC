@@ -1,9 +1,1 @@
-sicion_pin> docker images
-                                                                                                    i Info →   U  In Use
-IMAGE                                                ID             DISK USAGE   CONTENT SIZE   EXTRA
-
-giancarlo47/api-reposicion-pin-tc:v2                 c054539b0531        547MB          164MB
-PS C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Reposicion PIN\api_reposicion_pin\reposicion_pin>
-
-
-Como hago el docker save ? 
+docker save -o C:\Users\80730.HN\Desktop\api-reposicion-pin-tc-v2.tar giancarlo47/api-reposicion-pin-tc:v2
