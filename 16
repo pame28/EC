@@ -1,206 +1,387 @@
-<?xml version="1.0"?>
-<configuration>
-<configSections>
-  <section name="log4net" type="log4net.Config.Log4NetConfigurationSectionHandler,log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=1b44e1d426115821" />
-    <sectionGroup name="userSettings" type="System.Configuration.UserSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" >
-        <section name="TransaccionesBancarias.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" allowExeDefinition="MachineToLocalUser" requirePermission="false" />
-    </sectionGroup>
-</configSections>
-<connectionStrings>
-    <add name="TransaccionesBancarias.Properties.Settings.ConnectionSeguridad"
-        connectionString="Data Source=PU-APLICABE01;Initial Catalog=SeguridadAplicaciones;Integrated Security=True"
-        providerName="System.Data.SqlClient" />
-    <add name="TransaccionesBancarias.Properties.Settings.ConnectionDB"
-        connectionString="Data Source=DES-APLICABE01;Initial Catalog=TransaccionesBancarias_PRD;User ID=app_transacciones;Password=app_transacciones" providerName="System.Data.SqlClient" />
-        <!--connectionString="Data Source=PU-APLICABE07;Initial Catalog=TransaccionesBancarias_PRD;Integrated Security=True" providerName="System.Data.SqlClient" />-->
-  <!--<add name="BPAnalytics.Properties.Settings.cnxBPAnalytics" connectionString="Data Source=PU-APLICABE08;Initial Catalog=BPAnalytics;User ID=usr_bpanalytics;Password=usr_bpanalytics" providerName="System.Data.SqlClient" />-->
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using DevExpress.XtraEditors;
+using System.Data.SqlClient;
+using log4net;
 
-</connectionStrings>
-<configProtectedData>
-		<providers>
-			<add useMachineProtection="true" name="DPAPIProtection" type="System.Configuration.DpapiProtectedConfigurationProvider,System.Configuration,&#xD;&#xA;Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"/>
-		</providers>
-	</configProtectedData>
-<startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/></startup>
-<userSettings>
-        <TransaccionesBancarias.Properties.Settings>
-                <setting name="UsuarioLogueado" serializeAs="String">
-                        <value />
-                </setting>
-                <setting name="Contrasena" serializeAs="String">
-                        <value />
-                </setting>
-                <setting name="AplicacionCod" serializeAs="String">
-                        <value>A3B7</value>
-                </setting>
-                <setting name="Pruebas" serializeAs="String">
-                        <value>True</value>
-                </setting>
-                <setting name="Profile" serializeAs="String">
-                        <value>0</value>
-                </setting>
-                <setting name="Zona" serializeAs="String">
-                        <value />
-                </setting>
-                <setting name="Area" serializeAs="String">
-                        <value>0</value>
-                </setting>
-                <setting name="Transferencias" serializeAs="String">
-                        <value>False</value>
-                </setting>
-                <setting name="Planillas" serializeAs="String">
-                        <value>False</value>
-                </setting>
-                <setting name="CreditoDebito" serializeAs="String">
-                        <value>False</value>
-                </setting>
-                <setting name="CodOficialAS400" serializeAs="String">
-                        <value>0</value>
-                </setting>
-                <setting name="MontoMaximoLps" serializeAs="String">
-                        <value>0</value>
-                </setting>
-                <setting name="MailServer" serializeAs="String">
-                        <value>PU-MAILSERVBP</value>
-                </setting>
-                <setting name="MailMessage" serializeAs="String">
-                        <value>Archivos Generados por  Banco del Pais,  Favor no responder a este correo.</value>
-                </setting>
-                <setting name="MailFrom" serializeAs="String">
-                        <value>aplicaciones_producc@banpais.hn</value>
-                </setting>
-                <setting name="MailServerPort" serializeAs="String">
-                        <value>25</value>
-                </setting>
-                <setting name="AgenciaCod" serializeAs="String">
-                        <value>0</value>
-                </setting>
-                <setting name="Usuario525" serializeAs="String">
-                        <value />
-                </setting>
-                <setting name="Serverid" serializeAs="String">
-                        <value>4</value>
-                </setting>
-                <setting name="Appid" serializeAs="String">
-                        <value>181</value>
-                </setting>
-                <setting name="ServidorDB2" serializeAs="String">
-                        <value>ASPRB04</value>
-                </setting>
-                <setting name="Dominio" serializeAs="String">
-                        <value>HN.BI-CENTRAL.LOCAL</value>
-                </setting>
-                <setting name="Destino" serializeAs="String">
-                        <value>/PlaCredDeb/</value>
-                </setting>
-                <setting name="Source" serializeAs="String">
-                        <value> C:\Planillas</value>
-                </setting>
-                <setting name="Encryp" serializeAs="String">
-                        <value />
-                </setting>
-                <setting name="AdministradorTrx" serializeAs="String">
-                        <value>False</value>
-                </setting>
-                <setting name="ServerIdCripto" serializeAs="String">
-                        <value>7</value>
-                </setting>
-                <setting name="AppIdCripto" serializeAs="String">
-                        <value>182</value>
-                </setting>
-                <setting name="MontoMaximoDlrs" serializeAs="String">
-                        <value>0</value>
-                </setting>
-                <setting name="Bloqueado" serializeAs="String">
-                        <value>True</value>
-                </setting>
-                <setting name="ParametroMulticampo" serializeAs="String">
-                        <value>BENFINADIC</value>
-                </setting>
-                <setting name="PagoTc" serializeAs="String">
-                        <value>False</value>
-                </setting>
-                <setting name="CnxAS400" serializeAs="String">
-                        <value>Provider=IBMDA400.DataSource.1;Data Source=;Persist Security Info=True;Password=;User ID=</value>
-                </setting>
-                <setting name="UrlWsAS400" serializeAs="String">
-                        <value>https://wsas400pwdpu.banpais.hn/UA.asmx</value>
-                </setting>
-        </TransaccionesBancarias.Properties.Settings>
-    </userSettings>
-<log4net>
-    <root>
-      <level value="ALL"/>
-      <appender-ref ref="AdoNetAppender"/>
-    </root>
-    <appender name="AdoNetAppender" type="log4net.Appender.AdoNetAppender">
-      <bufferSize value="1"/>
-      <connectionType value="System.Data.SqlClient.SqlConnection, System.Data, Version=1.0.3300.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"/>
-      <connectionString value="data source=DES-APLICABE01;initial catalog=TransaccionesBancarias_PRD;User ID=app_transacciones;Password=app_transacciones;"/>
-      <commandText value="INSERT INTO AdminLogApp ([Fecha],[Level],[Logger],[Mensaje],[Exception],[Equipo]) VALUES (@log_Fecha, @log_level, @logger, @message, @exception, @Equipo)"/>
-      <parameter>
-        <parameterName value="@log_Fecha"/>
-        <dbType value="DateTime"/>
-        <layout type="log4net.Layout.RawTimeStampLayout"/>
-      </parameter>
-      <parameter>
-        <parameterName value="@Equipo"/>
-        <dbType value="String"/>
-        <size value="255"/>
-        <layout type="log4net.Layout.PatternLayout">
-          <conversionPattern value="%property{log4net:HostName}"/>
-        </layout>
-      </parameter>
-      <parameter>
-        <parameterName value="@log_level"/>
-        <dbType value="String"/>
-        <size value="50"/>
-        <layout type="log4net.Layout.PatternLayout">
-          <conversionPattern value="%level"/>
-        </layout>
-      </parameter>
-      <parameter>
-        <parameterName value="@logger"/>
-        <dbType value="String"/>
-        <size value="255"/>
-        <layout type="log4net.Layout.PatternLayout">
-          <conversionPattern value="%logger"/>
-        </layout>
-      </parameter>
-      <parameter>
-        <parameterName value="@message"/>
-        <dbType value="String"/>
-        <size value="-1"/>
-        <layout type="log4net.Layout.PatternLayout">
-          <conversionPattern value="%message"/>
-        </layout>
-      </parameter>
-      <parameter>
-        <parameterName value="@exception"/>
-        <dbType value="String"/>
-        <size value="-1"/>
-        <layout type="log4net.Layout.ExceptionLayout"/>
-      </parameter>
-    </appender>
-  </log4net>
-    <system.serviceModel>
-        <bindings>
-            <basicHttpBinding>
-                <binding name="wsBPAutenticacionSoap">
-                    <security mode="Transport" />
-                </binding>
-                <binding name="wsBPAutenticacionSoap1" />
-            </basicHttpBinding>
-        </bindings>
-        <client>
-            <endpoint address="https://wsbpautenticacionpu.banpais.hn/wsBPAutenticacion.asmx"
-                binding="basicHttpBinding" bindingConfiguration="wsBPAutenticacionSoap"
-                contract="wsBPAutenticacion.wsBPAutenticacionSoap" name="wsBPAutenticacionSoap" />
-        </client>
-    </system.serviceModel>
-</configuration>
+namespace TransaccionesBancarias
+{
+    public partial class FrmLogin : DevExpress.XtraEditors.XtraForm
+    {
+        private ILog log;
+        
+        int contador,contadorparametros = 0;
+        Boolean Activo = false;
+        bool autenticado = true;
+        string grupoAD = string.Empty;
+        string usuario = string.Empty;
+        string usuariotxt = string.Empty;
+        string clave = string.Empty;
+        string CodigoEmpleado = string.Empty;
+        string UsuarioAS400 = string.Empty;
+
+        public FrmLogin()
+        {
+            InitializeComponent();
+            log4net.Config.XmlConfigurator.Configure();
+            log = LogManager.GetLogger(this.GetType()); //aquí procedemos a inicializar el objeto log.
+        }
+
+        private void loginControl1_btnCancelClicked()
+        {
+            if (Properties.Settings.Default.UsuarioLogueado.Length > 0 && Properties.Settings.Default.Bloqueado == true)
+            {
+                MessageBox.Show("Actualmente se encuentra un Usuario Logueado, debe loguearse para cerrar la aplicación", "Usuario Logueado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            else
+                this.Close();
+        }
+
+        private void loginControl1_FailedValidation()
+        {
+            log.Warn("Usuario " + loginControl1.txtUsuario.Text + " validacion fallida");
+            MessageBox.Show("Informacion de Usuario Invalida, Por favor asegúrate de que la cuenta y la contraseña sean correctos.");
+        }
+
+        private void loginControl1_SuccessValidation()
+        {
+            string UltimaVersion = string.Empty;
+            try
+            {             
+                UltimaVersion = this.GetVersion();
+                //***********************************************Parametros del nuevo login***********************************               
+                grupoAD = loginControl1.ADGrupoSeguridad.ToString();
+                usuariotxt = loginControl1.txtUsuario.Text.ToString().Trim();
+                clave = loginControl1.txtPassword.Text.ToString().Trim();
+
+                DataTable dtAutenticacion;
+                string strUsuario = usuariotxt;
+                string strClave = clave;
+                string strGrupoAD = grupoAD;
+
+                bool wsBPAutenticado = false;
+                wsBPAutenticacion.wsBPAutenticacionSoapClient wsAuth = new wsBPAutenticacion.wsBPAutenticacionSoapClient();
+                dtAutenticacion = wsAuth.BPLogin(strUsuario, strClave, strGrupoAD);
+                wsBPAutenticado = Convert.ToBoolean(dtAutenticacion.Rows[0][0].ToString());                
+                //*************************************************************************************************************
+                if (wsBPAutenticado == true)
+                {
+                    strUsuario = dtAutenticacion.Rows[0]["UsuarioAD"].ToString();
+                    CodigoEmpleado = dtAutenticacion.Rows[0]["CodigoEmpleado"].ToString();
+                    usuario = dtAutenticacion.Rows[0]["UsuarioAD"].ToString();
+                    UsuarioAS400 = dtAutenticacion.Rows[0]["UsuarioAS"].ToString();
+                    
+                    if (UltimaVersion == LblVersion.Text)
+                    {                      
+                        if (Properties.Settings.Default.UsuarioLogueado.Length > 0)
+                        {
+                            string user = Properties.Settings.Default.UsuarioLogueado.ToString();
+                            if (user.Trim().ToUpper() != usuario)
+                            {
+                                MessageBox.Show("Actualmente se encuentra otro Usuario Logueado", "Usuario Logueado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                loginControl1.txtUsuario.Text = Properties.Settings.Default.UsuarioLogueado;
+                                loginControl1.txtPassword.Text = "";
+                                loginControl1.txtPassword.Focus();
+                                return;
+                            }
+                        }
+
+                        //Verifica si el usuario tiene permiso para loguearse en la aplicacion
+                        this.validausuario();
+
+                        // Obtiene el perfil del usuario
+                        this.getprofile();
+
+                        //Obtiene los Parametros del Usuario
+                        this.GetParamatersByUser();
+
+                        if ((contador > 0 && contadorparametros > 0) || (contador > 0 && Properties.Settings.Default.Profile == 1))
+                        {
+                           // MessageBox.Show("Asigna usuario:  " + usuario);
+                            Properties.Settings.Default.UsuarioLogueado = usuario;
+                            Properties.Settings.Default.Contrasena = clave;
+                           // txtPasswordV2.Text = "";
+                            loginControl1.txtUsuario.Text = "";
+                            loginControl1.txtPassword.Text = "";
+                            loginControl1.txtUsuario.Focus();
+
+                            Properties.Settings.Default.Bloqueado = false;
+
+                            if (Properties.Settings.Default.Profile == 1)
+                            {
+                                log.Info("Usuario " + Properties.Settings.Default.UsuarioLogueado + " con perfil " + Properties.Settings.Default.Profile + " ingreso al sistema");
+                                this.Hide();
+                                bool IsOpen = false;
+                                foreach (Form f in Application.OpenForms)
+                                {
+                                    if (f.Name == "FrmMain")
+                                    {
+                                        IsOpen = true;
+                                        f.Focus();
+                                        f.Show();
+                                    }
+                                    else if (f.Name == "FrmPlanillaView")
+                                    {
+                                        f.Focus();
+                                        f.Show();
+                                    }
+                                    else if (f.Name == "FrmTransferenciaView")
+                                    {
+                                        f.Focus();
+                                        f.Show();
+                                    }
+                                    else if (f.Name == "FrmCtaHondutel")
+                                    {
+                                        f.Focus();
+                                        f.Show();
+                                    }
+                                    else if (f.Name == "FrmSupervisores")
+                                    {
+                                        f.Focus();
+                                        f.Show();
+                                    }
+                                }
+
+                                if (IsOpen == false)
+                                {
+                                    FrmMain FrmMain = new FrmMain();
+                                    FrmMain.WindowState = FormWindowState.Normal;
+                                    FrmMain.Show();
+                                }
+                            }
+                            else
+                            {
+                                if (Activo == true)
+                                {
+                                    log.Info("Usuario " + Properties.Settings.Default.UsuarioLogueado + " con perfil " + Properties.Settings.Default.Profile + " ingreso al sistema");
+                                    this.Hide();
+                                    bool IsOpen = false;
+                                    foreach (Form f in Application.OpenForms)
+                                    {
+                                        if (f.Name == "FrmMain")
+                                        {
+                                            IsOpen = true;
+                                            f.Focus();
+                                            f.Show();
+                                        }
+                                        else if (f.Name == "FrmPlanillaView")
+                                        {
+                                            f.Focus();
+                                            f.Show();
+                                        }
+                                        else if (f.Name == "FrmTransferenciaView")
+                                        {
+                                            f.Focus();
+                                            f.Show();
+                                        }
+                                        else if (f.Name == "FrmCtaHondutel")
+                                        {
+                                            f.Focus();
+                                            f.Show();
+                                        }
+                                        else if (f.Name == "FrmSupervisores")
+                                        {
+                                            f.Focus();
+                                            f.Show();
+                                        }
+                                    }
+
+                                    if (IsOpen == false)
+                                    {
+                                        FrmMain FrmMain = new FrmMain();
+                                        FrmMain.WindowState = FormWindowState.Normal;
+                                        FrmMain.Show();
+                                    }
+                                }
+                                else
+                                    MessageBox.Show("Area se encuentra Desactivada para ingresar a la aplicación", "", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            }
+                        }
+                        else
+                            MessageBox.Show("El usuario no Existe en la Base de Datos", "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                    }
+                    else
+                        MessageBox.Show("La versión de la aplicación instalada no es la mas reciente \n Favor Comunicarse con el area de Técnologia", "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                }
+                else
+                {
+                    MessageBox.Show("Usuario: {0} - Error autenticando en el dominio. Usuario o contraseña inválidos. Error: " + dtAutenticacion.Rows[0][1].ToString() , usuario);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("No se pudo establecer la conexión al servidor");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("No se pudo establecer la conexión al servidor. " + ex.ToString());
+            }
+        }
+
+        private void getprofile()
+        {
+            try
+            {
+                using (SqlConnection conexion = new SqlConnection(TransaccionesBancarias.Properties.Settings.Default.ConnectionSeguridad))
+                {
+                    conexion.Open();
+                    using (SqlCommand cmd = new SqlCommand("Usp_GetProfile"))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        Object returnValue;
+                        cmd.CommandTimeout = 300;
+                        cmd.Parameters.AddWithValue("@usuario", usuario.ToLower());
+                        cmd.Parameters.AddWithValue("@Aplicacion", TransaccionesBancarias.Properties.Settings.Default.AplicacionCod);
+                        cmd.Connection = conexion;
+                        returnValue = cmd.ExecuteScalar();
+                        TransaccionesBancarias.Properties.Settings.Default.Profile = Convert.ToInt32(returnValue);
+                        conexion.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al obtener Perfil de Usuario" + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void validausuario()
+        {
+            try
+            {
+                using (SqlConnection conexion = new SqlConnection(TransaccionesBancarias.Properties.Settings.Default.ConnectionSeguridad))
+                {
+                    conexion.Open();
+                    using (SqlCommand cmd = new SqlCommand("Usp_ValidaUsuario"))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        Object returnValue;
+                        cmd.CommandTimeout = 300;
+                        cmd.Parameters.AddWithValue("@usuario", usuario.ToLower());
+                        cmd.Parameters.AddWithValue("@Aplicacion", TransaccionesBancarias.Properties.Settings.Default.AplicacionCod);
+                        cmd.Parameters.AddWithValue("@estado", 1);
+                        cmd.Connection = conexion;
+                        returnValue = (int)cmd.ExecuteScalar();
+                        contador = Convert.ToInt32(returnValue);                 
+                        conexion.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al Validar Usuario" + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void GetParamatersByUser()
+        {
+            if (Properties.Settings.Default.Profile != 1)
+            {
+                DataTable Parameters = new DataTable();
+
+                try
+                {
+                    using (SqlConnection conexion = new SqlConnection(TransaccionesBancarias.Properties.Settings.Default.ConnectionDB))
+                    {
+                        conexion.Open();
+                        using (SqlCommand cmd = new SqlCommand("Usp_GetUserParameters"))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            cmd.CommandTimeout = 300;
+                            cmd.Parameters.AddWithValue("@usuario", usuario.ToLower());
+                            cmd.Connection = conexion;
+                            using (SqlDataAdapter adp = new SqlDataAdapter(cmd))
+                            {
+                                adp.Fill(Parameters);
+                            }
+                            contadorparametros = Parameters.Rows.Count;
+
+                            if (contadorparametros > 0)
+                            {
+                                    Activo =Convert.ToBoolean(Parameters.Rows[0]["Activo"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.AdministradorTrx = Convert.ToBoolean(Parameters.Rows[0]["AdministradorTrx"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.Transferencias = Convert.ToBoolean(Parameters.Rows[0]["Transferencias"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.Planillas = Convert.ToBoolean(Parameters.Rows[0]["Planillas"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.CreditoDebito = Convert.ToBoolean(Parameters.Rows[0]["CreditoDebito"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.PagoTc = Convert.ToBoolean(Parameters.Rows[0]["PagoTc"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.Usuario525 = Parameters.Rows[0]["Usuario525"].ToString();
+                                    TransaccionesBancarias.Properties.Settings.Default.Area = Convert.ToInt32(Parameters.Rows[0]["OficialArea"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.Zona = Parameters.Rows[0]["Zona"].ToString();
+                                    TransaccionesBancarias.Properties.Settings.Default.MontoMaximoLps = Convert.ToDecimal(Parameters.Rows[0]["MontoMaximoLps"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.MontoMaximoDlrs = Convert.ToDecimal(Parameters.Rows[0]["MontoMaximoDlrs"].ToString());
+                                    TransaccionesBancarias.Properties.Settings.Default.Encryp = Parameters.Rows[0]["Encryp"].ToString();
+                            }
+                            else
+                                MessageBox.Show("No se encontraron parametros para el usuario Usuario" + loginControl1.txtUsuario.Text, "", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                conexion.Close();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al Obtener Parametros del Usuario" + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private string GetVersion()
+        {
+            string Version = string.Empty;
+            try
+            {
+                using (SqlConnection conexion = new SqlConnection(TransaccionesBancarias.Properties.Settings.Default.ConnectionDB))
+                {
+                    conexion.Open();
+                    using (SqlCommand cmd = new SqlCommand("SELECT Version FROM Versiones where Id = (select max(Id) from Versiones)"))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        Object returnValue;
+                        cmd.CommandTimeout = 300;
+                        cmd.Connection = conexion;
+                        returnValue = cmd.ExecuteScalar();
+                        Version = returnValue.ToString();
+                        conexion.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al obtener versión del aplicativo" + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return Version;
+        }
+
+        private void FrmLogin_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (Properties.Settings.Default.UsuarioLogueado.Length > 0 && Properties.Settings.Default.Bloqueado == true)
+            {
+                MessageBox.Show("Actualmente se encuentra un Usuario Logueado, debe loguearse para cerrar la aplicación", "Usuario Logueado", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                loginControl1.txtUsuario.Text = Properties.Settings.Default.UsuarioLogueado;
+                loginControl1.txtPassword.Focus();
+                e.Cancel = true;
+
+            }
+            else
+                Application.Exit();
+        }
+
+        private void FrmLogin_Load(object sender, EventArgs e)
+        {
+           System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("es-HN");
+        }
+
+        private void loginControl1_Load(object sender, EventArgs e)
+        {
+           string PASS= loginControl1.txtPassword.Text;
+        }
+    }
+}
 
 
-
-
-necesito saber que servicios consume
+Necesito saber como es que funciona la autenticacion, si necesito estar en alguna tabla en especifico o como
