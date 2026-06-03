@@ -1,32 +1,75 @@
-######################################################
-# TEMPLATE DINAMICO POR POD (ARCHIVO POR POD)
-######################################################
-template(name="dynFileByPod" type="list") {
-    constant(value="/syslog/pu-procesadortc-bp/")
-    property(name="$!kubernetes!pod_name")
-    constant(value=".log")
-}
+        private void EjecutaPGM(string CALL)//ejecuta los calls al as400
+        {
+            OleDbConnection Conn = new OleDbConnection(_cnnAS400);
+            try
+            {
+                OleDbCommand cmdCuentas = new OleDbCommand(CALL, Conn);
+                cmdCuentas.CommandType = CommandType.Text;
 
-######################################################
-# TEMPLATE FORMATO LEGIBLE
-######################################################
-template(name="openshiftPrettyLogs" type="list") {
-    property(name="timereported" dateFormat="rfc3339")
-    constant(value=" ")
-    property(name="$!kubernetes!pod_name")
-    constant(value=" ")
-    property(name="$!log")
-    constant(value="\n")
-}
+                OleDbParameter oLote = new OleDbParameter("$NOLOTE_Chr", OleDbType.Char, 10); //Parametro Numero de Lote
+                oLote.Value = Lote;
+                oLote.Direction = ParameterDirection.Input;
 
-######################################################
-# REGLA PRINCIPAL
-######################################################
-if ($msg contains "pu-procesadortc-bp") then {
-    action(
-        type="omfile"
-        dynaFile="dynFileByPod"
-        template="openshiftPrettyLogs"
-    )
-    stop
-}
+                OleDbParameter oError = new OleDbParameter("$MSGERR", OleDbType.Char, 40); //Parametro Error 
+                oError.Value = "";
+                oError.Direction = ParameterDirection.Output;
+
+                cmdCuentas.Parameters.Add(oLote);//Agregamos los prámetros
+                cmdCuentas.Parameters.Add(oError);
+
+                if (Conn.State != ConnectionState.Open)
+                    Conn.Open();
+
+                OleDbCommand oCmdLIBLE = new OleDbCommand(); //Agregamos a la conexión las librerías que se ocupará el programa.
+                oCmdLIBLE.CommandType = CommandType.Text;
+                oCmdLIBLE.Connection = Conn;
+
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('CHGLIBL LIBL(*NONE)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(DP053DAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(CLIDAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(CARTDAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(BPPGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(V5DPDTAQ)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(V5DPJOUR)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(BPDAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(IB054PGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(IB054DAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(DP053PGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(CLIPGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(CARTPGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                cmdCuentas.ExecuteNonQuery();
+                string respuesta = cmdCuentas.Parameters["$MSGERR"].Value.ToString();
+
+                if (respuesta != string.Empty)
+                    resp_call = respuesta;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al llamar Programa AS400  " + ex.Message.ToString(), "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (Conn.State == ConnectionState.Open)
+                {
+                    Conn.Close();
+                    Conn.Dispose();
+                }
+            }
+        }
+
+
+
+No se cual es el programa que ejecuta
