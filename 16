@@ -1,1 +1,253 @@
-pongo este valor 1000000004496553 y se me cambia a  1000000004496550 en excel
+using System.Net;
+using System.Text.Json;
+using transacciones_flotantes.DTOs.Response;
+using transacciones_flotantes.DTOs.TransaccionesFlotantes;
+using transacciones_flotantes.Repository.Interface;
+using transacciones_flotantes.Service.Interface;
+using static transacciones_flotantes.DTOs.Response.ResponseDto;
+using static transacciones_flotantes.DTOs.TransaccionesFlotantes.ProveedorTransaccionesFlotantesResponseDto;
+
+namespace transacciones_flotantes.Service
+{
+    public class TransaccionesFlotantesService : ITransaccionesFlotantesService
+    {
+        private readonly ITransaccionFlotanteRepository _repository;
+        private readonly IProveedorApiClient _proveedorClient;
+        private readonly ICatalogoErroresRepository _catalogoErrores;
+        private readonly ILogger<TransaccionesFlotantesService> _logger;
+        private readonly ICurrencyService _currencyService;
+
+        public TransaccionesFlotantesService(
+            ITransaccionFlotanteRepository repository,
+            IProveedorApiClient proveedorClient,
+            ICatalogoErroresRepository catalogoErrores,
+            ILogger<TransaccionesFlotantesService> logger,
+            ICurrencyService currencyService)
+        {
+            _repository = repository;
+            _proveedorClient = proveedorClient;
+            _catalogoErrores = catalogoErrores;
+            _logger = logger;
+            _currencyService = currencyService;
+        }
+
+        public async Task<LegacyTransaccionesResponseDto> ProcesarAsync(
+            TransaccionesFlotantesRequestDto request)
+        {
+            var start = DateTime.UtcNow;
+            _logger.LogInformation("Inicio procesamiento");
+
+            try
+            {
+                var data = await _repository.ObtenerDatosProveedorAsync(request.CounterpartCard);
+                if (data == null)
+                    return await CrearRespuestaError(2, "Datos proveedor no encontrados");
+
+                var proveedorRequest = new ProveedorTransaccionFlotanteRequestDto
+                {
+                    card = new()
+                    {
+                        bin = data.bin,
+                        lastFourDigits = data.lastFourDigits
+                    },
+                    client = new()
+                    {
+                        documentNumber = data.documentNumber,
+                        documentType = data.documentType,
+                        gender = data.gender
+                    }
+                };
+
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug(
+                    "Request proveedor: {Json}",
+                    JsonSerializer.Serialize(proveedorRequest));
+                }
+                string rawResponse;
+
+                try
+                {
+                    rawResponse = await _proveedorClient.EnviarTransaccionAsync(proveedorRequest);
+                }
+
+                catch (ProveedorApiException ex)
+                {
+                    _logger.LogWarning(
+                        "Error proveedor {StatusCode} - {Body}",
+                        ex.StatusCode,
+                        ex.ResponseBody);
+
+                    return ex.StatusCode switch
+                    {
+                        HttpStatusCode.BadRequest =>
+                            await CrearRespuestaError(
+                                5,
+                                $"Error al consumir proveedor - {ex.ResponseBody}"
+                            ),
+
+                        HttpStatusCode.NotFound =>
+                            await CrearRespuestaError(
+                                2,
+                                "No se encontraron registros"
+                            ),
+
+                        HttpStatusCode.InternalServerError =>
+                            await CrearRespuestaError(
+                                3,
+                                $"Proveedor no disponible - {ex.ResponseBody}"
+                            ),
+
+                        _ =>
+                            await CrearRespuestaError(
+                                3,
+                                "Proveedor no disponible"
+                            )
+                    };
+                }
+
+                catch (TaskCanceledException ex)
+                {
+                    _logger.LogError(ex, "Timeout proveedor");
+                    return await CrearRespuestaError(4, "Timeout proveedor");
+                }
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Response cruda proveedor: {Raw}", rawResponse);
+                }
+                ProveedorResponseDto proveedorData;
+                try
+                {
+                    proveedorData = JsonSerializer.Deserialize<ProveedorResponseDto>(rawResponse)
+                        ?? throw new Exception("JSON vacío");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "JSON inválido proveedor");
+                    return await CrearRespuestaError(6, "Respuesta inválida proveedor");
+                }
+
+                if (proveedorData.Authorizations.Count() == 0)
+                    return await CrearRespuestaError(2, "Sin autorizaciones");
+
+                var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(1);
+
+                var autorizaciones = await Task.WhenAll(
+                    proveedorData.Authorizations.Select(async a => new LegacyAutorizacionDto
+                    {
+                        Date = ConvertirFecha(a.Date),
+                        merchant_name = a.MerchantName,
+                        Amount = a.Amount,
+                        Currency = await _currencyService.ResolverAsync(a.Currency),
+                        Reference = a.Reference,
+                        transaction_type = a.TransactionType
+                    }));
+
+
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                    "Proceso exitoso. Tiempo: {Ms} ms",
+                    (DateTime.UtcNow - start).TotalMilliseconds);
+                }
+                return new LegacyTransaccionesResponseDto
+                {
+                    Result =
+                        {
+                            Codigo      = catalogo.Codigo,
+                            Descripcion = catalogo.Descripcion
+                        },
+                    Total_floating = new TotalFloatingDto
+                    {
+                        Total_HNL = proveedorData.TotalFloating.TotalHNL.ToString("0.##"),
+                        Total_USD = proveedorData.TotalFloating.TotalUSD.ToString("0.##")
+                    },
+                    Respuesta = autorizaciones.ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Error no controlado en servicio");
+                throw;
+            }
+        }
+
+
+
+
+        private async Task<LegacyTransaccionesResponseDto> CrearRespuestaError(
+            int codigo, string detalle)
+        {
+            var catalogo = await _catalogoErrores.GetCatalogoResponseAsync(codigo);
+
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                "Error controlado {Codigo}: {Detalle}",
+                codigo, detalle);
+            }
+            return new LegacyTransaccionesResponseDto
+            {
+                Result =
+                {
+                    Codigo = catalogo.Codigo,
+                    Descripcion = catalogo.Descripcion
+                },
+                Respuesta = 0
+            };
+        }
+
+        private static string ConvertirFecha(string fechaIso)
+        {
+            if (string.IsNullOrWhiteSpace(fechaIso))
+                return fechaIso;
+
+            if (!DateTimeOffset.TryParse(fechaIso, out var dto))
+                return fechaIso;
+
+            var tzId = OperatingSystem.IsWindows()
+                ? "Central America Standard Time"   // Windows
+                : "America/Tegucigalpa";            // Linux / OpenShift
+
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
+
+            var localTime = TimeZoneInfo.ConvertTime(dto, tz);
+
+            return localTime.ToString("yyyy-MM-ddTHH:mm:sszzz");
+        }
+
+
+    }
+
+
+}
+
+	
+Response body
+Download
+{
+  "result": {
+    "codigo": 2,
+    "descripcion": "No se encontraron registros"
+  },
+  "total_floating": null,
+  "respuesta": 0
+}
+
+
+
+
+cuando yo espero una respuesta asi:
+
+{
+  "result": {
+    "codigo": 2,
+    "descripcion": "No se encontraron registros"
+  },
+  "respuesta": 0
+}
+Tengo un problema me esta respondiendo asi 
+
