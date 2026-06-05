@@ -1,7 +1,30 @@
-
-[adm_80730@PU-SYSLOGLX ~]$ sudo grep "pu-procesadortc-bp" /var/log/messages | head -3
-[adm_80730@PU-SYSLOGLX ~]$ sudo journalctl | grep "pu-procesadortc-bp" | head -3
-Jun 05 14:25:39 PU-SYSLOGLX.hn.bi-central.local sudo[409351]: adm_80730 : TTY=pts/1 ; PWD=/home/adm_80730 ; USER=root ; COMMAND=/bin/cat /syslog/pu-procesadortc-bp/.log
-Jun 05 14:26:38 PU-SYSLOGLX.hn.bi-central.local sudo[410059]: adm_80730 : TTY=pts/1 ; PWD=/home/adm_80730 ; USER=root ; COMMAND=/bin/tail -10 /syslog/pu-procesadortc-bp/.log
-Jun 05 14:28:36 PU-SYSLOGLX.hn.bi-central.local sudo[411432]: adm_80730 : TTY=pts/1 ; PWD=/home/adm_80730 ; USER=root ; COMMAND=/bin/grep pu-procesadortc-bp /var/log/messages
-[adm_80730@PU-SYSLOGLX ~]$
+#########################################################
+# TEMPLATE DINÁMICO POR POD (ARCHIVO POR POD)
+#########################################################
+template(name="dynFileByPod" type="list") {
+    constant(value="/syslog/pu-procesadortc-bp/")
+    property(name="$!kubernetes!pod_name")
+    constant(value=".log")
+}
+#########################################################
+# TEMPLATE FORMATO LEGIBLE
+#########################################################
+template(name="openshiftPrettyLogs" type="list") {
+    property(name="timereported" dateFormat="rfc3339")
+    constant(value=" ")
+    property(name="$!kubernetes!pod_name")
+    constant(value=" ")
+    property(name="$!log")
+    constant(value="\n")
+}
+#########################################################
+# REGLA PRINCIPAL
+#########################################################
+if ($msg contains "pu-procesadortc-bp") then {
+    action(
+        type="omfile"
+        dynaFile="dynFileByPod"
+        template="openshiftPrettyLogs"
+    )
+    stop
+}
