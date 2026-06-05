@@ -1,31 +1,33 @@
-[adm_80730@PU-SYSLOGLX ~]$ ls -lh /syslog/pu-procesadortc-bp/
-total 0
-[adm_80730@PU-SYSLOGLX ~]$ sudo vi  /etc/rsyslog.d/30-openshift-enterprise.conf
 #########################################################
 # TEMPLATE DINÁMICO POR POD (ARCHIVO POR POD)
 #########################################################
 template(name="dynFileByPod" type="list") {
     constant(value="/syslog/pu-procesadortc-bp/")
-    property(name="$!kubernetes!pod_name")
+    property(name="$!pod_name")
     constant(value=".log")
 }
-
 #########################################################
 # TEMPLATE FORMATO LEGIBLE
 #########################################################
 template(name="openshiftPrettyLogs" type="list") {
     property(name="timereported" dateFormat="rfc3339")
     constant(value=" ")
-    property(name="$!kubernetes!pod_name")
+    property(name="$!pod_name")
     constant(value=" ")
-    property(name="$!log")
+    property(name="msg")
     constant(value="\n")
 }
+#########################################################
+# EXTRAE pod_name DEL MENSAJE
+#########################################################
+template(name="extractPodName" type="string"
+    string="%!pod_name%")
 
 #########################################################
 # REGLA PRINCIPAL
 #########################################################
 if ($msg contains "pu-procesadortc-bp") then {
+    set $!pod_name = re_extract($msg, "pod_name=([^,]+)", 0, 1, "unknown-pod");
     action(
         type="omfile"
         dynaFile="dynFileByPod"
@@ -33,13 +35,3 @@ if ($msg contains "pu-procesadortc-bp") then {
     )
     stop
 }
-
-~
-~
-"/etc/rsyslog.d/30-openshift-enterprise.conf" 33L, 1029B    
-
-
-
-
-
-Mira
