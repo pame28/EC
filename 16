@@ -1,4 +1,6 @@
-[adm_80730@PU-SYSLOGLX ~]$ cat /etc/rsyslog.d/30-openshift-enterprise.conf
+[adm_80730@PU-SYSLOGLX ~]$ ls -lh /syslog/pu-procesadortc-bp/
+total 0
+[adm_80730@PU-SYSLOGLX ~]$ sudo vi  /etc/rsyslog.d/30-openshift-enterprise.conf
 #########################################################
 # TEMPLATE DINÁMICO POR POD (ARCHIVO POR POD)
 #########################################################
@@ -32,12 +34,12 @@ if ($msg contains "pu-procesadortc-bp") then {
     stop
 }
 
-[adm_80730@PU-SYSLOGLX ~]$
+~
+~
+"/etc/rsyslog.d/30-openshift-enterprise.conf" 33L, 1029B    
 
 
 
 
 
-
-
-Mira, parece que ta tengo acceso al servidor, como podemos probar?
+Mira
