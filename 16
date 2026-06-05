@@ -1,20 +1,7 @@
 
-[adm_80730@PU-SYSLOGLX ~]$ sudo cat /syslog/pu-procesadortc-bp/.log | head -5
-2026-05-20T22:09:44.890Z
-2026-05-20T22:09:50.062Z
-2026-05-20T22:32:02.590Z
-2026-05-20T22:32:02.599Z
-2026-05-20T22:32:02.599Z
-[adm_80730@PU-SYSLOGLX ~]$ ^C
-[adm_80730@PU-SYSLOGLX ~]$ sudo tail -10 /syslog/pu-procesadortc-bp/.log
-2026-06-05T20:23:39.038Z
-2026-06-05T20:23:39.055Z
-2026-06-05T20:23:39.056Z
-2026-06-05T20:23:39.056Z
-2026-06-05T20:23:39.056Z
-2026-06-05T20:23:39.057Z
-2026-06-05T20:23:39.058Z
-2026-06-05T20:23:39.058Z
-2026-06-05T20:23:39.058Z
-2026-06-05T14:25:39.160451-06:00
+[adm_80730@PU-SYSLOGLX ~]$ sudo grep "pu-procesadortc-bp" /var/log/messages | head -3
+[adm_80730@PU-SYSLOGLX ~]$ sudo journalctl | grep "pu-procesadortc-bp" | head -3
+Jun 05 14:25:39 PU-SYSLOGLX.hn.bi-central.local sudo[409351]: adm_80730 : TTY=pts/1 ; PWD=/home/adm_80730 ; USER=root ; COMMAND=/bin/cat /syslog/pu-procesadortc-bp/.log
+Jun 05 14:26:38 PU-SYSLOGLX.hn.bi-central.local sudo[410059]: adm_80730 : TTY=pts/1 ; PWD=/home/adm_80730 ; USER=root ; COMMAND=/bin/tail -10 /syslog/pu-procesadortc-bp/.log
+Jun 05 14:28:36 PU-SYSLOGLX.hn.bi-central.local sudo[411432]: adm_80730 : TTY=pts/1 ; PWD=/home/adm_80730 ; USER=root ; COMMAND=/bin/grep pu-procesadortc-bp /var/log/messages
 [adm_80730@PU-SYSLOGLX ~]$
