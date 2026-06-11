@@ -1,1 +1,5 @@
-<p style="margin:0;line-height:1.1;font-size:6px;">Ej. Request Enviado<br/>{<br/>&nbsp;"cif": "2148503",<br/>&nbsp;"dni": "0510199401090",<br/>&nbsp;"cliente": "GUSTA GOMEZ MURILLO",<br/>&nbsp;"metodoEnvio": 1,<br/>&nbsp;"telefono": "96423295",<br/>&nbsp;"operadorTelefono": "D",<br/>&nbsp;"correo": "pamelas@banpais.hn",<br/>&nbsp;"ultimosDigitosTC": "9227",<br/>&nbsp;"contenidoSMS": "Su pin es @PIN",<br/>&nbsp;"contenidoCorreo": "Su pin es @PIN"<br/>}</p>
+<p style="margin:0;line-height:1.1;font-size:5px;"><b><font style="color: rgb(0, 56, 101);">Ej. Response:</font></b></p><p style="margin:0;line-height:1.1;font-size:5px;">
+</p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>{</b></span></font></p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>&nbsp; &nbsp; "Codigo": "00",</b></span></font></p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>&nbsp; &nbsp; "Descripcion": "Pin generado exitosamente"</b></span></font></p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>}</b></span></font></p>
+
+
+Ahora ayudame a arreglar esto
