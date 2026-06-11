@@ -1,19 +1,5 @@
-Mira, necesito reLizar un diagrama de flujo transaccional con esta plantilla (solo tengo esta imagen de referencia) de Reposicion de PIN TC 
+<font style="font-size: 6px;">Hollaa&nbsp;</font><span style="background-color: transparent; font-size: 6px;">Ej. Request Enviado</span><div><span style="font-size: 6px;">{</span></div><div><span style="font-size: 6px;">"cif": "2148503",</span></div><div><span style="font-size: 6px;">&nbsp; "dni": "0510199401090",</span></div><div><span style="font-size: 6px;">&nbsp; "cliente": "GUSTA GOMEZ MURILLO",</span></div><div><span style="font-size: 6px;">&nbsp; "metodoEnvio": 1,</span></div><div><span style="font-size: 6px;">&nbsp; "telefono": "96423295",</span></div><div><span style="font-size: 6px;">&nbsp; "operadorTelefono": "D",</span></div><div><span style="font-size: 6px;">&nbsp; "correo": "pamelas@banpais.hn",</span></div><div><span style="font-size: 6px;">&nbsp; "ultimosDigitosTC": "9227",</span></div><div><span style="font-size: 6px;">&nbsp; "contenidoSMS": "Su pin es @PIN",</span></div><div><span style="font-size: 6px;">&nbsp; "contenidoCorreo": "Su pin es @PIN"</span></div><div><span style="font-size: 6px;">}</span></div><div>
+</div>
 
 
-El flujo es asi ... el usuario puede solicitar la reposicion mediante los siguientes canales:
-    - Aplicación Movil
-    - Aplicación web
-    - Correo Electronico
-    - Whatsapp con el bot de Sam
-
-Esta Solicitud llega a CRM que es un sistema que se almacena en Guatemala
-Crm consume el microservicio 
-el microservicio envia una trama a AS400
-AS400 manda una trama al Broker MQ 
-y el broker va hacia AZ7 
-
-autoriza manda respuesta al broker, el broker al AS400, AS400 al microservicio, el microservicio a CRM 
-
-
-cabe recalcar que, el pin es enviado por el microservicio por correo o por SMS 
+como yo le quito espacio al interlineado
