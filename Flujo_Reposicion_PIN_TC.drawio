@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ==================== HEADER TABLE ==================== -->
+    <!-- Header border -->
+    <mxCell id="header_border" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="20" y="20" width="1614" height="90" as="geometry" />
+    </mxCell>
+    <!-- Header cell 1 -->
+    <mxCell id="h1" value="&lt;b&gt;Nombre del área:&lt;/b&gt; Tecnología" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="20" y="20" width="300" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h2" value="&lt;b&gt;Elaborado por:&lt;/b&gt; Arquitectura" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="320" y="20" width="320" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h3" value="&lt;b&gt;Fecha de expedición:&lt;/b&gt; 11-06-2026" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="640" y="20" width="320" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h4" value="&lt;b&gt;LOGO&lt;/b&gt;" style="text;html=1;strokeColor=#000000;fillColor=#dae8fc;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1474" y="20" width="160" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="h5" value="&lt;b&gt;Nombre del proceso:&lt;/b&gt; Reposición de PIN TC" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="20" y="50" width="300" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h6" value="&lt;b&gt;Revisado por:&lt;/b&gt; Gerencia TI" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="320" y="50" width="320" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h7" value="&lt;b&gt;Fecha de Actualización:&lt;/b&gt; 11-06-2026" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="640" y="50" width="320" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h8" value="&lt;b&gt;Sistema Tecnológico&lt;/b&gt;" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="20" y="80" width="300" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h9" value="&lt;b&gt;Aprobado por:&lt;/b&gt; Dirección" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="320" y="80" width="320" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="h10" value="&lt;b&gt;Código:&lt;/b&gt; PIN-TC-001 | &lt;b&gt;Clasificación:&lt;/b&gt; CONFIDENCIAL | &lt;b&gt;Versión:&lt;/b&gt; 1.0 | &lt;b&gt;Página:&lt;/b&gt; 1/1" style="text;html=1;strokeColor=#000000;fillColor=none;align=left;verticalAlign=middle;spacingLeft=5;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="640" y="80" width="834" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== TITLE ==================== -->
+    <mxCell id="title" value="FLUJO TRANSACCIONAL - REPOSICIÓN DE PIN TC" style="text;html=1;strokeColor=#000000;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="20" y="115" width="1614" height="35" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== SWIM LANE HEADERS ==================== -->
+    <!-- Lane 1: CANALES (Cliente) -->
+    <mxCell id="lane1_header" value="CLIENTE / CANALES" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="20" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane1_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="60" y="155" width="210" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Lane 2: CRM (Guatemala) -->
+    <mxCell id="lane2_header" value="CRM (Guatemala)" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="270" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane2_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="310" y="155" width="210" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Lane 3: MICROSERVICIO -->
+    <mxCell id="lane3_header" value="MICROSERVICIO" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="520" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane3_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="560" y="155" width="210" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Lane 4: AS400 -->
+    <mxCell id="lane4_header" value="AS400" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="770" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane4_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="810" y="155" width="210" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Lane 5: BROKER MQ -->
+    <mxCell id="lane5_header" value="BROKER MQ" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="1020" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane5_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="1060" y="155" width="210" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Lane 6: AZ7 (Autorizador) -->
+    <mxCell id="lane6_header" value="AZ7 (Autorizador)" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="1270" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane6_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="1310" y="155" width="210" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Lane 7: NOTIFICACIÓN -->
+    <mxCell id="lane7_header" value="NOTIFICACIÓN" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;rotation=-90;" vertex="1" parent="1">
+      <mxGeometry x="1520" y="155" width="40" height="870" as="geometry" />
+    </mxCell>
+    <mxCell id="lane7_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;opacity=30;" vertex="1" parent="1">
+      <mxGeometry x="1560" y="155" width="74" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- Outer border for all lanes -->
+    <mxCell id="outer_border" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="20" y="155" width="1614" height="870" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== STEP 1: INICIO ==================== -->
+    <mxCell id="s0" value="INICIO" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="110" y="195" width="110" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- Step 1: Canales de solicitud -->
+    <mxCell id="s1_title" value="① Solicitud Reposición PIN TC" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="60" y="250" width="210" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- App Movil -->
+    <mxCell id="canal1" value="📱 Aplicación Móvil" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="75" y="280" width="150" height="35" as="geometry" />
+    </mxCell>
+    <!-- App Web -->
+    <mxCell id="canal2" value="🌐 Aplicación Web" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="75" y="325" width="150" height="35" as="geometry" />
+    </mxCell>
+    <!-- Correo -->
+    <mxCell id="canal3" value="✉️ Correo Electrónico" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="75" y="370" width="150" height="35" as="geometry" />
+    </mxCell>
+    <!-- WhatsApp / SAM -->
+    <mxCell id="canal4" value="💬 WhatsApp - Bot SAM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="75" y="415" width="150" height="35" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== CRM ==================== -->
+    <mxCell id="crm_icon" value="🗄️ CRM" style="shape=mxgraph.cisco.servers.standard_server;html=1;pointerEvents=1;dashed=0;fillColor=#1e4d78;strokeColor=#1e4d78;sketch=0;aspect=fixed;fontColor=#ffffff;fontSize=11;fontStyle=1;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+      <mxGeometry x="350" y="280" width="60" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="crm_label" value="CRM&lt;br&gt;&lt;font style=&apos;font-size: 9px;&apos;&gt;(Almacenado en Guatemala)&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="310" y="360" width="210" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- CRM DB -->
+    <mxCell id="crm_db" value="BD CRM&lt;br&gt;&lt;font style=&apos;font-size:9px&apos;&gt;Guatemala&lt;/font&gt;" style="shape=mxgraph.flowchart.database;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=10;fontStyle=1;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="350" y="430" width="60" height="60" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== MICROSERVICIO ==================== -->
+    <mxCell id="ms_icon" value="" style="shape=mxgraph.cisco.servers.standard_server;html=1;pointerEvents=1;dashed=0;fillColor=#1e4d78;strokeColor=#1e4d78;sketch=0;aspect=fixed;" vertex="1" parent="1">
+      <mxGeometry x="605" y="270" width="60" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="ms_label" value="Microservicio&lt;br&gt;&lt;font style=&apos;font-size:9px&apos;&gt;TLS 1.2+&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="560" y="350" width="210" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== AS400 ==================== -->
+    <mxCell id="as400_icon" value="" style="shape=mxgraph.cisco.mainframes.mainframe;html=1;pointerEvents=1;dashed=0;fillColor=#1e4d78;strokeColor=#1e4d78;sketch=0;aspect=fixed;" vertex="1" parent="1">
+      <mxGeometry x="855" y="270" width="60" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="as400_label" value="AS400" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="810" y="350" width="210" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== BROKER MQ ==================== -->
+    <mxCell id="mq_icon" value="" style="shape=mxgraph.cisco.routers.router;html=1;pointerEvents=1;dashed=0;fillColor=#1e4d78;strokeColor=#1e4d78;sketch=0;aspect=fixed;" vertex="1" parent="1">
+      <mxGeometry x="1100" y="270" width="70" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="mq_label" value="Broker MQ" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1060" y="350" width="210" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== AZ7 ==================== -->
+    <mxCell id="az7_icon" value="" style="shape=mxgraph.cisco.servers.standard_server;html=1;pointerEvents=1;dashed=0;fillColor=#d79b00;strokeColor=#d79b00;sketch=0;aspect=fixed;" vertex="1" parent="1">
+      <mxGeometry x="1355" y="270" width="60" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="az7_label" value="AZ7&lt;br&gt;&lt;font style=&apos;font-size:9px&apos;&gt;Autorizador&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1310" y="350" width="210" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== ARROWS — IDA (REQUEST) ==================== -->
+    <!-- Canales → CRM -->
+    <mxCell id="arr1" value="Solicitud&lt;br&gt;Reposición PIN" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;fontStyle=0;fontSize=9;" edge="1" source="canal1" target="crm_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="arr1b" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;" edge="1" source="canal2" target="crm_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="arr1c" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;" edge="1" source="canal3" target="crm_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="arr1d" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;" edge="1" source="canal4" target="crm_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- CRM → Microservicio -->
+    <mxCell id="arr2" value="Consume&lt;br&gt;Microservicio" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;fontStyle=0;fontSize=9;" edge="1" source="crm_icon" target="ms_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Microservicio → AS400 (trama) -->
+    <mxCell id="arr3" value="Trama" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;fontStyle=0;fontSize=9;" edge="1" source="ms_icon" target="as400_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- AS400 → Broker MQ (trama) -->
+    <mxCell id="arr4" value="Trama&lt;br&gt;ISO 8583" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;fontStyle=0;fontSize=9;" edge="1" source="as400_icon" target="mq_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Broker MQ → AZ7 -->
+    <mxCell id="arr5" value="Solicitud&lt;br&gt;Autorización" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;fontStyle=0;fontSize=9;" edge="1" source="mq_icon" target="az7_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== ARROWS — VUELTA (RESPONSE) ==================== -->
+    <!-- AZ7 → Broker (respuesta) -->
+    <mxCell id="arr6" value="Respuesta&lt;br&gt;Autorización" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#00a000;strokeWidth=2;dashed=1;fontStyle=0;fontSize=9;fontColor=#00a000;" edge="1" source="az7_icon" target="mq_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Broker → AS400 (respuesta) -->
+    <mxCell id="arr7" value="Respuesta" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#00a000;strokeWidth=2;dashed=1;fontStyle=0;fontSize=9;fontColor=#00a000;" edge="1" source="mq_icon" target="as400_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- AS400 → Microservicio (respuesta) -->
+    <mxCell id="arr8" value="Respuesta" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#00a000;strokeWidth=2;dashed=1;fontStyle=0;fontSize=9;fontColor=#00a000;" edge="1" source="as400_icon" target="ms_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Microservicio → CRM (respuesta) -->
+    <mxCell id="arr9" value="Respuesta" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#00a000;strokeWidth=2;dashed=1;fontStyle=0;fontSize=9;fontColor=#00a000;" edge="1" source="ms_icon" target="crm_icon" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== ENVÍO DE PIN (Microservicio → Email/SMS) ==================== -->
+    <!-- PIN por Correo -->
+    <mxCell id="pin_email" value="✉️ PIN vía&lt;br&gt;Correo Electrónico" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="575" y="570" width="150" height="50" as="geometry" />
+    </mxCell>
+    <!-- PIN por SMS -->
+    <mxCell id="pin_sms" value="📱 PIN vía&lt;br&gt;SMS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="575" y="640" width="150" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- Microservicio → PIN email -->
+    <mxCell id="arr_pin1" value="Envía PIN" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;fontStyle=0;fontSize=9;fontColor=#006600;" edge="1" source="ms_icon" target="pin_email" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <!-- Microservicio → PIN SMS -->
+    <mxCell id="arr_pin2" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" source="ms_icon" target="pin_sms" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== INICIO arrow ==================== -->
+    <mxCell id="arr_start" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1e4d78;strokeWidth=2;" edge="1" source="s0" target="canal1" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- CRM stores solicitud -->
+    <mxCell id="arr_crm_db" value="Almacena&lt;br&gt;solicitud" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDx=0;entryDy=0;strokeColor=#9673a6;strokeWidth=1.5;dashed=1;fontStyle=0;fontSize=9;" edge="1" source="crm_icon" target="crm_db" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== FIN ==================== -->
+    <mxCell id="fin" value="FIN" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="110" y="730" width="110" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- CRM → FIN (confirmación al cliente) -->
+    <mxCell id="arr_fin" value="Confirmación&lt;br&gt;al cliente" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#00a000;strokeWidth=2;fontStyle=0;fontSize=9;fontColor=#006600;" edge="1" source="crm_icon" target="fin" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== DESCRIPTION BOX ==================== -->
+    <mxCell id="desc_title" value="DESCRIPCIÓN" style="text;html=1;strokeColor=#000000;fillColor=#1e4d78;fontColor=#ffffff;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="155" width="200" height="30" as="geometry" />
+    </mxCell>
+
+    <mxCell id="desc1" value="① El usuario solicita la reposición de PIN TC a través de uno de los canales habilitados: App Móvil, App Web, Correo Electrónico o WhatsApp (Bot SAM)." style="text;html=1;strokeColor=#d0d0d0;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="185" width="200" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="desc2" value="② La solicitud llega al CRM almacenado en Guatemala, que registra la petición y la almacena en su base de datos local." style="text;html=1;strokeColor=#d0d0d0;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="265" width="200" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="desc3" value="③ El CRM consume el Microservicio enviando la solicitud de cambio de PIN mediante TLS 1.2+." style="text;html=1;strokeColor=#d0d0d0;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="345" width="200" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="desc4" value="④ El Microservicio construye y envía una trama al AS400 para iniciar el proceso de autorización de cambio de PIN." style="text;html=1;strokeColor=#d0d0d0;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="415" width="200" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="desc5" value="⑤ AS400 envía la trama al Broker MQ en formato ISO 8583 para ser enrutada hacia el autorizador AZ7." style="text;html=1;strokeColor=#d0d0d0;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="485" width="200" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="desc6" value="⑥ AZ7 procesa y autoriza la transacción. La respuesta retorna por la misma ruta: AZ7 → Broker MQ → AS400 → Microservicio → CRM." style="text;html=1;strokeColor=#d0d0d0;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="555" width="200" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="desc7" value="⑦ El Microservicio envía el nuevo PIN al cliente a través de Correo Electrónico o SMS, según el canal preferido." style="text;html=1;strokeColor=#d0d0d0;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="635" width="200" height="80" as="geometry" />
+    </mxCell>
+    <mxCell id="desc8" value="⑧ El CRM recibe la confirmación y notifica al cliente la finalización exitosa del proceso de Reposición de PIN TC." style="text;html=1;strokeColor=#d0d0d0;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=5;fontSize=9;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="1634" y="715" width="200" height="80" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== LEGEND ==================== -->
+    <mxCell id="legend_box" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="870" width="500" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="legend_title" value="LEYENDA" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="70" y="875" width="200" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="leg1" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1e4d78;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1">
+      <mxGeometry x="70" y="905" width="60" height="10" relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="130" y="905" />
+          <mxPoint x="130" y="905" />
+        </Array>
+        <mxPoint x="70" y="905" as="sourcePoint" />
+        <mxPoint x="140" y="905" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg1_label" value="Flujo de solicitud (ida)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="150" y="897" width="180" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="leg2" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#00a000;strokeWidth=2;dashed=1;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="70" y="930" as="sourcePoint" />
+        <mxPoint x="140" y="930" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg2_label" value="Flujo de respuesta (vuelta)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="150" y="922" width="180" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="leg3" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="70" y="955" as="sourcePoint" />
+        <mxPoint x="140" y="955" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg3_label" value="Envío de PIN (correo / SMS)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="150" y="947" width="180" height="16" as="geometry" />
+    </mxCell>
+    <mxCell id="leg4" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;strokeWidth=1.5;dashed=1;" edge="1" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="70" y="977" as="sourcePoint" />
+        <mxPoint x="140" y="977" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="leg4_label" value="Almacenamiento en BD" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=9;" vertex="1" parent="1">
+      <mxGeometry x="150" y="969" width="180" height="16" as="geometry" />
+    </mxCell>
+
+    <!-- ==================== STEP NUMBERS ON LANES ==================== -->
+    <mxCell id="num1" value="①" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="110" y="160" width="30" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="num2" value="②" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="360" y="160" width="30" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="num3" value="③" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="610" y="160" width="30" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="num4" value="④" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="860" y="160" width="30" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="num5" value="⑤" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1110" y="160" width="30" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="num6" value="⑥" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1e4d78;strokeColor=#1e4d78;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1360" y="160" width="30" height="30" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
