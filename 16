@@ -1,5 +1,2 @@
-<p style="margin:0;line-height:1.1;font-size:5px;"><b><font style="color: rgb(0, 56, 101);">Ej. Response:</font></b></p><p style="margin:0;line-height:1.1;font-size:5px;">
-</p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>{</b></span></font></p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>&nbsp; &nbsp; "Codigo": "00",</b></span></font></p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>&nbsp; &nbsp; "Descripcion": "Pin generado exitosamente"</b></span></font></p><p style="margin: 0px; line-height: 1.1;"><font face="Courier New"><span style="font-size: 5px;"><b>}</b></span></font></p>
-
-
-Ahora ayudame a arreglar esto
+<p style="margin:0;line-height:1.1;font-size:5px;"><b><font color="#003865">Ej. Response:</font></b></p>
+<p style="margin:0;line-height:1.1;font-size:5px;font-family:Courier New;"><b>{<br/>&nbsp;&nbsp;&nbsp;&nbsp;"Codigo": "00",<br/>&nbsp;&nbsp;&nbsp;&nbsp;"Descripcion": "Pin generado exitosamente"<br/>}</b></p>
