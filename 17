@@ -1,83 +1,89 @@
-using EstadosCuentaTC.Repositories;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.Text;
+using System.IO.Compression;
+using System.Security.Cryptography;
 
 namespace EstadosCuentaTC.Services
 {
-    public class GeneracionIndividualService
+    public class EncriptacionService
     {
-        private readonly EstadoCuentaRepository _repo;
-        private readonly ILogger<GeneracionIndividualService> _logger;
+        private readonly ILogger<EncriptacionService> _logger;
 
-        public GeneracionIndividualService(
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionIndividualService> logger)
+        public EncriptacionService(ILogger<EncriptacionService> logger)
         {
-            _repo = repo;
             _logger = logger;
         }
 
-        public int Ejecutar(string rutaBase, string nombreArchivoBase, DateTime fechaCorte)
+        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte, string keyString)
         {
             try
             {
-                _logger.LogInformation("---------- INICIO GENERACIÓN INDIVIDUAL ----------");
+                _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN ----------");
 
-                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-                Directory.CreateDirectory(ruta);
-                _logger.LogInformation("Carpeta de salida: {Ruta}", ruta);
+                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
+                string nombreJson = $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.json";
+                string pathJson = Path.Combine(rutaFinal, nombreJson);
 
-                var archivoJson = Path.Combine(ruta, $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.json");
-                _logger.LogInformation("Archivo JSON de salida: {Archivo}", archivoJson);
+                _logger.LogInformation("Archivo a encriptar: {Archivo}", pathJson);
 
-                int contador = 0;
-
-                using (var writer = new StreamWriter(archivoJson, false, Encoding.UTF8, bufferSize: 65536))
+                if (!File.Exists(pathJson))
                 {
-                    writer.Write("{");
-
-                    while (true)
-                    {
-                        var resultado = _repo.ProcesarSiguiente();
-
-                        if (resultado == null)
-                        {
-                            _logger.LogInformation("No hay más registros por procesar.");
-                            break;
-                        }
-
-                        var (tarjeta, json) = resultado.Value;
-
-                        if (string.IsNullOrWhiteSpace(json))
-                        {
-                            _logger.LogWarning("Tarjeta {Tarjeta} no tiene JSON, se escribe vacío.", tarjeta);
-                            json = "{}";
-                        }
-
-                        if (contador > 0)
-                            writer.Write(",");
-
-                        writer.Write($"\"{tarjeta}\":{json}");
-                        contador++;
-
-                        if (contador % 100 == 0)
-                            _logger.LogInformation("Procesados hasta ahora: {Contador}", contador);
-                    }
-
-                    writer.Write("}");
+                    _logger.LogError("El archivo JSON no existe: {Archivo}", pathJson);
+                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
                 }
 
-                _logger.LogInformation("---------- FIN GENERACIÓN INDIVIDUAL ----------");
-                _logger.LogInformation("Total procesados: {Contador}", contador);
-                _logger.LogInformation("Archivo generado en: {Archivo}", archivoJson);
+                // Generar IV aleatorio
+                _logger.LogInformation("Generando IV aleatorio...");
+                byte[] iv = new byte[16];
+                using (var rng = RandomNumberGenerator.Create())
+                    rng.GetBytes(iv);
 
-                return contador;
+                string ivBase64 = Convert.ToBase64String(iv);
+
+                // Guardar llave pública
+                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
+                File.WriteAllText(rutaLlave, ivBase64);
+                _logger.LogInformation("Llave pública guardada en: {Ruta}", rutaLlave);
+
+                // Encriptar
+                string archivoEnc = pathJson + "e";
+                _logger.LogInformation("Encriptando archivo...");
+                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyString, ivBase64);
+
+                // Reemplazar original con encriptado
+                File.Delete(pathJson);
+                File.Move(archivoEnc, pathJson);
+                _logger.LogInformation("Archivo encriptado correctamente: {Archivo}", pathJson);
+
+                // Comprimir en ZIP
+                string nombreZip = $"{nombreArchivoBase}{fechaCorte:yyyyMMdd}.zip";
+                string rutaZipTemp = rutaFinal + ".zip";
+                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
+
+                _logger.LogInformation("Comprimiendo carpeta en ZIP...");
+
+                if (File.Exists(rutaZipTemp))
+                {
+                    File.Delete(rutaZipTemp);
+                    _logger.LogInformation("ZIP temporal anterior eliminado: {Zip}", rutaZipTemp);
+                }
+
+                if (File.Exists(rutaZipFinal))
+                {
+                    File.Delete(rutaZipFinal);
+                    _logger.LogInformation("ZIP final anterior eliminado: {Zip}", rutaZipFinal);
+                }
+
+                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
+                File.Move(rutaZipTemp, rutaZipFinal);
+
+                _logger.LogInformation("ZIP generado en: {Zip}", rutaZipFinal);
+                _logger.LogInformation("---------- FIN ENCRIPTACIÓN Y COMPRESIÓN ----------");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error en Generación Individual");
+                _logger.LogError(ex, "Error en el proceso de encriptación/compresión");
                 throw;
             }
         }
