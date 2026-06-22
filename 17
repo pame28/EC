@@ -1,58 +1,161 @@
 using EstadosCuentaTC.Dtos;
 using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
 
 namespace EstadosCuentaTC.Services
 {
-    public class ParametrosGeneracionECService
+    public class GeneracionEstadoCuentaService
     {
-        private readonly ParametrosGeneracionECRepository _paramRepo;
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly JsonRepository _jsonRepo;
-        private readonly ILogger<ParametrosGeneracionECService> _logger;
+        private readonly EstadoCuentaRepository _repo;
+        private readonly EncriptacionService _encriptacionService;
 
-        public ParametrosGeneracionECService(
-            ParametrosGeneracionECRepository paramRepo,
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
             JsonRepository jsonRepo,
-            ILogger<ParametrosGeneracionECService> logger)
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionEstadoCuentaService> logger,
+            ILoggerFactory loggerFactory,
+            IConfiguration config,
+            EncriptacionService encriptacionService)
         {
-            _paramRepo = paramRepo;
-            _jsonRepo = jsonRepo;
+            _individualService = individualService;
             _logger = logger;
+            _jsonRepo = jsonRepo;
+            _repo = repo;
+            _loggerFactory = loggerFactory;
+            _encriptacionService = encriptacionService;
         }
 
-        public ParametrosGeneracionECDto ObtenerParametros()
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("---------- GENERACIÓN DE ESTADOS DE CUENTA ----------");
+            _logger.LogInformation("Limpiando carpeta de generados...");
+            LimpiarCarpetaGenerados(parametros.RutaArchivoJson);
+
+            int totalProcesados = 0;
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo: INDIVIDUAL");
+
+                totalProcesados = _individualService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.NombreArchivo,
+                    parametros.FechaCorteProcesar
+                );
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo: LOTE");
+
+                var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
+                var loteService = new GeneracionLoteService(_repo, loteLogger);
+
+                totalProcesados = loteService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.NombreArchivo,
+                    parametros.FechaCorteProcesar,
+                    parametros.CantidadHilos
+                );
+            }
+            else
+            {
+                _logger.LogError("TipoGeneracion no válido: {Tipo}", parametros.TipoGeneracion);
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+
+            _logger.LogInformation("Total estados de cuenta generados: {Total}", totalProcesados);
+
+            _logger.LogInformation("Generando archivo contador...");
+            GenerarArchivoContador(
+                parametros.RutaArchivoJson,
+                parametros.FechaCorteProcesar,
+                parametros.TipoGeneracion,
+                totalProcesados
+            );
+
+            _logger.LogInformation("Iniciando proceso de encriptación y compresión...");
+            _encriptacionService.Ejecutar(
+                parametros.RutaArchivoJson,
+                parametros.NombreArchivo,
+                parametros.FechaCorteProcesar,
+                parametros.LlaveEncripta
+            );
+
+            _logger.LogInformation("========== PROCESO FINALIZADO CORRECTAMENTE ==========");
+        }
+
+        private void GenerarArchivoContador(
+            string rutaBase,
+            DateTime fechaCorte,
+            string tipoGeneracion,
+            int totalProcesados)
         {
             try
             {
-                _logger.LogInformation("========== INICIO PROCESO ==========");
-                _logger.LogInformation("Obteniendo parámetros de generación...");
+                _logger.LogInformation("Generando archivo Contador.txt...");
 
-                var parametros = _paramRepo.ObtenerParametros();
+                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+                var archivoContador = Path.Combine(ruta, "Contador.txt");
 
-                _logger.LogInformation("Fecha Corte       : {Fecha}", parametros.FechaCorteProcesar.ToString("dd/MM/yyyy"));
-                _logger.LogInformation("Tipo Generación   : {Tipo}", parametros.TipoGeneracion);
-                _logger.LogInformation("Registros por Lote: {Lote}", parametros.RegistrosPorLote);
-                _logger.LogInformation("Cantidad Hilos    : {Hilos}", parametros.CantidadHilos);
-                _logger.LogInformation("Nombre Archivo    : {Nombre}", parametros.NombreArchivo);
-                _logger.LogInformation("Ruta JSON         : {Ruta}", parametros.RutaArchivoJson);
-                _logger.LogInformation("Total Estados de Cuenta encontrados: {Total}", parametros.CantidadEstadosCuenta);
+                var contenido = $"Fecha Corte      : {fechaCorte:dd/MM/yyyy}{Environment.NewLine}" +
+                                $"Tipo Generacion  : {tipoGeneracion}{Environment.NewLine}" +
+                                $"Fecha Ejecucion  : {DateTime.Now:dd/MM/yyyy HH:mm:ss}{Environment.NewLine}" +
+                                $"Total Procesados : {totalProcesados}";
 
-                if (parametros.CantidadEstadosCuenta == 0)
-                {
-                    _logger.LogWarning("No hay estados de cuenta para procesar. El proceso se detiene.");
-                    throw new InvalidOperationException("No hay estados de cuenta para procesar en la fecha de corte indicada.");
-                }
+                File.WriteAllText(archivoContador, contenido);
 
-                _logger.LogInformation("Parámetros obtenidos correctamente.");
-                return parametros;
-            }
-            catch (InvalidOperationException)
-            {
-                throw; // se relanza limpio, ya fue logueado
+                _logger.LogInformation("Contador.txt generado en: {Ruta}", archivoContador);
+                _logger.LogInformation("Total procesados: {Total}", totalProcesados);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener parámetros de generación");
+                _logger.LogError(ex, "Error al generar archivo Contador.txt");
+                throw;
+            }
+        }
+
+        private void LimpiarCarpetaGenerados(string rutaBase)
+        {
+            try
+            {
+                if (!Directory.Exists(rutaBase))
+                {
+                    _logger.LogWarning("La carpeta de generados no existe, se omite limpieza: {Ruta}", rutaBase);
+                    return;
+                }
+
+                int archivosEliminados = 0;
+                int carpetasEliminadas = 0;
+
+                foreach (string file in Directory.GetFiles(rutaBase))
+                {
+                    File.Delete(file);
+                    archivosEliminados++;
+                    _logger.LogInformation("Archivo eliminado: {Archivo}", file);
+                }
+
+                foreach (string dir in Directory.GetDirectories(rutaBase))
+                {
+                    Directory.Delete(dir, true);
+                    carpetasEliminadas++;
+                    _logger.LogInformation("Carpeta eliminada: {Carpeta}", dir);
+                }
+
+                _logger.LogInformation(
+                    "Limpieza completada. Archivos: {A}, Carpetas: {C}",
+                    archivosEliminados, carpetasEliminadas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al limpiar carpeta de generados: {Ruta}", rutaBase);
                 throw;
             }
         }
