@@ -1,128 +1,458 @@
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
 
+var config = builder.Build();
 
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-Índice
-Descripción General	2
-Base de datos	2
-Parametrización	4
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-Descripción General
-Generación de XML de encabezado, detalle y financiamientos de estados de cuenta de tarjeta de crédito. 
-Base de datos
-Nombre del Objeto	Tipo de Objeto	Descripción
-ufn_RemoveInvalidXMLCharacters	SQL SCALAR FUNCTION	Reemplaza caracteres antes de generar el archivo XML
-ufn_ValidChars	SQL SCALAR FUNCTION	Realizar la limpieza y normalización de cadenas de texto
-usp_ActualizaEstadoLote	SQL STORED PROCEDURE	Update al estado del lote en la tabla MaestroEstadosCuentaXML
-usp_GeneraDetalleXML	SQL STORED PROCEDURE	Genera el XML de detalle de acuerdo con el Id de lote consultado
-usp_GeneraEncabezadoXML	SQL STORED PROCEDURE	Genera el XML de encabezado de acuerdo con el Id de lote consultado
-usp_GeneraFinanciamientosXML	SQL STORED PROCEDURE	Genera el XML de detalle de acuerdo con el Id de lote consultado
-usp_GetLotes	SQL STORED PROCEDURE	Obtiene el listado de lotes a procesar
-usp_GetParametros	SQL STORED PROCEDURE	Obtiene los parámetros generales del proceso.
-usp_ObtenerResumenJSON	SQL STORED PROCEDURE	Obtiene JSON con resumen de ejecución del proceso.
-usp_ObtieneMaestroEstadosCuentaXML	SQL STORED PROCEDURE	Obtiene las tarjetas que cumplen con las validaciones para ser consideradas en el procesamiento del XML
-usp_RebuildIndicesEstadoCuenta	SQL STORED PROCEDURE	Reconstruye los índices de las tablas relacionadas con el procesamiento de EC
-usp_ReporteHistoricoPorFecha	SQL STORED PROCEDURE	Obtiene los registros para generar el reporte de ejecución del proceso. 
-DetalleEstadoCuenta	TABLE	Bandeja de transacciones realizadas dentro del corte
-EncabezadoEstadoCuenta	TABLE	Bandeja de datos del encabezado de estados de cuenta
-FinanciamientosEstadoCuenta	TABLE	Bandeja con los saldos de los financiamientos a la fecha de corte
-HistoricoMaestroEstadosCuentaXML	TABLE	Histórico de ejecución, origen del reporte de Estados de Cuenta XML
-LogEjecucionProcesos	TABLE	Tabla con el detalle de cuentas procesadas por corte y contenidas dentro de los XML
-MaestroEstadosCuentaXML	TABLE	Maestro de tarjetas que cumplen con las validaciones de negocio y a las cuales se les generará EC XML
-MovimientosEstadoCuenta	TABLE	Transacciones de estados de cuenta separas por débitos y créditos en dólares y lempiras. Así como totales y subtotales separados por tarjetas titulares y adicionales.
-Parametros	TABLE	Parametrización general del proceso de generación.
-ParametrosProducto	TABLE	Parametrización de productos
-ParametrosRutas	TABLE	Parametrización de rutas para envío en físico. 
-TiposMovimientos	TABLE	Parametrización de tipos de movimientos para clasificación de débitos y créditos. 
-uvw_SubTotalesEstadoCuenta	VIEW	Vista para obtener los subtotales por tarjeta titular y adiciones para ser insertados en la tabla MovimientosEstadoCuenta.
-uvw_TotalesEstadoCuenta	VIEW	Vista para obtener los totales por tarjeta titular y adiciones para ser insertados en la tabla MovimientosEstadoCuenta.
-uvw_TransaccionesEstadoCuenta	VIEW	Vista para obtener las transacciones por tarjeta titular y adiciones como débitos y créditos para ser insertados en la tabla MovimientosEstadoCuenta.
-
-Parametrización
-Clave	Valor	
-Descripción
-CARPETA_ORIGEN	C:\ECXML\	Carpeta donde se generarán los XML, debe de ser propia del servidor donde se ejecute el proceso
-CARPETA_DESTINO	\\PRD-FILESERVER\In_Tec_act\ Carlos Elvir\ECXML\	Carpeta destino donde se colocarán los XML
-CORREO_REMITENTE	Estados Cuenta XML <EstadosCuentaXML@banpais.hn>	Correo desde el cual se enviará la notificación de finalización del proceso. 
-CORREO_PLANTILLA	<!DOCTYPE html> <html lang="es"> <head> <meta charset="UTF-8"> <title>Confirmacion EC XML</title> </head> <body> <h1>Confirmacion de EC XML</h1> </body> </html>	HTML plantilla para envío de correo de confirmación de finalización del proceso.
-CORREO_ASUNTO	Estados de Cuenta XML QA Procesador Regional corte [FechaCorteProcesar]	Asunto del correo de notificación de finalización del proceso.
-CORREOS_DESTINO	carlosen@banpais.hn	Correos a los cuales se enviará la notificación de finalización del proceso. Puede contener varios registros separados por punto y coma.
-FECHA_CORTE_PROCESAR	6/3/2026	Fecha de corte para la ejecución del proceso, su actualización es automática. 
-REGISTROS_POR_LOTE	3000	Cantidad de registros que se incluirán por iteración en la ejecución del proceso. Su objetivo es particionar los datos.
-NOMBRE_CARPETA_ HISTORICO	Historico	Carpeta donde se colocará una copia de los XML procesados, con el objetivo de mantener un histórico. 
-NombreXMLDetalle	Detalle_[FechaProceso].xml	Nombre del archivo XML de detalle de EC.
-NombreXMLEncabezado	Encabezado_[FechaProceso].xml	Nombre del archivo XML de encabezado de EC.
-NombreXMLFinanciamientos	Financiamientos_[FechaProceso]
-.xml	Nombre del archivo XML de financimientos de EC.
-NombreJSONResumen	Resumen.json	Archivo JSON donde se compartirá detalle de la ejecución de estados de cuentaXML: 
-
+//  Logger
+var loggerFactory = LoggerFactory.Create(builder =>
 {
-    "Resumen": {
-"TotalProcesos": 0,
-"TotalCuentasProceso1": 0,
-"TotalCuentasProceso2": 0,
-"EstadoEjecucion": "F"
+    builder.AddConsole();
+});
+
+
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+
+var loggerEncrypt = loggerFactory.CreateLogger<EncriptacionService>();
+
+
+var encriptacionService = new EncriptacionService(loggerEncrypt);
+
+
+
+//  Infraestructura
+//var sql = new SqlExecutor(connectionString);
+var sql = new SqlExecutor(config);
+
+//  FASE 1
+
+
+// Repos
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
+
+
+// FASE 3
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo, 
+    jsonRepo, 
+    loggerParam);
+
+
+//  FASE 4 (Servicios de generación)
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config,
+    encriptacionService
+
+);
+try
+{
+
+    var parametros = ParametrosECService.ObtenerParametros();
+    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR GENERAL: {ex.Message}");
+}
+
+
+
+
+
+
+
+
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Data;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class ParametrosGeneracionECRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public ParametrosGeneracionECRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public ParametrosGeneracionECDto ObtenerParametros()
+        {
+            using var conn = _sql.GetConnection();
+
+            // Obtener parámetros de generación
+            using var cmd = new SqlCommand("usp_ObtenerParametrosGeneracionEC", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                throw new Exception("No hay parámetros de generación configurados");
+
+            var parametros = new ParametrosGeneracionECDto
+            {
+
+                FechaCorteProcesar = reader.GetDateTime(reader.GetOrdinal("FechaCorteProcesar")),
+                DireccionReporte = reader["DireccionReporte"]?.ToString() ?? "",
+                RutaArchivoJson = reader["RutaArchivoJson"]?.ToString() ?? "",
+                RutaDestinoArchivoJson = reader["RutaDestinoArchivoJson"]?.ToString() ?? "",
+                LlaveEncripta = reader["LlaveEncripta"]?.ToString() ?? "",
+                TipoGeneracion = reader["TipoGeneracion"]?.ToString() ?? "",
+                RegistrosPorLote = reader.GetInt32(reader.GetOrdinal("RegistrosPorLote")),
+                CantidadHilos = reader.GetInt32(reader.GetOrdinal("CantidadHilos")),
+                NombreArchivo = reader["NombreArchivo"]?.ToString() ?? ""
+
+            };
+
+            reader.Close();
+
+            //  Obtener contep
+            parametros.CantidadEstadosCuenta = ObtenerCantidadEstadosCuenta(conn);
+
+            return parametros;
+        }
+
+        private int ObtenerCantidadEstadosCuenta(SqlConnection conn)
+        {
+            using var cmd = new SqlCommand("usp_ObtenerCantidadEstadosCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            return Convert.ToInt32(cmd.ExecuteScalar());
+        }
     }
 }
-MaximoHilos	3	Cantidad de hilos paralelos para la ejecución del proceso. 
-RutaConsola	C:\Users\66510\
-Desktop\publish\ GeneradorEstadosCuentaXML.exe	Ruta del servidor donde se encuentra la consola generadora de los EC XML
 
 
 
 
-Mira, tengo esta documentación técnica, pero tengo que agregarle ciertas cosas 
 
-Le hace falta ponerle que se crean 3 XML y un json de resumen de cuentas(voy a adjuntar una imagen)
-Tambien que creamos un historico
- 
-Y que se van generando estas carpetas(voy a adjuntar una imagen)
 
-Al final el proceso pasamos la carpeta a la carpeta del PU-SFTP para que Corporacion CM venga, mandamos un correo de confirmación al terminar
- 
- 
+
+using EstadosCuentaTC.Data;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class JsonRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public JsonRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+        public int GenerarJson()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_LlenarBandejaEstadoCuentaJson", conn);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+            var result = cmd.ExecuteScalar();
+
+            return Convert.ToInt32(result);
+        }
+    }
+}
+
+
+
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Dtos.Generacion_JSON;
+using EstadosCuentaTC.Dtos.Generacion_JSON_Lote;
+using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Text;
+
+namespace EstadosCuentaTC.Repositories
+{
+    public class EstadoCuentaRepository
+    {
+        private readonly SqlExecutor _sql;
+
+        public EstadoCuentaRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
+
+
+        public (string tarjeta, string json)? ProcesarSiguiente()
+        {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ProcesarSiguienteEstadoCuenta", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return null;
+
+            return (
+
+        reader["NoTarjeta"]?.ToString() ?? string.Empty,
+        reader["JsonEstadoCuenta"]?.ToString() ?? string.Empty
+
+            );
+        }
+
+        public LoteDatosDto? ObtenerLote(int workerId)
+        {
+            using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("usp_EstadoCuentaJsonMasivo", conn)
+            {
+                CommandType = CommandType.StoredProcedure,
+                CommandTimeout = 0
+            };
+
+            cmd.Parameters.AddWithValue("@WorkerId", workerId);
+
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+
+            using var reader = cmd.ExecuteReader();
+
+            // ── RS1: Encabezados ─────────────────────────────────────────────
+            // Si el SP devuelve la señal de fin (col "Resultado") → bandeja vacía
+            if (reader.FieldCount == 1 && reader.GetName(0) == "Resultado")
+                return null;
+
+            var encabezados = new List<EncabezadoDto>();
+            int numeroLote = 0;
+
+            while (reader.Read())
+            {
+                var enc = MapEncabezado(reader);
+                encabezados.Add(enc);
+
+                // El número de lote es el mismo para todos los registros del RS1;
+                // se toma del primero y se propaga al LoteDatosDto.
+                if (numeroLote == 0)
+                    numeroLote = enc.NumeroLote;
+            }
+
+            if (encabezados.Count == 0)
+                return null;
+
+            // ── RS2: Detalle ─────────────────────────────────────────────────
+            var detalles = new List<DetalleDto>();
+            reader.NextResult();
+
+            while (reader.Read())
+                detalles.Add(MapDetalle(reader));
+
+            // ── RS3: Financiamientos ─────────────────────────────────────────
+            var financiamientos = new List<FinanciamientoDto>();
+            reader.NextResult();
+
+            while (reader.Read())
+                financiamientos.Add(MapFinanciamiento(reader));
+
+            // ── RS4: Tarjetas del lote ───────────────────────────────────────
+            var tarjetas = new List<string>();
+            reader.NextResult();
+
+            while (reader.Read())
+                tarjetas.Add(reader.GetString(0));
+
+            return new LoteDatosDto
+            {
+                Encabezados = encabezados,
+                Detalles = detalles,
+                Financiamientos = financiamientos,
+                Tarjetas = tarjetas,
+                NumeroLote = numeroLote
+            };
+        }
+
+
+        public void ReiniciarControlLote(DateTime fechaCorte)
+        {
+            using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("usp_ReiniciarControlLote", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@FechaCorte", fechaCorte.Date);
+
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+
+            cmd.ExecuteNonQuery();
+        }
+
+        // ── Mappers ──────────────────────────────────────────────────────────
+
+        private static EncabezadoDto MapEncabezado(SqlDataReader r)
+        {
+            return new EncabezadoDto
+            {
+                No_Tarjeta = r["No_Tarjeta"]?.ToString() ?? "",
+                No_Cuenta = r["No_Cuenta"]?.ToString() ?? "",
+                NoCuentaVASA = r["NoCuentaVASA"]?.ToString() ?? "",
+                NumeroLote = Int(r, "NumeroLote"),
+                Origen = Trim(r, "Origen"),
+                Emisor = Trim(r, "Emisor"),
+                Nombre_TH_Tit = Trim(r, "Nombre_TH_Tit"),
+                Emisor_Madre = Trim(r, "Emisor_Madre"),
+                Cuenta_Madre = Trim(r, "Cuenta_Madre"),
+                Nombre_Empresa = Trim(r, "Nombre_Empresa"),
+                Tipo_Tarjeta = Trim(r, "Tipo_Tarjeta"),
+                Fecha_Pago = r["Fecha_Pago"] is DBNull ? null : Convert.ToDateTime(r["Fecha_Pago"]),
+                Fecha_Corte = r["Fecha_Corte"] is DBNull ? null : Convert.ToDateTime(r["Fecha_Corte"]),
+                Pago_Contado_MN = Dec(r, "Pago_Contado_MN"),
+                Pago_Minimo_MN = Dec(r, "Pago_Minimo_MN"),
+                Saldo_Vencido_MN = Dec(r, "Saldo_Vencido_MN"),
+                Saldo_Anterior_MN = Dec(r, "Saldo_Anterior_MN"),
+                Saldo_Final_MN = Dec(r, "Saldo_Final_MN"),
+                Compras_Deb_MN = Dec(r, "Compras_Deb_MN"),
+                Pagos_Cred_MN = Dec(r, "Pagos_Cred_MN"),
+                Sobregiro_MN = Dec(r, "Sobregiro_MN"),
+                Cuota_Mes_MN = Dec(r, "Cuota_Mes_MN"),
+                Pago_Contado_ME = Dec(r, "Pago_Contado_ME"),
+                Pago_Minimo_ME = Dec(r, "Pago_Minimo_ME"),
+                Saldo_Vencido_ME = Dec(r, "Saldo_Vencido_ME"),
+                Saldo_Anterior_ME = Dec(r, "Saldo_Anterior_ME"),
+                Saldo_Final_ME = Dec(r, "Saldo_Final_ME"),
+                Compras_Deb_ME = Dec(r, "Compras_Deb_ME"),
+                Pagos_Cred_ME = Dec(r, "Pagos_Cred_ME"),
+                Sobregiro_ME = Dec(r, "Sobregiro_ME"),
+                Cuota_Mes_ME = Dec(r, "Cuota_Mes_ME"),
+                Moneda_Lim_Cre = Trim(r, "Moneda_Lim_Cre"),
+                Limite_Credito = Dec(r, "Limite_Credito"),
+                Disponible_Cta_MN = Dec(r, "Disponible_Cta_MN"),
+                Disponible_Cta_ME = Dec(r, "Disponible_Cta_ME"),
+                Disponible_Ret_MN = Dec(r, "Disponible_Ret_MN"),
+                Disponible_Ret_ME = Dec(r, "Disponible_Ret_ME"),
+                PTS_Saldo_Ant = Long(r, "PTS_Saldo_Ant"),
+                PTS_Ganados = Long(r, "PTS_Ganados"),
+                PTS_Usuados = Long(r, "PTS_Usuados"),
+                PTS_Saldo_Actual = Long(r, "PTS_Saldo_Actual"),
+                Moneda_Lim_EF = Trim(r, "Moneda_Lim_EF"),
+                EF_Limite = Dec(r, "EF_Limite"),
+                EF_Saldo_MN = Dec(r, "EF_Saldo_MN"),
+                EF_Debitos_MN = Dec(r, "EF_Debitos_MN"),
+                EF_Creditos_MN = Dec(r, "EF_Creditos_MN"),
+                EF_Saldo_ME = Dec(r, "EF_Saldo_ME"),
+                EF_Debitos_ME = Dec(r, "EF_Debitos_ME"),
+                EF_Creditos_ME = Dec(r, "EF_Creditos_ME"),
+                EF_Disponible_MN = Dec(r, "EF_Disponible_MN"),
+                EF_Disponible_ME = Dec(r, "EF_Disponible_ME"),
+                Tasa_Int_Anual_MN = Dec(r, "Tasa_Int_Anual_MN"),
+                Tasa_Int_Anual_ME = Dec(r, "Tasa_Int_Anual_ME"),
+                Direccion_1 = Trim(r, "Direccion_1"),
+                Direccion_2 = Trim(r, "Direccion_2"),
+                Direccion_3 = Trim(r, "Direccion_3"),
+                Apdo_Postal = Trim(r, "Apdo_Postal"),
+                Ciudad = Trim(r, "Ciudad"),
+                Mensaje_1 = Trim(r, "Mensaje_1"),
+                Mensaje_2 = Trim(r, "Mensaje_2"),
+                Mensaje_3 = Trim(r, "Mensaje_3"),
+                Mensaje_4 = Trim(r, "Mensaje_4"),
+                Mensaje_5 = Trim(r, "Mensaje_5"),
+                Tarjeta_Imprimir = Trim(r, "Tarjeta_Imprimir"),
+                Costo_Anual_Tot_MN = Dec(r, "Costo_Anual_Tot_MN"),
+                Costo_Anual_Tot_ME = Dec(r, "Costo_Anual_Tot_ME"),
+                Plazo_Canc_Deuda_MN = Int(r, "Plazo_Canc_Deuda_MN"),
+                Plazo_Canc_Deuda_ME = Int(r, "Plazo_Canc_Deuda_ME"),
+                Interes_Pago_Min_MN = Dec(r, "Interes_Pago_Min_MN"),
+                Interes_Pago_Min_ME = Dec(r, "Interes_Pago_Min_ME"),
+                Correo = Trim(r, "Correo"),
+                Limite_CreditoMN = Dec(r, "Limite_CreditoMN"),
+                Interes_Corriente_MN = Dec(r, "Interes_Corriente_MN"),
+                Interes_Corriente_ME = Dec(r, "Interes_Corriente_ME"),
+                EstadoTarjeta = Trim(r, "EstadoTarjeta")
+            };
+        }
+
+
+        private static DetalleDto MapDetalle(SqlDataReader r) => new()
+        {
+            No_Cuenta = r["No_Cuenta"]?.ToString() ?? "",
+            Fecha_Consumo = r["Fecha_Consumo"] is DBNull ? null : Convert.ToDateTime(r["Fecha_Consumo"]),
+            Codigo_Mov = r["Codigo_Mov"]?.ToString() ?? "",
+            Descripcion_Mov = r["Descripcion_Mov"]?.ToString() ?? "",
+            Moneda_Mov = r["Moneda_Mov"]?.ToString() ?? "",
+            TipoMovimiento = r["TipoMovimiento"]?.ToString() ?? "",
+            Monto_Mov = r["Monto_Mov"] is DBNull ? 0m : Convert.ToDecimal(r["Monto_Mov"])
+        };
+
+        private static FinanciamientoDto MapFinanciamiento(SqlDataReader r) => new()
+        {
+            No_Cuenta = r["No_Cuenta"]?.ToString() ?? "",
+            Tipo = r["Tipo"]?.ToString() ?? "",
+            FechaOtorgamiento = r["FechaOtorgamiento"] is DBNull ? null : Convert.ToDateTime(r["FechaOtorgamiento"]),
+            ImporteTotalPlan = r["ImporteTotalPlan"] is DBNull ? 0m : Convert.ToDecimal(r["ImporteTotalPlan"]),
+            MonedaMovimiento = r["MonedaMovimiento"]?.ToString() ?? "",
+            Importe = r["Importe"] is DBNull ? 0m : Convert.ToDecimal(r["Importe"]),
+            CantidadCuotasPlan = r["CantidadCuotasPlan"] is DBNull ? 0 : Convert.ToInt32(r["CantidadCuotasPlan"]),
+            NoCuotaLiquidada = r["NoCuotaLiquidada"] is DBNull ? 0 : Convert.ToInt32(r["NoCuotaLiquidada"]),
+            PlanExtraTasa = r["PlanExtraTasa"] is DBNull ? 0m : Convert.ToDecimal(r["PlanExtraTasa"]),
+            PlanCuotaCapitalPend = r["PlanCuotaCapitalPend"] is DBNull ? 0m : Convert.ToDecimal(r["PlanCuotaCapitalPend"])
+        };
+
+        // ── Helpers de lectura segura ─────────────────────────────────────
+        private static string Trim(SqlDataReader r, string col) => r[col] is DBNull ? "" : r[col].ToString()!.Trim();
+        private static decimal Dec(SqlDataReader r, string col) => r[col] is DBNull ? 0m : Convert.ToDecimal(r[col]);
+        private static int Int(SqlDataReader r, string col) => r[col] is DBNull ? 0 : Convert.ToInt32(r[col]);
+        private static long Long(SqlDataReader r, string col) => r[col] is DBNull ? 0L : Convert.ToInt64(r[col]);
+    }
+}
+
+
+
+
+
+
+
+
+
+Mira que tengo un serio problema, y es que yo no le puse logs .. o sea .. para que quedaran en un txt, necesito apoyo con eso, además que ... cuando abro la consola .. me imprime fase 4 y se me cierra, que puede ser? 
