@@ -1,40 +1,87 @@
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Logging;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace EstadosCuentaTC.Logging
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// Ruta del log con fecha y hora
+var logPath = Path.Combine(
+    AppDomain.CurrentDomain.BaseDirectory,
+    $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+);
+
+Console.WriteLine($"Log guardándose en: {logPath}");
+
+// Logger con consola + archivo
+var loggerFactory = LoggerFactory.Create(b =>
 {
-    public class FileLogger : ILogger
-    {
-        private readonly string _category;
-        private readonly string _filePath;
-        private static readonly object _lock = new();
+    b.AddConsole();
+    b.AddProvider(new FileLoggerProvider(logPath));
+});
 
-        public FileLogger(string category, string filePath)
-        {
-            _category = category;
-            _filePath = filePath;
-        }
+var loggerParam      = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+var loggerEncrypt    = loggerFactory.CreateLogger<EncriptacionService>();
 
-        public IDisposable? BeginScope<TState>(TState state) => null;
-        public bool IsEnabled(LogLevel level) => true;
+var encriptacionService = new EncriptacionService(loggerEncrypt);
 
-        public void Log<TState>(LogLevel level, EventId eventId,
-            TState state, Exception? ex, Func<TState, Exception?, string> formatter)
-        {
-            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {_category}: {formatter(state, ex)}";
-            if (ex != null) line += $"\n  EXCEPCION: {ex}";
+var sql = new SqlExecutor(config);
 
-            lock (_lock)
-                File.AppendAllText(_filePath, line + Environment.NewLine);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo  = new JsonRepository(sql);
+var ecRepo    = new EstadoCuentaRepository(sql);
 
-            Console.WriteLine(line);
-        }
-    }
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo,
+    jsonRepo,
+    loggerParam);
 
-    public class FileLoggerProvider : ILoggerProvider
-    {
-        private readonly string _filePath;
-        public FileLoggerProvider(string filePath) => _filePath = filePath;
-        public ILogger CreateLogger(string category) => new FileLogger(category, _filePath);
-        public void Dispose() { }
-    }
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config,
+    encriptacionService
+);
+
+try
+{
+    var parametros = ParametrosECService.ObtenerParametros();
+    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
 }
+catch (Exception ex)
+{
+    Console.WriteLine($"\nERROR GENERAL: {ex.Message}");
+    Console.WriteLine($"DETALLE: {ex.StackTrace}");
+
+    // Escribe el error también al log
+    File.AppendAllText(logPath,
+        $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n");
+}
+
+Console.WriteLine("\nPresiona cualquier tecla para salir...");
+Console.ReadKey();
+
+
+
+
+
