@@ -1,123 +1,179 @@
-using System.Net.Http.Headers;
-using transacciones_flotantes.Service.Interface;
+Requirement 6.2.4
+Use software engineering techniques to mitigate common software attacks. 
+Requirement 6.2.4 states: "Software engineering techniques or other methods are defined and in use 
+by software development personnel to prevent or mitigate common software attacks and related 
+vulnerabilities in bespoke and custom software, including but not limited to the following: 
+• Injection attacks, including SQL, LDAP, XPath, or other command, parameter, object, fault, or 
+injection-type flaws.
+• Attacks on data and data structures, including attempts to manipulate buffers, pointers, input data, 
+or shared data.
+• Attacks on cryptography usage, including attempts to exploit weak, insecure, or inappropriate 
+cryptographic implementations, algorithms, cipher suites, or modes of operation.
+• Attacks on business logic, including attempts to abuse or bypass application features and 
+functionalities through the manipulation of APIs, communication protocols and channels, client-side 
+functionality, or other system/application functions and resources. This includes cross-site scripting 
+(XSS) and cross-site request forgery (CSRF).
+• Attacks on access control mechanisms, including attempts to bypass or abuse identification, 
+authentication, or authorization mechanisms, or attempts to exploit weaknesses in the 
+implementation of such mechanisms.
+• Attacks via any "high-risk" vulnerabilities identified in the vulnerability identification process, as 
+defined in Requirement 6.3.1."
+Micro Focus Fortify considers issues related to injection vulnerabilities, buffer manipulation, logic 
+attacks, access control violations, and high risk vulnerabilities to violate this requirement.
+Weak Encryption: Insecure Mode of Operation
+High
+Package: EstadosCuentaTC.Services
+Location
+Analysis Info
+Security/EncriptacionAES.cs:
+18
+Sink: FunctionCall: set_Mode
+Enclosing Method: EncriptarArchivo()
+Source:
+Analyzer
+SCA
+System Information Leak
+Low
+Package: <none>
+Location
+Analysis Info
+Program.cs:79
+Sink: System.Console.WriteLine()
+Enclosing Method: Main()
+Source: Read ex from Program.Main() In Program.c
+s:79
+Analyzer
 
-namespace transacciones_flotantes.Service
+
+
+
+
+
+
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Logging;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// Ruta del log con fecha y hora
+var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+Directory.CreateDirectory(logsDir); // la crea si no existe
+
+var logPath = Path.Combine(logsDir, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+
+Console.WriteLine($"Log guardándose en: {logPath}");
+
+// Logger con consola + archivo
+var loggerFactory = LoggerFactory.Create(b =>
 {
-    public class AuthHandler : DelegatingHandler
+    b.AddConsole();
+    b.AddProvider(new FileLoggerProvider(logPath));
+});
+
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+var loggerEncrypt = loggerFactory.CreateLogger<EncriptacionService>();
+
+var encriptacionService = new EncriptacionService(loggerEncrypt);
+
+var sql = new SqlExecutor(config);
+
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
+
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo,
+    jsonRepo,
+    loggerParam);
+
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config,
+    encriptacionService
+);
+
+try
+{
+    var parametros = ParametrosECService.ObtenerParametros();
+    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"\nERROR GENERAL: {ex.Message}");
+    Console.WriteLine($"DETALLE: {ex.StackTrace}");
+
+    // Escribe el error también al log
+    File.AppendAllText(logPath,
+        $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n");
+}
+
+Console.WriteLine("\nPresiona cualquier tecla para salir...");
+Console.ReadKey();
+
+
+
+
+
+
+using System;
+using System.IO;
+using System.Security.Cryptography;
+
+namespace EstadosCuentaTC.Services
+{
+    public static class EncriptacionAES
     {
-        private readonly IProveedorTokenService _tokenProvider;
-        private readonly ILogger<AuthHandler> _logger;
-
-        public AuthHandler(IProveedorTokenService tokenProvider, ILogger<AuthHandler> logger)
+        public static void EncriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string llaveiv)
         {
-            _tokenProvider = tokenProvider;
-            _logger = logger;
-        }
+            byte[] key = Convert.FromBase64String(keyString);
+            byte[] iv = Convert.FromBase64String(llaveiv);
 
-        protected override async Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            _logger.LogInformation("***** Petición recibida AuthHandler.SendAsync() *****");
-
-            try
+            using (Aes aesAlg = Aes.Create())
             {
-                var token = await _tokenProvider.ObtenerAccessTokenAsync();
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                aesAlg.Key = key;
+                aesAlg.IV = iv;
+                aesAlg.Mode = CipherMode.CBC;
+                aesAlg.Padding = PaddingMode.PKCS7;
 
-                _logger.LogInformation("Token enviado en Authorization Header : {Token}", token);
-
-                var response = await base.SendAsync(request, cancellationToken);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                using (var fsEntrada = new FileStream(rutaEntrada, FileMode.Open, FileAccess.Read))
+                using (var fsSalida = new FileStream(rutaSalida, FileMode.Create, FileAccess.Write))
+                using (var cs = new CryptoStream(fsSalida, aesAlg.CreateEncryptor(), CryptoStreamMode.Write))
                 {
-                    _logger.LogWarning("Token rechazado con 401. Invalidando y reintentando...");
-
-                    _tokenProvider.InvalidarToken();
-
-                    var nuevoToken = await _tokenProvider.ObtenerAccessTokenAsync();
-
-                    var retryRequest = await CloneRequestAsync(request, nuevoToken);
-
-                    _logger.LogInformation("Reintento con nuevo token: {Token}", nuevoToken);
-
-                    response = await base.SendAsync(retryRequest, cancellationToken);
-                }
-
-                _logger.LogInformation("***** Llamado completado con AuthHandler.SendAsync() *****");
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Error en AuthHandler.SendAsync(). Descripcion: {Message}", ex.Message);
-
-                return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
-                {
-                    Content = new StringContent($"Error en AuthHandler: {ex.Message}")
-                };
-            }
-        }
-
-        private static async Task<HttpRequestMessage> CloneRequestAsync(
-            HttpRequestMessage original, string nuevoToken)
-        {
-            var clone = new HttpRequestMessage(original.Method, original.RequestUri);
-
-            foreach (var header in original.Headers)
-            {
-                if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var sanitizedValues = SanitizeHeaderValues(header.Value);
-                if (sanitizedValues.Any())
-                {
-                    try
-                    {
-                        clone.Headers.Add(header.Key, sanitizedValues);
-                    }
-                    catch (FormatException)
-                    {
-                        // Header con formato inválido: se omite intencionalmente
-                    }
+                    fsEntrada.CopyTo(cs);
                 }
             }
-
-            clone.Headers.Authorization = new AuthenticationHeaderValue("Bearer", nuevoToken);
-
-            if (original.Content != null)
-            {
-                var bodyBytes = await original.Content.ReadAsByteArrayAsync();
-                clone.Content = new ByteArrayContent(bodyBytes);
-
-                foreach (var header in original.Content.Headers)
-                {
-                    var sanitizedValues = SanitizeHeaderValues(header.Value);
-                    if (sanitizedValues.Any())
-                    {
-                        try
-                        {
-                            clone.Content.Headers.Add(header.Key, sanitizedValues);
-                        }
-                        catch (FormatException)
-                        {
-                            // Header con formato inválido: se omite intencionalmente
-                        }
-                    }
-                }
-            }
-
-            return clone;
-        }
-
-        /// <summary>
-        /// Elimina caracteres CRLF de los valores de headers para prevenir HTTP Header Injection.
-        /// </summary>
-        private static IEnumerable<string> SanitizeHeaderValues(IEnumerable<string> values)
-        {
-            return values
-                .Select(v => v.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())
-                .Where(v => !string.IsNullOrWhiteSpace(v));
         }
     }
 }
+
+
+
+
+
+Ayudame a mitigar estos dos archivos tambien, por favor
