@@ -1,51 +1,3 @@
-Requirement 6.2.4
-Use software engineering techniques to mitigate common software attacks. 
-Requirement 6.2.4 states: "Software engineering techniques or other methods are defined and in use 
-by software development personnel to prevent or mitigate common software attacks and related 
-vulnerabilities in bespoke and custom software, including but not limited to the following: 
-• Injection attacks, including SQL, LDAP, XPath, or other command, parameter, object, fault, or 
-injection-type flaws.
-• Attacks on data and data structures, including attempts to manipulate buffers, pointers, input data, 
-or shared data.
-• Attacks on cryptography usage, including attempts to exploit weak, insecure, or inappropriate 
-cryptographic implementations, algorithms, cipher suites, or modes of operation.
-• Attacks on business logic, including attempts to abuse or bypass application features and 
-functionalities through the manipulation of APIs, communication protocols and channels, client-side 
-functionality, or other system/application functions and resources. This includes cross-site scripting 
-(XSS) and cross-site request forgery (CSRF).
-• Attacks on access control mechanisms, including attempts to bypass or abuse identification, 
-authentication, or authorization mechanisms, or attempts to exploit weaknesses in the 
-implementation of such mechanisms.
-• Attacks via any "high-risk" vulnerabilities identified in the vulnerability identification process, as 
-defined in Requirement 6.3.1."
-Micro Focus Fortify considers issues related to injection vulnerabilities, buffer manipulation, logic 
-attacks, access control violations, and high risk vulnerabilities to violate this requirement.
-
-
-
-
-Package: transacciones_flotantes.Service
-Location Analysis Info Analyzer
-Service/AuthHandler.cs:87 Sink: System.Net.Http.Headers.HttpHeaders.TryAddWi
-thoutValidation()
-Enclosing Method: CloneRequestAsync()
-Source: System.Net.Http.HttpContent.get_Headers() 
-from transacciones_flotantes.Service.AuthHandler
-.CloneRequestAsync() In Service/AuthHandler.cs:8
-6
-SCA
-Service/AuthHandler.cs:87 Sink: System.Net.Http.Headers.HttpHeaders.TryAddWi
-thoutValidation()
-Enclosing Method: CloneRequestAsync()
-Source: System.Net.Http.HttpContent.get_Headers() 
-from transacciones_flotantes.Service.AuthHandler
-
-
-
-
-
-
-
 using System.Net.Http.Headers;
 using transacciones_flotantes.Service.Interface;
 
@@ -76,7 +28,6 @@ namespace transacciones_flotantes.Service
 
                 var response = await base.SendAsync(request, cancellationToken);
 
-                // Si el proveedor rechaza el token, invalidar y reintentar una vez
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     _logger.LogWarning("Token rechazado con 401. Invalidando y reintentando...");
@@ -85,11 +36,9 @@ namespace transacciones_flotantes.Service
 
                     var nuevoToken = await _tokenProvider.ObtenerAccessTokenAsync();
 
-                    // Clonar el request porque HttpRequestMessage no se puede reusar
                     var retryRequest = await CloneRequestAsync(request, nuevoToken);
 
-                    _logger.LogInformation(
-                        "Reintento con nuevo token: {Token}", nuevoToken);
+                    _logger.LogInformation("Reintento con nuevo token: {Token}", nuevoToken);
 
                     response = await base.SendAsync(retryRequest, cancellationToken);
                 }
@@ -110,42 +59,65 @@ namespace transacciones_flotantes.Service
             }
         }
 
-        // HttpRequestMessage no se puede reenviar, hay que clonarlo
         private static async Task<HttpRequestMessage> CloneRequestAsync(
             HttpRequestMessage original, string nuevoToken)
         {
             var clone = new HttpRequestMessage(original.Method, original.RequestUri);
 
-            // Copiar headers excepto Authorization (se reemplaza con el nuevo token)
             foreach (var header in original.Headers)
             {
-                if (!header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
-                    clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var sanitizedValues = SanitizeHeaderValues(header.Value);
+                if (sanitizedValues.Any())
+                {
+                    try
+                    {
+                        clone.Headers.Add(header.Key, sanitizedValues);
+                    }
+                    catch (FormatException)
+                    {
+                        // Header con formato inválido: se omite intencionalmente
+                    }
+                }
             }
 
             clone.Headers.Authorization = new AuthenticationHeaderValue("Bearer", nuevoToken);
 
-            // Copiar el body si existe
             if (original.Content != null)
             {
                 var bodyBytes = await original.Content.ReadAsByteArrayAsync();
                 clone.Content = new ByteArrayContent(bodyBytes);
 
                 foreach (var header in original.Content.Headers)
-                    clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                {
+                    var sanitizedValues = SanitizeHeaderValues(header.Value);
+                    if (sanitizedValues.Any())
+                    {
+                        try
+                        {
+                            clone.Content.Headers.Add(header.Key, sanitizedValues);
+                        }
+                        catch (FormatException)
+                        {
+                            // Header con formato inválido: se omite intencionalmente
+                        }
+                    }
+                }
             }
 
             return clone;
         }
+
+        /// <summary>
+        /// Elimina caracteres CRLF de los valores de headers para prevenir HTTP Header Injection.
+        /// </summary>
+        private static IEnumerable<string> SanitizeHeaderValues(IEnumerable<string> values)
+        {
+            return values
+                .Select(v => v.Replace("\r", string.Empty).Replace("\n", string.Empty).Trim())
+                .Where(v => !string.IsNullOrWhiteSpace(v));
+        }
     }
 }
-
-
-
-
-
-
-Ayudame a mitigar lo que se me señala, y dame un poco de contexto
-.CloneRequestAsync() In Service/AuthHandler.cs:8
-6
-SCA
