@@ -1,19 +1,18 @@
-try
-{
-    var parametros = ParametrosECService.ObtenerParametros();
-    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
-    generacionService.Ejecutar(parametros);
-    Console.WriteLine("\n========== FIN PROCESO ==========");
-}
-catch (Exception ex)
-{
-    // ✅ Solo se muestra un mensaje genérico en consola, sin exponer detalles internos
-    Console.WriteLine("\nERROR GENERAL: Se produjo un error durante la ejecución del proceso.");
+Entiende el contexto:
 
-    // ✅ El detalle completo (mensaje + stack trace) se escribe SOLO en el log seguro
-    var detalleError = $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n";
-    File.AppendAllText(logPath, detalleError);
-}
+hola, comentarles que tenemos el siguiente escenario:
+ 
+Actualmente el servicio realiza la busqueda del CIF en AS400 lo que ocasiona que para gestionar la reposicion del PIN de tarjetas de credito adicionales es necesario eniar el CIF del Tiitular de lo contrario el servicio devuelve mensaje: (05) NO SE ENCONTRÓ NINGUNA TARJETA ASOCIADA EN LA CUENTA. 
+ 
+Nos confirman si tenian contemplado este escenario o si por algun tema de seguridad solo el Titular podría solicitar reposicion de PIN de sus tarjetas adicionales? ya que esta informacion no la ingresaría el cliente. al momento de gestionar la reposición.
+ 
+Adicional
+Pamela agradecería nos confirme de su lado si esta es la manera en que el servcio realizar la busqueda de la TC en AS400 y si e CIF es el campo llave?
 
-Console.WriteLine("\nPresiona cualquier tecla para salir...");
-Console.ReadKey();
+
+
+Lo que yo quiero responder, pero necesito que se pueda comprender bien, ayudame a redactarlo mejor:  
+
+
+Bueno, le comento un poco del proceso. Para realizar la "busqueda" que menciona, es necesario el cif y los ultimos 4 digitos de la TC para yo enviar a AS400 la
+información que necesitan(Numero de equivalente y fecha de vencimiento) para obtener el PIN. Asi que respecto a su pregunta, si el CIF es crucial para identificar la TC junto con los ultimos cuatro digitos
