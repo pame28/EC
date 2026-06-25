@@ -1,195 +1,213 @@
-Mira este es un archivo correcto:
+using reposicion_pin.DTOs;
+using reposicion_pin.Models;
+using reposicion_pin.Repository.Interface;
+using reposicion_pin.Service.Interface;
+using Microsoft.Extensions.Logging;
 
+namespace reposicion_pin.Service
 {
-"1000000004302032": {
-    "Encabezado": {
-        "Origen": "VASA",
-        "Emisor": "491045",
-        "No_Cuenta": "5000001759903",
-        "Nombre_TH_Tit": "LUIS MIGUEL MARQUEZ DUBON",
-        "Emisor_Madre": "491045",
-        "Cuenta_Madre": "",
-        "Nombre_Empresa": "AGENCIA RAMIFICADA ESPECIALIZA",
-        "Tipo_Tarjeta": "VI0703",
-        "No_Tarjeta": "1000000004302032",
-        "Fecha_Pago": "14/07/2026",
-        "Fecha_Corte": "18/06/2026",
-        "Pago_Contado_MN": 74428.67,
-        "Pago_Minimo_MN": 29600.00,
-        "Saldo_Vencido_MN": 14800.00,
-        "Saldo_Anterior_MN": 56086.60,
-        "Saldo_Final_MN": 74428.67,
-        "Compras_Deb_MN": 18342.07,
-        "Pagos_Cred_MN": 0.00,
-        "Sobregiro_MN": 0.00,
-        "Cuota_Mes_MN": 29600.00,
-        "Pago_Contado_ME": 443.30,
-        "Pago_Minimo_ME": 0.00,
-        "Saldo_Vencido_ME": 0.00,
-        "Saldo_Anterior_ME": 206.47,
-        "Saldo_Final_ME": 443.30,
-        "Saldo_Consumo_MN": 72419.67,
-        "Saldo_Consumo_ME": 443.30,
-        "Compras_Deb_ME": 500.83,
-        "Pagos_Cred_ME": 264.00,
-        "Sobregiro_ME": 0.00,
-        "Cuota_Mes_ME": 0.00,
-        "Moneda_Lim_Cre": "$",
-        "Limite_Credito": 6000.00,
-        "Disponible_Cta_MN": 40155.83,
-        "Disponible_Cta_ME": 1498.94,
-        "Disponible_Ret_MN": 40155.83,
-        "Disponible_Ret_ME": 1498.94,
-        "PTS_Saldo_Ant": 32918,
-        "PTS_Ganados": 284,
-        "PTS_Usuados": 0,
-        "PTS_Saldo_Actual": 33202,
-        "Moneda_Lim_EF": "$",
-        "EF_Limite": 6000.00,
-        "EF_Saldo_MN": 34276.71,
-        "EF_Debitos_MN": 11425.56,
-        "EF_Creditos_MN": 0.00,
-        "EF_Saldo_ME": 0.00,
-        "EF_Debitos_ME": 0.00,
-        "EF_Creditos_ME": 0.00,
-        "EF_Disponible_MN": 0.00,
-        "EF_Disponible_ME": 0.00,
-        "Tasa_Int_Anual_MN": 51.11,
-        "Tasa_Int_Anual_ME": 51.11,
-        "Direccion_1": "ENVIAR SOLO POR CORREO ELECTRONICO",
-        "Direccion_2": "PPAL FTE BCO FICOHSA    * LA ENTRADA",
-        "Direccion_3": "",
-        "Apdo_Postal": "",
-        "Ciudad": "LA ENTRADA",
-        "Mensaje_1": "",
-        "Mensaje_2": "",
-        "Mensaje_3": "",
-        "Mensaje_4": "",
-        "Mensaje_5": "",
-        "Tarjeta_Imprimir": "4697",
-        "Costo_Anual_Tot_MN": 0.00,
-        "Costo_Anual_Tot_ME": 0.00,
-        "Plazo_Canc_Deuda_MN": 106,
-        "Plazo_Canc_Deuda_ME": 30,
-        "Interes_Pago_Min_MN": 2738.98,
-        "Interes_Pago_Min_ME": 31.05,
-        "Correo": "GERENCIA@ARESEGURIDADHN.COM",
-        "Limite_CreditoMN": 160737.00,
-        "Interes_Corriente_MN": 2009.00,
-        "Interes_Corriente_ME": 0.00,
-        "Estado": 20
-    },
-    "Detalle": [       
+    public class TarjetaValidationService : ITarjetaValidationService
+    {
+        private readonly ITarjetaRepository _tarjetaRepository;
+        private readonly ICatalogoRespuestaRepository _catalogoRepository;
+        private readonly IOperadorRepository _operadorRepository;
+        private readonly ILogger<TarjetaValidationService> _logger;
+
+        public TarjetaValidationService(
+            ITarjetaRepository tarjetaRepository,
+            ICatalogoRespuestaRepository catalogoRepository,
+            IOperadorRepository operadorRepository,
+            ILogger<TarjetaValidationService> logger)
         {
-            "Fecha_Consumo": "18/06/2026",
-            "Tipo_Reg": 3,
-            "Descripcion_Mov": "Total Titular + Adicional",
-            "DebitosMN": 18342.07,
-            "CreditosMN": 0.00,
-            "DebitosME": 500.83,
-            "CreditosME": 264.00
+            _tarjetaRepository = tarjetaRepository;
+            _catalogoRepository = catalogoRepository;
+            _operadorRepository = operadorRepository;
+            _logger = logger;
         }
-    ],
-    "Financiamientos": []
-  }
-}
 
+        public async Task<ReposicionPinResponseDto> ValidarTarjetaAsync(ReposicionPinRequestDto request)
+        {
+            _logger.LogInformation("[Validacion] Iniciando validación de campos del request");
 
-
-
-
-Y este es el que quiero comparar con el primero: 
-
-{
-    "1000000004501867": {
-        "Encabezado": {
-            "Origen": "VASA",
-            "Emisor": "523562",
-            "No_Cuenta": "5000001854097",
-            "Nombre_TH_Tit": "BARRIENTOS AMADOR FRANCISCO ENRIQUE",
-            "Emisor_Madre": "523562",
-            "Cuenta_Madre": "",
-            "Nombre_Empresa": "",
-            "Tipo_Tarjeta": "MC0101",
-            "No_Tarjeta": "1000000004501867",
-            "Fecha_Pago": "14/07/2026",
-            "Fecha_Corte": "18/06/2026",
-            "Pago_Contado_MN": 153150.00,
-            "Pago_Minimo_MN": 5235.00,
-            "Saldo_Vencido_MN": 0.00,
-            "Saldo_Anterior_MN": 153150.00,
-            "Saldo_Final_MN": 153150.00,
-            "Compras_Deb_MN": 188150.00,
-            "Pagos_Cred_MN": 35000.00,
-            "Sobregiro_MN": 0.00,
-            "Cuota_Mes_MN": 5235.00,
-            "Pago_Contado_ME": 17833.60,
-            "Pago_Minimo_ME": 526.66,
-            "Saldo_Vencido_ME": 0.00,
-            "Saldo_Anterior_ME": 17833.60,
-            "Saldo_Final_ME": 17833.60,
-            "Saldo_Consumo_MN": 306300.00,
-            "Saldo_Consumo_ME": 35667.20,
-            "Compras_Deb_ME": 18393.60,
-            "Pagos_Cred_ME": 560.00,
-            "Sobregiro_ME": 0.00,
-            "Cuota_Mes_ME": 526.66,
-            "Moneda_Lim_Cre": "$",
-            "Limite_Credito": 35000.00,
-            "Disponible_Cta_MN": 222871.55,
-            "Disponible_Cta_ME": 9004.62,
-            "Disponible_Ret_MN": 222871.55,
-            "Disponible_Ret_ME": 9004.62,
-            "PTS_Saldo_Ant": 0,
-            "PTS_Ganados": 0,
-            "PTS_Usuados": 0,
-            "PTS_Saldo_Actual": 0,
-            "Moneda_Lim_EF": "$",
-            "EF_Limite": 15000.00,
-            "EF_Saldo_MN": 0.00,
-            "EF_Debitos_MN": 0.00,
-            "EF_Creditos_MN": 0.00,
-            "EF_Saldo_ME": 0.00,
-            "EF_Debitos_ME": 0.00,
-            "EF_Creditos_ME": 0.00,
-            "EF_Disponible_MN": 371262.00,
-            "EF_Disponible_ME": 15000.00,
-            "Tasa_Int_Anual_MN": 51.31,
-            "Tasa_Int_Anual_ME": 51.31,
-            "Direccion_1": "RESIDENCIAL JARAGUA",
-            "Direccion_2": "",
-            "Direccion_3": "",
-            "Apdo_Postal": "",
-            "Ciudad": "EL PROGRESO",
-            "Mensaje_1": "",
-            "Mensaje_2": "",
-            "Mensaje_3": "",
-            "Mensaje_4": "",
-            "Mensaje_5": "3",
-            "Tarjeta_Imprimir": "3192",
-            "Costo_Anual_Tot_MN": 0.00,
-            "Costo_Anual_Tot_ME": 0.00,
-            "Plazo_Canc_Deuda_MN": 72,
-            "Plazo_Canc_Deuda_ME": 37,
-            "Interes_Pago_Min_MN": 7268.92,
-            "Interes_Pago_Min_ME": 862.57,
-            "Correo": "ELKINS@BANPAIS.HN",
-            "Limite_CreditoMN": 1414.10,
-            "Interes_Corriente_MN": 0.00,
-            "Interes_Corriente_ME": 0.00,
-            "Estado": 20
-        },
-        "Detalle": [
+            try
             {
-                "Fecha_Consumo": "18/06/2026",
-                "Tipo_Reg": 3,
-                "Descripcion_Mov": "Total Titular + Adicional",
-                "DebitosMN": 752600.00,
-                "CreditosMN": 140000.00,
-                "DebitosME": 73574.40,
-                "CreditosME": 2240.00
+                // Validaciones de campos básicos
+                if (string.IsNullOrWhiteSpace(request.CIF))
+                {
+                    _logger.LogWarning("[Validacion] CIF vacío o inválido");
+                    return await ObtenerRespuestaDinamicaAsync(10, "CIF", "Se encuentra vacío o inválido");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.UltimosDigitosTC))
+                {
+                    _logger.LogWarning("[Validacion] UltimosDigitosTC vacío o inválido");
+                    return await ObtenerRespuestaDinamicaAsync(10, "UltimosDigitosTC", "Se encuentra vacío o inválido");
+                }
+
+                if (request.MetodoEnvio != 1 && request.MetodoEnvio != 2)
+                {
+                    _logger.LogWarning("[Validacion] MetodoEnvio inválido | Valor recibido: {MetodoEnvio}", request.MetodoEnvio);
+                    return await ObtenerRespuestaDinamicaAsync(10, "MetodoEnvio", "Debe ser 1 (SMS) o 2 (Correo)");
+                }
+
+                _logger.LogInformation("[Validacion] Campos básicos OK | MetodoEnvio: {MetodoEnvio}", request.MetodoEnvio);
+
+                // Validaciones según método de envío
+                if (request.MetodoEnvio == 1) // SMS
+                {
+                    _logger.LogInformation("[Validacion] Validando campos para envío por SMS");
+
+                    if (string.IsNullOrWhiteSpace(request.Telefono))
+                    {
+                        _logger.LogWarning("[Validacion] Teléfono vacío para MetodoEnvio=1 (SMS)");
+                        return await ObtenerRespuestaDinamicaAsync(10, "Telefono", "Es obligatorio para MetodoEnvio=1 (SMS)");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(request.ContenidoSMS))
+                    {
+                        _logger.LogWarning("[Validacion] ContenidoSMS vacío para MetodoEnvio=1 (SMS)");
+                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido SMS", "Es obligatorio para MetodoEnvio=1 (SMS)");
+                    }
+
+                    _logger.LogInformation("[Validacion] Verificando operador de teléfono | Operador: {Operador}", request.OperadorTelefono);
+                    var operadorValido = await _operadorRepository.ExisteOperadorAsync(request.OperadorTelefono);
+                    if (!operadorValido)
+                    {
+                        _logger.LogWarning("[Validacion] Operador de teléfono no válido | Operador: {Operador}", request.OperadorTelefono);
+                        return await ObtenerRespuestaDinamicaAsync(10, "Operador de Teléfono", "No es válido");
+                    }
+
+                    _logger.LogInformation("[Validacion] Campos SMS OK | Operador: {Operador}", request.OperadorTelefono);
+                }
+                else if (request.MetodoEnvio == 2) // Correo
+                {
+                    _logger.LogInformation("[Validacion] Validando campos para envío por Correo");
+
+                    if (string.IsNullOrWhiteSpace(request.Correo) || !request.Correo.Contains("@"))
+                    {
+                        _logger.LogWarning("[Validacion] Correo inválido o vacío | Correo: {Correo}", request.Correo);
+                        return await ObtenerRespuestaDinamicaAsync(10, "Correo", "Es obligatorio y debe ser válido para MetodoEnvio=2 (Correo)");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(request.ContenidoCorreo))
+                    {
+                        _logger.LogWarning("[Validacion] ContenidoCorreo vacío para MetodoEnvio=2 (Correo)");
+                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
+                    }
+
+                    _logger.LogInformation("[Validacion] Campos Correo OK");
+                }
+
+                // Consulta de tarjeta
+                _logger.LogInformation("[Validacion] Consultando tarjeta | CIF: {CIF} | UltimosDigitos: {Digitos}",
+                    request.CIF, request.UltimosDigitosTC);
+
+                var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(request.CIF, request.UltimosDigitosTC);
+
+                if (tarjeta == null)
+                {
+                    _logger.LogWarning("[Validacion] Tarjeta no encontrada | CIF: {CIF} | UltimosDigitos: {Digitos}",
+                        request.CIF, request.UltimosDigitosTC);
+                    return await ObtenerRespuestaAsync(5);
+                }
+
+                _logger.LogInformation("[Validacion] Tarjeta encontrada | EstadoTarjeta: {Estado} | FechaFinVigencia: {Fecha} | EstadoHabilitar: '{EstadoHabilitar}'",
+                    tarjeta.EstadoTarjeta, tarjeta.FechaFinVigencia.ToString("yyyy-MM-dd"), tarjeta.EstadoHabilitar);
+
+                // Validaciones de estado de tarjeta
+                if (tarjeta.EstadoTarjeta != 20)
+                {
+                    _logger.LogWarning("[Validacion] Tarjeta inactiva | EstadoTarjeta: {Estado} (se esperaba 20)",
+                        tarjeta.EstadoTarjeta);
+                    return await ObtenerRespuestaAsync(1);
+                }
+
+                if (tarjeta.FechaFinVigencia < DateTime.Today)
+                {
+                    _logger.LogWarning("[Validacion] Tarjeta vencida | FechaFinVigencia: {Fecha} | Hoy: {Hoy}",
+                        tarjeta.FechaFinVigencia.ToString("yyyy-MM-dd"), DateTime.Today.ToString("yyyy-MM-dd"));
+                    return await ObtenerRespuestaAsync(2);
+                }
+
+                if (!string.IsNullOrWhiteSpace(tarjeta.EstadoHabilitar))
+                {
+                    _logger.LogWarning("[Validacion] EstadoHabilitar no está vacío | Valor: '{EstadoHabilitar}'",
+                        tarjeta.EstadoHabilitar);
+                    return await ObtenerRespuestaDinamicaAsync(10, "EstadoHabilitar", "debe estar vacío");
+                }
+
+                _logger.LogInformation("[Validacion] Validación completada exitosamente | CIF: {CIF}", request.CIF);
+                return await ObtenerRespuestaAsync(0);
             }
-        ],
-        "Financiamientos": []
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Validacion] Error inesperado en ValidarTarjetaAsync | CIF: {CIF}", request.CIF);
+                return await ObtenerRespuestaDinamicaAsync(99, "Excepción", ex.Message);
+            }
+        }
+
+        public async Task<TarjetaModel?> ObtenerTarjetaAsync(string cif, string ultimosDigitos)
+        {
+            _logger.LogInformation("[Validacion] ObtenerTarjetaAsync | CIF: {CIF} | UltimosDigitos: {Digitos}",
+                cif, ultimosDigitos);
+
+            var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(cif, ultimosDigitos);
+
+            if (tarjeta == null)
+                _logger.LogWarning("[Validacion] ObtenerTarjetaAsync no encontró tarjeta | CIF: {CIF}", cif);
+            else
+                _logger.LogInformation("[Validacion] ObtenerTarjetaAsync retornó tarjeta correctamente | CIF: {CIF}", cif);
+
+            return tarjeta;
+        }
+
+        #region Helpers
+        private async Task<ReposicionPinResponseDto> ObtenerRespuestaAsync(int codigo, string? fallbackDescripcion = null)
+        {
+            string? descripcion = fallbackDescripcion;
+            try
+            {
+                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
+                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
+                    descripcion = catalogoDescripcion;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[Validacion] Fallo consultando catálogo para código {Codigo}", codigo);
+            }
+            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = descripcion };
+        }
+
+        private async Task<ReposicionPinResponseDto> ObtenerRespuestaDinamicaAsync(int codigo, string campo, string detalle, string? fallbackDescripcion = null)
+        {
+            string? descripcion = fallbackDescripcion;
+            try
+            {
+                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
+                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
+                    descripcion = catalogoDescripcion;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[Validacion] Fallo consultando catálogo para código {Codigo}", codigo);
+            }
+
+            string mensajeFinal = $"{descripcion ?? "Error"} {campo}: {detalle}";
+            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = mensajeFinal };
+        }
+        #endregion
     }
 }
+
+
+
+
+Fijate que aqui tengo dos detalles importantes .. y es ... las validaciones de formato de correo y de telefono 
+
+
+
+Ellos tienen asignado sus propios errores 3 para el formato del telefono y el 4 que es el formato del correo y yo todos los mapeo por el error 10, eso no deberia ser asi ... 
+Y creo que no tengo valdiaciones de formato para el telefono .. que solo deben ser numeros, que no debe tener caracteres especiales, solo 8 numeros y asi 
+
+
+Me ayudas a corregirlo porfs
