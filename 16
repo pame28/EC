@@ -1,213 +1,58 @@
-using reposicion_pin.DTOs;
-using reposicion_pin.Models;
-using reposicion_pin.Repository.Interface;
-using reposicion_pin.Service.Interface;
-using Microsoft.Extensions.Logging;
-
-namespace reposicion_pin.Service
+if (request.MetodoEnvio == 1) // SMS
 {
-    public class TarjetaValidationService : ITarjetaValidationService
+    _logger.LogInformation("[Validacion] Validando campos para envío por SMS");
+
+    if (string.IsNullOrWhiteSpace(request.Telefono))
     {
-        private readonly ITarjetaRepository _tarjetaRepository;
-        private readonly ICatalogoRespuestaRepository _catalogoRepository;
-        private readonly IOperadorRepository _operadorRepository;
-        private readonly ILogger<TarjetaValidationService> _logger;
-
-        public TarjetaValidationService(
-            ITarjetaRepository tarjetaRepository,
-            ICatalogoRespuestaRepository catalogoRepository,
-            IOperadorRepository operadorRepository,
-            ILogger<TarjetaValidationService> logger)
-        {
-            _tarjetaRepository = tarjetaRepository;
-            _catalogoRepository = catalogoRepository;
-            _operadorRepository = operadorRepository;
-            _logger = logger;
-        }
-
-        public async Task<ReposicionPinResponseDto> ValidarTarjetaAsync(ReposicionPinRequestDto request)
-        {
-            _logger.LogInformation("[Validacion] Iniciando validación de campos del request");
-
-            try
-            {
-                // Validaciones de campos básicos
-                if (string.IsNullOrWhiteSpace(request.CIF))
-                {
-                    _logger.LogWarning("[Validacion] CIF vacío o inválido");
-                    return await ObtenerRespuestaDinamicaAsync(10, "CIF", "Se encuentra vacío o inválido");
-                }
-
-                if (string.IsNullOrWhiteSpace(request.UltimosDigitosTC))
-                {
-                    _logger.LogWarning("[Validacion] UltimosDigitosTC vacío o inválido");
-                    return await ObtenerRespuestaDinamicaAsync(10, "UltimosDigitosTC", "Se encuentra vacío o inválido");
-                }
-
-                if (request.MetodoEnvio != 1 && request.MetodoEnvio != 2)
-                {
-                    _logger.LogWarning("[Validacion] MetodoEnvio inválido | Valor recibido: {MetodoEnvio}", request.MetodoEnvio);
-                    return await ObtenerRespuestaDinamicaAsync(10, "MetodoEnvio", "Debe ser 1 (SMS) o 2 (Correo)");
-                }
-
-                _logger.LogInformation("[Validacion] Campos básicos OK | MetodoEnvio: {MetodoEnvio}", request.MetodoEnvio);
-
-                // Validaciones según método de envío
-                if (request.MetodoEnvio == 1) // SMS
-                {
-                    _logger.LogInformation("[Validacion] Validando campos para envío por SMS");
-
-                    if (string.IsNullOrWhiteSpace(request.Telefono))
-                    {
-                        _logger.LogWarning("[Validacion] Teléfono vacío para MetodoEnvio=1 (SMS)");
-                        return await ObtenerRespuestaDinamicaAsync(10, "Telefono", "Es obligatorio para MetodoEnvio=1 (SMS)");
-                    }
-
-                    if (string.IsNullOrWhiteSpace(request.ContenidoSMS))
-                    {
-                        _logger.LogWarning("[Validacion] ContenidoSMS vacío para MetodoEnvio=1 (SMS)");
-                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido SMS", "Es obligatorio para MetodoEnvio=1 (SMS)");
-                    }
-
-                    _logger.LogInformation("[Validacion] Verificando operador de teléfono | Operador: {Operador}", request.OperadorTelefono);
-                    var operadorValido = await _operadorRepository.ExisteOperadorAsync(request.OperadorTelefono);
-                    if (!operadorValido)
-                    {
-                        _logger.LogWarning("[Validacion] Operador de teléfono no válido | Operador: {Operador}", request.OperadorTelefono);
-                        return await ObtenerRespuestaDinamicaAsync(10, "Operador de Teléfono", "No es válido");
-                    }
-
-                    _logger.LogInformation("[Validacion] Campos SMS OK | Operador: {Operador}", request.OperadorTelefono);
-                }
-                else if (request.MetodoEnvio == 2) // Correo
-                {
-                    _logger.LogInformation("[Validacion] Validando campos para envío por Correo");
-
-                    if (string.IsNullOrWhiteSpace(request.Correo) || !request.Correo.Contains("@"))
-                    {
-                        _logger.LogWarning("[Validacion] Correo inválido o vacío | Correo: {Correo}", request.Correo);
-                        return await ObtenerRespuestaDinamicaAsync(10, "Correo", "Es obligatorio y debe ser válido para MetodoEnvio=2 (Correo)");
-                    }
-
-                    if (string.IsNullOrWhiteSpace(request.ContenidoCorreo))
-                    {
-                        _logger.LogWarning("[Validacion] ContenidoCorreo vacío para MetodoEnvio=2 (Correo)");
-                        return await ObtenerRespuestaDinamicaAsync(10, "Contenido Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
-                    }
-
-                    _logger.LogInformation("[Validacion] Campos Correo OK");
-                }
-
-                // Consulta de tarjeta
-                _logger.LogInformation("[Validacion] Consultando tarjeta | CIF: {CIF} | UltimosDigitos: {Digitos}",
-                    request.CIF, request.UltimosDigitosTC);
-
-                var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(request.CIF, request.UltimosDigitosTC);
-
-                if (tarjeta == null)
-                {
-                    _logger.LogWarning("[Validacion] Tarjeta no encontrada | CIF: {CIF} | UltimosDigitos: {Digitos}",
-                        request.CIF, request.UltimosDigitosTC);
-                    return await ObtenerRespuestaAsync(5);
-                }
-
-                _logger.LogInformation("[Validacion] Tarjeta encontrada | EstadoTarjeta: {Estado} | FechaFinVigencia: {Fecha} | EstadoHabilitar: '{EstadoHabilitar}'",
-                    tarjeta.EstadoTarjeta, tarjeta.FechaFinVigencia.ToString("yyyy-MM-dd"), tarjeta.EstadoHabilitar);
-
-                // Validaciones de estado de tarjeta
-                if (tarjeta.EstadoTarjeta != 20)
-                {
-                    _logger.LogWarning("[Validacion] Tarjeta inactiva | EstadoTarjeta: {Estado} (se esperaba 20)",
-                        tarjeta.EstadoTarjeta);
-                    return await ObtenerRespuestaAsync(1);
-                }
-
-                if (tarjeta.FechaFinVigencia < DateTime.Today)
-                {
-                    _logger.LogWarning("[Validacion] Tarjeta vencida | FechaFinVigencia: {Fecha} | Hoy: {Hoy}",
-                        tarjeta.FechaFinVigencia.ToString("yyyy-MM-dd"), DateTime.Today.ToString("yyyy-MM-dd"));
-                    return await ObtenerRespuestaAsync(2);
-                }
-
-                if (!string.IsNullOrWhiteSpace(tarjeta.EstadoHabilitar))
-                {
-                    _logger.LogWarning("[Validacion] EstadoHabilitar no está vacío | Valor: '{EstadoHabilitar}'",
-                        tarjeta.EstadoHabilitar);
-                    return await ObtenerRespuestaDinamicaAsync(10, "EstadoHabilitar", "debe estar vacío");
-                }
-
-                _logger.LogInformation("[Validacion] Validación completada exitosamente | CIF: {CIF}", request.CIF);
-                return await ObtenerRespuestaAsync(0);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[Validacion] Error inesperado en ValidarTarjetaAsync | CIF: {CIF}", request.CIF);
-                return await ObtenerRespuestaDinamicaAsync(99, "Excepción", ex.Message);
-            }
-        }
-
-        public async Task<TarjetaModel?> ObtenerTarjetaAsync(string cif, string ultimosDigitos)
-        {
-            _logger.LogInformation("[Validacion] ObtenerTarjetaAsync | CIF: {CIF} | UltimosDigitos: {Digitos}",
-                cif, ultimosDigitos);
-
-            var tarjeta = await _tarjetaRepository.ObtenerTarjetaAsync(cif, ultimosDigitos);
-
-            if (tarjeta == null)
-                _logger.LogWarning("[Validacion] ObtenerTarjetaAsync no encontró tarjeta | CIF: {CIF}", cif);
-            else
-                _logger.LogInformation("[Validacion] ObtenerTarjetaAsync retornó tarjeta correctamente | CIF: {CIF}", cif);
-
-            return tarjeta;
-        }
-
-        #region Helpers
-        private async Task<ReposicionPinResponseDto> ObtenerRespuestaAsync(int codigo, string? fallbackDescripcion = null)
-        {
-            string? descripcion = fallbackDescripcion;
-            try
-            {
-                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
-                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
-                    descripcion = catalogoDescripcion;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[Validacion] Fallo consultando catálogo para código {Codigo}", codigo);
-            }
-            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = descripcion };
-        }
-
-        private async Task<ReposicionPinResponseDto> ObtenerRespuestaDinamicaAsync(int codigo, string campo, string detalle, string? fallbackDescripcion = null)
-        {
-            string? descripcion = fallbackDescripcion;
-            try
-            {
-                var catalogoDescripcion = await _catalogoRepository.ObtenerDescripcionAsync(codigo);
-                if (!string.IsNullOrWhiteSpace(catalogoDescripcion))
-                    descripcion = catalogoDescripcion;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[Validacion] Fallo consultando catálogo para código {Codigo}", codigo);
-            }
-
-            string mensajeFinal = $"{descripcion ?? "Error"} {campo}: {detalle}";
-            return new ReposicionPinResponseDto { CodigoInt = codigo, Descripcion = mensajeFinal };
-        }
-        #endregion
+        _logger.LogWarning("[Validacion] Teléfono vacío para MetodoEnvio=1 (SMS)");
+        return await ObtenerRespuestaDinamicaAsync(10, "Telefono", "Es obligatorio para MetodoEnvio=1 (SMS)");
     }
+
+    // ✅ NUEVO: Validación de formato de teléfono → código 3
+    if (!System.Text.RegularExpressions.Regex.IsMatch(request.Telefono, @"^\d{8}$"))
+    {
+        _logger.LogWarning("[Validacion] Teléfono con formato inválido | Valor: {Telefono}", request.Telefono);
+        return await ObtenerRespuestaDinamicaAsync(3, "Telefono", "Debe contener exactamente 8 dígitos numéricos sin caracteres especiales");
+    }
+
+    if (string.IsNullOrWhiteSpace(request.ContenidoSMS))
+    {
+        _logger.LogWarning("[Validacion] ContenidoSMS vacío para MetodoEnvio=1 (SMS)");
+        return await ObtenerRespuestaDinamicaAsync(10, "Contenido SMS", "Es obligatorio para MetodoEnvio=1 (SMS)");
+    }
+
+    _logger.LogInformation("[Validacion] Verificando operador de teléfono | Operador: {Operador}", request.OperadorTelefono);
+    var operadorValido = await _operadorRepository.ExisteOperadorAsync(request.OperadorTelefono);
+    if (!operadorValido)
+    {
+        _logger.LogWarning("[Validacion] Operador de teléfono no válido | Operador: {Operador}", request.OperadorTelefono);
+        return await ObtenerRespuestaDinamicaAsync(10, "Operador de Teléfono", "No es válido");
+    }
+
+    _logger.LogInformation("[Validacion] Campos SMS OK | Operador: {Operador}", request.OperadorTelefono);
 }
+else if (request.MetodoEnvio == 2) // Correo
+{
+    _logger.LogInformation("[Validacion] Validando campos para envío por Correo");
 
+    if (string.IsNullOrWhiteSpace(request.Correo))
+    {
+        _logger.LogWarning("[Validacion] Correo vacío | Correo: {Correo}", request.Correo);
+        return await ObtenerRespuestaDinamicaAsync(10, "Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
+    }
 
+    // ✅ CORREGIDO: Validación de formato de correo → código 4 (antes usaba 10)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(request.Correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+    {
+        _logger.LogWarning("[Validacion] Correo con formato inválido | Correo: {Correo}", request.Correo);
+        return await ObtenerRespuestaDinamicaAsync(4, "Correo", "El formato no es válido para MetodoEnvio=2 (Correo)");
+    }
 
+    if (string.IsNullOrWhiteSpace(request.ContenidoCorreo))
+    {
+        _logger.LogWarning("[Validacion] ContenidoCorreo vacío para MetodoEnvio=2 (Correo)");
+        return await ObtenerRespuestaDinamicaAsync(10, "Contenido Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
+    }
 
-Fijate que aqui tengo dos detalles importantes .. y es ... las validaciones de formato de correo y de telefono 
-
-
-
-Ellos tienen asignado sus propios errores 3 para el formato del telefono y el 4 que es el formato del correo y yo todos los mapeo por el error 10, eso no deberia ser asi ... 
-Y creo que no tengo valdiaciones de formato para el telefono .. que solo deben ser numeros, que no debe tener caracteres especiales, solo 8 numeros y asi 
-
-
-Me ayudas a corregirlo porfs
+    _logger.LogInformation("[Validacion] Campos Correo OK");
+}
