@@ -1,58 +1,55 @@
-if (request.MetodoEnvio == 1) // SMS
+using Microsoft.AspNetCore.Mvc;
+using reposicion_pin.DTOs;
+using reposicion_pin.Service;
+
+namespace reposicion_pin.Controllers
 {
-    _logger.LogInformation("[Validacion] Validando campos para envío por SMS");
-
-    if (string.IsNullOrWhiteSpace(request.Telefono))
+    [Route("api")]
+    [ApiController]
+    public class ReposicionPinController : ControllerBase
     {
-        _logger.LogWarning("[Validacion] Teléfono vacío para MetodoEnvio=1 (SMS)");
-        return await ObtenerRespuestaDinamicaAsync(10, "Telefono", "Es obligatorio para MetodoEnvio=1 (SMS)");
-    }
+        private readonly ReposicionPinService _service;
+        private readonly ILogger<ReposicionPinController> _logger;
 
-    // ✅ NUEVO: Validación de formato de teléfono → código 3
-    if (!System.Text.RegularExpressions.Regex.IsMatch(request.Telefono, @"^\d{8}$"))
-    {
-        _logger.LogWarning("[Validacion] Teléfono con formato inválido | Valor: {Telefono}", request.Telefono);
-        return await ObtenerRespuestaDinamicaAsync(3, "Telefono", "Debe contener exactamente 8 dígitos numéricos sin caracteres especiales");
-    }
+        public ReposicionPinController(
+            ReposicionPinService service,
+            ILogger<ReposicionPinController> logger)
+        {
+            _service = service;
+            _logger = logger;
+        }
 
-    if (string.IsNullOrWhiteSpace(request.ContenidoSMS))
-    {
-        _logger.LogWarning("[Validacion] ContenidoSMS vacío para MetodoEnvio=1 (SMS)");
-        return await ObtenerRespuestaDinamicaAsync(10, "Contenido SMS", "Es obligatorio para MetodoEnvio=1 (SMS)");
-    }
+        [HttpPost]
+        [Route("reposicion-pin")]
+        public async Task<ActionResult<ReposicionPinResponseDto>> GenerarPin([FromBody] ReposicionPinRequestDto request)
+        {
+            try
+            {
+                _logger.LogInformation("REQUEST reposicion-pin: {Request}",
+                    System.Text.Json.JsonSerializer.Serialize(request));
 
-    _logger.LogInformation("[Validacion] Verificando operador de teléfono | Operador: {Operador}", request.OperadorTelefono);
-    var operadorValido = await _operadorRepository.ExisteOperadorAsync(request.OperadorTelefono);
-    if (!operadorValido)
-    {
-        _logger.LogWarning("[Validacion] Operador de teléfono no válido | Operador: {Operador}", request.OperadorTelefono);
-        return await ObtenerRespuestaDinamicaAsync(10, "Operador de Teléfono", "No es válido");
-    }
+                var response = await _service.ReposicionPinAsync(request);
 
-    _logger.LogInformation("[Validacion] Campos SMS OK | Operador: {Operador}", request.OperadorTelefono);
+                _logger.LogInformation("RESPONSE reposicion-pin: {Response}",
+                    System.Text.Json.JsonSerializer.Serialize(response));
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado en GenerarPin");
+                return Ok(new ReposicionPinResponseDto
+                {
+                    CodigoInt = 99,
+                    Descripcion = $"Error inesperado: {ex.Message}"
+                });
+            }
+        }
+    }
 }
-else if (request.MetodoEnvio == 2) // Correo
-{
-    _logger.LogInformation("[Validacion] Validando campos para envío por Correo");
 
-    if (string.IsNullOrWhiteSpace(request.Correo))
-    {
-        _logger.LogWarning("[Validacion] Correo vacío | Correo: {Correo}", request.Correo);
-        return await ObtenerRespuestaDinamicaAsync(10, "Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
-    }
 
-    // ✅ CORREGIDO: Validación de formato de correo → código 4 (antes usaba 10)
-    if (!System.Text.RegularExpressions.Regex.IsMatch(request.Correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-    {
-        _logger.LogWarning("[Validacion] Correo con formato inválido | Correo: {Correo}", request.Correo);
-        return await ObtenerRespuestaDinamicaAsync(4, "Correo", "El formato no es válido para MetodoEnvio=2 (Correo)");
-    }
 
-    if (string.IsNullOrWhiteSpace(request.ContenidoCorreo))
-    {
-        _logger.LogWarning("[Validacion] ContenidoCorreo vacío para MetodoEnvio=2 (Correo)");
-        return await ObtenerRespuestaDinamicaAsync(10, "Contenido Correo", "Es obligatorio para MetodoEnvio=2 (Correo)");
-    }
 
-    _logger.LogInformation("[Validacion] Campos Correo OK");
-}
+
+Como puedo forzar un error 99? quiero forzarlo :c 
