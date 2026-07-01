@@ -1,3 +1,900 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using DevExpress.XtraEditors;
+using System.Data.SqlClient;
+using System.Data.OleDb;
+using Microsoft.VisualBasic;
+using log4net;
+using System.Threading;
+using System.Net.Mail;
+using System.IO;
+using DevExpress.XtraGrid.Views.Grid;
+using System.Security.Cryptography;
+using System.Net;
+
+
+namespace TransaccionesBancarias
+{
+    public partial class FrmPlanillasCtas : DevExpress.XtraEditors.XtraForm
+    {
+        ILog log;
+        private DataSet dsFromXls = new DataSet();
+        private DataTable Detalle = new DataTable();
+        private DataTable FileText = new DataTable();
+        private string Dierctorio, DirectoryCrypto, resp_call, FileName, _cnnAS400, Service, DTRX, CTRX, CTCTRX, PasswordCripto = string.Empty;
+        int error, MotivoD, MotivoC, MotivoCTC, ContadorTC, LongitudTC, LongitudCtas, ErrorDebito = 0;
+        bool resp_open, duplicado, Dialoganswer = false;
+        decimal TotalCreditos, TotalDebitos = 0;
+        private string[] sVal;
+        private string[] CriptoVal;
+        Int64 Lote = 0;
+        BP_PROXY Proxy = new BP_PROXY();
+        BP_CRYPTO Criptografia = new BP_CRYPTO();
+
+        public FrmPlanillasCtas()
+        {
+            InitializeComponent();
+            CredencialesAS400();
+            log4net.Config.XmlConfigurator.Configure();
+            log = LogManager.GetLogger(this.GetType()); //aquí procedemos a inicializar el objeto log.
+        }
+
+        private void FrmCargaPlanillas_Load(object sender, EventArgs e)
+        {
+            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("es-HN");
+
+            DirectoryCrypto = Path.GetDirectoryName(Application.ExecutablePath) + @"\CFFiles.exe";
+            this.CredencialesCriptoWS();
+
+            this.monedasTableAdapter.Fill(this.dS_TransaccionesBancarias.Monedas);
+            this.UpdateTableAdapterMonedas();
+            this.monedasTableAdapter.Fill(this.dS_TransaccionesBancarias.Monedas);
+            this.GetCajeroAgencia();
+            if (error == 0)
+            {
+                this.GetLongitudes();
+            }
+        }
+
+        private void CredencialesAS400()
+        {
+            string connectionAs400 = string.Empty;
+
+            try
+            {
+
+                connectionAs400 = Properties.Settings.Default.CnxAS400;
+
+                string wsURLAS400 = Properties.Settings.Default.UrlWsAS400;
+                int APPid = Properties.Settings.Default.Appid;
+                Int16 EQPid = Properties.Settings.Default.Serverid;
+
+                UA wsAs400 = new UA(wsURLAS400);
+                wsAs400.PreAuthenticate = true;
+                ICredentials credentials = CredentialCache.DefaultCredentials;
+                wsAs400.Credentials = credentials;
+
+                sVal = wsAs400.SolicitarUC(APPid, EQPid);
+                OleDbConnectionStringBuilder strOleDBcsb = new OleDbConnectionStringBuilder(connectionAs400);
+
+
+                if (sVal != null)
+                {
+                    strOleDBcsb["Password"] = sVal[1];
+                    strOleDBcsb["User ID"] = sVal[0];
+                    strOleDBcsb["Data Source"] = Properties.Settings.Default.ServidorDB2;
+
+                    _cnnAS400 = strOleDBcsb.ConnectionString;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Obtener Credenciales del AS400 ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Obtener Credenciales del AS400 " + ex.Message.ToString(), "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                error++;
+            }
+        } // credenciales para conexion as400
+
+        private void CredencialesCriptoWS()
+        {
+            try
+            {
+                UA var_wsAS400 = new UA(Properties.Settings.Default.UrlWsAS400);
+                var_wsAS400.Credentials = new System.Net.NetworkCredential(Properties.Settings.Default.UsuarioLogueado, Properties.Settings.Default.Contrasena, Properties.Settings.Default.Dominio);
+                CriptoVal = var_wsAS400.SolicitarUC(Properties.Settings.Default.AppIdCripto, Properties.Settings.Default.ServerIdCripto);
+                PasswordCripto = CriptoVal[1];
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Obtener Credenciales de critografia desde Web Services");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Obtener Credenciales de critografia desde Web Services" + ex.Message.ToString(), "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                error++;
+            }
+        } // credenciales para conexion as400
+
+        private void GetCajeroAgencia()
+        {
+            DataTable respuesta = new DataTable();
+
+            try
+            {
+                string Query = "SELECT CAJCOD,DPAGEN FROM DP053DAT.DPCAJE WHERE TRIM(CAJUSR)= TRIM('{0}') AND TRIM(CAJSTA)='A'";
+
+                Query = string.Format(Query, Properties.Settings.Default.Usuario525);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QueryAS400(Query, _cnnAS400, "GetCajeroAgencia");
+                    error = error  + Proxy.error;
+                }
+
+                if (respuesta.Rows.Count > 0)
+                {
+                    Properties.Settings.Default.CodOficialAS400 = Convert.ToInt32(respuesta.Rows[0]["CAJCOD"].ToString());
+                    Properties.Settings.Default.AgenciaCod = Convert.ToInt32(respuesta.Rows[0]["DPAGEN"].ToString());
+                    BtnImportar.Enabled = true;
+                }
+                else
+                {
+                    MessageBox.Show("No se logro obtener Cajero y Agencia ", "Error al Obtener Parametros del AS400", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    BtnImportar.Enabled = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al obtener Cajero y Agencia ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al obtener Cajero y Agencia " + ex.ToString());
+                error++;
+
+            }
+        }
+
+        private void GetLongitudes()
+        {
+            DataTable respuesta = new DataTable();
+            String conexion = Properties.Settings.Default.ConnectionDB;
+
+            try
+            {
+                string Query = "SELECT LongitudTC,LongitudCtas FROM LongitudProductos";
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "GetLongitudes");
+                    error = error  + Proxy.error;
+                }
+
+                if (respuesta.Rows.Count > 0)
+                {
+                    LongitudCtas = Convert.ToInt32(respuesta.Rows[0]["LongitudCtas"].ToString());
+                    LongitudTC = Convert.ToInt32(respuesta.Rows[0]["LongitudTC"].ToString());
+                }
+                else
+                {
+                    MessageBox.Show("No se logro Longitud de Productos ", "Error al Obtener Longitud de Productos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    BtnImportar.Enabled = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al obtener Longitud de Productos ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al obtener Longitud de Productos " + ex.ToString());
+                error++;
+            }
+        }
+
+        private void ActualizaProgressBar(int Porcertaje)
+        {
+            LblEspere.Refresh();
+            ProgressBar.EditValue = Porcertaje;
+            ProgressBar.Update();
+            ProgressBar.Refresh();
+            LblPercent.Text = Convert.ToString(Porcertaje) + "%";
+            LblPercent.Refresh();
+        }
+
+        private void UpdateTableAdapterMonedas()
+        {
+            try
+            {
+                monedasTableAdapter.Adapter.SelectCommand.Parameters.Add("@Area", SqlDbType.VarChar);
+
+                monedasTableAdapter.Adapter.SelectCommand.Parameters["@Area"].Value = Properties.Settings.Default.Area;
+
+                monedasTableAdapter.Adapter.SelectCommand.CommandText = @"SELECT *   FROM Monedas WHERE Planilla=1";
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("PMU04: Error al Actualizar Table Adapter Monedas");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("PMU04: Error al Actualizar Table Adapter Monedas: " + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                error++;
+            }
+        }
+
+        #region Importar
+
+        private void BtnImportar_Click(object sender, EventArgs e)
+        {
+            BtnImportar.Enabled = false;
+
+            //Limpia el Dataset donde se carga la data del archivo de excel
+            dsFromXls.Reset();
+            TxtCredito.Text = "";
+            TxtDebito.Text = "";
+            LblLote.Text = "";
+            duplicado = false;
+            Lote = 0;
+            error = 0;
+
+            //realiza la carga de la informacion de archivo de excel a dataset
+            this.cargarexcel();
+            //Si se cargo un archivo de excel 
+            if (resp_open == true && error == 0)
+            {
+                ProgressBar.Visible = true;
+                LblEspere.Visible = true;
+                LblPercent.Visible = true;
+                this.ActualizaProgressBar(25);
+                if ((dsFromXls.Tables.Count > 0))
+                {
+                    //si el archivo de excel que se cargo tiene mas de un registro
+                    if ((dsFromXls.Tables[0].Rows.Count > 0))
+                    {
+                        this.validacionesalImportar();
+                        this.ActualizaProgressBar(50);
+                        this.ActualizaGrid();
+                        this.ActualizaProgressBar(75);
+                        this.ObtieneTotales();
+                        this.ActualizaProgressBar(100);
+                        if (error == 0)
+                        {
+                            MessageBox.Show("Archivo Importado Exitosamente", "Confirmación", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            BtnCargar.Enabled = true;
+                            ProgressBar.Visible = false;
+                            LblEspere.Visible = false;
+                            LblPercent.Visible = false;
+                            ProgressBar.EditValue = 0;
+                            LblPercent.Text = "0";
+                        }
+                        else
+                        {
+                            GrdErrores.DataSource = dsFromXls.Tables["errores"];
+                            MessageBox.Show("Se encontraron errores al momento de importar el archivo", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            BtnImportar.Enabled = true;
+                            ProgressBar.Visible = false;
+                            LblEspere.Visible = false;
+                            LblPercent.Visible = false;
+                            ProgressBar.EditValue = 0;
+                            LblPercent.Text = "0";
+                        }
+                    }
+                }
+            }
+            else
+            {
+                BtnImportar.Enabled = true;
+                return;
+            }
+        }
+
+        private void validacionesalImportar()
+        {
+            this.creatablaerrores();
+            if (error == 0)
+                this.ValidarNumericoCampo();
+            if (error == 0)
+                this.validacampocreditodebito();
+            if (error == 0)
+                this.validaMontosNegativos();
+        }
+
+        private void cargarexcel()//abre la conexion para cargar archivo
+        {
+            try
+            {
+                String _Path;
+
+                OpenFileDialog openFileDialog1 = new OpenFileDialog();
+                openFileDialog1.Filter = "Archivos Excel (*.xls;*.xlsx;*.ods)|*.xls; *.xlsx; *.ods|Archivos Encryptados (*.cfe;)|*.cfe;";
+                if (openFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    resp_open = true;
+                    _Path = openFileDialog1.FileName.ToString();
+
+                    if (_Path.Length > 0)
+                    {
+                        string ext = Path.GetExtension(_Path);
+                        if (ext == ".cfe")//valida si es un arhivo encriptado por aplicativo CriptoForge
+                        {
+                            string sfile = Path.GetFileName(_Path);
+                            string _PathOrigen = Path.GetDirectoryName(_Path);
+                            string _file = _PathOrigen + @"\" + Path.GetFileName(_Path).Substring(0, sfile.Length - 4);
+                            this.DesencriptarArchivo(_file, DirectoryCrypto, _PathOrigen, PasswordCripto, _Path);
+                            if (error == 0)
+                            {
+                                _Path = _file;
+                            }
+                            else
+                                return;
+                        }
+
+                        SpreadsheetGear.IWorkbook wbk = SpreadsheetGear.Factory.GetWorkbook(_Path, new System.Globalization.CultureInfo("es-HN"));     //Cargar Archivo de Excell
+                        SpreadsheetGear.IWorksheet wst = wbk.Worksheets[0];
+                        dsFromXls = wst.UsedRange.GetDataSet(SpreadsheetGear.Data.GetDataFlags.FormattedText);
+                        dsFromXls.Tables[0].Columns.Add("Secuencia").SetOrdinal(0);//agregamos campo numero de fila 
+                        dsFromXls.Tables[0].Columns.Add("TipoCuenta").SetOrdinal(5);//agregamos campo para tipo de cuenta 
+
+                        int SecuenciaDebitoSeleccionada = 0;
+                        for (int i = 0; i < dsFromXls.Tables[0].Rows.Count; i++)//llenamos campo numero de fila 
+                        {
+                            if (dsFromXls.Tables[0].Rows[i][2].ToString() == "2" && i > 0)//seleccionamos el registro del debito como secuencia 1 cuando no este en el primer registro
+                            {
+                                dsFromXls.Tables[0].Rows[i][0] = 1;
+                                SecuenciaDebitoSeleccionada = 1;
+                            }
+                            else if (dsFromXls.Tables[0].Rows[i][2].ToString() == "2" && i == 0)//seleccionamos el registro del debito como secuencia 1 cuando este en el primer registro
+                            {
+                                dsFromXls.Tables[0].Rows[i][0] = 1;
+                                SecuenciaDebitoSeleccionada = 1;
+                            }
+                            else if (SecuenciaDebitoSeleccionada == 1)//si ya seleccionamos la secuencia sumamos la secuencia + 1
+                            {
+                                dsFromXls.Tables[0].Rows[i][0] = i + 1;
+                            }
+                            else
+                                dsFromXls.Tables[0].Rows[i][0] = i + 2;
+                        }
+
+                        if (ext == ".cfe")//si es un arhivo encriptado por aplicativo CriptoForge  elimina el archivo desencriptado
+                            File.Delete(_Path);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("No se ha seleccionado ningun archivo de planilla.", "Accion Cancelada", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    resp_open = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al importar archivo de excel con SpreadsheetGear");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al importar archivo de excel con SpreadsheetGear" + ex.ToString());
+                error++;
+            }
+        }
+
+        private void creatablaerrores()
+        {
+            try
+            {
+                //añadimos datatable de errores
+                dsFromXls.Tables.Add("errores");
+                dsFromXls.Tables["errores"].Columns.Add("Lote", typeof(Int64)).AllowDBNull = true;
+                dsFromXls.Tables["errores"].Columns.Add("Secuencia", typeof(Int64));
+                dsFromXls.Tables["errores"].Columns.Add("Campo", typeof(String));
+                dsFromXls.Tables["errores"].Columns.Add("Descripcion", typeof(String));
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al crear tabla de errores");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al crear tabla de errores" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        private void validacampocreditodebito()
+        {
+            object valor = string.Empty;
+
+            try
+            {
+                for (int i = 0; i < dsFromXls.Tables[0].Rows.Count; i++)
+                {
+
+                    valor = dsFromXls.Tables[0].Rows[i][2].ToString(); ;
+                    if (valor.ToString().Length > 1)
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i][0].ToString());
+                        dr["Campo"] = Convert.ToString(dsFromXls.Tables[0].Columns[2].ColumnName);
+                        dr["Descripcion"] = "Valor Incorrecto";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+
+                    if (Convert.ToInt64(valor) != 1 && Convert.ToInt64(valor) != 2)
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i][0].ToString());
+                        dr["Campo"] = Convert.ToString(dsFromXls.Tables[0].Columns[2].ColumnName);
+                        dr["Descripcion"] = "Valor Incorrecto";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al validar credito o debito");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al validar credito o debito" + ex.ToString());
+                error++;
+                return;
+
+            }
+        }
+
+        private void ValidarNumericoCampo()//valida campos sean solo numericos
+        {
+            object valor = string.Empty;
+
+            try
+            {
+                for (int i = 0; i < dsFromXls.Tables[0].Rows.Count; i++)
+                {
+                    valor = dsFromXls.Tables[0].Rows[i][1].ToString(); ;
+                    if (!Information.IsNumeric(valor))
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i]["Secuencia"].ToString());
+                        dr["Campo"] = Convert.ToString(dsFromXls.Tables[0].Columns[1].ColumnName);
+                        dr["Descripcion"] = "Numero de Cuenta solo acepta numeros";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+
+                    valor = dsFromXls.Tables[0].Rows[i][2].ToString(); ;
+                    if (!Information.IsNumeric(valor))
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i]["Secuencia"].ToString());
+                        dr["Campo"] = Convert.ToString(dsFromXls.Tables[0].Columns[2].ColumnName);
+                        dr["Descripcion"] = "Tipo de Transaccion solo acepta numeros";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+
+                    valor = dsFromXls.Tables[0].Rows[i][3].ToString(); ;
+                    if (!Information.IsNumeric(valor))
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i]["Secuencia"].ToString());
+                        dr["Campo"] = Convert.ToString(dsFromXls.Tables[0].Columns[3].ColumnName);
+                        dr["Descripcion"] = "Monto solo acepta numeros";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al validar campo numerico");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al validar campo numerico" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        private void validaMontosNegativos()
+        {
+            object valor = string.Empty;
+
+            try
+            {
+                for (int i = 0; i < dsFromXls.Tables[0].Rows.Count; i++)
+                {
+
+                    valor = dsFromXls.Tables[0].Rows[i][3].ToString();
+                    if (Convert.ToDecimal(valor) < 0)
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i][0].ToString());
+                        dr["Campo"] = Convert.ToString(dsFromXls.Tables[0].Columns[3].ColumnName);
+                        dr["Descripcion"] = "Monto no puede ser Negativo";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al validar Montos Negativos");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al validar Montos Negativos" + ex.ToString());
+                error++;
+                return;
+
+            }
+        }
+
+        private void ObtieneTotales()
+        {
+            decimal credito = 0;
+            decimal debito = 0;
+
+            try
+            {
+                for (int i = 0; i < gridView1.DataRowCount; i++)
+                {
+                    gridView1.FocusedRowHandle = i;
+
+                    credito = credito + Convert.ToDecimal(gridView1.GetFocusedRowCellValue("credito"));
+                    debito = debito + Convert.ToDecimal(gridView1.GetFocusedRowCellValue("debito"));
+                }
+
+                TxtDebito.EditValue = debito;
+                TxtCredito.EditValue = credito;
+
+                if (debito != credito)
+                {
+                    MessageBox.Show("Créditos y débitos no cuadran", "Error de Cuadre", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+                else if (debito == 0 && credito == 0)
+                {
+                    MessageBox.Show("Totales no pueden estar en Cero", "Totales Incorrectos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al totalizar cuentas");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error  al totalizar cuentas" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        private void ActualizaGrid()
+        {
+            // Limpia el contenido actual del grid
+            GrdPlanilla.DataSource = null;
+            TotalCreditos = 0;
+            TotalDebitos = 0;
+            ContadorTC = 0;
+            int contadordebitos = 0;
+
+            try
+            {
+                if (dsFromXls.Tables.Count > 2)
+                {
+                    dsFromXls.Tables.Remove("DetallePlanilla");
+                }
+
+                //crea un nuevo datatable dentro del dataset y lo llena
+                dsFromXls.Tables.Add("DetallePlanilla");
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("secuencia", typeof(string));
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("cuenta", typeof(string));
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("nombre", typeof(string));
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("debito", typeof(decimal));
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("credito", typeof(decimal));
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("concepto", typeof(string));
+                dsFromXls.Tables["DetallePlanilla"].Columns.Add("tipo", typeof(string));
+
+                for (int i = 0; i < dsFromXls.Tables[0].Rows.Count; i++)
+                {
+                    DataRow dr = dsFromXls.Tables["DetallePlanilla"].NewRow();
+                    dr["secuencia"] = dsFromXls.Tables[0].Rows[i][0].ToString();
+                    dr["cuenta"] = dsFromXls.Tables[0].Rows[i][1].ToString();
+                    dr["nombre"] = dsFromXls.Tables[0].Rows[i][4].ToString();
+                    if (Convert.ToInt64(dsFromXls.Tables[0].Rows[i][2].ToString()) == 2)
+                    {
+                        dr["debito"] = Convert.ToDecimal(dsFromXls.Tables[0].Rows[i][3].ToString());
+                        TotalDebitos++;
+                        contadordebitos++;
+                    }
+                    else
+                        dr["debito"] = "0.00";
+                    if (Convert.ToInt64(dsFromXls.Tables[0].Rows[i][2].ToString()) == 1)
+                    {
+                        dr["credito"] = Convert.ToDecimal(dsFromXls.Tables[0].Rows[i][3].ToString());
+                        TotalCreditos++;
+                        if (dsFromXls.Tables[0].Rows[i][1].ToString().Length >= LongitudTC)
+                        {
+                            //int count = dsFromXls.Tables[0].Rows[i][1].ToString().Length;
+                            ContadorTC++;
+                        }
+                    }
+                    else
+                        dr["credito"] = "0.00";
+                    dr["concepto"] = "PAGO PLANILLA";
+                    dr["tipo"] = dsFromXls.Tables[0].Rows[i][5].ToString();
+                    dsFromXls.Tables["DetallePlanilla"].Rows.Add(dr);
+                }
+
+                GrdPlanilla.DataSource = dsFromXls.Tables["DetallePlanilla"];
+
+                if (contadordebitos > 1)
+                {
+                    MessageBox.Show("Solo puede Venir una cuenta de Debito dentro del archivo", "Cantidad de Debitos Incorrecto", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Actualizar Grid");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Actualizar Grid" + ex.ToString());
+                error++;
+            }
+        }
+
+        #endregion
+
+        #region Cargar
+
+        private void BtnCargar_Click(object sender, EventArgs e)
+        {
+            BtnCargar.Enabled = false;
+            Dialoganswer = false;
+            Detalle.Reset();
+            error = 0;
+            if (CboClientes.EditValue != null)
+            {
+                if (CboMonedas.EditValue != null)
+                {
+                    if (TxtObservacion.Text.Length > 13)
+                    {
+                        if (TxtObservacion.Text.Length <= 40)
+                        {
+                            ProgressBar.Visible = true;
+                            LblEspere.Visible = true;
+                            LblPercent.Visible = true;
+                            CboClientes.Enabled = false;
+                            CboMonedas.Enabled = false;
+                            TxtObservacion.Enabled = false;
+                            this.ProcesodeCarga();
+                            if (error == 0)
+                            {
+                                if (Dialoganswer == true || duplicado == false)
+                                {
+                                    MessageBox.Show("Archivo Cargado Exitosamente", "Confirmación", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    ProgressBar.Visible = false;
+                                    LblEspere.Visible = false;
+                                    LblPercent.Visible = false;
+                                    ProgressBar.EditValue = 0;
+                                    LblPercent.Text = "0";
+                                }
+                                else
+                                    return;
+                            }
+                            else
+                            {
+                                if (dsFromXls.Tables["errores"].Rows.Count > 0)
+                                {
+                                    this.ActualizarErroresDB();
+                                }
+                                if (Lote != 0)
+                                {
+                                    this.TrasladaToHistorico();
+                                }
+                                GrdErrores.DataSource = null;
+                                GrdErrores.DataSource = dsFromXls.Tables["errores"];
+                                MessageBox.Show("Se encontraron errores al momento de cargar el archivo", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                ProgressBar.Visible = false;
+                                LblEspere.Visible = false;
+                                LblPercent.Visible = false;
+                                BtnImportar.Enabled = true;
+                                CboClientes.Enabled = true;
+                                CboMonedas.Enabled = true;
+                                TxtObservacion.Enabled = true;
+                                ProgressBar.EditValue = 0;
+                                LblPercent.Text = "0";
+                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show("Campo de Observacion solo Acepta 40 Caracteres Maximo", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            BtnCargar.Enabled = true;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Observación debe ser mas específica", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        BtnCargar.Enabled = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Debe de seleccionar una moneda", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    BtnCargar.Enabled = true;
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("Debe de seleccionar un cliente", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                BtnCargar.Enabled = true;
+                return;
+            }
+        }
+
+        private void ProcesodeCarga()
+        {
+            int Duplicado = 0;
+            ProgressBar.EditValue = 0;
+            this.GetTransacciones();
+            if (error == 0 && ContadorTC > 0)
+                this.GetTransaccionTC();
+            if (error == 0)
+                this.ValidaBandejasAS400();
+            if (error == 0)
+                this.ValidaCuentaCif();
+            if (error == 0)
+                Duplicado = this.ValidaDebitoDuplicado();
+            if (error == 0)
+            {
+                if (Duplicado > 0)
+                {
+                    var answer = MessageBox.Show("Ya se realizó un débito por el mismo valor en este día! \n\n Desea Continuar?", "Confirme Débito Duplicado", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (answer == DialogResult.Yes)
+                    {
+                        Dialoganswer = true;
+                        duplicado = true;
+                        this.InsertaLote();
+                        if (error == 0)
+                            this.InsertarDetalle();
+                        if (error == 0)
+                            this.ValidaTipoCuentaAS400();
+                        if (error == 0)
+                            BtnValidar.Enabled = true;
+                    }
+                    else
+                    {
+                        error++;
+                        return;
+                    }
+                }
+                else
+                {
+                    this.InsertaLote();
+                    if (error == 0)
+                        this.InsertarDetalle();
+                    if (error == 0)
+                        this.ValidaTipoCuentaAS400();
+                    if (error == 0)
+                        BtnValidar.Enabled = true;
+                }
+            }
+            else
+                return;
+        }
+
+        private void GetTransacciones()
+        {
+            Service = string.Empty;
+            DTRX = "0";
+            CTRX = "0";
+            CTCTRX = "0";
+            MotivoCTC = 0;
+            MotivoC = 0;
+            MotivoD = 0;
+
+            try
+            {
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                string Query = "EXEC Usp_GetTransacciones {0},{1},'{2}','{3}'";
+
+                Query = string.Format(Query, 1, Properties.Settings.Default.Area, Properties.Settings.Default.Zona, CboMonedas.EditValue);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "GetTransacciones");
+                    error = error  + Proxy.error;
+                }
+
+                if (respuesta.Rows.Count > 0)
+                {
+
+                    if (respuesta.Rows.Count == 2)
+                    {
+                        for (int i = 0; i < respuesta.Rows.Count; i++)
+                        {
+                            if (Convert.ToInt64(respuesta.Rows[i]["TrxCredito"].ToString()) > 0)
+                            {
+                                CTRX = respuesta.Rows[i]["TrxCredito"].ToString();
+                                MotivoC = Convert.ToInt32(respuesta.Rows[i]["Motivo"].ToString());
+                            }
+                            if (Convert.ToInt64(respuesta.Rows[i]["TrxDebito"].ToString()) > 0)
+                            {
+                                DTRX = respuesta.Rows[i]["TrxDebito"].ToString();
+                                MotivoD = Convert.ToInt32(respuesta.Rows[i]["Motivo"].ToString());
+                            }
+                            Service = respuesta.Rows[i]["NombreServicioAS400"].ToString();
+                        }
+                        if (Convert.ToInt64(DTRX) > 0 && Convert.ToInt64(CTRX) > 0)
+                        {
+                            this.ActualizaProgressBar(10);
+                        }
+                        else if (Convert.ToInt64(DTRX) == 0)
+                        {
+                            MessageBox.Show("No existe transaccion  de Debito configurada para el Servicio Pago de Planilla", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            error++;
+                        }
+                        else if (Convert.ToInt64(CTRX) == 0)
+                        {
+                            MessageBox.Show("No existe transaccion  de Credito configurada para el Servicio Pago de Planilla", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            error++;
+                        }
+
+                    }
+                    else if (respuesta.Rows.Count > 2)
+                    {
+                        MessageBox.Show("Error en configuración de transacciones, existen mas transacciones de las permitidas por servicio Pago de Planilla", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        error++;
+                    }
+                    else if (respuesta.Rows.Count < 2)
+                    {
+                        MessageBox.Show("Error en configuración de transacciones, existen menos transacciones de las requeridas por servicio Pago de Planilla", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        error++;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("No se encontraron Transacciones para el servicio Pago de Planilla", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al obtener las transacciones del servicio Pago de Planilla ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al obtener las transacciones  del servicio Pago de Planilla" + ex.ToString());
+                error++;
+            }
+        }
 
         private void GetTransaccionTC()
         {
@@ -63,97 +960,2254 @@
             }
         }
 
+        private void ValidaBandejasAS400()
+        {
+            try
+            {
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                string Query = "EXEC Usp_ValidaInfoAS400 ";
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "ValidaBandejasAS400");
+                    error = error  + Proxy.error;
+                }
+                if (respuesta.Rows[0][0].ToString() == "ERROR")
+                {
+                    MessageBox.Show("Información incompleta del AS400, favor informar a tecnología ", "Error en Información descargada por Job", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                    return;
+                }
+                this.ActualizaProgressBar(20);
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Validar Informacion del AS400 ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Validar Informacion del AS400 " + ex.ToString());
+                error++;
+            }
+        }
+
+        private void ValidaCuentaCif() // valida que la cuenta pertenezca al cliente
+        {
+            try
+            {
+                string Cuentas = string.Empty;
+
+                //obtiene la(s) cuentas de debito
+                foreach (DataRow row in this.dsFromXls.Tables[0].Rows)
+                {
+                    if (row[2].ToString() == "2")
+                    {
+                        if (Cuentas.Length > 0)
+                            Cuentas = Cuentas + "," + row[1].ToString();
+                        else
+                            Cuentas = row[1].ToString();
+                    }
+                }
+
+                //Valida que las cuentas pertenezcan al cliente
+                foreach (var Cuenta in Cuentas.Split(','))
+                {
+
+                    DataTable respuesta = new DataTable();
+                    String conexion = Properties.Settings.Default.ConnectionDB;
+
+                    string Query = "EXEC Usp_ValidaCuentaCliente '{0}','{1}'";
+
+                    Query = string.Format(Query, Cuenta, CboClientes.EditValue);
+
+                    Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                    if (Criptografia.error == 0)
+                    {
+                        respuesta = Proxy.QuerySQL(Query, conexion, "ValidaCuentaCif");
+                        error = error  + Proxy.error;
+                    }
+                    if (Convert.ToInt64(respuesta.Rows[0][0].ToString()) == 0)
+                    {
+                        respuesta.Reset();
+
+                        //SI LA CUENTA ES MANCOMUNADA VALIDA EN EL CLIENTE ESTE DENTRO DE LAS FIRMA AUTORIZADAS EN EL AS400 
+                        Query = @"SELECT COUNT(*) FROM DP053DAT.DPCTAS AS A
+                                INNER JOIN DP053DAT.DPCTAM03 AS B
+                                ON A.PRTIPO= B.PRTIPO AND A.DPAGEN=B.DPAGEN AND A.DPCORR=B.DPCORR AND A.DPDIVE=B.DPDIVE
+                                WHERE replace(A.ctedit,'-','')='{0}' AND B.CLDO1='{1}'";
+                        Query = string.Format(Query, Cuenta, CboClientes.EditValue);
+
+                        Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                        if (Criptografia.error == 0)
+                        {
+                            respuesta = Proxy.QueryAS400(Query, _cnnAS400, "ValidaCuentaCif");
+                            error = error  + Proxy.error;
+                        }
+                        if (Convert.ToInt64(respuesta.Rows[0][0].ToString()) == 0)
+                        {
+                            MessageBox.Show("Cuenta de débito : " + Cuenta + " no pertenece al cliente " + CboClientes.Text, "Error en Cuenta de Débito", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            error++;
+                            return;
+                        }
+                    }
+                }
+                this.ActualizaProgressBar(30);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Validar Cuenta - Cliente");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Validar Cuenta - Cliente" + ex.ToString());
+                error++;
+            }
+
+        }
+
+        private int ValidaDebitoDuplicado() // valida que la cuenta pertenezca al cliente
+        {
+            int contador = 0;
+            try
+            {
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                string Query = "EXEC Usp_ValidaDebitoDuplicado {0},'{1}'";
+
+                Query = string.Format(Query, Convert.ToDecimal(TxtDebito.Text), CboClientes.EditValue);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "ValidaDebitoDuplicado");
+                    error = error  + Proxy.error;
+                }
+                contador = Convert.ToInt32(respuesta.Rows[0][0]);
+                this.ActualizaProgressBar(40);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Validar Débito Duplicado ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Validar Débito Duplicado " + ex.ToString());
+                error++;
+
+            }
+            return contador;
+
+        }
+
+        private void InsertaLote()
+        {
+            try
+            {
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+                string Usuario, Cif, Moneda, Creditos, Debitos, Observacion;
+                int Cajero, Agencia, Area = 0;
+
+                //Obtiene Campos para crear Lote
+                Usuario = Properties.Settings.Default.UsuarioLogueado;
+                Cif = Convert.ToString(CboClientes.EditValue);
+                Moneda = Convert.ToString(CboMonedas.EditValue).Trim();
+                Creditos = TxtCredito.Text;
+                Debitos = TxtDebito.Text;
+                Observacion = TxtObservacion.Text;
+                Cajero = Properties.Settings.Default.CodOficialAS400;
+                Agencia = Properties.Settings.Default.AgenciaCod;
+                Area = Properties.Settings.Default.Area;
+
+                string Query = "EXEC Usp_InsertLotePlanilla '{0}','{1}','{2}',{3},{4},{5},{6},'{7}','{8}' ,{9},'{10}',{11},'{12}',{13},'{14}'";
+
+                Query = string.Format(Query, Usuario, Cif, Moneda, Creditos, Debitos, MotivoC, MotivoD, Observacion, "PAGO DE PLANILLA", Cajero, Agencia, Area, Service, 0, "C");
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "InsertaLote");
+                    error = error  + Proxy.error;
+                }
+
+                if (respuesta.Rows.Count > 0)
+                {
+                    Lote = Convert.ToInt64(respuesta.Rows[0][0].ToString());
+                    LblLote.Text = "# Lote Creado:" + Lote.ToString();
+                    LblLote.Visible = true;
+                    this.ActualizaProgressBar(60);
+                }
+                else
+                {
+                    MessageBox.Show("No se logro obtener el numero de lote ", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Insertar Lote ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Insertar Lote " + ex.ToString());
+                error++;
+            }
+        }
+
+        private void InsertarDetalle()
+        {
+            String conexion = Properties.Settings.Default.ConnectionDB;
+            try
+            {
+                //creamos campos dentro del datatable de detalle
+                Detalle.Columns.Add("IdLote", typeof(Int64));
+                Detalle.Columns.Add("Correlativo", typeof(Int64));
+                Detalle.Columns.Add("Cuenta", typeof(string));
+                Detalle.Columns.Add("CuentaByte", typeof(string));
+                Detalle.Columns.Add("TipoCuenta", typeof(Int32)).AllowDBNull = true;
+                Detalle.Columns.Add("Monto", typeof(Decimal));
+                Detalle.Columns.Add("Trx", typeof(Int32));
+                Detalle.Columns.Add("TipoTrx", typeof(Int32));
+                Detalle.Columns.Add("NoReferencia", typeof(Int64));
+                Detalle.Columns.Add("ReferenciaByte", typeof(Int64));
+                Detalle.Columns.Add("NombreEmpleado", typeof(string));
+                Detalle.Columns.Add("Status", typeof(string));
+                Detalle.Columns.Add("CTSTA", typeof(string)).AllowDBNull = true;
+
+                for (int i = 0; i < dsFromXls.Tables[0].Rows.Count; i++)
+                {
+                    DataRow dr = Detalle.NewRow();
+                    dr["IdLote"] = Lote;
+                    dr["Correlativo"] = dsFromXls.Tables[0].Rows[i][0].ToString();
+                    dr["Cuenta"] = dsFromXls.Tables[0].Rows[i][1].ToString();
+                    if (dsFromXls.Tables[0].Rows[i][1].ToString().Length >= LongitudTC)
+                        dr["CuentaByte"] = 0;
+                    else
+                        dr["CuentaByte"] = dsFromXls.Tables[0].Rows[i][1].ToString();
+                    dr["Monto"] = Convert.ToDecimal(dsFromXls.Tables[0].Rows[i][3].ToString());
+                    if (Convert.ToInt64(dsFromXls.Tables[0].Rows[i][2].ToString()) == 2)
+                        dr["Trx"] = DTRX;
+                    if (Convert.ToInt64(dsFromXls.Tables[0].Rows[i][2].ToString()) == 1)
+                    {
+                        if (dsFromXls.Tables[0].Rows[i][1].ToString().Length <= LongitudCtas)
+                            dr["Trx"] = CTRX;
+                        if (dsFromXls.Tables[0].Rows[i][1].ToString().Length >= LongitudTC)
+                        {
+                            dr["Trx"] = CTCTRX;
+                            dr["TipoCuenta"] = 6;
+                        }
+                    }
+                    dr["TipoTrx"] = Convert.ToInt64(dsFromXls.Tables[0].Rows[i][2].ToString());
+                    dr["NoReferencia"] = Lote.ToString() + dsFromXls.Tables[0].Rows[i][0].ToString();
+                    dr["ReferenciaByte"] = 0;
+                    dr["NombreEmpleado"] = dsFromXls.Tables[0].Rows[i][4].ToString();
+                    dr["Status"] = "C";
+                    Detalle.Rows.Add(dr);
+                }
+
+                //Inserta detalle en Tabla de SQL
+                string sqlTable = "DetallePlanillas";
+
+                SqlBulkCopy bulkcopy = new SqlBulkCopy(Properties.Settings.Default.ConnectionDB);
+                bulkcopy.DestinationTableName = sqlTable;
+
+                bulkcopy.WriteToServer(Detalle);
+                bulkcopy.Close();
+
+                //Limpia Datatable Detalle
+                Detalle.Clear();
+
+                //Manda a actualizar Tipo de cuenta del detalle del lote cargado
+                string Query = "EXEC Usp_ActualizaDetalleLotesPlanillas {0}";
+
+                Query = string.Format(Query, Lote);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    Detalle = Proxy.QuerySQL(Query, conexion, "InsertarDetalle");
+                    error = error  + Proxy.error;
+                }
+
+                this.ActualizaProgressBar(75);
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Insertar Detalle de Planilla ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Insertar Detalle de Planilla " + ex.ToString());
+                error++;
+            }
+        }
+
+        private void ValidaTipoCuentaAS400()
+        {
+            int product = 0;
+            DataTable Respuesta = new DataTable();
+            String conexion = Properties.Settings.Default.ConnectionDB;
+
+            try
+            {
+                dsFromXls.Tables[0].Clear();
+
+                for (int i = 0; i < Detalle.Rows.Count; i++)
+                {
+                    product = Convert.ToInt32(Detalle.Rows[i]["TipoCuenta"].ToString());
+                    if (Detalle.Rows[i]["Cuenta"].ToString().Length <= LongitudCtas)//VALIDA SI REGISTRO ES UNA CUENTA
+                    {
+                        if (product == 0)//SI NO ENCONTRO PRODUCTO EN SQL ENTONCES VA AL AS400
+                        {
+                            Respuesta.Reset();
+                            String Query = "SELECT DISTINCT TIPPRO FROM DP053DAT.DPCTAS WHERE TRIM(REPLACE(CTEDIT,'-','')) ='{0}'";
+                            Query = string.Format(Query, Detalle.Rows[i]["Cuenta"].ToString());
+                            Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                            if (Criptografia.error == 0)
+                            {
+                                Respuesta = Proxy.QueryAS400(Query, _cnnAS400, "ValidaTipoCuentaAS400");
+                                error = error  + Proxy.error;
+                            }
+                            if (Respuesta.Rows.Count > 0)//SI ENCONTRO TIPO DE PRODUCTO EN EL AS400 ENTONCES ACTUALIZA EN SQL
+                            {
+                                Detalle.Rows[i]["TipoCuenta"] = Convert.ToInt64(Respuesta.Rows[0][0].ToString());
+                                product = Convert.ToInt32(Detalle.Rows[i]["TipoCuenta"].ToString());
+                                Respuesta.Reset();
+                                Query = @"UPDATE DetallePlanillas SET TipoCuenta = {0} WHERE IdLote={1} AND Correlativo={2}";
+                                Query = string.Format(Query, product, Detalle.Rows[i]["IdLote"].ToString(), Detalle.Rows[i]["Correlativo"].ToString());
+                                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                                if (Criptografia.error == 0)
+                                {
+                                    Proxy.QuerySQL(Query, conexion, "ValidaTipoCuentaAS400");
+                                    error = error  + Proxy.error;
+                                }
+                            }
+                            else//SINO INSERTA ERROR
+                            {
+                                DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                                dr["Lote"] = Lote;
+                                dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                                dr["Campo"] = Convert.ToString(Detalle.Columns["TipoCuenta"].ColumnName);
+                                dr["Descripcion"] = "Cuenta No Existe";
+                                dsFromXls.Tables["errores"].Rows.Add(dr);
+                                error++;
+                            }
+                        }
+                        if (product != 0)
+                        {
+                            //si la respuesta es 3(CDT´S) inserta un error en tabla de errores
+                            if (product == 3)
+                            {
+                                DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                                dr["Lote"] = Lote;
+                                dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                                dr["Campo"] = Convert.ToString(Detalle.Columns["TipoCuenta"].ColumnName);
+                                dr["Descripcion"] = "Cuenta CDT no permitida";
+                                dsFromXls.Tables["errores"].Rows.Add(dr);
+                                error++;
+                            }
+                        }
+                    }
+
+                    DataRow Fila = dsFromXls.Tables[0].NewRow();
+                    Fila[0] = Detalle.Rows[i]["Correlativo"].ToString();
+                    Fila[1] = Detalle.Rows[i]["Cuenta"].ToString();
+                    Fila[2] = Detalle.Rows[i]["TipoTrx"].ToString();
+                    Fila[3] = Detalle.Rows[i]["Monto"].ToString();
+                    Fila[4] = Detalle.Rows[i]["NombreEmpleado"].ToString();
+                    Fila[5] = Detalle.Rows[i]["TipoCuenta"].ToString();
+                    dsFromXls.Tables[0].Rows.Add(Fila);
+                }
+                this.ActualizaGrid();
+                this.ActualizaProgressBar(100);
+            }
+
+            catch (Exception ex)
+            {
+                log.Error("Error al consultar producto de cuenta");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al consultar producto de cuenta" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        #endregion
+
+        #region Validar
+
+        private void BtnValidar_Click(object sender, EventArgs e)
+        {
+            BtnValidar.Enabled = false;
+            ProgressBar.Visible = true;
+            LblEspere.Visible = true;
+            LblPercent.Visible = true;
+            FileText.Reset();
+            dsFromXls.Tables["errores"].Clear();
+            error = 0;
+            ErrorDebito = 0;
+            GrdPlanilla.DataSource = null;
+            this.EliminaRegistrosError();
+            this.ActualizaGrid();
+            this.ProcesoValidacion();
+            if (error == 0)
+            {
+                if (TotalDebitos == 0 && TotalCreditos == 0)
+                {
+                    MessageBox.Show("No se puede procesar el lote, debido a que los valores a Debitar y Acreditar estan en Cero", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    BtnImportar.Enabled = true;
+                    CboClientes.Enabled = true;
+                    CboMonedas.Enabled = true;
+                    TxtObservacion.Enabled = true;
+                    ProgressBar.Visible = false;
+                    LblEspere.Visible = false;
+                    LblPercent.Visible = false;
+                    ProgressBar.EditValue = 0;
+                    LblPercent.Text = "0";
+                }
+                else
+                {
+                    MessageBox.Show("Proceso de Validacion terminado correctamente", "Proceso Ejecutado Correctamente", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    this.ActualizarErroresDB();
+                    BtnAutorizar.Enabled = true;
+                    ProgressBar.Visible = false;
+                    LblEspere.Visible = false;
+                    LblPercent.Visible = false;
+                    ProgressBar.EditValue = 0;
+                    LblPercent.Text = "0";
+                }
+            }
+            else
+            {
+                this.ActualizaEstatus("V");
+                GrdErrores.DataSource = null;
+                GrdErrores.DataSource = dsFromXls.Tables["errores"];
+                if (ErrorDebito > 0)//SI ENCONTRO ERROR EN LA CUENTA DEL DEBITO NO PUEDE CONTINUAR CON EL PROCESO
+                {
+                    if (dsFromXls.Tables["errores"].Rows.Count > 0)
+                    {
+                        this.ActualizarErroresDB();
+                    }
+                    this.TrasladaToHistorico();
+                    MessageBox.Show("Se encontraron errores al momento de validar el archivo", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    BtnImportar.Enabled = true;
+                    CboClientes.Enabled = true;
+                    CboMonedas.Enabled = true;
+                    TxtObservacion.Enabled = true;
+                    ProgressBar.Visible = false;
+                    LblEspere.Visible = false;
+                    LblPercent.Visible = false;
+                    ProgressBar.EditValue = 0;
+                    LblPercent.Text = "0";
+                }
+                else
+                {
+                    if (dsFromXls.Tables["errores"].Rows.Count > 0)
+                    {
+                        var answer = MessageBox.Show("Se encontraron errores al momento de validar el archivo \n Desea ignorar los registros con Error y volver a validar?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+                        if (answer == DialogResult.Yes)
+                        {
+                            error = 0;
+                            this.ActualizarErroresDB();
+                            if (error == 0)
+                                this.RecalcularDebito();
+                            if (error == 0)
+                            {
+                                BtnValidar.Enabled = true;
+                                ProgressBar.Visible = false;
+                                LblEspere.Visible = false;
+                                LblPercent.Visible = false;
+                                ProgressBar.EditValue = 0;
+                                LblPercent.Text = "0";
+                                MessageBox.Show("Se han recalculado los totales a procesar, Favor Revise los Errores encontrados y proceda a Validar nuevamente", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                            else
+                            {
+                                BtnImportar.Enabled = true;
+                                ProgressBar.Visible = false;
+                                LblEspere.Visible = false;
+                                LblPercent.Visible = false;
+                                ProgressBar.EditValue = 0;
+                                LblPercent.Text = "0";
+                                MessageBox.Show("No se logro recalcular los totales", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+
+                        }
+                        else
+                        {
+                            if (dsFromXls.Tables["errores"].Rows.Count > 0)
+                            {
+                                this.ActualizarErroresDB();
+                            }
+                            this.TrasladaToHistorico();
+                            BtnImportar.Enabled = true;
+                            CboClientes.Enabled = true;
+                            CboMonedas.Enabled = true;
+                            TxtObservacion.Enabled = true;
+                            ProgressBar.Visible = false;
+                            LblEspere.Visible = false;
+                            LblPercent.Visible = false;
+                            ProgressBar.EditValue = 0;
+                            LblPercent.Text = "0";
+                        }
+                    }
+                    else
+                    {
+                        BtnValidar.Enabled = true;
+                        ProgressBar.Visible = false;
+                        LblEspere.Visible = false;
+                        LblPercent.Visible = false;
+                        ProgressBar.EditValue = 0;
+                        LblPercent.Text = "0";
+                    }
+                }
+            }
+        }
+
+        private void ProcesoValidacion()
+        {
+            if (TotalDebitos > 0 && TotalCreditos > 0)
+            {
+                this.ActualizaEstatus("VL");
+                if (error == 0)
+                {
+                    this.crearcamposDT();
+                    this.ActualizaProgressBar(20);
+                }
+                if (error == 0)
+                {
+                    this.ValidaNumerosCuentasEnCero();
+                    if (ContadorTC > 0)
+                        this.ValidacionesTC();
+                    if (error == 0)
+                    {
+                        this.llenarDTFileText();
+                        this.ActualizaProgressBar(40);
+                    }
+                }
+                if (error == 0)
+                {
+                    this.BuildTextFile("VS", FileText);
+                    this.ActualizaProgressBar(60);
+                }
+                if (error == 0)
+                {
+                    if (UploadToAS400(Dierctorio + @"\" + FileName, ".txt", true, true, Properties.Settings.Default.Destino, Properties.Settings.Default.Source + @"\", Properties.Settings.Default.ServidorDB2))
+                    {
+                        this.ActualizaProgressBar(80);
+                        this.EjecutaPGM();
+
+                        this.ActualizaProgressBar(90);
+                        if (error == 0)
+                        {
+                            this.ActualizaEstatus("V");
+                            this.ActualizaProgressBar(100);
+                        }
+                    }
+                    else
+                        error++;
+                }
+            }
+            else
+            {
+                MessageBox.Show("Debitos y Creditos con valor Cero", "Error en Montos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ErrorDebito++;
+                error++;
+            }
+        }
+
+        private void crearcamposDT()//crea los campos al data table que se utilizara para armar el archivo de texto
+        {
+            try
+            {
+                //creamos campos dentro del datatable de FileText
+                FileText.Columns.Add("APLCOD003", typeof(string));//CODIGO APLICACION
+                FileText.Columns.Add("NOLOTE003", typeof(Int64));// NUMERO DE LOTE
+                FileText.Columns.Add("CORREL003", typeof(Int64));//CORRELATIVO
+                FileText.Columns.Add("TIPCTA003", typeof(int));//TIPO DE CUENTA
+                FileText.Columns.Add("MONCOD003", typeof(string));//CODIGO DE MONEDA
+                FileText.Columns.Add("ESTADO003", typeof(string)).DefaultValue = "";//ESTADO LOTE
+                FileText.Columns.Add("DES001003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 1
+                FileText.Columns.Add("DES002003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 2
+                FileText.Columns.Add("DES003003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 3
+                FileText.Columns.Add("DES004003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 4
+                FileText.Columns.Add("DES005003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 5
+                FileText.Columns.Add("DES006003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 6
+                FileText.Columns.Add("DES007003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 7
+                FileText.Columns.Add("DES008003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 8
+                FileText.Columns.Add("DES009003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 9
+                FileText.Columns.Add("DES010003", typeof(string)).DefaultValue = 0;//DESCRIPTOR 10
+                FileText.Columns.Add("DESOBS003", typeof(string)); //OBSERVACION
+                FileText.Columns.Add("DTASND003", typeof(string)).DefaultValue = ""; //COLA DE SND
+                FileText.Columns.Add("DTARCV003", typeof(string)).DefaultValue = ""; //COLA DE RCV
+                FileText.Columns.Add("DTALON003", typeof(int)).DefaultValue = 0; //LONGITUD KEY COLA
+                FileText.Columns.Add("PARM01003", typeof(string)).DefaultValue = ""; //PARAMETRO 1
+                FileText.Columns.Add("PARM02003", typeof(string)).DefaultValue = ""; //PARAMETRO 2
+                FileText.Columns.Add("EXT01A003", typeof(string)).DefaultValue = ""; //EXTRA CAMPO ALFA 1
+                FileText.Columns.Add("EXT02A003", typeof(string)).DefaultValue = ""; //EXTRA CAMPO ALFA 2
+                FileText.Columns.Add("EXT03A003", typeof(string)).DefaultValue = ""; //EXTRA CAMPO ALFA 3
+                FileText.Columns.Add("REFEBY003", typeof(int)).DefaultValue = 0; //REFERENCIA BYTE
+                FileText.Columns.Add("RESPBY003", typeof(int)).DefaultValue = 0; //REPUESTA AAA BYTE
+                FileText.Columns.Add("ERRBP_003", typeof(int)).DefaultValue = 0; //ERROR GESTOR BP
+                FileText.Columns.Add("TRXEXE003", typeof(int)).DefaultValue = 0;//TRANSACCION EXECUTE
+                FileText.Columns.Add("USREXE003", typeof(string)).DefaultValue = "";//USUARIO EXECUTE
+                FileText.Columns.Add("FCHCORE03", typeof(int)).DefaultValue = 0;//FECHA CORE BYTE
+                FileText.Columns.Add("FCHSIST03", typeof(int)).DefaultValue = 0;//FECHA SISTEMA
+                FileText.Columns.Add("FYHSIST03", typeof(string)).DefaultValue = "";//FECHA Y HORA SISTEMA
+                FileText.Columns.Add("TRXCOD003", typeof(string));//CODIGO DE TRANSACCION
+                FileText.Columns.Add("CAJCOD003", typeof(string));//CODIGO DE CAJERO
+                FileText.Columns.Add("AGECOD003", typeof(string));//CODIGO DE AGENCIA
+                FileText.Columns.Add("TARSON003", typeof(string)).DefaultValue = "";//ES TARJETA DE CREDITO S/N
+                FileText.Columns.Add("PARM03003", typeof(string)).DefaultValue = "";//PARAMETRO 3
+                FileText.Columns.Add("PARM04003", typeof(string)).DefaultValue = "";//PARAMETRO 4 
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al crear campos en DataTable FileText");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al crear campos en DataTable FileText" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        private void llenarDTFileText()
+        {
+            DataTable Descriptores = new DataTable();
+            string CRECUENTA = string.Empty;
+            string CRETCCUENTA = string.Empty;
+            string DEBTCTA = string.Empty;
+            string DREF = string.Empty;
+            string CREF = string.Empty;
+            string CTCREF = string.Empty;
+            string CEFECTIVO = string.Empty;
+            string CTEFECTIVO = string.Empty;
+            string DEFECTIVO = string.Empty;
+            string DMONTO = string.Empty;
+            string CMONTO = string.Empty;
+            string CTCMONTO = string.Empty;
+            string DMOTIVO = string.Empty;
+            string CMOTIVO = string.Empty;
+            string CTCMOTIVO = string.Empty;
+
+            try
+            {
+                Descriptores.Columns.Add("TRXCOD", typeof(string));
+                Descriptores.Columns.Add("TRXT01", typeof(string));
+                Descriptores.Columns.Add("TRXT02", typeof(string));
+                Descriptores.Columns.Add("TRXT03", typeof(string)).DefaultValue = 0;
+                Descriptores.Columns.Add("TRXT04", typeof(string));
+                Descriptores.Columns.Add("TRXT07", typeof(string));
+
+                Descriptores = this.GetDescriptors();
+
+                if (error == 0 && (Descriptores.Rows.Count > 1 && Descriptores.Rows.Count < 4))
+                {
+                    for (int i = 0; i < Descriptores.Rows.Count; i++)
+                    {
+                        if (Descriptores.Rows[i]["TRXCOD"].ToString() == CTRX)//TRANSACCIÓN DE CRÉDITO CTAS
+                        {
+                            CRECUENTA = "DES00" + Descriptores.Rows[i]["TRXT01"].ToString() + "003";
+                            CREF = "DES00" + Descriptores.Rows[i]["TRXT02"].ToString() + "003";
+                            CEFECTIVO = "DES00" + Descriptores.Rows[i]["TRXT03"].ToString() + "003";
+                            CMONTO = "DES00" + Descriptores.Rows[i]["TRXT04"].ToString() + "003";
+                            if (Convert.ToInt64(Descriptores.Rows[i]["TRXT07"].ToString()) > 0)
+                            {
+                                CMOTIVO = "DES00" + Descriptores.Rows[i]["TRXT07"].ToString() + "003";
+                            }
+                        }
+                        else if (Descriptores.Rows[i]["TRXCOD"].ToString() == CTCTRX)//TRANSACCIÓN DE CRÉDITO TC
+                        {
+                            CRETCCUENTA = "DES00" + Descriptores.Rows[i]["TRXT01"].ToString() + "003";
+                            CTCREF = "DES00" + Descriptores.Rows[i]["TRXT02"].ToString() + "003";
+                            CTEFECTIVO = "DES00" + Descriptores.Rows[i]["TRXT03"].ToString() + "003";
+                            CTCMONTO = "DES00" + Descriptores.Rows[i]["TRXT04"].ToString() + "003";
+                            if (Convert.ToInt64(Descriptores.Rows[i]["TRXT07"].ToString()) > 0)
+                            {
+                                CTCMOTIVO = "DES00" + Descriptores.Rows[i]["TRXT07"].ToString() + "003";
+                            }
+                        }
+                        else if (Descriptores.Rows[i]["TRXCOD"].ToString() == DTRX)//TRANSACCIÓN DE DÉBITO
+                        {
+                            DEBTCTA = "DES00" + Descriptores.Rows[i]["TRXT01"].ToString() + "003";
+                            DREF = "DES00" + Descriptores.Rows[i]["TRXT02"].ToString() + "003";
+                            DEFECTIVO = "DES00" + Descriptores.Rows[i]["TRXT03"].ToString() + "003";
+                            DMONTO = "DES00" + Descriptores.Rows[i]["TRXT04"].ToString() + "003";
+                            if (Convert.ToInt64(Descriptores.Rows[i]["TRXT07"].ToString()) > 0)
+                            {
+                                DMOTIVO = "DES00" + Descriptores.Rows[i]["TRXT07"].ToString() + "003";
+                            }
+                        }
+                    }
+                    for (int i = 0; i < Detalle.Rows.Count; i++)
+                    {
+                        if (Detalle.Rows[i]["Status"].ToString() != "E" && Convert.ToDecimal(Detalle.Rows[i]["Monto"]) > 0)
+                        {
+                            DataRow dr = FileText.NewRow();
+                            dr["APLCOD003"] = Service;
+                            dr["NOLOTE003"] = Detalle.Rows[i]["IdLote"].ToString();
+                            dr["CORREL003"] = Detalle.Rows[i]["Correlativo"].ToString();
+                            dr["TIPCTA003"] = Detalle.Rows[i]["TipoCuenta"].ToString();
+                            dr["MONCOD003"] = CboMonedas.EditValue.ToString().Trim();
+                            if (Detalle.Rows[i]["Trx"].ToString() == CTRX)//TRANSACCIÓN DE CRÉDITO CTAS
+                            {
+                                dr[CRECUENTA] = Convert.ToString(Convert.ToDecimal(Detalle.Rows[i]["Cuenta"].ToString()) / 100).PadLeft(13, '0');
+                                dr[CREF] = (Convert.ToDecimal(Detalle.Rows[i]["NoReferencia"].ToString()) / 100).ToString();
+                                if (Convert.ToInt32(CEFECTIVO.Substring(5, 1)) > 0)
+                                {
+                                    dr[CEFECTIVO] = Detalle.Rows[i]["Monto"].ToString();
+                                }
+                                dr[CMONTO] = Detalle.Rows[i]["Monto"].ToString();
+                                dr["PARM03003"] = "C";
+                                dr["PARM04003"] = "C";
+                                if (CMOTIVO != string.Empty)
+                                {
+                                    dr[CMOTIVO] = (Convert.ToDecimal(MotivoC) / 100).ToString();
+                                }
+                            }
+                            else if (Detalle.Rows[i]["Trx"].ToString() == CTCTRX)//TRANSACCIÓN DE CRÉDITO TC
+                            {
+                                dr[CRETCCUENTA] = Convert.ToString(Convert.ToDecimal(Detalle.Rows[i]["Cuenta"].ToString()) / 100).PadLeft(13, '0');
+                                dr[CTCREF] = (Convert.ToDecimal(Detalle.Rows[i]["NoReferencia"].ToString()) / 100).ToString();
+                                if (Convert.ToInt32(CTEFECTIVO.Substring(5, 1)) > 0)
+                                {
+                                    dr[CTEFECTIVO] = Detalle.Rows[i]["Monto"].ToString();
+                                }
+                                dr[CTCMONTO] = Detalle.Rows[i]["Monto"].ToString();
+                                dr["PARM03003"] = "C";
+                                dr["PARM04003"] = "T";
+                                if (CTCMOTIVO != string.Empty)
+                                {
+                                    dr[CTCMOTIVO] = (Convert.ToDecimal(MotivoCTC) / 100).ToString();
+                                }
+                            }
+                            else if (Detalle.Rows[i]["Trx"].ToString() == DTRX)//TRANSACCIÓN DE DÉBITO
+                            {
+                                dr[DEBTCTA] = Convert.ToString(Convert.ToDecimal(Detalle.Rows[i]["Cuenta"].ToString()) / 100).PadLeft(13, '0');
+                                dr[DREF] = (Convert.ToDecimal(Detalle.Rows[i]["NoReferencia"].ToString()) / 100).ToString();
+                                if (Convert.ToInt32(DEFECTIVO.Substring(5, 1)) > 0)
+                                {
+                                    dr[DEFECTIVO] = Detalle.Rows[i]["Monto"].ToString();
+                                }
+                                dr[DMONTO] = Detalle.Rows[i]["Monto"].ToString();
+                                dr["PARM03003"] = "D";
+                                dr["PARM04003"] = "C";
+                                if (DMOTIVO != string.Empty)
+                                {
+                                    dr[DMOTIVO] = (Convert.ToDecimal(MotivoD) / 100).ToString();
+                                }
+                            }
+
+                            dr["DESOBS003"] = TxtObservacion.Text;
+                            dr["TRXCOD003"] = Detalle.Rows[i]["Trx"].ToString();
+                            dr["CAJCOD003"] = Properties.Settings.Default.CodOficialAS400.ToString();
+                            dr["AGECOD003"] = Properties.Settings.Default.AgenciaCod.ToString();
+                            dr["TARSON003"] = "N";
+                            FileText.Rows.Add(dr);
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Error al llenar DatatTable FileText", "Error al llenar DatatTable FileText", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Llenar DataTable FileText");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Llenar DataTable FileText" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        private DataTable GetDescriptors()
+        {
+            DataTable respuesta = new DataTable();
+
+            String conexion = Properties.Settings.Default.ConnectionDB;
+
+            try
+            {
+                string Query = "EXEC Usp_GetDescriptors {0},{1},{2}";
+
+                Query = string.Format(Query, DTRX, CTRX, CTCTRX);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "GetDescriptors");
+                    error = error  + Proxy.error;
+                }
+
+                return respuesta;
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Obtener los Descriptores");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Obtener los Descriptores" + ex.ToString());
+                error++;
+                return respuesta;
+            }
+        }
+
+        private void OriginalValidarStatusCta()
+        {
+            string Status = string.Empty;
+            DataTable Respuesta = new DataTable();
+            String conexion = Properties.Settings.Default.ConnectionDB;
+            String Query = string.Empty;
+
+            try
+            {
+                for (int i = 0; i < Detalle.Rows.Count; i++)
+                {
+                    Status = Detalle.Rows[i]["CTSTA"].ToString();
+                    if (Status == null || Status == "")//SI ESTATUS VIENE VACIO DE SQL VA AL AS400 A BUSCAR EL ESTATUS
+                    {
+                        Respuesta.Reset();
+                        Query = "SELECT DISTINCT CTSTA FROM DP053DAT.DPCTAS WHERE TRIM(REPLACE(CTEDIT,'-','')) ='{0}'";
+                        Query = string.Format(Query, Detalle.Rows[i]["Cuenta"].ToString());
+                        Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                        if (Criptografia.error == 0)
+                        {
+                            Respuesta = Proxy.QueryAS400(Query, _cnnAS400, "ValidarStatusCta");
+                            error = error  + Proxy.error;
+                        }
+                        if (Respuesta.Rows.Count > 0)
+                        {
+                            Detalle.Rows[i]["CTSTA"] = Respuesta.Rows[0][0].ToString();
+                            Status = Detalle.Rows[i]["CTSTA"].ToString();
+                            Respuesta.Reset();
+                            Query = @"UPDATE DetallePlanillas SET CTSTA = '{0}' WHERE IdLote={1} AND Correlativo={2}";
+                            Query = string.Format(Query, Status, Detalle.Rows[i]["IdLote"].ToString(), Detalle.Rows[i]["Correlativo"].ToString());
+                            Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                            if (Criptografia.error == 0)
+                            {
+                                Proxy.QuerySQL(Query, conexion, "ValidarStatusCta");
+                                error = error  + Proxy.error;
+                            }
+                        }
+                        else//SINO INSERTA ERROR
+                        {
+                            DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                            dr["Lote"] = Lote;
+                            dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                            dr["Campo"] = Convert.ToString(Detalle.Columns["Cuenta"].ColumnName);
+                            dr["Descripcion"] = "CUENTA NO EXISTE";
+                            dsFromXls.Tables["errores"].Rows.Add(dr);
+                            error++;
+                        }
+                    }
+
+                    if (Status == "C")//SI ESTATUS ES CANCELADO ENTONCES VA AL AS400 A CONFIRMAR 
+                    {
+                        Respuesta.Reset();
+                        Query = "SELECT DISTINCT CTSTA FROM DP053DAT.DPCTAS WHERE TRIM(REPLACE(CTEDIT,'-','')) ='{0}'";
+                        Query = string.Format(Query, Detalle.Rows[i]["Cuenta"].ToString());
+                        Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                        if (Criptografia.error == 0)
+                        {
+                            Respuesta = Proxy.QueryAS400(Query, _cnnAS400, "ValidarStatusCta'");
+                            error = error  + Proxy.error;
+                        }
+                        if (Respuesta.Rows.Count > 0)
+                        {
+                            if (Respuesta.Rows[0][0].ToString() != Status)//SI ESTATUS ES DIFERENTE EN EL AS400 ENTONCES ACTUALIZA EL STATUS EN SQL
+                            {
+                                Detalle.Rows[i]["CTSTA"] = Respuesta.Rows[0][0].ToString();
+                                Status = Detalle.Rows[i]["CTSTA"].ToString();
+                                Respuesta.Reset();
+                                Query = @"UPDATE DetallePlanillas SET CTSTA = '{0}' WHERE IdLote={1} AND Correlativo={2}";
+                                Query = string.Format(Query, Status, Detalle.Rows[i]["IdLote"].ToString(), Detalle.Rows[i]["Correlativo"].ToString());
+                                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                                if (Criptografia.error == 0)
+                                {
+                                    Proxy.QuerySQL(Query, conexion, "ValidarStatusCta");
+                                    error = error  + Proxy.error;
+                                }
+                            }
+                            else//SINO INSERTA ERROR
+                            {
+                                DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                                dr["Lote"] = Lote;
+                                dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                                dr["Campo"] = Convert.ToString(Detalle.Columns["Cuenta"].ColumnName);
+                                dr["Descripcion"] = "CUENTA SE ENCUENTRA CANCELADA";
+                                dsFromXls.Tables["errores"].Rows.Add(dr);
+                                error++;
+                            }
+                        }
+                        else//SINO ENCONTRO CUENTA EN EL DPCTAS DEL AS400 ENTONCES INSERTA ERROR
+                        {
+                            DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                            dr["Lote"] = Lote;
+                            dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                            dr["Campo"] = Convert.ToString(Detalle.Columns["Cuenta"].ColumnName);
+                            dr["Descripcion"] = "CUENTA SE ENCUENTRA CANCELADA";
+                            dsFromXls.Tables["errores"].Rows.Add(dr);
+                            error++;
+                        }
+                    }
+                    if (Status == "B")//SI ESTATUS ES BLOQUEADO ENTONCES VA AL AS400 A CONFIRMAR 
+                    {
+                        Respuesta.Reset();
+                        Query = "SELECT DISTINCT CTSTA FROM DP053DAT.DPCTAS WHERE TRIM(REPLACE(CTEDIT,'-','')) ='{0}'";
+                        Query = string.Format(Query, Detalle.Rows[i]["Cuenta"].ToString());
+                        Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                        if (Criptografia.error == 0)
+                        {
+                            Respuesta = Proxy.QueryAS400(Query, _cnnAS400, "ValidarStatusCta");
+                            error = error  + Proxy.error;
+                        }
+                        if (Respuesta.Rows.Count > 0)
+                        {
+                            if (Respuesta.Rows[0][0].ToString() != Status)//SI ESTATUS ES DIFERENTE EN EL AS400 ENTONCES ACTUALIZA EL STATUS EN SQL
+                            {
+
+                                Detalle.Rows[i]["CTSTA"] = Respuesta.Rows[0][0].ToString();
+                                Status = Detalle.Rows[i]["CTSTA"].ToString();
+                                Respuesta.Reset();
+                                Query = @"UPDATE DetallePlanillas SET CTSTA = {0} WHERE IdLote={1} AND Correlativo={2}";
+                                Query = string.Format(Query, Status, Detalle.Rows[i]["IdLote"].ToString(), Detalle.Rows[i]["Correlativo"].ToString());
+                                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                                if (Criptografia.error == 0)
+                                {
+                                    Proxy.QuerySQL(Query, conexion, "ValidarStatusCta");
+                                    error = error  + Proxy.error;
+                                }
+                                if (Respuesta.Rows[0][0].ToString() == "C")
+                                {
+                                    DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                                    dr["Lote"] = Lote;
+                                    dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                                    dr["Campo"] = Convert.ToString(Detalle.Columns["Cuenta"].ColumnName);
+                                    dr["Descripcion"] = "CUENTA SE ENCUENTRA CANCELADA";
+                                    dsFromXls.Tables["errores"].Rows.Add(dr);
+                                    error++;
+                                }
+                            }
+                            else//SINO INSERTA ERROR
+                            {
+                                DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                                dr["Lote"] = Lote;
+                                dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                                dr["Campo"] = Convert.ToString(Detalle.Columns["Cuenta"].ColumnName);
+                                dr["Descripcion"] = "CUENTA SE ENCUENTRA BLOQUEADA";
+                                dsFromXls.Tables["errores"].Rows.Add(dr);
+                                error++;
+                            }
+                        }
+                        else//SINO ENCONTRO CUENTA EN EL DPCTAS DEL AS400 ENTONCES INSERTA ERROR
+                        {
+                            DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                            dr["Lote"] = Lote;
+                            dr["Secuencia"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                            dr["Campo"] = Convert.ToString(Detalle.Columns["Cuenta"].ColumnName);
+                            dr["Descripcion"] = "CUENTA SE ENCUENTRA BLOQUEADA";
+                            dsFromXls.Tables["errores"].Rows.Add(dr);
+                            error++;
+                        }
+                    }
+                }
+                this.ActualizaProgressBar(100);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al validar status cuentas");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al validar status cuentas" + ex.ToString());
+                error++;
+                return;
+
+            }
+        }
+
+        private void ValidaNumerosCuentasEnCero()
+        {
+            for (int i = 0; i < dsFromXls.Tables["DetallePlanilla"].Rows.Count; i++)
+            {
+                if (dsFromXls.Tables["DetallePlanilla"].Rows[i]["cuenta"].ToString() == "0")
+                {
+                    DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                    dr["Lote"] = Lote;
+                    dr["Secuencia"] = Convert.ToInt64(dsFromXls.Tables["DetallePlanilla"].Rows[i]["secuencia"].ToString());
+                    dr["Campo"] = cuenta;
+                    dr["Descripcion"] = "Numero de Cuenta no Existe";
+                    dsFromXls.Tables["errores"].Rows.Add(dr);
+                    error++;
+                    foreach (DataRow row in Detalle.Rows)
+                    {
+                        if (row["Correlativo"].ToString() == dsFromXls.Tables["DetallePlanilla"].Rows[i]["secuencia"].ToString())
+                            row.SetField("Status", "E");
+                    }
+                }
+            }
+        }
+
+        private void ValidacionesTC()
+        {
+            DataTable TC = new DataTable();
+            DataTable Respuesta = new DataTable();
+            TC.Columns.Add("IdLote", typeof(string));
+            TC.Columns.Add("Correlativo", typeof(string));
+            TC.Columns.Add("NumeroTarjeta", typeof(string));
+
+            for (int i = 0; i < Detalle.Rows.Count; i++)//OBTIENE LAS TC PREPAGO
+            {
+                if (Detalle.Rows[i]["TipoTrx"].ToString() == "1" && Detalle.Rows[i]["Cuenta"].ToString().Length >= LongitudTC)
+                {
+                    if (Detalle.Rows[i]["Status"].ToString() != "E")
+                    {
+                        DataRow dr = TC.NewRow();
+                        dr["IdLote"] = Convert.ToInt64(Detalle.Rows[i]["IdLote"].ToString());
+                        dr["Correlativo"] = Convert.ToInt64(Detalle.Rows[i]["Correlativo"].ToString());
+                        dr["NumeroTarjeta"] = Convert.ToInt64(Detalle.Rows[i]["Cuenta"].ToString());
+                        TC.Rows.Add(dr);
+                    }
+                }
+            }
+            Respuesta = this.ValidarTC(TC);//OBTIENE INFO DE LAS TC
+
+            for (int i = 0; i < Respuesta.Rows.Count; i++)//VALIDA SI HAY ERRORES
+            {
+                if (Respuesta.Rows[i]["EstadoTarjeta"].ToString() != string.Empty)
+                {
+                    if (Respuesta.Rows[i]["EstadoTarjeta"].ToString() != "20" || Respuesta.Rows[i]["EstadoHabilitar"].ToString() != string.Empty)
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Lote"] = Lote;
+                        dr["Secuencia"] = Convert.ToInt64(Respuesta.Rows[i]["CORRELATIVO"].ToString());
+                        dr["Campo"] = cuenta;
+                        dr["Descripcion"] = "Tarjeta no activa";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                        foreach (DataRow row in Detalle.Rows)
+                        {
+                            if (row["cuenta"].ToString() == Respuesta.Rows[i]["NumeroTarjeta"].ToString())
+                                row.SetField("Status", "E");
+                        }
+                    }
+                    if (Respuesta.Rows[i]["EstadoCuenta"].ToString() != "10")
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Lote"] = Lote;
+                        dr["Secuencia"] = Convert.ToInt64(Respuesta.Rows[i]["CORRELATIVO"].ToString());
+                        dr["Campo"] = cuenta;
+                        dr["Descripcion"] = "Cuenta de TC no activa";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                        foreach (DataRow row in Detalle.Rows)
+                        {
+                            if (row["cuenta"].ToString() == Respuesta.Rows[i]["NumeroTarjeta"].ToString())
+                                row.SetField("Status", "E");
+                        }
+                    }
+                    if (Respuesta.Rows[i]["EsPrepago"].ToString() != string.Empty)
+                    {
+                        if (Convert.ToBoolean(Respuesta.Rows[i]["EsPrepago"]) == false)
+                        {
+                            DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                            dr["Lote"] = Lote;
+                            dr["Secuencia"] = Convert.ToInt64(Respuesta.Rows[i]["CORRELATIVO"].ToString());
+                            dr["Campo"] = cuenta;
+                            dr["Descripcion"] = "Tarjeta no es Prepago";
+                            dsFromXls.Tables["errores"].Rows.Add(dr);
+                            error++;
+                            foreach (DataRow row in Detalle.Rows)
+                            {
+                                if (row["cuenta"].ToString() == Respuesta.Rows[i]["NumeroTarjeta"].ToString())
+                                    row.SetField("Status", "E");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Lote"] = Lote;
+                        dr["Secuencia"] = Convert.ToInt64(Respuesta.Rows[i]["CORRELATIVO"].ToString());
+                        dr["Campo"] = cuenta;
+                        dr["Descripcion"] = "Tarjeta no es Prepago";
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                        foreach (DataRow row in Detalle.Rows)
+                        {
+                            if (row["cuenta"].ToString() == Respuesta.Rows[i]["NumeroTarjeta"].ToString())
+                                row.SetField("Status", "E");
+                        }
+                    }
+                }
+                else
+                {
+                    DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                    dr["Lote"] = Lote;
+                    dr["Secuencia"] = Convert.ToInt64(Respuesta.Rows[i]["CORRELATIVO"].ToString());
+                    dr["Campo"] = cuenta;
+                    dr["Descripcion"] = "No existe número de Tarjeta";
+                    dsFromXls.Tables["errores"].Rows.Add(dr);
+                    error++;
+                    foreach (DataRow row in Detalle.Rows)
+                    {
+                        if (row["cuenta"].ToString() == Respuesta.Rows[i]["NumeroTarjeta"].ToString())
+                            row.SetField("Status", "E");
+                    }
+                }
+            }
+        }
+
+        private DataTable ValidarTC(DataTable Fuente)
+        {
+            DataTable Answer = new DataTable();
+
+            try
+            {
+                using (SqlConnection conection = new SqlConnection(Properties.Settings.Default.ConnectionDB))
+                {
+                    conection.Open();
+                    using (SqlCommand cmd = new SqlCommand("Usp_ValidaTarjetas"))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Connection = conection;
+                        cmd.CommandTimeout = 300;
+                        cmd.Parameters.AddWithValue("@Tabla", Fuente);
+                        cmd.ExecuteNonQuery();
+                        using (SqlDataAdapter adp = new SqlDataAdapter(cmd))
+                        {
+                            adp.Fill(Answer);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Validar Tarjetas de Crédito");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Validar Tarjetas de Crédito " + ex.ToString());
+                error++;
+            }
+            return Answer;
+        }
+
+        private void RecalcularDebito()
+        {
+            try
+            {
+                TotalCreditos = 0;
+                TotalDebitos = 0;
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                for (int i = 0; i < Detalle.Rows.Count; i++)//RECALCULA MONTO TOTAL DE LOS CREDITOS
+                {
+                    if (Convert.ToInt32(Detalle.Rows[i]["TipoTrx"].ToString()) == 1 && Detalle.Rows[i]["Status"].ToString() != "E")
+                    {
+                        TotalCreditos = TotalCreditos + Convert.ToDecimal(Detalle.Rows[i]["Monto"].ToString());
+                    }
+                }
+
+                for (int i = 0; i < Detalle.Rows.Count; i++)//RECALCULA MONTO TOTAL DE LOS DEBITOS
+                {
+                    if (Convert.ToInt32(Detalle.Rows[i]["TipoTrx"].ToString()) == 2)
+                    {
+                        TotalDebitos = TotalCreditos;
+                        foreach (DataRow row in dsFromXls.Tables[0].Rows)
+                        {
+                            if (row[0].ToString() == Detalle.Rows[i]["Correlativo"].ToString())
+                            {
+                                row["Monto"] = TotalDebitos;
+                            }
+                        }
+
+                        Detalle.Rows[i]["Monto"] = TotalDebitos;
+                        TxtCredito.Text = TotalCreditos.ToString();
+                        TxtDebito.Text = TotalDebitos.ToString();
+                    }
+                }
+
+                //*******************ACTUALIZA EN SQL EL VALOR DE DEBITOS A COBRAR /****************
+                string Query = "UPDATE LotesPlanillas SET CobroParcial= {0} WHERE IdLote= {1}";
+
+                Query = string.Format(Query, TotalDebitos, Lote);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    Proxy.QuerySQL(Query, conexion, "RecalcularDebito");
+                    error = error  + Proxy.error;
+                }
+                //**********************************************************************************
+
+                if (error == 0)
+                {
+                    //*******************ACTUALIZA EN SQL EL VALOR DE DEBITOS A COBRAR /****************
+                    Query = "UPDATE DetallePlanillas SET Monto= {0} WHERE IdLote= {1} AND TipoTrx=2";
+
+                    Query = string.Format(Query, TotalDebitos, Lote);
+
+                    Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                    if (Criptografia.error == 0)
+                    {
+                        Proxy.QuerySQL(Query, conexion, "RecalcularDebito");
+                        error = error  + Proxy.error;
+                    }
+                    //**********************************************************************************
+
+                }
+                this.ActualizaGrid();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al recalcular Debito");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al recalcular Debito" + ex.ToString());
+                error++;
+            }
+        }
+
+        private void EliminaRegistrosError()
+        {
+            try
+            {
+                for (int i = 0; i < Detalle.Rows.Count; i++)//RECALCULA MONTO TOTAL DE LOS DEBITOS
+                {
+                    if (Detalle.Rows[i]["Status"].ToString() == "E")
+                    {
+                        foreach (DataRow dr in dsFromXls.Tables[0].Rows)
+                        {
+                            if (dr[0].ToString() == Detalle.Rows[i]["Correlativo"].ToString())
+                            {
+                                dr.Delete();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Eliminar Registros con Error");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Eliminar Registros con Error " + ex.ToString());
+                error++;
+            }
+        }
+
+        #endregion
+
+        #region Autorizar
+
+        private void BtnAutorizar_Click(object sender, EventArgs e)
+        {
+            decimal MontoMaximo = 0;
+            if (CboMonedas.EditValue.ToString() == "L         ")
+                MontoMaximo = Properties.Settings.Default.MontoMaximoLps;
+            else if (CboMonedas.EditValue.ToString() == "US$       ")
+                MontoMaximo = Properties.Settings.Default.MontoMaximoDlrs;
+
+            if (Convert.ToDecimal(TxtCredito.Text) <= MontoMaximo)
+            {
+                this.AutorizarLote();
+                if (error == 0)
+                {
+                    this.ActualizaEstatus("A");
+                    if (error == 0)
+                    {
+                        MessageBox.Show("Lote: " + Lote + " Autorizado Correctamente ", "Proceso Ejecutado Correctamente", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        this.BtnAutorizar.Enabled = false;
+                        this.BtnProcesar.Enabled = true;
+                    }
+                }
+            }
+            else
+            {
+                bool IsOpen = false;
+                foreach (Form f in Application.OpenForms)
+                {
+                    if (f.Name == "FrmAutorizacion")
+                    {
+                        IsOpen = true;
+                        f.Focus();
+                        break;
+                    }
+                }
+                if (IsOpen == false)
+                {
+                    FrmAutorizacion FrmAutorizacion = new FrmAutorizacion();
+                    FrmAutorizacion.Lote = Lote;
+                    FrmAutorizacion.pantalla = 1;
+                    FrmAutorizacion.WindowState = FormWindowState.Normal;
+                    FrmAutorizacion.ShowDialog();
+                    if (FrmAutorizacion.DialogResult == DialogResult.OK)
+                    {
+                        this.ActualizaEstatus("A");
+                        if (error == 0)
+                        {
+                            MessageBox.Show("Lote: " + Lote + " Autorizado Correctamente ", "Proceso Ejecutado Correctamente", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            this.BtnAutorizar.Enabled = false;
+                            this.BtnProcesar.Enabled = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void AutorizarLote()
+        {
+            DataTable respuesta = new DataTable();
+
+            String conexion = Properties.Settings.Default.ConnectionDB;
+
+            try
+            {
+                string Query = "EXEC Usp_AutorizaTrx {0},{1},{2}";
+
+                Query = string.Format(Query, 1, Properties.Settings.Default.UsuarioLogueado, Lote);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "autorizaplanilla");
+                    error = error  + Proxy.error;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al autorizar Planilla");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al autorizar Planilla" + ex.ToString());
+                error++;
+            }
+        }
+
+        #endregion
+
+        #region Procesar
+
+        private void BtnProcesar_Click(object sender, EventArgs e)
+        {
+            BtnProcesar.Enabled = false;
+            ProgressBar.Visible = true;
+            LblEspere.Visible = true;
+            LblPercent.Visible = true;
+
+            this.ActualizaEstatus("PR");
+            FileName = "PD" + Service + Lote.ToString().PadLeft(10, '0') + ".TXT";
+            this.ProcesoAplicacion();
+            if (error == 0)
+            {
+                this.TrasladaToHistorico();
+                MessageBox.Show("Lote: " + Lote + " Procesado Correctamente ", "Proceso Ejecutado Correctamente", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                BtnImportar.Enabled = true;
+                ProgressBar.Visible = false;
+                LblEspere.Visible = false;
+                LblPercent.Visible = false;
+                CboClientes.Enabled = true;
+                CboMonedas.Enabled = true;
+                TxtObservacion.Enabled = true;
+                ProgressBar.EditValue = 0;
+                LblPercent.Text = "0";
+                this.VisualizarLote();
+            }
+            else
+            {
+                if (dsFromXls.Tables["errores"].Rows.Count > 0)
+                {
+                    this.ActualizarErroresDB();
+                }
+                this.TrasladaToHistorico();
+                GrdErrores.DataSource = null;
+                GrdErrores.DataSource = dsFromXls.Tables["errores"];
+                MessageBox.Show("Se encontraron errores al momento de procesar el archivo", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                BtnImportar.Enabled = true;
+                CboClientes.Enabled = true;
+                CboMonedas.Enabled = true;
+                TxtObservacion.Enabled = true;
+                ProgressBar.Visible = false;
+                LblEspere.Visible = false;
+                LblPercent.Visible = false;
+                ProgressBar.EditValue = 0;
+                LblPercent.Text = "0";
+                this.VisualizarLote();
+            }
+        }
+
+        private void ProcesoAplicacion()
+        {
+            this.EjecutaPGM();
+            this.ActualizaProgressBar(30);
+            this.ActualizarstatusSQL();
+            this.ActualizaProgressBar(50);
+
+            if (error == 0)
+            {
+                this.ComisionXCliente();
+                this.ActualizaProgressBar(80);
+                if (error == 0)
+                {
+                    if (duplicado == true)
+                    {
+                        this.sendemail();
+                        this.ActualizaProgressBar(100);
+                    }
+                    else
+                    {
+                        this.ActualizaProgressBar(100);
+                    }
+                }
+            }
+        }
+
+        private void sendemail()
+        {
+            try
+            {
+                String NotificationsMails = string.Empty;
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                string Query = "EXEC Usp_GetNotificactionsMails '{0}',{1}";
+
+                Query = string.Format(Query, Properties.Settings.Default.Zona, Properties.Settings.Default.Area);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "sendemail");
+                    error = error  + Proxy.error;
+                }
+                if (respuesta.Rows.Count > 0)
+                {
+                    if (respuesta.Rows[0][0].ToString().Length > 0)
+                    {
+                        NotificationsMails = respuesta.Rows[0][0].ToString();
+
+                        // DECLARA EL OBJETO PARA ENVIAR CORREOS
+                        MailMessage objeto_mail = new MailMessage();
+                        SmtpClient client = new SmtpClient();
+
+                        //OBTIENE LOS PARAMETROS PARA ASIGNAR AL OBJETO SMTPCLIENT           
+                        string MailServer = Properties.Settings.Default.MailServer;
+                        int MailServerPort = Properties.Settings.Default.MailServerPort;
+
+                        //OBTIENE LOS PARAMETROS PARA ASIGNAR AL OBJETO MAILMESSAGE  
+                        string CorreoOrigen = Properties.Settings.Default.MailFrom;
+                        string correodestino = NotificationsMails;
+                        string[] cuenta = CorreoOrigen.Split('@');
+                        string acount = cuenta[0];
+                        string MailMsg = "El Usuario: " + Properties.Settings.Default.UsuarioLogueado + " ha realizado un débito por: Lps " + TxtDebito.Text + " al cliente : " + CboClientes.Text; //Properties.Settings.Default.MailMessage;
+
+                        //ASIGNA LOS PARAMETROS AL OBJETO SMTPCLIENT
+                        client.Host = MailServer;
+                        client.Port = MailServerPort;
+                        client.Timeout = 300;
+                        client.DeliveryMethod = SmtpDeliveryMethod.Network;
+                        client.UseDefaultCredentials = false;
+                        client.Credentials = new System.Net.NetworkCredential(acount, "");
+
+                        //ASIGNA LOS PARAMETROS AL OBJETO MAILMESSAGE
+                        objeto_mail.From = new MailAddress(CorreoOrigen);
+                        foreach (var address in correodestino.Split(';'))
+                        {
+                            objeto_mail.To.Add(new MailAddress(address, ""));
+                        }
+                        //objeto_mail.To.Add(new MailAddress(correodestino));
+                        objeto_mail.Subject = "Debito Duplicado a cliente " + CboClientes.Text;
+                        objeto_mail.Body = MailMsg;
+
+                        ////ASIGNA LOS ARCHIVOS ADJUNTOS AL MENSAJE
+                        //System.Net.Mail.Attachment attachment;
+                        //attachment = new System.Net.Mail.Attachment(txt);
+                        //objeto_mail.Attachments.Add(attachment);
+
+                        //ENVIA EL MENSAJE POR EMAIL
+                        client.Send(objeto_mail);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al enviar mensaje de Notificación ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al enviar mensaje de Notificación " + ex.ToString());
+                error++;
+
+            }
+        }
+
+        #endregion
+
+        #region CobroComision
+
+        private void ComisionXCliente()
+        {
+            DataTable respuesta = new DataTable();
+
+            String conexion = Properties.Settings.Default.ConnectionDB;
+
+            try
+            {
+                string Query = "SELECT [Comision] FROM Clientes WHERE Cif = {0} AND CodArea ={1}";
+
+                Query = string.Format(Query, CboClientes.EditValue.ToString(), Properties.Settings.Default.Area);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "ComisionXCliente");
+                    error = error  + Proxy.error;
+                }
+
+                if (Convert.ToBoolean(respuesta.Rows[0][0].ToString()) == true)
+                {
+                    respuesta.Reset();
+                    respuesta = this.GetComision();
+
+                    if (respuesta.Rows.Count > 0)
+                    {
+                        this.BuildTextFile("CN", respuesta);
+                        if (error == 0)
+                        {
+                            this.UploadToAS400(Dierctorio + @"\" + FileName, ".txt", true, true, Properties.Settings.Default.Destino, Properties.Settings.Default.Source + @"\", Properties.Settings.Default.ServidorDB2);
+                            if (error == 0)
+                            {
+                                FileName = FileName + Properties.Settings.Default.UsuarioLogueado.PadRight(25, ' ');
+                                this.EjecutaPGM();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Obtener Cobro de Comisión Por Cliente");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Obtener Cobro de Comisión Por Cliente" + ex.ToString());
+                error++;
+            }
+        }
+
+        private DataTable GetComision()
+        {
+            DataTable respuesta = new DataTable();
+
+            String conexion = Properties.Settings.Default.ConnectionDB;
+
+            try
+            {
+                string Query = "EXEC Usp_GetComision '{0}',{1},{2},{3},{4},'{5}'";
+
+                Query = string.Format(Query, CboClientes.EditValue.ToString(), Convert.ToDecimal(TxtCredito.Text), TotalCreditos, Lote, Properties.Settings.Default.Area, CboMonedas.EditValue.ToString());
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "GetComision");
+                    error = error  + Proxy.error;
+                }
+
+                return respuesta;
+
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Obtener Cobro de Comisión");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Obtener Cobro de Comisión" + ex.ToString());
+                error++;
+                return respuesta;
+            }
+        }
+
+        #endregion
+
+        #region Combobox
+
+        private void CboClientes_Click(object sender, EventArgs e)
+        {
+            this.clientesByOficialTableAdapter.Fill(this.dS_TransaccionesBancarias.ClientesByOficial,
+                Properties.Settings.Default.UsuarioLogueado, Properties.Settings.Default.Area);
+        }
+
+        private void CboMonedas_Click(object sender, EventArgs e)
+        {
+            this.monedasTableAdapter.Fill(this.dS_TransaccionesBancarias.Monedas);
+        }
+
+        #endregion
+
+        private void BuildTextFile(string TipoArchivo, DataTable Fuente)
+        {
+            try
+            {
+                System.IO.FileStream wFile;
+                byte[] byteData = new byte[0];
+                FileName = TipoArchivo + Service + Lote.ToString().PadLeft(10, '0') + ".TXT";
+                Dierctorio = Properties.Settings.Default.Source;
+                if (!Directory.Exists(Dierctorio))
+                    Directory.CreateDirectory(Dierctorio);
+
+                if (File.Exists(Dierctorio + @"\" + FileName))
+                    File.Delete(Dierctorio + @"\" + FileName);
+
+                wFile = new FileStream(Dierctorio + @"\" + FileName, FileMode.Append);
+                //FOR QUE RECORRE EL DATATABLE DONDE SE ALMACENO LA RESPUESTA DEL QUERY EJECUTADO
+                for (int i = 0; i < Fuente.Rows.Count; i++)
+                {
+                    //FOR QUE RECORRE LAS COLUMNAS DEL DATATABLE DONDE SE ALMACENO LA RESPUESTA DEL QUERY EJECUTADO
+                    for (int f = 0; f < Fuente.Columns.Count; f++)
+                    {
+                        //VALIDA HASTA CUANDO ES LA PENULTIMA COLUMNA PARA INSERTAR EL SEPARADOR
+                        if (f == (Fuente.Columns.Count) - 1)
+                        {
+                            byteData = Encoding.ASCII.GetBytes(Fuente.Rows[i][f].ToString());
+                        }
+                        //SINO LE INSERTA EL SEPARADOR A LAS COLUMNAS
+                        else
+                        {
+                            byteData = Encoding.ASCII.GetBytes(Fuente.Rows[i][f].ToString() + '|');
+                        }
+                        //ESCRIBE LOS DATOS DENTRO DE LA FILA
+                        wFile.Write(byteData, 0, byteData.Length);
+                        byteData = new byte[0];
+                    }
+                    //AGREGA UNA NUEVA FILA CUANDO HA RECORRIDO TODAS LAS COLUMNAS
+                    byteData = Encoding.ASCII.GetBytes(Environment.NewLine);
+                    wFile.Write(byteData, 0, byteData.Length);
+                }
+                wFile.Close();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Construir Archivo de Texto");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Construir Archivo de Texto" + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private bool UploadToAS400(string FileName, string Extension, bool RemoveExistingFileAS400, bool IsFolderUnderRoot, string DestinationFile, string SourceFile, string ServidorDB2)
+        {
+            bool ProcesoExitoso = false;
+            bool _SubidaArchivo = false;
+            try
+            {
+                string sUserAS400 = sVal[0];
+                string sPassAS400 = sVal[1];
+                AS400FTP ftp = new AS400FTP();
+                ftp.AS400FileExtension = Extension;
+                ftp.RemoveExistingFile = RemoveExistingFileAS400;
+                ftp.IsFolderUnderRoot = IsFolderUnderRoot;
+                log.Info(string.Format("Colocando Archivo '{0}' en la Carpeta del AS400: '{1}'", FileName, DestinationFile));
+                _SubidaArchivo = ftp.FTPPUT(DestinationFile, SourceFile,
+                    new string[] { FileName }, ServidorDB2, sUserAS400, sPassAS400);
+
+                if (_SubidaArchivo == true)
+                {
+                    File.Delete(FileName);
+                    log.Info(string.Format("Archivo '{0}' Subido Correctamente", FileName));
+                    ProcesoExitoso = true;
+                }
+                else
+                {
+                    File.Delete(FileName);
+                    log.Info(string.Format("Error al Subir Archivo '{0}' al AS400", FileName));
+                    MessageBox.Show(string.Format("Error al Subir Archivo '{0}' al AS400", FileName), "Error al subir Archivo al AS400", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                error++;
+                log.Error("Error al Subir Archivo al AS400");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Subir Archivo al AS400" + Environment.NewLine + ex.Message.ToString(), "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            }
+            return ProcesoExitoso;
+        }
+
+        private void ActualizarstatusSQL()
+        {
+            String conexion = Properties.Settings.Default.ConnectionDB;
+            string Query = string.Empty;
+            DataTable Fuente = new DataTable();
+
+            try
+            {
+                Query = @"SELECT NOLOTE003 AS Lote,
+                        CORREL003 AS Correlativo,
+                        CASE  
+                        WHEN ESTADO003 = '' AND (ERRBP_003<>0 OR RESPBY003<>0) THEN 'E'
+                        WHEN ESTADO003 = '' AND ERRBP_003=0 AND RESPBY003=0 THEN 'PR'
+                        WHEN ESTADO003 = 'A' AND ERRBP_003=0 AND RESPBY003=0 THEN 'RA'
+                        ELSE ESTADO003 
+                        END AS ESTADO,
+                        REFEBY003 AS ReferenciaByte FROM BPDAT.GAMAT003F
+                        WHERE NOLOTE003 ={0} AND APLCOD003='{1}'";
+
+                //Query = string.Format(Query, servicio, Lote);
+                Query = string.Format(Query, Lote, Service);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    Fuente = Proxy.QueryAS400(Query, _cnnAS400, "ActualizarstatusSQL");
+                    error = error  + Proxy.error;
+                }
+
+                using (SqlConnection conection = new SqlConnection(Properties.Settings.Default.ConnectionDB))
+                {
+                    conection.Open();
+                    using (SqlCommand cmd = new SqlCommand("Usp_UpdateStatusLotes"))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Connection = conection;
+                        cmd.CommandTimeout = 300;
+                        cmd.Parameters.AddWithValue("@Lote", Lote);
+                        cmd.Parameters.AddWithValue("@EstatusOriginal", "PR");
+                        cmd.Parameters.AddWithValue("@Tabla", Fuente);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Actualizar Status del Lote # : " + Lote.ToString());
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Actualizar Status del Lote # : " + Lote.ToString());
+                error++;
+            }
+        }
+
+        private void ActualizaEstatus(string Status)
+        {
+            String conexion = Properties.Settings.Default.ConnectionDB;
+            string Query = string.Empty;
+
+            //ACTUALIZA ESTATUS DE LOTE
+            Query = @" UPDATE LotesPlanillas SET Status = '{0}' WHERE IdLote = {1}";
+
+            Query = string.Format(Query, Status, Lote);
+
+            Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+            if (Criptografia.error == 0)
+            {
+                Proxy.QuerySQL(Query, conexion, "ActualizaEstatus");
+                error = error  + Proxy.error;
+            }
+
+            if (error == 0)
+            {
+
+                //ACTUALIZA ESTATUS DE DETALLE
+                Query = @" UPDATE DetallePlanillas SET Status = '{0}' WHERE  IdLote = {1} AND Status <> 'E'";
+
+                Query = string.Format(Query, Status, Lote);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    Proxy.QuerySQL(Query, conexion, "ActualizaEstatus");
+                    error = error  + Proxy.error;
+                }
+            }
+        }
+
+        private void ActualizarErroresDB()
+        {
+            try
+            {
+                if (dsFromXls.Tables["errores"].Rows.Count > 0)
+                {
+                    //Inserta detalle en Tabla de SQL
+                    string sqlTable = "DetalleErrores";
+
+                    SqlBulkCopy bulkcopy = new SqlBulkCopy(Properties.Settings.Default.ConnectionDB);
+                    bulkcopy.DestinationTableName = sqlTable;
+
+                    bulkcopy.WriteToServer(dsFromXls.Tables["errores"]);
+                    bulkcopy.Close();
+                }
+
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                string Query = @"UPDATE A SET Status = 'E' FROM DetallePlanillas as A
+                 INNER JOIN DetalleErrores AS B 
+                 ON A.IdLote=B.Lote AND A.Correlativo=B.Secuencia
+                 WHERE A.IdLote = '{0}'";
+
+                Query = string.Format(Query, Lote);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "ActualizarErroresDB");
+                    error = error  + Proxy.error;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al actualizar estatus de registros con error");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al actualizar estatus de registros con error" + ex.ToString());
+                error++;
+                return;
+            }
+        }
+
+        private void ValidacionesAS400()
+        {
+            DataTable Respuesta = new DataTable();
+            ErrorDebito = 0;
+            try
+            {
+                string Status = FileName.Substring(0, 1);
+                if (Status == "V")
+                {
+                    Respuesta = this.GetErroresFromAS400(Lote, Service, "VL");
+                }
+                if (Status == "P")
+                {
+                    Respuesta = this.GetErroresFromAS400(Lote, Service, "PR");
+                }
+
+                if (Respuesta.Rows.Count > 0)
+                {
+                    for (int i = 0; i < Respuesta.Rows.Count; i++)
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Lote"] = Convert.ToInt64(Respuesta.Rows[i]["Lote"].ToString());
+                        dr["Secuencia"] = Convert.ToInt64(Respuesta.Rows[i]["Correlativo"].ToString());
+                        dr["Campo"] = Respuesta.Rows[i]["Campo"].ToString();
+                        dr["Descripcion"] = Respuesta.Rows[i]["Error"].ToString();
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                        if (Status == "V")
+                        {
+                            foreach (DataRow row in Detalle.Rows)
+                            {
+                                if (Convert.ToInt64(row["IdLote"].ToString()) == Convert.ToInt64(Respuesta.Rows[i]["Lote"].ToString())
+                                    && Convert.ToInt64(row["Correlativo"].ToString()) == Convert.ToInt64(Respuesta.Rows[i]["Correlativo"].ToString()))
+                                {
+                                    row.SetField("Status", "E");
+                                }
+
+                                if (Convert.ToInt32(row["TipoTrx"].ToString()) == 2 && row["Status"].ToString() == "E")
+                                {
+                                    ErrorDebito++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (Status == "P" && ContadorTC > 0)
+                {
+                    this.GetErroresTC(Lote, Service);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al copiar errores en validaciones del AS400");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al copiar errores en validaciones del AS400" + ex.ToString());
+                error++;
+                return;
+
+            }
+        }
+
+        private DataTable GetErroresFromAS400(Int64 NoLote, string IdServicio, string Status)
+        {
+            string Query = string.Empty;
+            DataTable respuesta = new DataTable();
+            try
+            {
+                //Obtiene los errores del AS400 
+
+                if (Status == "PR" || Status == "RV")//Si Status es Procesando o Reversando
+                {
+
+                    Query = @"SELECT A.Lote,A.Correlativo,'Cuenta' AS Campo,A.ERROR1||A.ERROR2 AS Error FROM (
+                            SELECT A.NOLOTE003 as Lote
+                            ,A.CORREL003 AS Correlativo                            
+                            ,COALESCE((SELECT TB8DES FROM DP053DAT.DPTB08 WHERE TB8COD = A.ERRBP_003 FETCH FIRST ROW ONLY),'') AS ERROR1 
+                            ,COALESCE((SELECT TB8DES FROM DP053DAT.DPTB08 WHERE TB8COD = A.RESPBY003 FETCH FIRST ROW ONLY),'') AS ERROR2 
+                            FROM BPDAT.GAMAT003F AS A
+                            WHERE (A.ERRBP_003<>0 OR A.RESPBY003<>0) AND A.NOLOTE003={0} AND APLCOD003='{1}') AS A";
+
+                    Query = string.Format(Query, NoLote, IdServicio);
+
+                    Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                    if (Criptografia.error == 0)
+                    {
+                        respuesta = Proxy.QueryAS400(Query, _cnnAS400, "GetErroresFromAS400");
+                        error = error  + Proxy.error;
+                    }
+                }
+
+                if (Status == "VL")//Si Status es Validando
+                {
+                    Query = @"SELECT A.NOLOTE011 AS Lote,A.CORREL011 AS Correlativo,'Cuenta' AS Campo, B.TB8DES AS Error  FROM BPDAT.GAMAT011F AS A
+                        LEFT JOIN DP053DAT.DPTB08 AS B
+                        ON A.CODERR11=B.TB8COD
+                        WHERE A.APLCOD011='{0}' AND A.NOLOTE011={1}";
+
+                    Query = string.Format(Query, IdServicio, NoLote);
+
+                    Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                    if (Criptografia.error == 0)
+                    {
+                        respuesta = Proxy.QueryAS400(Query, _cnnAS400, "GetErroresFromAS400");
+                        error = error  + Proxy.error;
+                    }
+                }
+                return respuesta;
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al obtener Errores del Lote # : " + Lote.ToString());
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al obtener Errores del Lote # : " + Lote.ToString());
+                error++;
+                return respuesta;
+            }
+
+        }
+
+        private void GetErroresTC(Int64 NoLote, string IdServicio)
+        {
+            string Query = string.Empty;
+            DataTable respuesta = new DataTable();
+            try
+            {
+                OleDbConnection oledbConnection = new OleDbConnection(_cnnAS400);
+                oledbConnection.Open();
+
+                OleDbDataAdapter adapter = new OleDbDataAdapter();
+                adapter.SelectCommand = new OleDbCommand();
+                adapter.SelectCommand.Connection = oledbConnection;
+
+                OleDbCommand oCmd = new OleDbCommand("BPDAT.OBTIENE_ERRORES_TC_GAMMAT", oledbConnection);
+                oCmd.CommandType = CommandType.StoredProcedure;
+                OleDbDataAdapter oDa = new OleDbDataAdapter(oCmd);
+
+                OleDbParameter LOTE = new OleDbParameter("LOTE", OleDbType.BigInt);
+                LOTE.Value = NoLote;
+                LOTE.Direction = ParameterDirection.InputOutput;
+                oCmd.Parameters.Add(LOTE);
+
+                OleDbParameter CODIGOAPLICACION = new OleDbParameter("CODIGOAPLICACION", OleDbType.Char, 18);
+                CODIGOAPLICACION.Value = IdServicio;
+                CODIGOAPLICACION.Direction = ParameterDirection.InputOutput;
+                oCmd.Parameters.Add(CODIGOAPLICACION);
+
+                oCmd.Prepare();
+                oDa.Fill(respuesta);
+
+                if (respuesta.Rows.Count > 0)
+                {
+                    for (int i = 0; i < respuesta.Rows.Count; i++)
+                    {
+                        DataRow dr = dsFromXls.Tables["errores"].NewRow();
+                        dr["Lote"] = Convert.ToInt64(respuesta.Rows[i]["NOLOTE003"].ToString());
+                        dr["Secuencia"] = Convert.ToInt64(respuesta.Rows[i]["CORREL003"].ToString());
+                        dr["Campo"] = respuesta.Rows[i]["CAMPO"].ToString();
+                        dr["Descripcion"] = respuesta.Rows[i]["ERROR"].ToString();
+                        dsFromXls.Tables["errores"].Rows.Add(dr);
+                        error++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al obtener Errores de TC del Lote # : " + Lote.ToString());
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al obtener Errores de TC del Lote # : " + Lote.ToString());
+                error++;
+            }
+        }
+
+        private void EjecutaPGM()//ejecuta los calls al as400
+        {
+            resp_call = string.Empty;
+            string Codigo = string.Empty;
+
+            OleDbConnection Conn = new OleDbConnection(_cnnAS400);
+            try
+            {
+                OleDbCommand cmdCuentas = new OleDbCommand("{{CALL BPPGM/GAMAT200R(?,?,?,?,?)}}", Conn);
+                cmdCuentas.CommandType = CommandType.Text;
+
+                OleDbParameter oCodigoAplicacion = new OleDbParameter("$APLCOD", OleDbType.Char, 15); //Parametro Nombre Archivo
+                oCodigoAplicacion.Value = Service;
+                oCodigoAplicacion.Direction = ParameterDirection.Input;
+
+                OleDbParameter oLote = new OleDbParameter("$NOLOTE_Chr", OleDbType.Char, 10); //Parametro Nombre Archivo
+                oLote.Value = Lote.ToString();
+                oLote.Direction = ParameterDirection.Input;
+
+                OleDbParameter oCodErr = new OleDbParameter("$CODERR", OleDbType.Char, 1); //Parametro Error 
+                oCodErr.Value = "";
+                oCodErr.Direction = ParameterDirection.Output;
+
+                OleDbParameter oErrorP = new OleDbParameter("$MSGERR", OleDbType.Char, 40); //Parametro Error 
+                oErrorP.Value = "";
+                oErrorP.Direction = ParameterDirection.Output;
+
+                OleDbParameter oNoArchivo = new OleDbParameter("$APLPR002", OleDbType.Char, 100); //Parametro Nombre Archivo
+                oNoArchivo.Value = FileName;
+                oNoArchivo.Direction = ParameterDirection.Input;
+
+                cmdCuentas.Parameters.Add(oCodigoAplicacion);//Agregamos los prámetros
+                cmdCuentas.Parameters.Add(oLote);
+                cmdCuentas.Parameters.Add(oCodErr);
+                cmdCuentas.Parameters.Add(oErrorP);
+                cmdCuentas.Parameters.Add(oNoArchivo);
+
+                if (Conn.State != ConnectionState.Open)
+                    Conn.Open();
+
+                OleDbCommand oCmdLIBLE = new OleDbCommand(); //Agregamos a la conexión las librerías que se ocupará el programa.
+                oCmdLIBLE.CommandType = CommandType.Text;
+                oCmdLIBLE.Connection = Conn;
+
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('CHGLIBL LIBL(*NONE)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(BPDAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(DP053DAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(BPPGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(V5DPDTAQ)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(V5DPJOUR)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(IB054PGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(IB054DAT)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(DP053PGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                oCmdLIBLE.CommandText = "{{CALL PGM(QSYS/QCMDEXC) PARM('ADDLIBLE LIB(CLIPGM)' 30)}}";
+                oCmdLIBLE.ExecuteNonQuery();
+                cmdCuentas.ExecuteNonQuery();
+                resp_call = cmdCuentas.Parameters["$MSGERR"].Value.ToString();
+                Codigo = cmdCuentas.Parameters["$CODERR"].Value.ToString();
+
+                //if (resp_call != "")
+                if (Codigo != "0" && Codigo != "")
+                {
+                    this.ValidacionesAS400();
+                    MessageBox.Show("Se ha encontrado el siguiente error: " + "'" + resp_call + "'" + "  al llamar el programa del AS400", "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al llamar Programa del AS400  ");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al llamar Programa del AS400  " + ex.Message.ToString(), "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                error++;
+            }
+            finally
+            {
+                if (Conn.State == ConnectionState.Open)
+                {
+                    Conn.Close();
+                    Conn.Dispose();
+                }
+            }
+        }
+
+        private void TrasladaToHistorico()
+        {
+            try
+            {
+                String conexion = Properties.Settings.Default.ConnectionDB;
+                string Query = string.Empty;
+
+                Query = @"Usp_MoveDataLotes {0}";
+
+                Query = string.Format(Query, Lote);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    Proxy.QuerySQL(Query, conexion, "TrasladaToHistorico");
+                    error = error  + Proxy.error;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Trasladar Lote # : " + Lote.ToString() + " a Historico");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Trasladar Lote # : " + Lote.ToString() + " a Historico");
+                error++;
+            }
+        }
+
+        private void VisualizarLote()
+        {
+            try
+            {
+                FrmPlanillaView FrmPlanillaView = new FrmPlanillaView();
+                FrmPlanillaView.Lote = Lote;
+                FrmPlanillaView.Moneda = CboMonedas.EditValue.ToString();
+                FrmPlanillaView.Show();
+                FrmPlanillaView.WindowState = FormWindowState.Normal;
+            }
+            catch (Exception Ex)
+            {
+                MessageBox.Show("Se ha producido un error al mostrar resumen del Lote procesado" + Ex.Message, "Transacciones Bancarias", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void gridView2_RowClick(object sender, RowClickEventArgs e)
+        {
+            if (gridView2.RowCount > 0)
+            {
+                xtraTabControl1.SelectedTabPage = xtraTabPage1;
+                int[] selRows = ((GridView)GrdErrores.MainView).GetSelectedRows();
+                DataRowView selRow = (DataRowView)(((GridView)GrdErrores.MainView).GetRow(selRows[0]));
+                int row = 0;
+                row = Convert.ToInt32(selRow["secuencia"].ToString()) - 1;
+                string ValueError = selRow["secuencia"].ToString();
+
+                for (int i = 0; i < gridView1.RowCount; i++)
+                {
+                    if (gridView1.GetRowCellValue(i, "secuencia").ToString() == ValueError)
+                    {
+                        gridView1.FocusedRowHandle = i;
+                        gridView1.ShowEditor();
+                    }
+                }
+            }
+        }
+
+        private void DesencriptarArchivo(string file, string RutaCriptoForge, string PathOrigen, string LlaveArchivo, string ruta)
+        {
+            try
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+
+                System.Diagnostics.Process procc = new System.Diagnostics.Process();
+                procc.EnableRaisingEvents = false;
+                procc.StartInfo.FileName = String.Format(@"""{0}""", RutaCriptoForge);
+                procc.StartInfo.Arguments = " /d /sa:Leave /nim" + @"""/td:" + PathOrigen + @""" " + @"""/passw:" + LlaveArchivo + @""" " + "/lofr" + @" """ + ruta + @""" ";
+                procc.Start();
+                procc.WaitForExit();
+                if (procc.ExitCode != 0)
+                {
+                    throw new Exception("Ocurrio un error desencriptando el archivo. ExitCode = " + procc.ExitCode.ToString());
+                }
+                procc.Dispose();
+                procc.Close();
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al Desencriptar el archivo de planilla" + ex.ToString());
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al Desencriptar el archivo de planilla" + ex.ToString());
+                error++;
+            }
+        }
+
+        private void TxtObservacion_Click(object sender, EventArgs e)
+        {
+            //System.Diagnostics.Process.Start("osk.exe");            
+        }
+    }
+}
 
 
 
 
 
-
-
-USE [TransaccionesBancarias]
-GO
-/****** Object:  StoredProcedure [dbo].[Usp_GetTransacciones]    Script Date: 1/7/2026 12:46:52 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
--- =============================================
-
--- Description:	Obtiene nombre del servicio y las transacciones de debito y credito que se aplicaran
--- =============================================
-ALTER PROCEDURE [dbo].[Usp_GetTransacciones] 
-	@IdServicio INT,
-	@AreaCod INT,
-	@zona CHAR(2),
-	@MONEDA CHAR(5) 
-	 
-AS
-BEGIN
-		
-	IF @IdServicio <> 0
-	BEGIN
-		
-	IF @IdServicio=5
-	BEGIN
-	SELECT A.NombreServicioAS400,A.TrxCredito,A.TrxDebito,A.Motivo,A.Moneda
-	FROM 
-	(SELECT s.NombreServicioAS400,
-	tx.Trx AS TrxCredito,
-	0 AS TrxDebito,
-	tx.Motivo,	
-	tx.Moneda
-	FROM  TransaccionesXArea tx
-	INNER JOIN Servicios s 
-	ON tx.IdServicio = s.IdServicio
-	INNER JOIN Transacciones t
-	ON tx.Trx=t.TrxCodigo
-	WHERE tx.IdServicio = 5 and t.TrxTipo=1 AND tx.Zona='01'AND tx.CodigoArea=16
-	UNION ALL
-		SELECT s.NombreServicioAS400,
-	0 AS TrxCredito,
-	tx.Trx AS TrxDebito,
-	tx.Motivo,
-	tx.Moneda
-	FROM  TransaccionesXArea tx
-	INNER JOIN Servicios s 
-	ON tx.IdServicio = s.IdServicio
-	INNER JOIN Transacciones t
-	ON tx.Trx=t.TrxCodigo
-	WHERE tx.IdServicio = 5 and t.TrxTipo=2 AND tx.Zona='01'and tx.CodigoArea=16
-	)AS A
-	END
-
-	ELSE
-	BEGIN
-	SELECT A.NombreServicioAS400,A.TrxCredito,A.TrxDebito,A.Motivo 
-	FROM 
-	(SELECT s.NombreServicioAS400,
-	tx.Trx AS TrxCredito,
-	0 AS TrxDebito,
-	tx.Motivo	
-	FROM  TransaccionesXArea tx
-	INNER JOIN Servicios s 
-	ON tx.IdServicio = s.IdServicio
-	INNER JOIN Transacciones t
-	ON tx.Trx=t.TrxCodigo
-	WHERE tx.IdServicio = @IdServicio AND tx.CodigoArea=@AreaCod AND tx.Zona=@zona AND LTRIM(RTRIM(tx.Moneda)) = LTRIM(RTRIM(@MONEDA))AND t.TrxTipo=1	
-	UNION ALL
-		SELECT s.NombreServicioAS400,
-	0 AS TrxCredito,
-	tx.Trx AS TrxDebito,
-	tx.Motivo
-	FROM  TransaccionesXArea tx
-	INNER JOIN Servicios s 
-	ON tx.IdServicio = s.IdServicio
-	INNER JOIN Transacciones t
-	ON tx.Trx=t.TrxCodigo
-	WHERE tx.IdServicio = @IdServicio AND tx.CodigoArea=@AreaCod AND tx.Zona=@zona AND LTRIM(RTRIM(tx.Moneda)) = LTRIM(RTRIM(@MONEDA))AND t.TrxTipo=2
-	)AS A
-	END
-
-	END	
-END
-		
-
-Y este que hace?
+Es que fijate que un usuario me menciona que, cuando se le da cargar .. hay un punto donde el numero de cuenta cambia y hace una "conversion" a la equivalente de la TC y dice que le estan saliendo los datos de la tc mal, entonces me gustaria saber donde exactamente pasa eso, es caso seguro que es a nivel de bd, pero no se donde o en que tabla revisar
