@@ -1,148 +1,48 @@
-using System.Text.Json.Serialization;
+USE [TransaccionesBancarias]
+GO
+/****** Object:  StoredProcedure [dbo].[Usp_ValidaCuentaCliente]    Script Date: 1/7/2026 12:52:02 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Sergio Erazo
+-- Create date: 13-09-2016
+-- Description:	Valida si  cuenta de débito pertenece al cliente
+-- =============================================
+ALTER PROCEDURE [dbo].[Usp_ValidaCuentaCliente] 
+	-- Parametros
+	@Cuenta nvarchar(18), 
+	@Cif nvarchar(18) 
+	AS
+BEGIN
 
-namespace transacciones_flotantes.Models.AccessToken
-{
-    public class AccessTokenResponse
-    {
-        [JsonPropertyName("accessToken")]
-        public string accessToken { get; set; } = string.Empty;
+ DECLARE @Contador AS INT	
+ SELECT  @Contador = COUNT(*)  FROM AS400_ClientesCuentas where LTRIM(RTRIM(REPLACE(numCuenta,'-',''))) = LTRIM(RTRIM(@Cuenta)) AND LTRIM(RTRIM(cifCliente))=LTRIM(RTRIM(@Cif))
+ 
+ IF @Contador = 0
+ 
+ BEGIN
+ 	
+SELECT @Contador = COUNT(*) FROM AS400_ClientesCuentas AS A
+INNER JOIN  AS400_DPALIAS AS B
+ON A.PRTIPO=B.PRTIPO AND A.DPAGEN=B.DPAGEN AND A.DPCORR=B.DPCORR AND A.DPDIVE = B.DPDIVE
+WHERE REPLACE(LTRIM(REPLACE(B.DPALIA, '0', ' ')), ' ', '0')=REPLACE(LTRIM(REPLACE(@Cuenta, '0', ' ')), ' ', '0')AND LTRIM(RTRIM(A.cifCliente)) = LTRIM(RTRIM(@Cif))
+--LTRIM(RTRIM(B.DPALIA))=LTRIM(RTRIM(@Cuenta)) AND LTRIM(RTRIM(A.cifCliente)) = LTRIM(RTRIM(@Cif))
 
-        [JsonPropertyName("expiresIn")]
-        public long expiresIn { get; set; }
-
-        [JsonPropertyName("tokenType")]
-        public string tokenType { get; set; } = string.Empty;
-
-        [JsonPropertyName("refreshToken")]
-        public string refreshToken { get; set; } = string.Empty;
-
-        [JsonPropertyName("scope")]
-        public string scope { get; set; } = string.Empty;
-    }
-}
-
-
-
-
+ END
+  
+IF @Contador IS NULL	
+BEGIN
+	SET @Contador=0
+END
+  
+SELECT @Contador AS Coincidencias
+END
 
 
 
 
 
 
-
-
-
-using Microsoft.Extensions.Caching.Memory;
-using System.Net.Http;
-using System.Text.Json;
-using transacciones_flotantes.Models.AccessToken;
-using transacciones_flotantes.Service.Interface;
-
-namespace transacciones_flotantes.Service
-{
-    public class ProveedorTokenService : IProveedorTokenService
-    {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IMemoryCache _cache;
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<ProveedorTokenService> _logger;
-
-        private static readonly SemaphoreSlim _lock = new(1, 1);
-
-        private const string CACHE_TOKEN = "ACCESS_TOKEN";
-
-        public ProveedorTokenService(
-            IHttpClientFactory httpClientFactory,
-            IMemoryCache cache,
-            IConfiguration configuration,
-            ILogger<ProveedorTokenService> logger)
-        {
-            _httpClientFactory = httpClientFactory;
-            _cache = cache;
-            _configuration = configuration;
-            _logger = logger;
-        }
-
-        public async Task<string> ObtenerAccessTokenAsync()
-        {
-            if (_cache.TryGetValue(CACHE_TOKEN, out string token))
-            {
-                return token;
-            }
-
-            await _lock.WaitAsync();
-
-            try
-            {
-                // Double check para evitar race conditions
-                if (_cache.TryGetValue(CACHE_TOKEN, out token))
-                {
-                    return token;
-                }
-
-                _logger.LogInformation("Generando nuevo accessToken...");
-
-                var tokenResponse = await GenerarTokenAsync();
-
-                // IMPORTANTE: expiresIn viene en MILISEGUNDOS desde el endpoint
-                // centralizado (Criptografia ya le resta 120s de colchón antes
-                // de devolverlo), por eso usamos AddMilliseconds y no restamos
-                // nada extra aquí.
-                var expiration = DateTime.UtcNow.AddMilliseconds(tokenResponse.expiresIn);
-
-                _cache.Set(
-                    CACHE_TOKEN,
-                    tokenResponse.accessToken,
-                    expiration
-                );
-
-                _logger.LogInformation("AccessToken generado y almacenado en cache. Expira en: {Expiration:u}", expiration);
-
-                return tokenResponse.accessToken;
-            }
-            finally
-            {
-                _lock.Release();
-            }
-        }
-
-        private async Task<AccessTokenResponse> GenerarTokenAsync()
-        {
-            try
-            {
-                var client = _httpClientFactory.CreateClient();
-
-                var url = $"{_configuration["ApiSettings:EndpointAccessToken"]}";
-
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-                var response = await client.SendAsync(request);
-
-                response.EnsureSuccessStatusCode();
-
-                var json = await response.Content.ReadAsStringAsync();
-
-                var tokenResponse = JsonSerializer.Deserialize<AccessTokenResponse>(json);
-
-                if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.accessToken))
-                {
-                    throw new InvalidOperationException("La respuesta del endpoint de accessToken es nula o no contiene accessToken.");
-                }
-
-                return tokenResponse;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo accessToken desde el endpoint centralizado.");
-                throw;
-            }
-        }
-
-        public void InvalidarToken()
-        {
-            _cache.Remove(CACHE_TOKEN);
-            _logger.LogInformation("AccessToken Invalidado del cache");
-        }
-    }
-}
+explicame que hace este SP 
