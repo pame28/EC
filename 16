@@ -1,48 +1,50 @@
 USE [TransaccionesBancarias]
 GO
-/****** Object:  StoredProcedure [dbo].[Usp_ValidaCuentaCliente]    Script Date: 1/7/2026 12:52:02 ******/
+/****** Object:  StoredProcedure [dbo].[Usp_ValidaInfoAS400]    Script Date: 1/7/2026 12:50:30 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
 -- Author:		Sergio Erazo
--- Create date: 13-09-2016
--- Description:	Valida si  cuenta de débito pertenece al cliente
+-- Create date: 16-09-2016
+-- Description:	Valida que las bandejas que se cargan desde el AS400 se encuentren llenas
 -- =============================================
-ALTER PROCEDURE [dbo].[Usp_ValidaCuentaCliente] 
-	-- Parametros
-	@Cuenta nvarchar(18), 
-	@Cif nvarchar(18) 
-	AS
+ALTER PROCEDURE [dbo].[Usp_ValidaInfoAS400] 
+	
+AS
 BEGIN
-
- DECLARE @Contador AS INT	
- SELECT  @Contador = COUNT(*)  FROM AS400_ClientesCuentas where LTRIM(RTRIM(REPLACE(numCuenta,'-',''))) = LTRIM(RTRIM(@Cuenta)) AND LTRIM(RTRIM(cifCliente))=LTRIM(RTRIM(@Cif))
- 
- IF @Contador = 0
- 
- BEGIN
- 	
-SELECT @Contador = COUNT(*) FROM AS400_ClientesCuentas AS A
-INNER JOIN  AS400_DPALIAS AS B
-ON A.PRTIPO=B.PRTIPO AND A.DPAGEN=B.DPAGEN AND A.DPCORR=B.DPCORR AND A.DPDIVE = B.DPDIVE
-WHERE REPLACE(LTRIM(REPLACE(B.DPALIA, '0', ' ')), ' ', '0')=REPLACE(LTRIM(REPLACE(@Cuenta, '0', ' ')), ' ', '0')AND LTRIM(RTRIM(A.cifCliente)) = LTRIM(RTRIM(@Cif))
---LTRIM(RTRIM(B.DPALIA))=LTRIM(RTRIM(@Cuenta)) AND LTRIM(RTRIM(A.cifCliente)) = LTRIM(RTRIM(@Cif))
-
- END
-  
-IF @Contador IS NULL	
-BEGIN
-	SET @Contador=0
+	DECLARE @ContadorAGencias AS INT
+	DECLARE	@ContadorCuentas AS INT
+	DECLARE @ContadorClienteJuridicos AS INT
+	DECLARE @ContadorNombresClientes AS INT
+	DECLARE @ContadorDPALIAS AS INT
+	DECLARE @TRX AS INT
+	DECLARE @DPTB08 AS INT
+	DECLARE @ESTATUS AS NVARCHAR(10)
+	
+	SELECT @ContadorAGencias = COUNT(*) FROM dbo.AS400_CLAGEN
+	SELECT @ContadorCuentas = COUNT(*) FROM dbo.AS400_ClientesCuentas
+	SELECT @ContadorClienteJuridicos = COUNT(*) FROM dbo.AS400_ClientesJuridicos
+	SELECT @ContadorNombresClientes = COUNT(*) FROM dbo.AS400_ClientesNaturales acn
+	SELECT @ContadorDPALIAS = COUNT(*) FROM dbo.AS400_DPALIAS
+	SELECT @TRX = COUNT(*) FROM dbo.AS400_DPTRX
+	SELECT @DPTB08 = COUNT(*) FROM dbo.AS400_DPTB08	
+	
+	IF @ContadorAGencias =0 OR @ContadorCuentas =0 OR @ContadorClienteJuridicos = 0 
+	OR @ContadorNombresClientes = 0 OR @ContadorDPALIAS = 0 OR  @TRX = 0 OR @DPTB08 = 0
+	BEGIN
+		SET @ESTATUS = 'ERROR'
+	END
+	 
+	 ELSE
+	 BEGIN
+	 	SET @ESTATUS = 'OK'
+	 END
+	 SELECT @ESTATUS
 END
-  
-SELECT @Contador AS Coincidencias
-END
 
 
 
 
-
-
-explicame que hace este SP 
+y este que hace?
