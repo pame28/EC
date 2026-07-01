@@ -1,50 +1,159 @@
+
+        private void GetTransaccionTC()
+        {
+            try
+            {
+                DataTable respuesta = new DataTable();
+                String conexion = Properties.Settings.Default.ConnectionDB;
+
+                string Query = "EXEC Usp_GetTransacciones {0},{1},'{2}','{3}'";
+
+                Query = string.Format(Query, 4, Properties.Settings.Default.Area, Properties.Settings.Default.Zona, CboMonedas.EditValue);
+
+                Query = Criptografia.EncryptQueryString(Query, Properties.Settings.Default.Encryp, "|");
+
+                if (Criptografia.error == 0)
+                {
+                    respuesta = Proxy.QuerySQL(Query, conexion, "GetTransaccionesTC");
+                    error = error  + Proxy.error;
+                }
+
+                if (respuesta.Rows.Count > 0)
+                {
+                    if (respuesta.Rows.Count == 1)
+                    {
+                        for (int i = 0; i < respuesta.Rows.Count; i++)
+                        {
+                            if (Convert.ToInt64(respuesta.Rows[i]["TrxCredito"].ToString()) > 0)
+                            {
+                                CTCTRX = respuesta.Rows[i]["TrxCredito"].ToString();
+                                MotivoCTC = Convert.ToInt32(respuesta.Rows[i]["Motivo"].ToString());
+                            }
+                        }
+                        if (Convert.ToInt64(CTCTRX) > 0)
+                        {
+                            this.ActualizaProgressBar(15);
+                        }
+                        else if (Convert.ToInt64(CTCTRX) == 0)
+                        {
+                            MessageBox.Show("No existe transaccion  de Credito configurada para el Servicio mi Billetera", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            error++;
+                        }
+                    }
+                    else if (respuesta.Rows.Count > 1)
+                    {
+                        MessageBox.Show("Error en configuración de transacciones, existen mas transacciones de las permitidas por servicio mi Billetera", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        error++;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("No se encontraron Transacciones para servicio mi Billetera", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    error++;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("Error al obtener las transacciones del servicio mi Billetera");
+                log.Error("Mensaje " + ex.Message);
+                log.Error("Source " + ex.Source);
+                log.Error("StackTrace " + ex.StackTrace);
+                MessageBox.Show("Error al obtener las transacciones del servicio mi Billetera" + ex.ToString());
+                error++;
+            }
+        }
+
+
+
+
+
+
+
+
 USE [TransaccionesBancarias]
 GO
-/****** Object:  StoredProcedure [dbo].[Usp_ValidaInfoAS400]    Script Date: 1/7/2026 12:50:30 ******/
+/****** Object:  StoredProcedure [dbo].[Usp_GetTransacciones]    Script Date: 1/7/2026 12:46:52 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
 -- =============================================
--- Author:		Sergio Erazo
--- Create date: 16-09-2016
--- Description:	Valida que las bandejas que se cargan desde el AS400 se encuentren llenas
+
+-- Description:	Obtiene nombre del servicio y las transacciones de debito y credito que se aplicaran
 -- =============================================
-ALTER PROCEDURE [dbo].[Usp_ValidaInfoAS400] 
-	
+ALTER PROCEDURE [dbo].[Usp_GetTransacciones] 
+	@IdServicio INT,
+	@AreaCod INT,
+	@zona CHAR(2),
+	@MONEDA CHAR(5) 
+	 
 AS
 BEGIN
-	DECLARE @ContadorAGencias AS INT
-	DECLARE	@ContadorCuentas AS INT
-	DECLARE @ContadorClienteJuridicos AS INT
-	DECLARE @ContadorNombresClientes AS INT
-	DECLARE @ContadorDPALIAS AS INT
-	DECLARE @TRX AS INT
-	DECLARE @DPTB08 AS INT
-	DECLARE @ESTATUS AS NVARCHAR(10)
-	
-	SELECT @ContadorAGencias = COUNT(*) FROM dbo.AS400_CLAGEN
-	SELECT @ContadorCuentas = COUNT(*) FROM dbo.AS400_ClientesCuentas
-	SELECT @ContadorClienteJuridicos = COUNT(*) FROM dbo.AS400_ClientesJuridicos
-	SELECT @ContadorNombresClientes = COUNT(*) FROM dbo.AS400_ClientesNaturales acn
-	SELECT @ContadorDPALIAS = COUNT(*) FROM dbo.AS400_DPALIAS
-	SELECT @TRX = COUNT(*) FROM dbo.AS400_DPTRX
-	SELECT @DPTB08 = COUNT(*) FROM dbo.AS400_DPTB08	
-	
-	IF @ContadorAGencias =0 OR @ContadorCuentas =0 OR @ContadorClienteJuridicos = 0 
-	OR @ContadorNombresClientes = 0 OR @ContadorDPALIAS = 0 OR  @TRX = 0 OR @DPTB08 = 0
+		
+	IF @IdServicio <> 0
 	BEGIN
-		SET @ESTATUS = 'ERROR'
+		
+	IF @IdServicio=5
+	BEGIN
+	SELECT A.NombreServicioAS400,A.TrxCredito,A.TrxDebito,A.Motivo,A.Moneda
+	FROM 
+	(SELECT s.NombreServicioAS400,
+	tx.Trx AS TrxCredito,
+	0 AS TrxDebito,
+	tx.Motivo,	
+	tx.Moneda
+	FROM  TransaccionesXArea tx
+	INNER JOIN Servicios s 
+	ON tx.IdServicio = s.IdServicio
+	INNER JOIN Transacciones t
+	ON tx.Trx=t.TrxCodigo
+	WHERE tx.IdServicio = 5 and t.TrxTipo=1 AND tx.Zona='01'AND tx.CodigoArea=16
+	UNION ALL
+		SELECT s.NombreServicioAS400,
+	0 AS TrxCredito,
+	tx.Trx AS TrxDebito,
+	tx.Motivo,
+	tx.Moneda
+	FROM  TransaccionesXArea tx
+	INNER JOIN Servicios s 
+	ON tx.IdServicio = s.IdServicio
+	INNER JOIN Transacciones t
+	ON tx.Trx=t.TrxCodigo
+	WHERE tx.IdServicio = 5 and t.TrxTipo=2 AND tx.Zona='01'and tx.CodigoArea=16
+	)AS A
 	END
-	 
-	 ELSE
-	 BEGIN
-	 	SET @ESTATUS = 'OK'
-	 END
-	 SELECT @ESTATUS
+
+	ELSE
+	BEGIN
+	SELECT A.NombreServicioAS400,A.TrxCredito,A.TrxDebito,A.Motivo 
+	FROM 
+	(SELECT s.NombreServicioAS400,
+	tx.Trx AS TrxCredito,
+	0 AS TrxDebito,
+	tx.Motivo	
+	FROM  TransaccionesXArea tx
+	INNER JOIN Servicios s 
+	ON tx.IdServicio = s.IdServicio
+	INNER JOIN Transacciones t
+	ON tx.Trx=t.TrxCodigo
+	WHERE tx.IdServicio = @IdServicio AND tx.CodigoArea=@AreaCod AND tx.Zona=@zona AND LTRIM(RTRIM(tx.Moneda)) = LTRIM(RTRIM(@MONEDA))AND t.TrxTipo=1	
+	UNION ALL
+		SELECT s.NombreServicioAS400,
+	0 AS TrxCredito,
+	tx.Trx AS TrxDebito,
+	tx.Motivo
+	FROM  TransaccionesXArea tx
+	INNER JOIN Servicios s 
+	ON tx.IdServicio = s.IdServicio
+	INNER JOIN Transacciones t
+	ON tx.Trx=t.TrxCodigo
+	WHERE tx.IdServicio = @IdServicio AND tx.CodigoArea=@AreaCod AND tx.Zona=@zona AND LTRIM(RTRIM(tx.Moneda)) = LTRIM(RTRIM(@MONEDA))AND t.TrxTipo=2
+	)AS A
+	END
+
+	END	
 END
+		
 
-
-
-
-y este que hace?
+Y este que hace?
