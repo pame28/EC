@@ -1,11 +1,148 @@
+using System.Text.Json.Serialization;
+
+namespace transacciones_flotantes.Models.AccessToken
 {
-    "accessToken": "eyJraWQiOiJhdXRoLXNlcnZlci1rZXktMSIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3ODI4OTE1MzgsImlhdCI6MTc4Mjg5MDYzOCwianRpIjoiNzQ5NThiMzYtNThiMC00ZTBiLTkzZWUtMmUxZTI4NDNmYmEzIn0.exxqujlHUf1EAUIjp1p70FD6kOiig3G-bjVl937XmatMOLuFUYV0TOVMtDcVS3Ld_VWmbeYfCWISkAzyj_7Gm_r9vQxBAwPNC8npDu4mkwi_I4AoMBce53K-fOhZcdR1427fQd1amN1dm2gXPKXGm6Cq0tVhKUQXvnIQf19L61T5baj4PFDBYJ2EU7lsAbSJpHiMPKweVCoUOSjwnTVngVkInkdjFtsas-CuFC_ImjmCm7F83M-la4jUZjawIRpq2LpvVhNPjRa7Z205paalMzYHfU9d33m30-1YXEG2siQfIJwp5XPlt1Qqws69sViyV4zivjYgz1lzQeOg6jql5Q",
-    "expiresIn": 900000,
-    "tokenType": "Bearer",
-    "refreshToken": "eyJraWQiOiJhdXRoLXNlcnZlci1rZXktMSIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJodHRwOi8vdGMtYXV0aC1zZXJ2ZXItc3J2OjgwODAvYXV0aC1zZXJ2ZXIiLCJzdWIiOiJLcnRmaytNNXdJOFFnalY1TENSaDMxNDBqNXFhOFFLRnhtYlhzbmo1a1BYVU1yVXYiLCJleHAiOjE3ODI5NzcwMzgsImlhdCI6MTc4Mjg5MDYzOCwianRpIjoiZTY4NTk0ZDItZDUxNy00NTEyLWEyNjAtMTUzMDk3OGUyMDNiIn0.U8z0o21Onjlae5EiZLJd8uP1ap3PLBnWsPslsXZBYue9yz8hnpPaDElcVmw5HJ1169G2wUZ6dQba_dZIIAOhJxL6pdNHBsau8BBv546YNs_75b7Tj4sLfwEQ0nh2-SY8EiDvNUDSOISTmrocmyzJ5YohXM5R_bii8NmyMlm3CQlk5J3b3RuZxyX8263_rbTgcFm8Fis4kph_TLzXbGBPZwVeyF7CrtFmREA9Vvj5jVG4JxZVEok7EuvaZ_W3QbWXpuuJlPgIdGe3obnuHVJwUNiWpOW48Eg_iOjhDygJpKcfagZwShE2uhKR_ZDbvJZrJfBEtZmRjYFfYDV8nndexA",
-    "scope": "read:messages"
+    public class AccessTokenResponse
+    {
+        [JsonPropertyName("accessToken")]
+        public string accessToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("expiresIn")]
+        public long expiresIn { get; set; }
+
+        [JsonPropertyName("tokenType")]
+        public string tokenType { get; set; } = string.Empty;
+
+        [JsonPropertyName("refreshToken")]
+        public string refreshToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("scope")]
+        public string scope { get; set; } = string.Empty;
+    }
 }
 
 
 
-Mira. ese es un response 
+
+
+
+
+
+
+
+
+
+
+using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http;
+using System.Text.Json;
+using transacciones_flotantes.Models.AccessToken;
+using transacciones_flotantes.Service.Interface;
+
+namespace transacciones_flotantes.Service
+{
+    public class ProveedorTokenService : IProveedorTokenService
+    {
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMemoryCache _cache;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<ProveedorTokenService> _logger;
+
+        private static readonly SemaphoreSlim _lock = new(1, 1);
+
+        private const string CACHE_TOKEN = "ACCESS_TOKEN";
+
+        public ProveedorTokenService(
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache,
+            IConfiguration configuration,
+            ILogger<ProveedorTokenService> logger)
+        {
+            _httpClientFactory = httpClientFactory;
+            _cache = cache;
+            _configuration = configuration;
+            _logger = logger;
+        }
+
+        public async Task<string> ObtenerAccessTokenAsync()
+        {
+            if (_cache.TryGetValue(CACHE_TOKEN, out string token))
+            {
+                return token;
+            }
+
+            await _lock.WaitAsync();
+
+            try
+            {
+                // Double check para evitar race conditions
+                if (_cache.TryGetValue(CACHE_TOKEN, out token))
+                {
+                    return token;
+                }
+
+                _logger.LogInformation("Generando nuevo accessToken...");
+
+                var tokenResponse = await GenerarTokenAsync();
+
+                // IMPORTANTE: expiresIn viene en MILISEGUNDOS desde el endpoint
+                // centralizado (Criptografia ya le resta 120s de colchón antes
+                // de devolverlo), por eso usamos AddMilliseconds y no restamos
+                // nada extra aquí.
+                var expiration = DateTime.UtcNow.AddMilliseconds(tokenResponse.expiresIn);
+
+                _cache.Set(
+                    CACHE_TOKEN,
+                    tokenResponse.accessToken,
+                    expiration
+                );
+
+                _logger.LogInformation("AccessToken generado y almacenado en cache. Expira en: {Expiration:u}", expiration);
+
+                return tokenResponse.accessToken;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        private async Task<AccessTokenResponse> GenerarTokenAsync()
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+
+                var url = $"{_configuration["ApiSettings:EndpointAccessToken"]}";
+
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+                var response = await client.SendAsync(request);
+
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                var tokenResponse = JsonSerializer.Deserialize<AccessTokenResponse>(json);
+
+                if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.accessToken))
+                {
+                    throw new InvalidOperationException("La respuesta del endpoint de accessToken es nula o no contiene accessToken.");
+                }
+
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo accessToken desde el endpoint centralizado.");
+                throw;
+            }
+        }
+
+        public void InvalidarToken()
+        {
+            _cache.Remove(CACHE_TOKEN);
+            _logger.LogInformation("AccessToken Invalidado del cache");
+        }
+    }
+}
