@@ -5,3 +5,6 @@ Tengo un dtsx que mueve data desde una BD sql a otra BD sql
 Pero, varias de las columnas tienen data "sucia" que tienen caracteres especiales, los cuales necesito eliminar..
 
 Para darte mejor contexto ... yo necesito limpiar esa data porque con esa info realizo un JSON y rompe mi JSON, entonces esa es la razón por la cual lo quiero hacer 
+
+
+Agregué una columna derivaa ... pero no que hacer con eso, por favor explicame paso a paso que hacer en el dtsx 
