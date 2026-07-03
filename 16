@@ -1,1 +1,82 @@
-REPLACE(REPLACE(REPLACE(REPLACE(Direccion_1,"\"",""),"'",""),"{",""),"}","")
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Logging;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// Ruta del log con fecha y hora
+var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+Directory.CreateDirectory(logsDir); // la crea si no existe
+
+var logPath = Path.Combine(logsDir, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+
+Console.WriteLine($"Log guardándose en: {logPath}");
+
+// Logger con consola + archivo
+var loggerFactory = LoggerFactory.Create(b =>
+{
+    b.AddConsole();
+    b.AddProvider(new FileLoggerProvider(logPath));
+});
+
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+var loggerEncrypt = loggerFactory.CreateLogger<EncriptacionService>();
+
+var encriptacionService = new EncriptacionService(loggerEncrypt);
+
+var sql = new SqlExecutor(config);
+
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
+
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo,
+    jsonRepo,
+    loggerParam);
+
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config,
+    encriptacionService
+);
+
+try
+{
+    var parametros = ParametrosECService.ObtenerParametros();
+    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"\nERROR GENERAL: {ex.Message}");
+    Console.WriteLine($"DETALLE: {ex.StackTrace}");
+
+    // Escribe el error también al log
+    File.AppendAllText(logPath,
+        $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n");
+}
+
+Console.WriteLine("\nPresiona cualquier tecla para salir...");
+Console.ReadKey();
