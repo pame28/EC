@@ -1,5 +1,1 @@
-REPLACE(REPLACE(REPLACE(REPLACE(Direccion_1,
-    "\"", ""),
-    "'", ""),
-    "{", ""),
-    "}", "")
+REPLACE(REPLACE(REPLACE(REPLACE(Direccion_1,"\"",""),"'",""),"{",""),"}","")
