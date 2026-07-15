@@ -1,121 +1,23 @@
-Fijate que, actualmente tengo un dtsx que me ayuda a la generación de estados de cuenta para una fecha de corte en especifico .. esa fecha la tomamos de la siguiente tabla en la BD:
+Ok, mira primero determinemos que cosas harán que .. sea reproceso ..
 
-SELECT * FROM [dbo].[ParametrosCorte] WHERE Estado =1 
+Yo quiero que la condición sea .. si la fecha_corte que obtengamos de 
 
-al finalizar todo el proceso … se ejecuta este SP desde el dtax
-
-USE [EstadosCuentaJSONProcesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_ActualizarFechaCorte]    Script Date: 15/7/2026 14:04:17 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [dbo].[usp_ActualizarFechaCorte]
--- =====================================================================================
--- Autor original:		PAMELA SUAZO
--- Fecha creacion:		13-04-2026
--- Description:	actualiza la fecha de corte para generar estados de cuenta json
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
--- PAMELA SUAZO     Se creó el procedimiento almacenado					    13-04-2026
-
--- =======================================================================================
-AS
-BEGIN
-	declare @FechaCorteActual date,
-			@FechaCorteNueva varchar(15),
-			@FlagAmiente varchar(15),
-			@Dia int,
-			@Mes int,
-			@Año varchar(5),
-			@UltimoRegistro int
-
-	select @FechaCorteActual= FechaCorte from [dbo].[ParametrosCorte] where Estado=1;
-
-	--Id del ultimo registro
-	select @UltimoRegistro= Id from [dbo].[ParametrosCorte] where Estado=1;
-	--Contar si hay datos en la bandeja
-
-	--SI SE ESTA EJECUTANDO UN PROCESO NORMAL
-
-	BEGIN
-		--Si el flag es false se esta trabajando en ambiente de PRD
-		
-			BEGIN
-				select @Dia= DATEPART(DAY, @FechaCorteActual);
-				select @Mes= DATEPART(MONTH, @FechaCorteActual);
-				select @Año= DATEPART(YEAR, @FechaCorteActual);
-
-				if (@Dia<27)
-				BEGIN --Si el dia es 27
-					--Si la fecha activa es corte 06
-					if(@Dia=6)
-						BEGIN
-							--El nuevo corte activo debe de ser 10
-							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-10';
-							--Actualizamos a la nueva fecha de corte que sería año-mes-10
-						END
-					if(@Dia=10)
-						BEGIN
-							--El nuevo corte activo debe de ser 18
-							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-18';
-							--Actualizamos a la nueva fecha de corte que sería año-mes-18
-						END
-					--Si la fecha de corte activa es 18
-					if(@Dia=18)
-						BEGIN
-							--El nuevo corte activo debe de ser 24
-							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-24';
-							--Actualizamos a la nueva fecha de corte que sería año-mes-24
-						END
-					--Si la fecha de corte activa es 24
-					if(@Dia=24)
-						BEGIN
-							--El nuevo corte activo debe de ser 27
-							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes)+'-27';
-							--Actualizamos a la nueva fecha de corte que sería año-mes-27
-						END
-				END--Si el dia es menor a 27
-
-			--Si la fecha de corte activa es 27
-			if(@Dia=27)
-				BEGIN
-					if(@Mes<12)--Si el mes es menor a 12, no es diciembre
-						BEGIN
-							--select @Mes=@Mes+1;
-							--El nuevo corte activo debe de ser 06
-							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-'+CONVERT(varchar(3), @Mes+1)+'-06';
-							--Actualizamos a la nueva fecha de corte que sería año-mes+1 - 06
-						END--Mes menor a 12
-					if(@Mes=12)--Si el mes es igual a 12, es diciembre
-						BEGIN
-							select @Año=@Año+1;
-							--El nuevo corte activo debe de ser 06
-							select @FechaCorteNueva= CONVERT(varchar(5), @Año)+'-01-06';
-							--Actualizamos a la nueva fecha de corte que sería año-01 - 06
-						END--Mes igual a 12
-				END--Dia igual a 27
-						--Se hace el update para desctivar la fecha anterior y activar la nueva
-			update [dbo].[ParametrosCorte] set Estado=0 where Id=@UltimoRegistro;
-			--Insertar la nueva fecha activa
-			insert into [dbo].[ParametrosCorte] (FechaCorte, Estado) values (CONVERT(date, @FechaCorteNueva), 1);
-
-END
-
-END
-END
+  FROM [EstadosCuentaJSONProcesador].[dbo].[BandejaEstadoCuenta]
 
 
-que son como las fechas de corte definidas, verdad
+ no es igual a la FechaCorte que obtenemos de 
+
+
+SELECT * FROM ParametrosCorte WHERE Estado =1
 
 
 
-Pero siento que no lo estoy haciendo bien … 
+Entonces que sea un reproceso … 
 
-Porque en reprocessos… no me sirve....
-Como al principio se hace una carga de BandejaEstadoCuenta … que esa carga la data que se va a procesar de una misma fecha de corte … tal vez podemos tomar de ahí la fecha a procesar .. y no de la tabla …
-pero no se, que me recomiendas? como podemos manejarlo de manera correcta
 
+si es menor entonces no se .. que elimine las que ya están agg .. o no se ..
+
+y si la fecha es mayor que agregue .. o no se como ordenar eso :c 
+
+
+como podemos hacer?
