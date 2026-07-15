@@ -1,23 +1,24 @@
-Ok, mira primero determinemos que cosas harán que .. sea reproceso ..
+No vaya .. a lo que quiero llegar es …
 
-Yo quiero que la condición sea .. si la fecha_corte que obtengamos de 
-
-  FROM [EstadosCuentaJSONProcesador].[dbo].[BandejaEstadoCuenta]
-
-
- no es igual a la FechaCorte que obtenemos de 
-
-
-SELECT * FROM ParametrosCorte WHERE Estado =1
+podría pasar que … según mi tabla de 
+SELECT * FROM ParametrosCorte WHERE Estado =1 la fecha es 2026-05-18
 
 
 
-Entonces que sea un reproceso … 
+Pero mi Bandeja diga que toca 2026-05-27
 
 
-si es menor entonces no se .. que elimine las que ya están agg .. o no se ..
-
-y si la fecha es mayor que agregue .. o no se como ordenar eso :c 
+yo pienso que debería haber una inserción en ParametrosCorte que agrega las fechas intermedio con estado 0 y la fecha a procesar seria 2026-05-27 con estado 1 
 
 
-como podemos hacer?
+Y aja …
+
+si según Parámetros corte la fecha a procesar es 2026-05-18
+
+Pero mi Bandeja dice que la fecha a procesar es 2026-05-06
+
+entonces en Parametrosorte se debería eliminar 2026-05-18 y 2026-05-10 y pone en Estado 1 2026-05-06
+
+
+
+Pienso yo que asi podemos tener un orden 
