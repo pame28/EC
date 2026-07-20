@@ -1,5 +1,17 @@
-Ayudame a redactar un correo donde se explique la siguiente situación.
-Buen dia Mario,
-Se sometió a escaneo de Seguridad el código de la consola de Generación de Estados de Cuenta Json, el cual mostró como hallazgo la encriptación que se está utilizando para el archivo json. Según nuestra investigación el problema es que se esta usando el metodo de encriptación CBC, para evigtar este hallazgo se debería hacer una actualización utilizando el método de encriptación GCM, pero, hay que tomar en cuenta que esta actualización Impacta a PBS, debido que el cambio de encriptación...
-Necesito que nos diga como atender el tema de encriptacion de EC
-saludos
+Subject: Consulta sobre hallazgo de encriptación — Consola de Generación de Estados de Cuenta JSON
+
+Buen día Mario,
+
+Espero se encuentre bien. Me comunico con usted para consultarle sobre un hallazgo identificado durante el escaneo de seguridad realizado al código de la Consola de Generación de Estados de Cuenta JSON.
+
+El escaneo reportó un hallazgo relacionado con el método de encriptación actualmente utilizado para el archivo JSON. Tras nuestra investigación, identificamos que el problema radica en el uso del modo de encriptación CBC (Cipher Block Chaining), el cual es considerado inseguro según los estándares actuales de seguridad.
+
+Para mitigar este hallazgo, la solución técnica sería migrar al modo de encriptación GCM (Galois/Counter Mode). Sin embargo, este cambio impacta directamente a PBS, ya que el proceso de desencriptado que utiliza dicho sistema está estrechamente ligado al formato actual generado con CBC. Al cambiar el método de encriptación, el formato del archivo resultante sería diferente, lo que requeriría ajustes en PBS para poder procesarlo correctamente.
+
+Dado que PBS está fuera de nuestro alcance de modificación en este momento, necesitamos su orientación para definir la mejor forma de atender este hallazgo sin afectar la operación actual.
+
+¿Podría indicarnos cómo proceder con respecto al tema de encriptación de los Estados de Cuenta?
+
+Quedo atento a su respuesta y en disposición de ampliar la información que requiera.
+
+Saludos cordiales,
