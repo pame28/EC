@@ -1,8 +1,5 @@
 Ayudame a redactar un correo donde se explique la siguiente situación.
-
 Buen dia Mario,
-
 Se sometió a escaneo de Seguridad el código de la consola de Generación de Estados de Cuenta Json, el cual mostró como hallazgo la encriptación que se está utilizando para el archivo json. Según nuestra investigación el problema es que se esta usando el metodo de encriptación CBC, para evigtar este hallazgo se debería hacer una actualización utilizando el método de encriptación GCM, pero, hay que tomar en cuenta que esta actualización Impacta a PBS, debido que el cambio de encriptación...
-
 Necesito que nos diga como atender el tema de encriptacion de EC
 saludos
