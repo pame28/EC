@@ -1,71 +1,40 @@
-CREATE PROCEDURE [dbo].[usp_SincronizarFechaCorte]
-    @EsReproceso        BIT OUTPUT,
-    @FechaCorteProceso  DATE OUTPUT
+SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
+
+IF @Siguiente IS NULL
+    THROW 50004, 'No se pudo calcular el siguiente corte, la fecha activa no corresponde a un día de corte válido.', 1;
+
+
+
+
+
+
+
+CREATE FUNCTION [dbo].[fn_SiguienteFechaCorte]
+(
+    @FechaActual DATE
+)
+RETURNS DATE
 AS
 BEGIN
-    SET NOCOUNT ON;
+    DECLARE @Dia INT = DATEPART(DAY, @FechaActual);
+    DECLARE @Mes INT = DATEPART(MONTH, @FechaActual);
+    DECLARE @Anio INT = DATEPART(YEAR, @FechaActual);
+    DECLARE @Siguiente DATE;
 
-    DECLARE @FechaBandeja DATE, @FechaActiva DATE;
-    DECLARE @CantidadFechasDistintas INT;
+    IF @Dia = 6
+        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 10);
+    ELSE IF @Dia = 10
+        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 18);
+    ELSE IF @Dia = 18
+        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 24);
+    ELSE IF @Dia = 24
+        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 27);
+    ELSE IF @Dia = 27 AND @Mes < 12
+        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes + 1, 6);
+    ELSE IF @Dia = 27 AND @Mes = 12
+        SET @Siguiente = DATEFROMPARTS(@Anio + 1, 1, 6);
+    ELSE
+        RETURN NULL; -- fecha que no corresponde a ningún día de corte válido
 
-    -- 1. Validar que la bandeja tenga una sola fecha de corte
-    SELECT @CantidadFechasDistintas = COUNT(DISTINCT FechaCorte)
-    FROM [dbo].[BandejaEstadoCuenta];
-
-    IF @CantidadFechasDistintas > 1
-        THROW 50001, 'BandejaEstadoCuenta contiene más de una FechaCorte distinta. Revisar carga.', 1;
-
-    IF @CantidadFechasDistintas = 0
-        THROW 50003, 'BandejaEstadoCuenta está vacía, no hay fecha de corte que sincronizar.', 1;
-
-    SELECT @FechaBandeja = FechaCorte FROM [dbo].[BandejaEstadoCuenta] GROUP BY FechaCorte;
-    SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
-
-    -- 2. Determinar el escenario: ¿la fecha de bandeja es igual a la activa?
-    IF @FechaBandeja = @FechaActiva
-    BEGIN
-        SET @EsReproceso = 0;
-        SET @FechaCorteProceso = @FechaBandeja;
-        RETURN;
-    END
-
-    SET @EsReproceso = 1;
-    SET @FechaCorteProceso = @FechaBandeja;
-
-    -- 3. Sincronizar ParametrosCorte según dirección
-    IF @FechaBandeja < @FechaActiva
-    BEGIN
-        -- Rebobinar a un corte anterior
-        IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
-            THROW 50002, 'La fecha de reproceso no existe como corte histórico válido.', 1;
-
-        UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE Estado = 1;
-        UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
-    END
-    ELSE -- @FechaBandeja > @FechaActiva
-    BEGIN
-        DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
-
-        WHILE @FechaCursor < @FechaBandeja
-        BEGIN
-            SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
-
-            IF @Siguiente = @FechaBandeja
-            BEGIN
-                IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
-                    UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @Siguiente;
-                ELSE
-                    INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 1);
-            END
-            ELSE
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
-                    INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 0);
-            END
-
-            SET @FechaCursor = @Siguiente;
-        END
-
-        UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE FechaCorte = @FechaActiva;
-    END
+    RETURN @Siguiente;
 END
