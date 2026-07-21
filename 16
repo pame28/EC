@@ -1,17 +1,71 @@
-Subject: Consulta sobre hallazgo de encriptación — Consola de Generación de Estados de Cuenta JSON
+CREATE PROCEDURE [dbo].[usp_SincronizarFechaCorte]
+    @EsReproceso        BIT OUTPUT,
+    @FechaCorteProceso  DATE OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-Buen día Mario,
+    DECLARE @FechaBandeja DATE, @FechaActiva DATE;
+    DECLARE @CantidadFechasDistintas INT;
 
-Espero se encuentre bien. Me comunico con usted para consultarle sobre un hallazgo identificado durante el escaneo de seguridad realizado al código de la Consola de Generación de Estados de Cuenta JSON.
+    -- 1. Validar que la bandeja tenga una sola fecha de corte
+    SELECT @CantidadFechasDistintas = COUNT(DISTINCT FechaCorte)
+    FROM [dbo].[BandejaEstadoCuenta];
 
-El escaneo reportó un hallazgo relacionado con el método de encriptación actualmente utilizado para el archivo JSON. Tras nuestra investigación, identificamos que el problema radica en el uso del modo de encriptación CBC (Cipher Block Chaining), el cual es considerado inseguro según los estándares actuales de seguridad.
+    IF @CantidadFechasDistintas > 1
+        THROW 50001, 'BandejaEstadoCuenta contiene más de una FechaCorte distinta. Revisar carga.', 1;
 
-Para mitigar este hallazgo, la solución técnica sería migrar al modo de encriptación GCM (Galois/Counter Mode). Sin embargo, este cambio impacta directamente a PBS, ya que el proceso de desencriptado que utiliza dicho sistema está estrechamente ligado al formato actual generado con CBC. Al cambiar el método de encriptación, el formato del archivo resultante sería diferente, lo que requeriría ajustes en PBS para poder procesarlo correctamente.
+    IF @CantidadFechasDistintas = 0
+        THROW 50003, 'BandejaEstadoCuenta está vacía, no hay fecha de corte que sincronizar.', 1;
 
-Dado que PBS está fuera de nuestro alcance de modificación en este momento, necesitamos su orientación para definir la mejor forma de atender este hallazgo sin afectar la operación actual.
+    SELECT @FechaBandeja = FechaCorte FROM [dbo].[BandejaEstadoCuenta] GROUP BY FechaCorte;
+    SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
 
-¿Podría indicarnos cómo proceder con respecto al tema de encriptación de los Estados de Cuenta?
+    -- 2. Determinar el escenario: ¿la fecha de bandeja es igual a la activa?
+    IF @FechaBandeja = @FechaActiva
+    BEGIN
+        SET @EsReproceso = 0;
+        SET @FechaCorteProceso = @FechaBandeja;
+        RETURN;
+    END
 
-Quedo atento a su respuesta y en disposición de ampliar la información que requiera.
+    SET @EsReproceso = 1;
+    SET @FechaCorteProceso = @FechaBandeja;
 
-Saludos cordiales,
+    -- 3. Sincronizar ParametrosCorte según dirección
+    IF @FechaBandeja < @FechaActiva
+    BEGIN
+        -- Rebobinar a un corte anterior
+        IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
+            THROW 50002, 'La fecha de reproceso no existe como corte histórico válido.', 1;
+
+        UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE Estado = 1;
+        UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
+    END
+    ELSE -- @FechaBandeja > @FechaActiva
+    BEGIN
+        DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
+
+        WHILE @FechaCursor < @FechaBandeja
+        BEGIN
+            SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
+
+            IF @Siguiente = @FechaBandeja
+            BEGIN
+                IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
+                    UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @Siguiente;
+                ELSE
+                    INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 1);
+            END
+            ELSE
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
+                    INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 0);
+            END
+
+            SET @FechaCursor = @Siguiente;
+        END
+
+        UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE FechaCorte = @FechaActiva;
+    END
+END
