@@ -1,13 +1,26 @@
-SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
+USE [EstadosCuentaJSONProcesador]
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
-IF @Siguiente IS NULL
-    THROW 50004, 'No se pudo calcular el siguiente corte, la fecha activa no corresponde a un día de corte válido.', 1;
-
-
-
-
-
-
+-- =====================================================================================
+-- Objeto:				[dbo].[fn_SiguienteFechaCorte]
+-- Autor:				(completar)
+-- Fecha creacion:		21-07-2026
+-- Description:			Calcula la siguiente fecha de corte en la secuencia de negocio
+--						(dias 06, 10, 18, 24, 27) a partir de una fecha de corte dada.
+--						Es una funcion pura: no lee ni modifica ninguna tabla, por lo
+--						que puede usarse dentro de un WHILE para caminar la secuencia
+--						varios pasos hacia adelante (ver usp_SincronizarFechaCorte).
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+-- (completar)       Se creo la funcion, extraida de la logica que antes		21-07-2026
+--                   vivia en usp_ActualizarFechaCorte
+-- =======================================================================================
 
 CREATE FUNCTION [dbo].[fn_SiguienteFechaCorte]
 (
@@ -34,7 +47,8 @@ BEGIN
     ELSE IF @Dia = 27 AND @Mes = 12
         SET @Siguiente = DATEFROMPARTS(@Anio + 1, 1, 6);
     ELSE
-        RETURN NULL; -- fecha que no corresponde a ningún día de corte válido
+        RETURN NULL; -- Fecha que no corresponde a ningun dia de corte valido
 
     RETURN @Siguiente;
 END
+GO
