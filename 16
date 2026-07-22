@@ -1,54 +1,56 @@
 USE [EstadosCuentaJSONProcesador]
 GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 
 -- =====================================================================================
--- Objeto:				[dbo].[fn_SiguienteFechaCorte]
--- Autor:				(completar)
--- Fecha creacion:		21-07-2026
--- Description:			Calcula la siguiente fecha de corte en la secuencia de negocio
---						(dias 06, 10, 18, 24, 27) a partir de una fecha de corte dada.
---						Es una funcion pura: no lee ni modifica ninguna tabla, por lo
---						que puede usarse dentro de un WHILE para caminar la secuencia
---						varios pasos hacia adelante (ver usp_SincronizarFechaCorte).
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
--- (completar)       Se creo la funcion, extraida de la logica que antes		21-07-2026
---                   vivia en usp_ActualizarFechaCorte
--- =======================================================================================
+-- Script de pruebas manuales para fn_SiguienteFechaCorte y usp_SincronizarFechaCorte
+-- Ejecutar cada bloque por separado y revisar resultados antes de correr el DTSX real.
+-- IMPORTANTE: correr contra un ambiente de pruebas, no contra produccion.
+-- =====================================================================================
 
-CREATE FUNCTION [dbo].[fn_SiguienteFechaCorte]
-(
-    @FechaActual DATE
-)
-RETURNS DATE
-AS
-BEGIN
-    DECLARE @Dia INT = DATEPART(DAY, @FechaActual);
-    DECLARE @Mes INT = DATEPART(MONTH, @FechaActual);
-    DECLARE @Anio INT = DATEPART(YEAR, @FechaActual);
-    DECLARE @Siguiente DATE;
 
-    IF @Dia = 6
-        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 10);
-    ELSE IF @Dia = 10
-        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 18);
-    ELSE IF @Dia = 18
-        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 24);
-    ELSE IF @Dia = 24
-        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes, 27);
-    ELSE IF @Dia = 27 AND @Mes < 12
-        SET @Siguiente = DATEFROMPARTS(@Anio, @Mes + 1, 6);
-    ELSE IF @Dia = 27 AND @Mes = 12
-        SET @Siguiente = DATEFROMPARTS(@Anio + 1, 1, 6);
-    ELSE
-        RETURN NULL; -- Fecha que no corresponde a ningun dia de corte valido
+-- -----------------------------------------------------------------
+-- 1. Probar la funcion de forma aislada
+-- -----------------------------------------------------------------
+SELECT dbo.fn_SiguienteFechaCorte('2026-05-06') AS Esperado_2026_05_10;
+SELECT dbo.fn_SiguienteFechaCorte('2026-05-27') AS Esperado_2026_06_06;
+SELECT dbo.fn_SiguienteFechaCorte('2026-12-27') AS Esperado_2027_01_06;
+SELECT dbo.fn_SiguienteFechaCorte('2026-05-15') AS Esperado_NULL_dia_invalido;
 
-    RETURN @Siguiente;
-END
-GO
+
+-- -----------------------------------------------------------------
+-- 2. Ver el estado actual antes de cualquier prueba
+-- -----------------------------------------------------------------
+SELECT * FROM [dbo].[ParametrosCorte] ORDER BY FechaCorte;
+SELECT DISTINCT FechaCorte FROM [dbo].[BandejaEstadoCuenta];
+
+
+-- -----------------------------------------------------------------
+-- 3. Caso NORMAL: la fecha de bandeja coincide con la activa
+--    (No debe modificar ParametrosCorte, @EsReproceso debe salir en 0)
+-- -----------------------------------------------------------------
+DECLARE @EsReproceso BIT, @FechaCorteProceso DATE;
+
+EXEC [dbo].[usp_SincronizarFechaCorte]
+    @EsReproceso = @EsReproceso OUTPUT,
+    @FechaCorteProceso = @FechaCorteProceso OUTPUT;
+
+SELECT @EsReproceso AS EsReproceso, @FechaCorteProceso AS FechaCorteProceso;
+
+
+-- -----------------------------------------------------------------
+-- 4. Caso REPROCESO (menor): simular bandeja con fecha anterior a la activa
+--    Ajustar la fecha segun tu data de prueba real antes de correr
+-- -----------------------------------------------------------------
+-- UPDATE [dbo].[BandejaEstadoCuenta] SET FechaCorte = '2026-05-06';
+-- (luego correr el bloque 3 de nuevo y revisar @EsReproceso = 1)
+
+
+-- -----------------------------------------------------------------
+-- 5. Caso AVANCE (mayor): simular bandeja con fecha posterior a la activa,
+--    saltando cortes intermedios
+-- -----------------------------------------------------------------
+-- UPDATE [dbo].[BandejaEstadoCuenta] SET FechaCorte = '2026-05-27';
+-- (luego correr el bloque 3 de nuevo y revisar que los intermedios
+--  queden en Estado=0 y solo 2026-05-27 en Estado=1)
+
+SELECT * FROM [dbo].[ParametrosCorte] ORDER BY FechaCorte;
