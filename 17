@@ -1,24 +1,87 @@
-No vaya .. a lo que quiero llegar es …
+Mira, necesito que me ayudes a calcular el monto que se me debe debitar de ISR en Honduras. 
+Basicamente me gustaria que quede cuadrado segun la info que te voy a brindar ... 
+Pero quiero que quede cuadrado legalmente, como deberia ser ...
 
-podría pasar que … según mi tabla de 
-SELECT * FROM ParametrosCorte WHERE Estado =1 la fecha es 2026-05-18
+Estas son las deducciones que he logrado identificar:
+DEDUCCIONES:
+
+-ENERO:
+
+Quincena 01
+ISR L.243.35
 
 
-
-Pero mi Bandeja diga que toca 2026-05-27
-
-
-yo pienso que debería haber una inserción en ParametrosCorte que agrega las fechas intermedio con estado 0 y la fecha a procesar seria 2026-05-27 con estado 1 
-
-
-Y aja …
-
-si según Parámetros corte la fecha a procesar es 2026-05-18
-
-Pero mi Bandeja dice que la fecha a procesar es 2026-05-06
-
-entonces en Parametrosorte se debería eliminar 2026-05-18 y 2026-05-10 y pone en Estado 1 2026-05-06
+Quincena 02
+ISR  L.172.71
+IHSS L.595.16
+FOVIIF 196.45
 
 
 
-Pienso yo que asi podemos tener un orden 
+-FEBRERO
+Quincena 01
+
+Isr 172.71
+impuesto municipal 784.58
+Apoyo RSE L. 100
+
+
+Quincena 02
+Isr 172.71
+IHSS L.595.16
+FOVIIF 196.45
+Cobro por Solvencia municipal L. 50
+
+
+-MARZO
+Quincena 01
+ISR  L.172.71
+
+Quincena 02
+ISR  L.172.71
+IHSS L.595.16
+FOVIIF 196.45
+
+
+
+-ABRIL
+Quincena 01
+ISR  L.172.71
+
+Quincena 02
+ISR  L.172.71
+IHSS L.595.16
+FOVIIF 196.45
+
+
+-MAYO
+Quincena 01
+ISR  L.172.71
+
+Quincena 02
+ISR  L.172.71
+IHSS L.595.16
+FOVIIF 196.45
+
+
+-JUNIO
+Quincena 01
+ISR  L.172.71
+Apoyo RSE Habitat L. 100
+
+Quincena 02
+ISR  L.172.71
+IHSS L.595.16
+FOVIIF 196.45
+
+
+-JULIO
+Quincena 01
+ISR  L.172.71
+
+
+
+
+
+
+Yo gano L.25,000 mensuales
