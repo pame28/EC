@@ -1,32 +1,6 @@
-Message
-Microsoft (R) SQL Server Execute Package Utility
-Version 11.0.7001.0 for 64-bit
-Copyright (C) Microsoft Corporation. All rights reserved.
- 
-Started:  10:34:10 a.m.
-Error: 2026-07-29 10:42:37.97
-   Code: 0xC0202009
-   Source: Ubicacion Geografica UbicacionGeografica [44]
-   Description: SSIS Error Code DTS_E_OLEDBERROR.  An OLE DB error has occurred. Error code: 0x80004005.
-An OLE DB record is available.  Source: "Microsoft SQL Server Native Client 11.0"  Hresult: 0x80004005  Description: "The statement has been terminated.".
-An OLE DB record is available.  Source: "Microsoft SQL Server Native Client 11.0"  Hresult: 0x80004005  Description: "Violation of PRIMARY KEY constraint 'PK_UbicacionGeografica'. Cannot insert duplicate key in object 'dbo.UbicacionGeografica'. The duplicate key value is (1, 1, 1, 5, 1).".
-End Error
-Error: 2026-07-29 10:42:37.97
-   Code: 0xC0209029
-   Source: Ubicacion Geografica UbicacionGeografica [44]
-   Description: SSIS Error Code DTS_E_INDUCEDTRANSFORMFAILUREONERROR.  The "UbicacionGeografica.Inputs[OLE DB Destination Input]" failed because error code 0xC020907B occurred, and the error row disposition on "UbicacionGeografica.Inputs[OLE DB Destination Input]" specifies failure on error. An error occurred on the specified object of the specified component.  There may be error messages posted before this with more information about the failure.
-End Error
-Error: 2026-07-29 10:42:37.97
-   Code: 0xC0047022
-   Source: Ubicacion Geografica SSIS.Pipeline
-   Description: SSIS Error Code DTS_E_PROCESSINPUTFAILED.  The ProcessInput method on component "UbicacionGeografica" (44) failed with error code 0xC0209029 while processing input "OLE DB Destination Input" (57). The identified component returned an error from the ProcessInput method. The error is specific to the component, but the error is fatal and will cause the Data Flow task to stop running.  There may be error messages posted before this with more information about the failure.
-End Error
-DTExec: The package execution returned DTSER_FAILURE (1).
-Started:  10:34:10 a.m.
-Finished: 10:42:38 a.m.
-Elapsed:  507.141 seconds
-
-
-
-
-Que fue lo que falló? donde reviso? como lo soluciono?
+SELECT c.name, ic.key_ordinal
+FROM sys.indexes i
+JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE i.object_id = OBJECT_ID('dbo.UbicacionGeografica') AND i.is_primary_key = 1
+ORDER BY ic.key_ordinal;
