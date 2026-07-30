@@ -1,6 +1,22 @@
-SELECT c.name, ic.key_ordinal
-FROM sys.indexes i
-JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-WHERE i.object_id = OBJECT_ID('dbo.UbicacionGeografica') AND i.is_primary_key = 1
-ORDER BY ic.key_ordinal;
+-- 1. Crear el LOGIN a nivel de servidor
+USE master;
+GO
+
+CREATE LOGIN appCobranzas 
+WITH PASSWORD = 'appCobranzas',
+     CHECK_POLICY = OFF,      -- evita que se apliquen políticas de complejidad de Windows
+     CHECK_EXPIRATION = OFF;  -- evita que la contraseña expire
+GO
+
+-- 2. Cambiar al contexto de la base de datos
+USE BPTarjetas_PRD_Procesador;
+GO
+
+-- 3. Crear el USER mapeado al LOGIN
+CREATE USER appCobranzas FOR LOGIN appCobranzas;
+GO
+
+-- 4. (Opcional) Asignar permisos/roles al usuario
+ALTER ROLE db_datareader ADD MEMBER appCobranzas;
+ALTER ROLE db_datawriter ADD MEMBER appCobranzas;
+GO
