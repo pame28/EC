@@ -1,22 +1,192 @@
--- 1. Crear el LOGIN a nivel de servidor
-USE master;
+Mira, necesito rastrear de donde se origina la información de esta vista
+
+
+USE [BPTarjetas]
 GO
 
-CREATE LOGIN appCobranzas 
-WITH PASSWORD = 'appCobranzas',
-     CHECK_POLICY = OFF,      -- evita que se apliquen políticas de complejidad de Windows
-     CHECK_EXPIRATION = OFF;  -- evita que la contraseña expire
+/****** Object:  View [dbo].[uvw_Cobros]    Script Date: 31/7/2026 14:49:04 ******/
+SET ANSI_NULLS ON
 GO
 
--- 2. Cambiar al contexto de la base de datos
-USE BPTarjetas_PRD_Procesador;
+SET QUOTED_IDENTIFIER ON
 GO
 
--- 3. Crear el USER mapeado al LOGIN
-CREATE USER appCobranzas FOR LOGIN appCobranzas;
+
+
+
+
+
+/*******************************************
+ * Milton D. Canales.	<2015-03-25>
+ * Vista para simular el Archivo de Cobros
+ * con información de ATH y VASA
+ *******************************************/
+
+CREATE VIEW [dbo].[uvw_Cobros] AS
+	Select Distinct
+		Msa.Origen
+		,Msa.NoCuenta                         										No_Cuenta
+		,Msa.NombreEmpresa                    										Nombre_Empresa
+		,Msa.NumeroTarjeta                    										No_Tarjeta
+		,Case Cli.CategoriaTarjeta
+			When '0' Then 'T'
+			When '1' Then 'A'
+			Else 'E'
+		End                                   										Tipo_Tarjeta
+		,Msa.EstadoTarjeta
+		,Msa.EstadoCuenta
+		,Msa.Cif                              										No_Cliente
+		,Cli.NumeroCedula                     										No_Cedula
+		,Cli.PrimerNombre                     										Nombre_Cliente
+		,Cli.SegundoNombre                    										Segundo_Nombre
+		,Cli.PrimerApellido                   										Primer_Apellido
+		,Cli.SegundoApellido                  										Segundo_Apellido
+		,Cli.ApellidoCasada                   										Apellido_Casada
+		,Cli.FechaNacimiento                  										Fecha_Nacimiento
+		,Cli.Sexo
+		,Cli.EstadoCivil                      										Estado_Civil
+		,Cli.Direccion1
+		,Cli.Direccion2
+		,Cli.Direccion3
+		,Cli.Telefono                          										Telefono_1
+		,Cli.Telefono1                         										Telefono_2
+		,Cli.Telefono2                         										Telefono_3
+		,Cli.
+
+		,Msa.Ciclo
+		,Cli.NombreCompletoTarjeta             										Nombre_Plastico
+		,Isnull(Msa.FechaAlta ,'1901-01-01')   										Fecha_Alta
+		,Cast(
+		   dbo.ufn_MaximoFecha(
+			   Isnull(Msa.FechaUltimaCompraML ,'1901-01-01')
+			  ,dbo.ufn_MaximoFecha(
+				   Isnull(Msa.FechaUltimaCompraUSD ,'1901-01-01')
+				  ,dbo.ufn_MaximoFecha(
+					   Isnull(Msa.FechaUltimoRetiroML ,'1901-01-01')
+					  ,Isnull(Msa.FechaUltimoRetiroUSD ,'1901-01-01')
+				   )
+			   )
+		   ) As Date)																Fecha_Ultima_Actividad
+		,Isnull(Msa.FechaExpiracion ,'1901-01-01')									Fecha_Expiracion
+		,Msa.LimiteCredito															Linea_Credito
+		,Msa.DisponibleRetiroML														Disp_Ret_Efectivo_MN
+		,Msa.DisponibleRetiroUSD													Disp_Ret_Efectivo_ME
+		,Msa.DisponibleCompraML														Disp_Compras_MN
+		,Msa.DisponibleCompraUSD													Disp_Compras_ME
+		,Isnull(Msa.FechaUltimaCompraML ,'1901-01-01')								Fecha_Ult_Compra_MN
+		,Isnull(Msa.FechaUltimaCompraUSD ,'1901-01-01')								Fecha_Ult_Compra_ME
+		,Isnull(Msa.FechaUltimoRetiroML ,'1901-01-01')								Fecha_Ult_Ret_Efec_MN
+		,Isnull(Msa.FechaUltimoRetiroUSD ,'1901-01-01')								Fecha_Ult_Ret_Efec_ME
+		,Isnull(Msa.FechaUltimoPagoML ,'1901-01-01')								Fecha_Ult_Pago_MN
+		,Isnull(Msa.FechaUltimaPagoUSD ,'1901-01-01')								Fecha_Ult_Pago_ME
+		,Isnull(Msa.FechaUltimoMantenimiento ,'1901-01-01') 						Fecha_Ult_Manto
+		,Isnull(Msa.FechaBaja ,'1901-01-01')										Fecha_Baja
+		,Isnull(Msa.FechaUltimaMora ,'1901-01-01')									Fecha_Ult_Mora
+		,Msa.HistorialMoraMN														Historial_Mora_MN
+		,Msa.HistorialMoraUSD														Historial_Mora_ME
+		,Isnull(Msa.CantidadPagosMN ,0)     										Cantidad_Pagos_MN
+		,Isnull(Msa.CantidadPagosUSD ,0)    										Cantidad_Pagos_ME
+		,Msa.PagosIngresadosML              										Total_Monto_Pagos_MN
+		,Msa.PagosIngresadosUSD             										Total_Monto_Pagos_ME
+		,Isnull(Cli.Oficial ,'')													Oficial
+		,Isnull(Msa.FechaMaximaPago ,'1901-01-01')									Dia_Max_Pago
+		,Msa.PagoContadoML                    										Pago_Contado_MN
+		,Msa.PagoContadoUSD                   										Pago_Contado_ME
+		,Msa.PagoMinimoML                     										Pago_Minimo_MN
+		,Msa.PagoMinimoUSD                    										Pago_Minimo_ME
+		,Msa.SaldoActualML                    										Saldo_Actual_MN
+		,Msa.SaldoActualUSD                   										Saldo_Actual_ME
+		,Isnull(Msa.SaldoInicialML ,0)        										Saldo_Inicial_MN
+		,Isnull(Msa.SaldoInicialUSD ,0)       										Saldo_Inicial_ME
+		,Msa.CiclosVencidosML                 										Ciclos_Vencidos_MN
+		,Msa.CiclosVencidosUSD                										Ciclos_Vencidos_ME
+		,Msa.PagoVencidoML                    										Pago_Vencido_MN
+		,Msa.PagoVencidoUSD                   										Pago_Vencido_ME
+		,Isnull(Fiad.NombreFiador1 ,'')       										Nombre_Fiador_1
+		,Isnull(Fiad.NumCedulaFiador1 ,'')    										Cedula_Fiador_1
+		,Isnull(Fiad.Telefono1_1 ,'')         										Telefono_1_Fiador_1
+		,Isnull(Fiad.Telefono1_2 ,'')         										Telefono_2_Fiador_1
+		,Isnull(Fiad.DireccionFiador1 + Fiad.DireccionFiador1_2 ,'')				Direccion_Fiador_1
+		,Isnull(Fiad.NombreFiador2 ,'')       										Nombre_Fiador_2
+		,Isnull(Fiad.NumCedulaFiador2 ,'')    										Cedula_Fiador_2
+		,Isnull(Fiad.Telefono2_1 ,'')         										Telefono_1_Fiador_2
+		,Isnull(Fiad.Telefono2_2 ,'')         										Telefono_2_Fiador_2
+		,Isnull(Fiad.DireccionFiador2 + Fiad.DireccionFiador2_2 ,'')				Direccion_Fiador_2
+		,Cli.TipoPersoneria 
+		,Isnull(ME.Saldo_Extrf_MN ,0)          										Saldo_Extrf_MN
+		,Isnull(ME.Saldo_Extrf_ME ,0)          										Saldo_Extrf_ME
+		,Isnull(ME.Saldo_Intrf_MN ,0)          										Saldo_Intrf_MN
+		,Isnull(ME.Saldo_Intrf_ME ,0)          										Saldo_Intrf_ME
+		,Msa.HistorialPagoML                   										His_Pago_MN
+		,Msa.HistorialPagoUSD                  										His_Pago_ME
+		,dbo.ufn_MaximoFecha(Msa.FechaPrimeraCompraML ,Msa.FechaPrimeraCompraUSD) 	Fecha_Pri_Compra
+		,Msa.TasaFinanciacionML               										Tasa_Finan_MN
+		,Msa.TasaFinanciacionUSD              										Tasa_Finan_ME
+		,Msa.BinTarjeta                       										Emisor
+		,Isnull(Msa.FechaActivacion ,'1901-01-01')									Fecha_Activacion
+		,Cli.Ciudad
+		,Cli.CodigoPostal
+		,Cli.RTN
+		,Cli.CodTipoIdentificacion													Tipo_Identificacion 
+		,Cli.Nacionalidad
+		,Msa.DiasMoraMN
+		,Msa.DiasMoraUSD
+	From
+		MaestroSaldos Msa
+	Inner Join
+		Clientes Cli
+	On
+		Msa.NoCuenta = Cli.NumeroCuenta
+		and Msa.NumeroTarjeta = Cli.NumeroTarjeta
+		--And Msa.Origen = Cli.Origen
+	Left Join
+		MaestroFiadores Fiad
+	On
+		Msa.NoCuenta = Fiad.NoUsuario
+	Left Join (	Select
+					MExt.NumeroCuenta
+					,MExt.NumeroTarjeta
+					,Sum(	Case When MExt.MonedaLiquidar = '340' And MExt.GrupoMovimientos = 'EXF' Then 
+								MExt.SaldoActual 
+							Else
+								0
+							End) Saldo_Extrf_MN
+					,Sum(	Case When MExt.MonedaLiquidar = '840' And MExt.GrupoMovimientos = 'EXF' Then
+								MExt.SaldoActual 
+							Else
+								0
+					     	End) Saldo_Extrf_ME
+					,Sum(	Case When MExt.MonedaLiquidar = '340' And MExt.GrupoMovimientos = 'INT' Then
+								MExt.SaldoActual 
+							Else
+								0
+					     	End) Saldo_Intrf_MN
+					,Sum(	Case When MExt.MonedaLiquidar = '840' And MExt.GrupoMovimientos = 'INT' Then
+								MExt.SaldoActual 
+							Else
+								0
+							End) Saldo_Intrf_ME
+	           	From
+	           		MaestroExtras MExt
+	           	Where
+	           		MExt.Estado = 'A'
+				Group By
+					   MExt.NumeroCuenta
+					  ,MExt.NumeroTarjeta) ME
+	On
+		Msa.NoCuenta = ME.NumeroCuenta
+		And Msa.NumeroTarjeta = ME.NumeroTarjeta
+	--where Msa.Origen = 'ATH'
+	--Where
+		--Msa.EstadoTarjeta = '20'		
+		--EstadoCuenta Not In('06','07')
+
+
+
 GO
 
--- 4. (Opcional) Asignar permisos/roles al usuario
-ALTER ROLE db_datareader ADD MEMBER appCobranzas;
-ALTER ROLE db_datawriter ADD MEMBER appCobranzas;
-GO
+
+
+
+
+la cosa es que el numero de cedula me los esta devolviendo vacios, no todos, sino para ciertos casos 
