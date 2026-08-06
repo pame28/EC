@@ -1,5 +1,1 @@
-"- Modificar la consola actual (EncriptacionService/EncriptacionAES) para eliminar la lógica de cifrado AES-CBC, dejándola únicamente para las tareas previas (generar/ubicar el JSON, o lo que corresponda antes del cifrado).
-Modificar el paquete DTSX para que, luego de que la consola genere el archivo, se agregue un paso que invoque GnuPG por línea de comandos (gpg.exe) y cifre el archivo con la llave pública de la entidad externa.
-Instalar y configurar GnuPG en el servidor donde corre el DTSX (agente de SSIS/Integration Services).
-Generar el par de llaves PGP propio e importar la llave pública de la entidad externa al keyring del servidor.
-Adaptar el flujo de compresión ZIP dentro del DTSX para que empaquete el archivo ya cifrado en .gpg en lugar del .json cifrado con AES.
+Cambia de un esquema simétrico (llave única en BD) a uno asimétrico: se importa al keyring del servidor (donde corre el DTSX) la llave pública que comparte la entidad externa, una única vez al inicio (o cuando ellos la rote/renueven). No se genera ni gestiona un par de llaves propio, ya que solo se cifra con la llave pública externa — no se firma el archivo. El descifrado ocurre enteramente del lado de la entidad externa, con su llave privada en Kleopatra; nuestro proceso nunca maneja una llave privada."
