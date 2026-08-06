@@ -1,1 +1,18 @@
-Cambia de un esquema simétrico (llave única en BD) a uno asimétrico: se importa al keyring del servidor (donde corre el DTSX) la llave pública que comparte la entidad externa, una única vez al inicio (o cuando ellos la rote/renueven). No se genera ni gestiona un par de llaves propio, ya que solo se cifra con la llave pública externa — no se firma el archivo. El descifrado ocurre enteramente del lado de la entidad externa, con su llave privada en Kleopatra; nuestro proceso nunca maneja una llave privada."
+pción 01: AES-GCM
+Ventajas:
+Resuelve directamente el hallazgo de Fortify, porque ya no se detecta como vulnerable.
+Todo el cambio queda dentro de nuestro propio código, sin depender de instalar herramientas externas en nuestros servidores.
+No se cambia la arquitectura del proceso (sigue siendo la consola la que cifra).
+Desventajas:
+Tenemos que construir el desencriptador que usará PBS, y darle soporte si algo falla de su lado.
+El archivo que reciben cambia de formato (ya no es solo el IV en el txt; ahora también viaja el tag de autenticación), así que PBS debe adaptar su proceso para leerlo.
+Cualquier ajuste futuro al cifrado implica coordinar y volver a probar con PBS.
+Opción 02: Kleopatra
+Ventajas:
+PBS no tiene que desarrollar nada nuevo: ya usa Kleopatra para abrir este tipo de archivos.
+Ya no se envía ninguna llave por archivo (se elimina el paso del LlavePublica.txt); solo se importa una vez la llave pública que PBS comparte.
+Es un estándar ampliamente usado y confiable (OpenPGP), no algo que desarrollamos nosotros desde cero.
+Desventajas:
+Hay que instalar y mantener GnuPG en el servidor donde corre el DTSX (una herramienta externa nueva en nuestra infraestructura).
+Se modifica tanto la consola como el paquete DTSX, es decir, toca dos componentes en vez de uno.
+Si PBS llega a rotar o cambiar su llave pública, hay que actualizar el keyring del servidor cada vez que eso pase.
