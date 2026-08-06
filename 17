@@ -1,51 +1,70 @@
-Con este query saque los nulos:
--- 1. Definir la consulta que quieres analizar
-DECLARE @Consulta NVARCHAR(MAX) = N'SELECT * FROM ETarjetas WHERE PROCESADORORIGEN=''LOCAL'''; -- <-- Coloca tu query aquí
- 
-DECLARE @SqlDinamico NVARCHAR(MAX) = N'';
- 
--- 2. Limpieza de tablas temporales por si acaso
-IF OBJECT_ID('tempdb..##MiConsultaTemporal') IS NOT NULL DROP TABLE ##MiConsultaTemporal;
-IF OBJECT_ID('tempdb..#ResumenNulos') IS NOT NULL DROP TABLE #ResumenNulos;
- 
--- 3. Creamos una tabla para almacenar el resultado vertical de forma segura
-CREATE TABLE #ResumenNulos (
-    Campo NVARCHAR(256),
-    Cantidad_Nulos INT
-);
- 
--- 4. Creamos la estructura espejo vacía de tu consulta (WHERE 1=0)
-DECLARE @SqlEstructura NVARCHAR(MAX) = N'SELECT * INTO ##MiConsultaTemporal FROM (' + @Consulta + N') AS Src WHERE 1=0;';
-EXEC sp_executesql @SqlEstructura;
- 
--- 5. Construimos INSERTs individuales en lugar de un UNION ALL largo (es más seguro)
-SELECT @SqlDinamico = @SqlDinamico + 
-    N'INSERT INTO #ResumenNulos (Campo, Cantidad_Nulos) ' +
-    N'SELECT ''' + REPLACE(name, '''', '''''') + N''', COUNT(*) - COUNT(' + QUOTENAME(name) + N') FROM (' + @Consulta + N') AS Src; '
-FROM tempdb.sys.columns 
-WHERE object_id = OBJECT_ID('tempdb..##MiConsultaTemporal');
- 
--- 6. Ejecutamos la inserción si se generaron comandos
-IF LEN(@SqlDinamico) > 0
-BEGIN
-    EXEC sp_executesql @SqlDinamico;
- 
-    -- 7. Mostramos el resultado ordenado (los que tienen más nulos primero)
-    SELECT Campo, Cantidad_Nulos 
-    FROM #ResumenNulos 
-    ORDER BY Cantidad_Nulos DESC, Campo ASC;
-END
-ELSE
-BEGIN
-    PRINT 'No se pudieron leer las columnas de la consulta.';
-END
- 
--- 8. Limpieza final absoluta
-IF OBJECT_ID('tempdb..##MiConsultaTemporal') IS NOT NULL DROP TABLE ##MiConsultaTemporal;
-IF OBJECT_ID('tempdb..#ResumenNulos') IS NOT NULL DROP TABLE #ResumenNulos;
+UPDATE ETarjetas
+		SET
+			  AltaPuntoVenta                   = ISNULL(AltaPuntoVenta, '')
+			, IndicadorLimiteCompra            = ISNULL(IndicadorLimiteCompra, '')
+			, IndicadorLimiteCompraAdelanto    = ISNULL(IndicadorLimiteCompraAdelanto, '')
+			, IndicadorLimiteCompraCuotas      = ISNULL(IndicadorLimiteCompraCuotas, '')
+			, IndicadorLimiteCompraTransaccion = ISNULL(IndicadorLimiteCompraTransaccion, '')
+			, MarcaFuncionarioNovedadABM       = ISNULL(MarcaFuncionarioNovedadABM, '')
+			, MarcaPlastico                    = ISNULL(MarcaPlastico, '')
+			, MarcaTarjetaRelacionada          = ISNULL(MarcaTarjetaRelacionada, '')
+			, MarcaTarjetaSospechosa           = ISNULL(MarcaTarjetaSospechosa, '')
+			, MarcaTarjetaVencida              = ISNULL(MarcaTarjetaVencida, '')
+			, NoEmpleadoCtaEmpresa             = ISNULL(NoEmpleadoCtaEmpresa, '')
+			, PerfilConsumo                    = ISNULL(PerfilConsumo, '')
+			, BinTarjetaAnterior               = ISNULL(BinTarjetaAnterior, '')
+			, NoTarjetaAnterior                = ISNULL(NoTarjetaAnterior, '')
+			, TarjetaAnteriorImprimir          = ISNULL(TarjetaAnteriorImprimir, '')
+			, FechaReposicion                  = ISNULL(FechaReposicion, '')
+			, NoTarjetaNuevo                   = ISNULL(NoTarjetaNuevo, '')
+			, CodigoProblemaTarjeta            = ISNULL(CodigoProblemaTarjeta, '')
+			, Denominacion4LineaEmbozado       = ISNULL(Denominacion4LineaEmbozado, '')
+			, FechaProceso                     = ISNULL(FechaProceso, '1900-01-01')
+			, Funcionario                      = ISNULL(Funcionario, '')
+			, Supervisor                       = ISNULL(Supervisor, '')
+			, Telefono2                        = ISNULL(Telefono2, '')
+			, EstadoCivil                      = ISNULL(EstadoCivil, '')
+			, Filler1                          = ISNULL(Filler1, '')
+			, Sexo                             = ISNULL(Sexo, '')
+			, Telefono1                        = ISNULL(Telefono1, '')
+			, NoDocumento                      = ISNULL(NoDocumento, '')
+			, TipoDocumento                    = ISNULL(TipoDocumento, '')
+			, BinTarjetaNueva                  = ISNULL(BinTarjetaNueva, '')
+			, TarjetaNuevaImprimir             = ISNULL(TarjetaNuevaImprimir, '')
+		WHERE 
+			AltaPuntoVenta IS NULL OR
+			IndicadorLimiteCompra IS NULL OR
+			IndicadorLimiteCompraAdelanto IS NULL OR
+			IndicadorLimiteCompraCuotas IS NULL OR
+			IndicadorLimiteCompraTransaccion IS NULL OR
+			MarcaFuncionarioNovedadABM IS NULL OR
+			MarcaPlastico IS NULL OR
+			MarcaTarjetaRelacionada IS NULL OR
+			MarcaTarjetaSospechosa IS NULL OR
+			MarcaTarjetaVencida IS NULL OR
+			NoEmpleadoCtaEmpresa IS NULL OR
+			PerfilConsumo IS NULL OR
+			BinTarjetaAnterior IS NULL OR
+			NoTarjetaAnterior IS NULL OR
+			TarjetaAnteriorImprimir IS NULL OR
+			FechaReposicion IS NULL OR
+			NoTarjetaNuevo IS NULL OR
+			CodigoProblemaTarjeta IS NULL OR
+			Denominacion4LineaEmbozado IS NULL OR
+			FechaProceso IS NULL OR
+			Funcionario IS NULL OR
+			Supervisor IS NULL OR
+			Telefono2 IS NULL OR
+			EstadoCivil IS NULL OR
+			Filler1 IS NULL OR
+			Sexo IS NULL OR
+			Telefono1 IS NULL OR
+			NoDocumento IS NULL OR
+			TipoDocumento IS NULL OR
+			BinTarjetaNueva IS NULL OR
+			TarjetaNuevaImprimir IS NULL;
 
 
 
 
-
-Me acaban de compartir esto mira, crees que nos puede servir de algo?
+Mi jefe quiere que lo hagamos asi mira, que piensas?
