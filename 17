@@ -1,70 +1,35 @@
-UPDATE ETarjetas
-		SET
-			  AltaPuntoVenta                   = ISNULL(AltaPuntoVenta, '')
-			, IndicadorLimiteCompra            = ISNULL(IndicadorLimiteCompra, '')
-			, IndicadorLimiteCompraAdelanto    = ISNULL(IndicadorLimiteCompraAdelanto, '')
-			, IndicadorLimiteCompraCuotas      = ISNULL(IndicadorLimiteCompraCuotas, '')
-			, IndicadorLimiteCompraTransaccion = ISNULL(IndicadorLimiteCompraTransaccion, '')
-			, MarcaFuncionarioNovedadABM       = ISNULL(MarcaFuncionarioNovedadABM, '')
-			, MarcaPlastico                    = ISNULL(MarcaPlastico, '')
-			, MarcaTarjetaRelacionada          = ISNULL(MarcaTarjetaRelacionada, '')
-			, MarcaTarjetaSospechosa           = ISNULL(MarcaTarjetaSospechosa, '')
-			, MarcaTarjetaVencida              = ISNULL(MarcaTarjetaVencida, '')
-			, NoEmpleadoCtaEmpresa             = ISNULL(NoEmpleadoCtaEmpresa, '')
-			, PerfilConsumo                    = ISNULL(PerfilConsumo, '')
-			, BinTarjetaAnterior               = ISNULL(BinTarjetaAnterior, '')
-			, NoTarjetaAnterior                = ISNULL(NoTarjetaAnterior, '')
-			, TarjetaAnteriorImprimir          = ISNULL(TarjetaAnteriorImprimir, '')
-			, FechaReposicion                  = ISNULL(FechaReposicion, '')
-			, NoTarjetaNuevo                   = ISNULL(NoTarjetaNuevo, '')
-			, CodigoProblemaTarjeta            = ISNULL(CodigoProblemaTarjeta, '')
-			, Denominacion4LineaEmbozado       = ISNULL(Denominacion4LineaEmbozado, '')
-			, FechaProceso                     = ISNULL(FechaProceso, '1900-01-01')
-			, Funcionario                      = ISNULL(Funcionario, '')
-			, Supervisor                       = ISNULL(Supervisor, '')
-			, Telefono2                        = ISNULL(Telefono2, '')
-			, EstadoCivil                      = ISNULL(EstadoCivil, '')
-			, Filler1                          = ISNULL(Filler1, '')
-			, Sexo                             = ISNULL(Sexo, '')
-			, Telefono1                        = ISNULL(Telefono1, '')
-			, NoDocumento                      = ISNULL(NoDocumento, '')
-			, TipoDocumento                    = ISNULL(TipoDocumento, '')
-			, BinTarjetaNueva                  = ISNULL(BinTarjetaNueva, '')
-			, TarjetaNuevaImprimir             = ISNULL(TarjetaNuevaImprimir, '')
-		WHERE 
-			AltaPuntoVenta IS NULL OR
-			IndicadorLimiteCompra IS NULL OR
-			IndicadorLimiteCompraAdelanto IS NULL OR
-			IndicadorLimiteCompraCuotas IS NULL OR
-			IndicadorLimiteCompraTransaccion IS NULL OR
-			MarcaFuncionarioNovedadABM IS NULL OR
-			MarcaPlastico IS NULL OR
-			MarcaTarjetaRelacionada IS NULL OR
-			MarcaTarjetaSospechosa IS NULL OR
-			MarcaTarjetaVencida IS NULL OR
-			NoEmpleadoCtaEmpresa IS NULL OR
-			PerfilConsumo IS NULL OR
-			BinTarjetaAnterior IS NULL OR
-			NoTarjetaAnterior IS NULL OR
-			TarjetaAnteriorImprimir IS NULL OR
-			FechaReposicion IS NULL OR
-			NoTarjetaNuevo IS NULL OR
-			CodigoProblemaTarjeta IS NULL OR
-			Denominacion4LineaEmbozado IS NULL OR
-			FechaProceso IS NULL OR
-			Funcionario IS NULL OR
-			Supervisor IS NULL OR
-			Telefono2 IS NULL OR
-			EstadoCivil IS NULL OR
-			Filler1 IS NULL OR
-			Sexo IS NULL OR
-			Telefono1 IS NULL OR
-			NoDocumento IS NULL OR
-			TipoDocumento IS NULL OR
-			BinTarjetaNueva IS NULL OR
-			TarjetaNuevaImprimir IS NULL;
+AltaPuntoVenta
+IndicadorLimiteCompra
+IndicadorLimiteCompraAdelanto
+IndicadorLimiteCompraCuotas
+IndicadorLimiteCompraTransaccion
+MarcaFuncionarioNovedadABM
+MarcaPlastico
+MarcaTarjetaRelacionada
+MarcaTarjetaSospechosa
+MarcaTarjetaVencida
+NoEmpleadoCtaEmpresa
+PerfilConsumo
+BinTarjetaAnterior
+NoTarjetaAnterior
+TarjetaAnteriorImprimir
+FechaReposicion
+NoTarjetaNuevo
+CodigoProblemaTarjeta
+Denominacion4LineaEmbozado
+FechaProceso
+Funcionario
+Supervisor
+Telefono2
+EstadoCivil
+Filler1
+Sexo
+Telefono1
+NoDocumento
+TipoDocumento
+BinTarjetaNueva
+TarjetaNuevaImprimir
 
 
 
-
-Mi jefe quiere que lo hagamos asi mira, que piensas?
+Ayudame a colocar cadauna entre comillas simples y separadas por coma
