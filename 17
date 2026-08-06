@@ -1,1 +1,5 @@
-Se deja de usar el cifrado propio (AES-CBC) y se pasa a usar OpenPGP, un estándar de cifrado ya reconocido en la industria. En la práctica, nuestro proceso cifra el archivo usando la llave pública de la entidad externa (a través de GnuPG, el motor que hay detrás de Kleopatra), y solo ellos pueden abrirlo, usando su llave privada en Kleopatra — la misma herramienta que ya usan en su día a día."
+"- Modificar la consola actual (EncriptacionService/EncriptacionAES) para eliminar la lógica de cifrado AES-CBC, dejándola únicamente para las tareas previas (generar/ubicar el JSON, o lo que corresponda antes del cifrado).
+Modificar el paquete DTSX para que, luego de que la consola genere el archivo, se agregue un paso que invoque GnuPG por línea de comandos (gpg.exe) y cifre el archivo con la llave pública de la entidad externa.
+Instalar y configurar GnuPG en el servidor donde corre el DTSX (agente de SSIS/Integration Services).
+Generar el par de llaves PGP propio e importar la llave pública de la entidad externa al keyring del servidor.
+Adaptar el flujo de compresión ZIP dentro del DTSX para que empaquete el archivo ya cifrado en .gpg en lugar del .json cifrado con AES.
