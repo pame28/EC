@@ -1,35 +1,96 @@
-AltaPuntoVenta
-IndicadorLimiteCompra
-IndicadorLimiteCompraAdelanto
-IndicadorLimiteCompraCuotas
-IndicadorLimiteCompraTransaccion
-MarcaFuncionarioNovedadABM
-MarcaPlastico
-MarcaTarjetaRelacionada
-MarcaTarjetaSospechosa
-MarcaTarjetaVencida
-NoEmpleadoCtaEmpresa
-PerfilConsumo
-BinTarjetaAnterior
-NoTarjetaAnterior
-TarjetaAnteriorImprimir
-FechaReposicion
-NoTarjetaNuevo
-CodigoProblemaTarjeta
-Denominacion4LineaEmbozado
-FechaProceso
-Funcionario
-Supervisor
-Telefono2
-EstadoCivil
-Filler1
-Sexo
-Telefono1
-NoDocumento
-TipoDocumento
-BinTarjetaNueva
-TarjetaNuevaImprimir
+USE [BPTarjetas]
+GO
+/****** Object:  StoredProcedure [db_ws].[usp_WSMovimientosDelDia]    Script Date: 7/8/2026 10:14:14 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- =============================================
+-- Author:		Jorge R. Donaire
+-- Create date: 02/05/2017
+-- Description:	Obtiene la información general del producto
+-- =============================================
+ALTER PROCEDURE [db_ws].[usp_WSMovimientosDelDia]
+	@Equivalente VARCHAR(16)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	
+	DECLARE @NumeroEquivalente AS VARCHAR(16)
+	IF (@Equivalente NOT LIKE '10%')
+	BEGIN
+	    SELECT @NumeroEquivalente = et.Equivalencia
+	    FROM   BandejaATH.dbo.EquivalenciasTarjetas et with(nolock)
+	    WHERE  BandejaATH.dbo.ufn_Hashing(@Equivalente) = et.NumeroTarjetaHash
+	    
+	    IF (@NumeroEquivalente IS NOT NULL)
+	    BEGIN
+	        SET @Equivalente = @NumeroEquivalente
+	    END
+	END		
+	
+	DECLARE @Fecha NVARCHAR(8)
+	SET @Fecha = CONVERT(NVARCHAR(8), GETDATE(),112)--'20170319' 
+	
+	
+	
+	;
+	WITH Transacciones_CTE
+	AS
+	(
+	    SELECT s.TTYPE
+	          ,s.CODIGO_TRANSAC
+	          ,s.MONTO
+	          ,s.MONEDA_TRANSAC
+	          ,s.NOMBRE_COMERCIO
+	          ,s.NUMERO_TARJETA
+	          ,s.HORA
+	          ,S.NO_DOCTO
+	    FROM   SMS.dbo.SMS_CREDITO s with(nolock)
+	    WHERE  s.NUMERO_TARJETA = @Equivalente
+	           AND s.FECHA = @Fecha
+	)	
+	
+	SELECT @Equivalente 'NumeroTarjeta'
+	      ,ETA.BinTarjeta + '******' + ETA.TarjetaImprimir 'TarjetaTruncada'
+	      ,LTRIM(RTRIM(eu.UsuEmailUsuario)) + '@' + LTRIM(RTRIM(eu.UsuEmailDominio)) 
+	       'EMail'
+	      ,RTRIM(LTRIM(EU.NombreUsuario)) + ' ' + RTRIM(LTRIM(Eu.DenominacionCuenta)) 
+	       'NombreTarjeta'
+	      ,CONVERT(NVARCHAR(8), t.HORA,108) 'Hora'
+	      ,CASE TTYPE
+	            WHEN 'S' THEN 'Compras'
+	            WHEN 'R' THEN 'Reverso'
+	            WHEN 'C' THEN 'Retiro'
+	            WHEN 'P' THEN 'Pago'
+	       END 'Tipo'
+	      ,t.NOMBRE_COMERCIO 'Comercio'
+	      ,T.CODIGO_TRANSAC 'Codigo'
+	      ,CASE T.Moneda_Transac
+	            WHEN '340' THEN 'L'
+	            WHEN '840' THEN 'USD'
+	            ELSE T.Moneda_Transac
+	       END 'Moneda'
+	      ,Monto
+	      --,t.NO_DOCTO 'NoAutorizacion'
+	FROM   Transacciones_CTE t with(nolock) --Transacciones recientes 
+	       
+	       INNER JOIN dbo.ETarjetas eta with(nolock)
+	            ON  t.NUMERO_TARJETA = eta.NumeroTarjeta
+	         INNER JOIN dbo.EUsuarios EU with(nolock)
+	            ON  ETA.NoUsuario = EU.NoUsuario   
+	            
+	                
+	                
+	                
+	                
+	                
+	                --SELEC|meroTarjeta = @Equivalente--Información General
+END
 
 
 
-Ayudame a colocar cadauna entre comillas simples y separadas por coma
+
+Como se pureba este SP?
