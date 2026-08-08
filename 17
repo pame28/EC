@@ -1,3 +1,10 @@
-(SELECT TOP 1 e.FechaFinVigencia 
- FROM ETarjetas e WITH(NOLOCK)  
- WHERE e.NoUsuario = ep.NoUsuario)   AS VencimientoPlastico
+-- 1. Ubicar el NoUsuario a partir del número de cuenta o tarjeta
+SELECT ep.NoUsuario, ep.NoCuentaClaro, ep.NoClienteUnico
+FROM EPosicionDiaria ep WITH(NOLOCK)
+WHERE ep.NoCuentaClaro = '0032378498'   -- o filtra por otro campo conocido
+
+-- 2. Ver TODAS las tarjetas asociadas a ese usuario en ETarjetas
+SELECT e.NoUsuario, e.FechaAltaTarjeta, e.FechaFinVigencia, e.*
+FROM ETarjetas e WITH(NOLOCK)
+WHERE e.NoUsuario = '<NoUsuario_obtenido_arriba>'
+ORDER BY e.FechaAltaTarjeta DESC
