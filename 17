@@ -1,7 +1,7 @@
 USE [BandejaVASA]
 GO
 
-/****** Object:  View [dbo].[uvw_CobranzaProductosTC]    Script Date: 8/8/2026 11:58:57 ******/
+/****** Object:  View [dbo].[uvw_SaldosVasa]    Script Date: 8/8/2026 15:52:49 ******/
 SET ANSI_NULLS ON
 GO
 
@@ -9,494 +9,376 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-
-
-
-
-
-
-
-
-
--- ==========================================================
--- Author:		<Elkin Amador Garcia>
--- Create date: <07-12-2015>
--- Description:	<Obtiene los Productos de Tarjetas para el Sistema de Administración de Cobranzas>
--- ==========================================================
--- Modificado por: Angelica López
--- Se agregaron los campos de equivalencia para Tarjeta Empresarial y numero truncado para ambos tipos de tarjeta
--- Modified date: <29-01-2026>
 --==============================================================================================
-CREATE VIEW [dbo].[uvw_CobranzaProductosTC]
+-- Milton D. Canales.	<2015-03-25>
+-- Informacion de los Saldos de TC de los
+-- Clientes a trasladar a BPTarjetas
+-- <2015-11-13> <Se agregaron las TC en estatus Cerrada>
+-- <2015-11-16> <Se agrego el campo NoCuentaClaro>
+--==============================================================================================
+-- Modificado por: Angelica López
+-- Se modifico el estado habilitar de las tarjetas de crédito
+--==============================================================================================
+
+CREATE VIEW [dbo].[uvw_SaldosVasa]
 As
-	WITH Saldos
-AS
-(
-	SELECT *
-	FROM uvw_SaldosVasa WITH(NOLOCK)
-)
-,
-SaldosIntras
-AS
-(	
-	SELECT cp.NoCuentaClaro      
-      --cp.GrupoMovimientos
-         ,(
-			   CASE 
-					WHEN cp.MonedaLiquidar = '840' THEN 'USD'
-					WHEN cp.MonedaLiquidar = '340' THEN 'LPS'
-			   END
-		   ) AS Moneda      
-      ,SUM(CASE WHEN cp.GrupoMovimientos LIKE 'R%' THEN  cp.PlanCuotaCapitalPend * -1 ELSE cp.PlanCuotaCapitalPend END) CapitalPendienteInt      
-	FROM   CuotasPendientes cp WITH(NOLOCK)
-	INNER JOIN EUsuarios e WITH(NOLOCK)--Modificado por ruben milla para excluir tarjetas castigadas.
-	ON e.NoUsuario = cp.NumeroCuenta
-	--No se debe excluir por que al capturador si se reporta.
-	WHERE cp.GrupoMovimientos NOT IN ('CGO','RGO','EXF','REX') --AND cp.NoCuentaClaro='0032378498'	
-	GROUP BY
-		  cp.NoCuentaClaro,
-		   --cp.GrupoMovimientos,
-		   cp.MonedaLiquidar
-	HAVING SUM(CASE WHEN cp.GrupoMovimientos LIKE 'R%' THEN  cp.PlanCuotaCapitalPend * -1 ELSE cp.PlanCuotaCapitalPend END) > 0
-)
-,
-SaldosExtras
-AS
-(	
-	
-	
-	SELECT cp.NoCuentaClaro,
-		   cp.GrupoMovimientos,
-		   (
-			   CASE 
-					WHEN cp.MonedaLiquidar = '840' THEN 'USD'
-					WHEN cp.MonedaLiquidar = '340' THEN 'LPS'
-			   END
-		   )                                Moneda,
-		   SUM(cp.PlanCuotaCapitalPend)     CapitalPendienteEx
-	FROM   CuotasPendientes                cp WITH(NOLOCK) 
-	WHERE  cp.GrupoMovimientos = 'EXF'
-		   AND NOT EXISTS(
-				   SELECT 1
-				   FROM   (
-							  SELECT cp.NoCuentaClaro,                                 
-									 cp.CodigoTransaccion,
-									 cp.CodigoTransaccionRelacion                                 
-							  FROM   CuotasPendientes cp WITH(NOLOCK) 
-							  WHERE  (
-										 EXISTS(
-											 SELECT 1
-											 FROM   CuotasPendientes cp2 WITH(NOLOCK) 
-											 WHERE  cp2.CodigoTransaccion = cp.CodigoTransaccionRelacion
-										 ) --Excluye los RIN y REX
-										 OR EXISTS (
-												SELECT 1
-												FROM   CuotasPendientes cp2 WITH(NOLOCK) 
-												WHERE  cp2.CodigoTransaccionRelacion = 
-													   cp.CodigoTransaccion
-											)
-									 ) --Excluye los extras reversado
-									 AND cp.GrupoMovimientos IN ('EXF', 'REX')
-						  ) AS X
-				   WHERE  x.NoCuentaClaro = cp.NoCuentaClaro
-		   ) --AND cp.NoCuentaClaro='0028293840'
+	With base
+	As
+	(
+		Select
+			  'VASA' Origen
+			  ,a.Cif
+			  ,a.NoCuenta
+			  ,a.NumeroTarjeta
+			  ,a.NombreEmpresa
+			  ,a.Ciclo
+			  ,a.LimiteCredito
+			  ,a.DisponibleRetiroML
+			  ,a.DisponibleCompraML
+			  ,a.DisponibleRetiroUSD
+			  ,a.DisponibleCompraUSD
+			  ,a.FechaUltimaCompraML
+			  ,a.FechaUltimaCompraUSD
+			  ,a.FechaUltimoRetiroML
+			  ,a.FechaUltimoRetiroUSD
+			  ,a.FechaUltimoPagoML
+			  ,a.FechaUltimaPagoUSD
+			  ,a.FechaUltimoMovimiento
+			  ,a.FechaUltimoMantenimiento
+			  ,a.CantidadPagosMN
+			  ,a.CantidadPagosUSD
+			  ,a.PagosIngresadosML
+			  ,a.PagosIngresadosUSD
+			  ,a.FechaMaximaPago
+			  ,a.PagoContadoML
+			  ,a.PagoContadoUSD
+			  ,a.PagoMinimoML
+			  ,a.PagoMinimoUSD
+			  ,a.SaldoInicialML
+			  ,a.SaldoInicialUSD
+			  ,a.SaldoActualML
+			  ,a.SaldoActualUSD
+			  ,a.CiclosVencidosML
+			  ,a.CiclosVencidosUSD
+			  ,a.PagoVencidoML
+			  ,a.PagoVencidoUSD
+			  ,a.SaldoExtraML
+			  ,a.SaldoExtraUSD
+			  ,a.SaldoIntraML
+			  ,a.SaldoIntraUSD
+			  ,a.TasaFinanciacionML
+			  ,a.TasaFinanciacionUSD
+			  ,a.BinTarjeta
+			  ,a.FechaUltimaMora
+			  ,a.HistorialPagoML
+			  ,a.HistorialPagoUSD
+			  ,a.FechaPrimeraCompraUSD
+			  ,a.FechaPrimeraCompraML
+			  ,a.FechaAlta
+			  ,a.FechaActivacion
+			  ,a.FechaExpiracion
+			  ,a.FechaBaja
+			  ,a.EstadoTarjeta
+			  ,a.EstadoCuenta
+			  ,a.FechaUltActualizacionMora
+			  ,Right('0' + Cast(Isnull(a.DiasMoraMN30 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraMN60 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraMN90 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraMN120 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraMasMN120 ,0) As Varchar(2)) ,2)       HistorialMoraMN
+			  ,Right('0' + Cast(Isnull(a.DiasMoraME30 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraME60 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraME90 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraME120 ,0) As Varchar(2)) ,2) +
+			   Right('0' + Cast(Isnull(a.DiasMoraMasME120 ,0) As Varchar(2)) ,2)       HistorialMoraUSD
+			  ,a.DiasMoraMN
+			  ,a.DiasMoraUSD
+			  ,t.TarjetaImprimir
+			  ,a.CategoriaTarjeta
+			  ,a.NoCuentaClaro
+			  -----Campo nuevo 
+			  ,t.BinTarjeta + 'XXXXXX'+t.TarjetaImprimir AS NumTarjetaTruncada
+		From
+			MaestroSaldos a WITH(NOLOCK)
+		Inner Join
+			ETarjetas t  WITH(NOLOCK)
+		On a.NumeroTarjeta = t.NumeroTarjeta
+		Where
+			t.EstadoHabilitar IN ('','I','*','R','U','A','B','E','D','H','G','K','J') )
+	, TarjetaNormales
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base  WITH(NOLOCK)
+		Where EstadoTarjeta = 20
+		And CategoriaTarjeta = '0'
+	)
+	, TarjetaNormalesAdi
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base  WITH(NOLOCK)
+		Where EstadoTarjeta = 20
+		And CategoriaTarjeta = '1'
+	)
+	, TarjetaOrdenNoRenovar
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base a  WITH(NOLOCK)
+		Where EstadoTarjeta = 22
+		And CategoriaTarjeta = '0'
+		And Not Exists( Select 1 From TarjetaNormales B  WITH(NOLOCK) Where a.NoCuenta = b.NoCuenta ) 
+	)
+	, TarjetaOrdenNoRenovarAdi
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base a  WITH(NOLOCK)
+		Where EstadoTarjeta = 22
+		And CategoriaTarjeta = '1'
+		And Not Exists( Select 1 From TarjetaNormales B  WITH(NOLOCK) Where a.NoCuenta = b.NoCuenta ) 
+	)
+	,TarjetasProblemas
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base A  WITH(NOLOCK)
+		Where EstadoTarjeta = 25
+		And CategoriaTarjeta = '0'
+		And Not Exists( Select 1 From TarjetaNormales B WITH(NOLOCK) Where a.NoCuenta = b.NoCuenta ) 
+	)
+	,TarjetasProblemasAdi
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base A  WITH(NOLOCK)
+		Where EstadoTarjeta = 25
+		And CategoriaTarjeta = '1'
+		And Not Exists( Select 1 From TarjetaNormalesAdi c  WITH(NOLOCK) Where a.NoCuenta = c.NoCuenta ) 
+	)
+	,TarjetasCerradas
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base A  WITH(NOLOCK)
+		Where EstadoTarjeta = 29
+		And CategoriaTarjeta = '0'
+		And Not Exists( Select 1 From TarjetaNormales B  WITH(NOLOCK) Where a.NoCuenta = b.NoCuenta ) 
+		And Not Exists( Select 1 From TarjetasProblemas c  WITH(NOLOCK) Where a.NoCuenta = c.NoCuenta ) 
+	)
+	,TarjetasCerradasAdi
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From base A  WITH(NOLOCK)
+		Where EstadoTarjeta = 29
+		And CategoriaTarjeta = '1'
+		And Not Exists( Select 1 From TarjetaNormalesAdi d  WITH(NOLOCK) Where a.NoCuenta = d.NoCuenta ) 
+		And Not Exists( Select 1 From TarjetasProblemasAdi e  WITH(NOLOCK) Where a.NoCuenta = e.NoCuenta ) 
+	)
+	,TarjetasMaxNumeroTarjetaTitular
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetaNormales  WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasNormalesTitular
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetaNormales a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaTitular b  WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
+	,TarjetasMaxNumeroTarjetaAdicional
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetaNormalesAdi  WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasNormalesAdicional
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetaNormalesAdi a  WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaAdicional b  WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
+	-- Orden de No Renovar estado 22
+	,TarjetasMaxNumeroTarjetaTitularNoRenovar
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetaOrdenNoRenovar  WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasNoRenovarTitular
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetaOrdenNoRenovar a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaTitularNoRenovar b  WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
+	,TarjetasMaxNumeroTarjetaAdicionalNoRenovar
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetaOrdenNoRenovarAdi WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasNoRenovarAdicionales
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetaOrdenNoRenovarAdi a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaAdicionalNoRenovar b WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
 
-	GROUP BY
-		   cp.NoCuentaClaro,
-		   cp.GrupoMovimientos,
-		   cp.MonedaLiquidar	
-)
-,
+	,TarjetasMaxNumeroTarjetaTitularProblema
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetasProblemas WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasProblemaTitular
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetasProblemas a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaTitularProblema b WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
+	,TarjetasMaxNumeroTarjetaAdicionalProblema
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetasProblemasAdi WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasProblemasAdicionales
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetasProblemasAdi a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaAdicionalProblema b WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
+	,TarjetasMaxNumeroTarjetaTitularCerrada
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetasCerradas WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasCerradasTitular
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetasCerradas a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaTitularCerrada b WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
+	,TarjetasMaxNumeroTarjetaAdicionalCerrada
+	As
+	(
+		Select NoCuenta, Max(NumeroTarjeta) NumeroTarjeta From TarjetasCerradasAdi WITH(NOLOCK)
+		Group By NoCuenta
+	)
+	,TarjetasCerradasAdicional
+	As
+	(
+		Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+		From TarjetasCerradasAdi a WITH(NOLOCK)
+		Where Exists(Select 1 From TarjetasMaxNumeroTarjetaAdicionalCerrada b WITH(NOLOCK) Where a.NumeroTarjeta = b.NumeroTarjeta)
+	)
 
- CobranzaProductosTC
-AS
-(
-/************************************PRODUCTOS LPS CLIENTES NORMALES*************************************************************************************************************************************/
-		SELECT	 ep.NoUsuario																													NoOperacion
-				,ep.NoCuentaClaro
-				,ep.NoClienteUnico																												CIF
-				,us.NumeroTarjeta																																																								
-				,'LPS'																															Moneda
-				,ep.DiasAtrasoActualML																											DíasMora
-				--,CASE 
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
-				--			 '100' --Activa
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
-				--			 '101' --Sobregirada
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
-				--			 '116' --Mas de 90 dias
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
-				--			 '118' --Arreglode Pago
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
-				--			 '119' --Cobro Judicial
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
-				--			 '117' --Cuentas incobrables
-				--		WHEN eu.EstadoCuenta = '19' THEN
-				--			 '190' --Cuenta Cerrada
-				--		ELSE '100'
-				--	END																															EstadoCuenta
-				,eu.EstadoCuenta																												EstadoCuenta 
-				,us.EstadoTarjeta
-				,us.PagoVencidoML																												SaldoVencido
-				,ep.CapitalpagominimoML																											CapitalVencido																												
-				,ep.PagoMinimoInteresFinanML																									InteresVencido
-				,ep.PagoMinimoCargoML																											CargoVencido
-				,ep.InteresSuspensoFinanciacionML																								InteresAcumulado		
-				,ep.CapitalPagoMinimoML+ep.PagoMinimoCargoML+ep.PagoMinimoInteresFinanML														PagoMinimoPeriodoActual
-				,ep.SaldoUltimaLiquidacionML																									LiquidacionAnterior
-				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
-				,ep.FechaUltimoPagoML																											FechaUltimoPago 
-				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago
-				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)												VencimientoPlastico
-				,ep.SaldoActualML																												SaldoContadoPeriodoActual 
-				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
-						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
-				 END																															Producto																													
-				,ep.FechaVencimientoProxima																										FechaVencimiento
-				,ep.Cartera
-				,eu.CodigoDeptoParticular																										DeptoParticular
-				,ep.CalificacionUsuario																											Clasificacion
-				,ep.TNAInteresConsumoFinanML																									Tasa
-				,ep.GrupoAfinidad																												
-				,ep.ModeloLiquidacion
-				,ep.DisponibleCompraML																											CreditoDisponible
-				,ep.ImporteUltimoPagoML																											MontoUltimoPago
-				,CONVERT(DECIMAL(18, 4),ep.ImporteLimiteCompra*(SELECT p.TasaCambio FROM Parametros p WITH(NOLOCK) ))											LimiteCredito
-				,CASE	WHEN ep.PeriodosImpagosActualML=0 THEN 0
-						ELSE ep.DiasAtrasoActualML/30
-				 END																															CiclosVencidos
-				 --cambio para priorización de colas
-				,ep.SaldoConsumidoML																											SaldoConsumido				
-				--,ep.ImporteCuotasPendienteLiquidacionML																							SaldoIntra
-				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
-				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
-				,0.00																															InteresAcumuladoPeriodo
-				,us.NumTarjetaTruncada                                                                                                          NumTarjetaTruncada
-		FROM EPosicionDiaria ep  WITH(NOLOCK) 
-		INNER JOIN	EUsuarios eu WITH(NOLOCK) 			ON	ep.Nousuario=eu.NoUsuario
-								INNER JOIN Saldos us	WITH(NOLOCK) 	ON	us.NoCuenta=ep.NoUsuario AND us.CategoriaTarjeta='0'
-								LEFT JOIN SaldosExtras se WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='LPS'
-								LEFT JOIN SaldosIntras si WITH(NOLOCK)  ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='LPS'
-								LEFT JOIN parBinProducto p	WITH(NOLOCK) 		ON	ep.CodigoProducto=p.Producto
-		WHERE ep.NumeroTarjeta='0000000000000000'
-		/****************************************************************************************************************************************************************************************/
-
-UNION ALL
-
-		/************************************PRODUCTOS USD CLIENTES NORMALES***************************************************************************************************************************************/
-		SELECT	 ep.NoUsuario																													NoOperacion
-				,ep.NoCuentaClaro
-				,ep.NoClienteUnico																												CIF
-				,us.NumeroTarjeta																																																								
-				,'USD'																															Moneda
-				,ep.DiasAtrasoActualUSD																											DíasMora
-				--,CASE 
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
-				--			 '100' --Activa
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
-				--			 '101' --Sobregirada
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
-				--			 '116' --Mas de 90 dias
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
-				--			 '118' --Arreglode Pago
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
-				--			 '119' --Cobro Judicial
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
-				--			 '117' --Cuentas incobrables
-				--		WHEN eu.EstadoCuenta = '19' THEN
-				--			 '190' --Cuenta Cerrada
-				--		ELSE '100'
-				--	END																															EstadoCuenta
-				,eu.EstadoCuenta																												EstadoCuenta																																	 
-				,us.EstadoTarjeta
-				,us.PagoVencidoUSD																												SaldoVencido
-				,ep.CapitalPagoMinimoUSD																										CapitalVencido																												
-				,ep.PagoMinimoInteresFinanUSD																									InteresVencido
-				,ep.PagoMinimoCargoUSD																											CargoVencido
-				,ep.InteresSuspensoFinanciacionUSD																								InteresAcumulado		
-				,ep.CapitalPagoMinimoUSD+ep.PagoMinimoCargoUSD+ep.PagoMinimoInteresFinanUSD														PagoMinimoPeriodoActual
-				,ep.SaldoUltimaLiquidacionUSD																									LiquidacionAnterior
-				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
-				,ep.FechaUltimoPagoUSD																											FechaUltimoPago 
-				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago
-				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)VencimientoPlastico
-				,ep.SaldoActualUSD																												SaldoContadoPeriodoActual
-				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
-						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
-				 END																															Producto																													
-				,ep.FechaVencimientoProxima																										FechaVencimiento
-				,ep.Cartera
-				,eu.CodigoDeptoParticular																										DeptoParticular
-				,ep.CalificacionUsuario																											Clasificacion
-				,ep.TNAInteresConsumoFinanUSD																									Tasa
-				,ep.GrupoAfinidad																												
-				,ep.ModeloLiquidacion
-				,CONVERT(DECIMAL(18, 4),ep.DisponibleCompraML/(SELECT TasaCambio FROM Parametros P WITH(NOLOCK) ))											CreditoDisponible
-				,ep.ImporteUltimoPagoUSD																										MontoUltimoPago
-				,ep.ImporteLimiteCompra																											LimiteCredito
-				,CASE	WHEN ep.PeriodosImpagosActualUSD=0 THEN 0
-						ELSE ep.DiasAtrasoActualUSD/30
-				 END																															CiclosVencidos
-				 --cambio para priorización de colas
-				 ,ep.SaldoConsumidoUSD																											SaldoConsumido				
-				--,ep.ImporteCuotasPendienteLiquidacionUSD																						SaldoIntra
-				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
-				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
-				,0.00																															InteresAcumuladoPeriodo
-				,us.NumTarjetaTruncada                                                                                                          NumTarjetaTruncada
-		FROM EPosicionDiaria ep WITH(NOLOCK)  INNER JOIN	EUsuarios eu	WITH(NOLOCK) 		ON	ep.Nousuario=eu.NoUsuario
-								INNER JOIN Saldos us WITH(NOLOCK) 		ON	us.NoCuenta=ep.NoUsuario AND us.CategoriaTarjeta='0'
-								LEFT JOIN SaldosExtras se WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='USD'
-								LEFT JOIN SaldosIntras si  WITH(NOLOCK)  ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='USD'
-								LEFT JOIN parBinProducto p		WITH(NOLOCK) 	ON	ep.CodigoProducto=p.Producto
-		WHERE ep.NumeroTarjeta='0000000000000000'
-
-		/***************************************************************************************************************************************************************************************/
-
-UNION ALL
-
-		/************************************PRODUCTOS LPS CLIENTES EMPRESARIALES***************************************************************************************************************/
-		SELECT	 ep.NoUsuario																													NoOperacion
-				,ep.NoCuentaClaro
-				,ep.NoClienteUnico																												CIF
-				,''																																NumeroTarjeta																																																								
-				,'LPS'																															Moneda
-				,ep.DiasAtrasoActualML																											DíasMora
-				--,CASE 
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
-				--			 '100' --Activa
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
-				--			 '101' --Sobregirada
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
-				--			 '116' --Mas de 90 dias
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
-				--			 '118' --Arreglode Pago
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
-				--			 '119' --Cobro Judicial
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
-				--			 '117' --Cuentas incobrables
-				--		WHEN eu.EstadoCuenta = '19' THEN
-				--			 '190' --Cuenta Cerrada
-				--		ELSE '100'
-				--	END																															EstadoCuenta 
-				,eu.EstadoCuenta																												EstadoCuenta
-				,us.Estado_Tarjeta																												EstadoTarjeta
-				,us.Pago_Vencido_ML																												SaldoVencido
-				,ep.CapitalPagoMinimoML																											CapitalVencido																												
-				,ep.PagoMinimoInteresFinanML																									InteresVencido
-				,ep.PagoMinimoCargoML																											CargoVencido
-				,ep.InteresSuspensoFinanciacionML																								InteresAcumulado		
-				,ep.CapitalPagoMinimoML+ep.PagoMinimoCargoML+ep.PagoMinimoInteresFinanML														PagoMinimoPeriodoActual
-				,ep.SaldoUltimaLiquidacionML																									LiquidacionAnterior
-				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
-				,ep.FechaUltimoPagoML																											FechaUltimoPago
-				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago 
-				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)												VencimientoPlastico
-				,ep.SaldoActualML																												SaldoContadoPeriodoActual
-				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
-						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
-				 END																															Producto																													
-				,ep.FechaVencimientoProxima																										FechaVencimiento
-				,ep.Cartera
-				,eu.CodigoDeptoParticular																										DeptoParticular
-				,ep.CalificacionUsuario																											Clasificacion
-				,ep.TNAInteresConsumoFinanML																									Tasa
-				,ep.GrupoAfinidad																												
-				,ep.ModeloLiquidacion
-				,ep.DisponibleCompraML																											CreditoDisponible
-				,ep.ImporteUltimoPagoUSD																										MontoUltimoPago
-				,CONVERT(DECIMAL(18, 4),ep.ImporteLimiteCompra*(SELECT p.TasaCambio FROM Parametros p WITH(NOLOCK) ))											LimiteCredito
-				,CASE	WHEN ep.PeriodosImpagosActualML=0 THEN 0
-						ELSE ep.DiasAtrasoActualML/30
-				 END																															CiclosVencidos
-				 --cambio para priorización de colas
-				,ep.SaldoConsumidoML																											SaldoConsumido				
-				--,ep.ImporteCuotasPendienteLiquidacionML																							SaldoIntra
-				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
-				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
-				,0.00																															InteresAcumuladoPeriodo
-				,''                                                                                                        NumTarjetaTruncada
-		FROM EPosicionDiaria ep INNER JOIN	EUsuarios eu	WITH(NOLOCK) 		ON	ep.Nousuario=eu.NoUsuario
-								INNER JOIN uvw_CobranzasCuentas us	WITH(NOLOCK) 	ON	us.No_Cuenta=ep.NoUsuario 
-								LEFT JOIN SaldosExtras se  WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='LPS'
-								LEFT JOIN SaldosIntras si WITH(NOLOCK)  ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='LPS'
-								LEFT JOIN parBinProducto p	WITH(NOLOCK) 			ON	ep.CodigoProducto=p.Producto
-		WHERE ep.NumeroTarjeta='0000000000000000'
-
-
-
-		/***************************************************************************************************************************************************************************************/
-
-UNION ALL
-
-		/************************************PRODUCTOS USD CLIENTES EMPRESARIALES***************************************************************************************************************/
-		SELECT	 ep.NoUsuario																													NoOperacion
-				,ep.NoCuentaClaro
-				,ep.NoClienteUnico																												CIF
-				,''																																NumeroTarjeta																																																								
-				,'USD'																															Moneda
-				,ep.DiasAtrasoActualUSD																											DíasMora
-				--,CASE 
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
-				--			 '100' --Activa
-				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
-				--			 '101' --Sobregirada
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
-				--			 '116' --Mas de 90 dias
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
-				--			 '118' --Arreglode Pago
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
-				--			 '119' --Cobro Judicial
-				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
-				--			 '117' --Cuentas incobrables
-				--		WHEN eu.EstadoCuenta = '19' THEN
-				--			 '190' --Cuenta Cerrada
-				--		ELSE '100'
-				--	END																															EstadoCuenta
-				,eu.EstadoCuenta																												EstadoCuenta 
-				,us.Estado_Tarjeta																												EstadoTarjeta
-				,us.Pago_Vencido_ME																												SaldoVencido
-				,ep.CapitalPagoMinimoUSD																										CapitalVencido																												
-				,ep.PagoMinimoInteresFinanUSD																									InteresVencido
-				,ep.PagoMinimoCargoUSD																											CargoVencido
-				,ep.InteresSuspensoFinanciacionUSD																								InteresAcumulado		
-				,ep.CapitalPagoMinimoUSD+ep.PagoMinimoCargoUSD+ep.PagoMinimoInteresFinanUSD														PagoMinimoPeriodoActual
-				,ep.SaldoUltimaLiquidacionUSD																									LiquidacionAnterior
-				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
-				,ep.FechaUltimoPagoUSD																											FechaUltimoPago
-				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago 
-				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)												VencimientoPlastico
-				,ep.SaldoActualUSD																												SaldoContadoPeriodoActual
-				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
-						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
-				 END																															Producto																													
-				,ep.FechaVencimientoProxima																										FechaVencimiento
-				,ep.Cartera
-				,eu.CodigoDeptoParticular																										DeptoParticular
-				,ep.CalificacionUsuario																											Clasificacion
-				,ep.TNAInteresConsumoFinanUSD																									Tasa
-				,ep.GrupoAfinidad																												
-				,ep.ModeloLiquidacion
-				,CONVERT(DECIMAL(18, 4),ep.DisponibleCompraML/(SELECT TasaCambio FROM Parametros P WITH(NOLOCK) ))											CreditoDisponible
-				,ep.ImporteUltimoPagoUSD																										MontoUltimoPago
-				,ep.ImporteLimiteCompra																											LimiteCredito
-				,CASE	WHEN ep.PeriodosImpagosActualUSD=0 THEN 0
-						ELSE ep.DiasAtrasoActualUSD/30
-				 END																															CiclosVencidos
-				 --cambio para priorización de colas
-				,ep.SaldoConsumidoUSD																											SaldoConsumido				
-				--,ep.ImporteCuotasPendienteLiquidacionUSD																						SaldoIntra
-				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
-				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
-				,0.00																															InteresAcumuladoPeriodo		
-				,''                                                                                                         NumTarjetaTruncada
-		FROM EPosicionDiaria ep INNER JOIN	EUsuarios eu WITH(NOLOCK) 			ON	ep.Nousuario=eu.NoUsuario
-								INNER JOIN uvw_CobranzasCuentas us	WITH(NOLOCK) 	ON	us.No_Cuenta=ep.NoUsuario 
-								LEFT JOIN SaldosExtras se WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='USD'
-								LEFT JOIN SaldosIntras si  WITH(NOLOCK) ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='USD'
-								LEFT JOIN parBinProducto p WITH(NOLOCK) 				ON	ep.CodigoProducto=p.Producto
-		WHERE ep.NumeroTarjeta='0000000000000000'
-		/****************************************************************************************************************************************************************************************/
-)
-, Productos
-AS(		
-		SELECT 
-				--[NoOperacion]						AS	PROD_NCTA
-				 ROW_NUMBER() OVER(PARTITION BY NoCuentaClaro,Moneda ORDER BY NoCuentaClaro DESC) AS "NoRow" 
-				,CAST([NoCuentaClaro] AS VARCHAR(10))					AS	PROD_NCTA	--NoEquivalente
-				,CAST([CIF] AS VARCHAR(15))								AS	PROD_CIF	--NoEquivalente
-				,CAST([NumeroTarjeta] AS VARCHAR(16))					AS	PROD_NTC	--NoEquivalente
-				,CAST([Moneda] AS VARCHAR(3))							AS	PROD_MONE
-				,CAST([DíasMora] AS INT)								AS	PROD_DIAM
-				,CAST([EstadoCuenta] AS VARCHAR(3))						AS	PROD_STAT	
-				,CAST([EstadoTarjeta] AS VARCHAR(2))					AS	PROD_STATT	--NoEquivalente
-				,CAST([SaldoVencido] AS DECIMAL(18,2))					AS	PROD_SALM	--NoEquivalente
-				,CAST([CapitalVencido] AS DECIMAL(16,2))				AS	PROD_CAPM	
-				,CAST([InteresVencido] AS DECIMAL(16,2))				AS	PROD_INTM
-				,CAST([CargoVencido] AS DECIMAL(16,2))					AS	PROD_CARV	--NoEquivalente
-				,CAST([InteresAcumulado] AS DECIMAL(10,2))				AS	PROD_IMOR
-				,CAST([PagoMinimoPeriodoActual] AS DECIMAL(16,2))		AS	PROD_PAGM
-				,CAST([LiquidacionAnterior] AS DECIMAL(16,2))			AS	PROD_SAUE
-				,CAST([FechaOtorgado] AS DATE)							AS  PROD_FECO
-				,CAST([FechaUltimoPago] AS DATE)						AS	PROD_FULP
-				,CAST([FechaProximoPago] AS DATE)						AS	PROD_FPPA	--NoEquivalente
-				,CAST([VencimientoPlastico] AS DATE)					AS	PROD_FECV
-				,CAST([SaldoContadoPeriodoActual] AS DECIMAL(16,2))		AS	PROD_MCAN
-				,CAST([Producto] AS VARCHAR(37))						AS	PROD_TIPO
-				,CAST([FechaVencimiento] AS DATE)						AS	PROD_FVEN	--NoEquivalente				
-				,CAST([Cartera] AS INT)									AS	PROD_DIAC
-				,CAST([DeptoParticular] AS VARCHAR(3))					AS	PROD_DTOP	--NoEquivalente
-				,CAST([Clasificacion] AS VARCHAR(1))					AS	PROD_CLAS	--NoEquivalente
-				,CAST([Tasa] AS DECIMAL(7,4))							AS	PROD_TASA
-				,CAST([GrupoAfinidad] AS INT)							AS	PROD_GRAF	--NoEquivalente
-				,CAST([ModeloLiquidacion] AS INT)						AS	PROD_MODL	--NoEquivalente
-				,CAST([CreditoDisponible] AS DECIMAL(16,2))				AS	PROD_CRED	--NoEquivalente
-				,CAST([MontoUltimoPago] AS DECIMAL(18,2))				AS	PROD_MOUP
-				,CAST([LimiteCredito] AS DECIMAL(16,2))					AS	PROD_MNTO
-				,CAST([CiclosVencidos] AS INT)							AS	PROD_CVEN	--NoEquivalente
-				--cambio para priorización de colas
-				,CAST([SaldoConsumido] AS DECIMAL(18,2))				AS	PROD_SCON
-				,CAST([SaldoIntra] AS DECIMAL(18,2))					AS	PROD_SINT
-				,CAST([SaldoExtra] AS DECIMAL(18,2))					AS	PROD_SEXF
-				,CAST([InteresAcumuladoPeriodo] AS DECIMAL(18,2))		AS	PROD_IACP	
-				,CAST([NumTarjetaTruncada] AS VARCHAR(20))		        AS	PROD_NUMTC	--NoTarjetaTruncada
-		FROM	CobranzaProductosTC  WITH(NOLOCK) ) 
-
-		SELECT [PROD_NCTA]
-			,[PROD_CIF]
-			,[PROD_NTC]
-			,[PROD_MONE]
-			,[PROD_DIAM]
-			,[PROD_STAT]
-			,[PROD_STATT]
-			,[PROD_SALM]
-			,[PROD_CAPM]
-			,[PROD_INTM]
-			,[PROD_CARV]
-			,[PROD_IMOR]
-			,[PROD_PAGM]
-			,[PROD_SAUE]
-			,[PROD_FECO]
-			,[PROD_FPPA]
-			,[PROD_FULP]
-			,[PROD_FECV]
-			,[PROD_MCAN]
-			,[PROD_TIPO]
-			,[PROD_FVEN]
-			,[PROD_DIAC]
-			,[PROD_DTOP]
-			,[PROD_CLAS]
-			,[PROD_TASA]
-			,[PROD_GRAF]
-			,[PROD_MODL]
-			,[PROD_CRED]
-			,[PROD_MOUP]
-			,[PROD_MNTO]
-			,[PROD_CVEN]
-			--cambio para priorización de colas
-			,[PROD_SCON]
-			,[PROD_SINT]
-			,[PROD_SEXF]
-			,[PROD_IACP]
-			,PROD_NUMTC
-		FROM PRODUCTOS WITH(NOLOCK) 
-		WHERE NoRow=1
-
-
-
-
-
-
-
-
-
-
-
-
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetasNormalesTitular WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetasNormalesAdicional WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetasProblemaTitular WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetasProblemasAdicionales WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetaOrdenNoRenovar WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetaOrdenNoRenovarAdi WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetasCerradasTitular WITH(NOLOCK)
+		Union All
+	Select Origen,	Cif,	NoCuenta,	NumeroTarjeta,	NombreEmpresa,	Ciclo,	LimiteCredito,	DisponibleRetiroML,	DisponibleCompraML,	DisponibleRetiroUSD,	DisponibleCompraUSD,	FechaUltimaCompraML,	FechaUltimaCompraUSD,	FechaUltimoRetiroML,	FechaUltimoRetiroUSD,	FechaUltimoPagoML,
+		FechaUltimaPagoUSD,	FechaUltimoMovimiento,	FechaUltimoMantenimiento,	CantidadPagosMN,	CantidadPagosUSD,	PagosIngresadosML,	PagosIngresadosUSD,	FechaMaximaPago,	PagoContadoML,	PagoContadoUSD,	PagoMinimoML,	PagoMinimoUSD,	SaldoInicialML,	SaldoInicialUSD,	SaldoActualML,	SaldoActualUSD,
+		CiclosVencidosML,	CiclosVencidosUSD,	PagoVencidoML,	PagoVencidoUSD,	SaldoExtraML,	SaldoExtraUSD,	SaldoIntraML,	SaldoIntraUSD,	TasaFinanciacionML,	TasaFinanciacionUSD,	BinTarjeta,	FechaUltimaMora,	HistorialPagoML,	HistorialPagoUSD,	FechaPrimeraCompraUSD,	FechaPrimeraCompraML,	FechaAlta,	FechaActivacion,	
+		FechaExpiracion,	FechaBaja,	EstadoTarjeta,	EstadoCuenta,	FechaUltActualizacionMora,	HistorialMoraMN,	HistorialMoraUSD,	DiasMoraMN,	DiasMoraUSD,	TarjetaImprimir,	CategoriaTarjeta,	NoCuentaClaro,	NumTarjetaTruncada 
+	From TarjetasCerradasAdicional WITH(NOLOCK)
 GO
 
 
-
-
-
-Necesito saber de donde viene este campo [PROD_SALM]
