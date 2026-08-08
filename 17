@@ -1,10 +1,502 @@
--- 1. Ubicar el NoUsuario a partir del número de cuenta o tarjeta
-SELECT ep.NoUsuario, ep.NoCuentaClaro, ep.NoClienteUnico
-FROM EPosicionDiaria ep WITH(NOLOCK)
-WHERE ep.NoCuentaClaro = '0032378498'   -- o filtra por otro campo conocido
+USE [BandejaVASA]
+GO
 
--- 2. Ver TODAS las tarjetas asociadas a ese usuario en ETarjetas
-SELECT e.NoUsuario, e.FechaAltaTarjeta, e.FechaFinVigencia, e.*
-FROM ETarjetas e WITH(NOLOCK)
-WHERE e.NoUsuario = '<NoUsuario_obtenido_arriba>'
-ORDER BY e.FechaAltaTarjeta DESC
+/****** Object:  View [dbo].[uvw_CobranzaProductosTC]    Script Date: 8/8/2026 11:58:57 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+
+
+
+
+
+
+
+-- ==========================================================
+-- Author:		<Elkin Amador Garcia>
+-- Create date: <07-12-2015>
+-- Description:	<Obtiene los Productos de Tarjetas para el Sistema de Administración de Cobranzas>
+-- ==========================================================
+-- Modificado por: Angelica López
+-- Se agregaron los campos de equivalencia para Tarjeta Empresarial y numero truncado para ambos tipos de tarjeta
+-- Modified date: <29-01-2026>
+--==============================================================================================
+CREATE VIEW [dbo].[uvw_CobranzaProductosTC]
+As
+	WITH Saldos
+AS
+(
+	SELECT *
+	FROM uvw_SaldosVasa WITH(NOLOCK)
+)
+,
+SaldosIntras
+AS
+(	
+	SELECT cp.NoCuentaClaro      
+      --cp.GrupoMovimientos
+         ,(
+			   CASE 
+					WHEN cp.MonedaLiquidar = '840' THEN 'USD'
+					WHEN cp.MonedaLiquidar = '340' THEN 'LPS'
+			   END
+		   ) AS Moneda      
+      ,SUM(CASE WHEN cp.GrupoMovimientos LIKE 'R%' THEN  cp.PlanCuotaCapitalPend * -1 ELSE cp.PlanCuotaCapitalPend END) CapitalPendienteInt      
+	FROM   CuotasPendientes cp WITH(NOLOCK)
+	INNER JOIN EUsuarios e WITH(NOLOCK)--Modificado por ruben milla para excluir tarjetas castigadas.
+	ON e.NoUsuario = cp.NumeroCuenta
+	--No se debe excluir por que al capturador si se reporta.
+	WHERE cp.GrupoMovimientos NOT IN ('CGO','RGO','EXF','REX') --AND cp.NoCuentaClaro='0032378498'	
+	GROUP BY
+		  cp.NoCuentaClaro,
+		   --cp.GrupoMovimientos,
+		   cp.MonedaLiquidar
+	HAVING SUM(CASE WHEN cp.GrupoMovimientos LIKE 'R%' THEN  cp.PlanCuotaCapitalPend * -1 ELSE cp.PlanCuotaCapitalPend END) > 0
+)
+,
+SaldosExtras
+AS
+(	
+	
+	
+	SELECT cp.NoCuentaClaro,
+		   cp.GrupoMovimientos,
+		   (
+			   CASE 
+					WHEN cp.MonedaLiquidar = '840' THEN 'USD'
+					WHEN cp.MonedaLiquidar = '340' THEN 'LPS'
+			   END
+		   )                                Moneda,
+		   SUM(cp.PlanCuotaCapitalPend)     CapitalPendienteEx
+	FROM   CuotasPendientes                cp WITH(NOLOCK) 
+	WHERE  cp.GrupoMovimientos = 'EXF'
+		   AND NOT EXISTS(
+				   SELECT 1
+				   FROM   (
+							  SELECT cp.NoCuentaClaro,                                 
+									 cp.CodigoTransaccion,
+									 cp.CodigoTransaccionRelacion                                 
+							  FROM   CuotasPendientes cp WITH(NOLOCK) 
+							  WHERE  (
+										 EXISTS(
+											 SELECT 1
+											 FROM   CuotasPendientes cp2 WITH(NOLOCK) 
+											 WHERE  cp2.CodigoTransaccion = cp.CodigoTransaccionRelacion
+										 ) --Excluye los RIN y REX
+										 OR EXISTS (
+												SELECT 1
+												FROM   CuotasPendientes cp2 WITH(NOLOCK) 
+												WHERE  cp2.CodigoTransaccionRelacion = 
+													   cp.CodigoTransaccion
+											)
+									 ) --Excluye los extras reversado
+									 AND cp.GrupoMovimientos IN ('EXF', 'REX')
+						  ) AS X
+				   WHERE  x.NoCuentaClaro = cp.NoCuentaClaro
+		   ) --AND cp.NoCuentaClaro='0028293840'
+
+	GROUP BY
+		   cp.NoCuentaClaro,
+		   cp.GrupoMovimientos,
+		   cp.MonedaLiquidar	
+)
+,
+
+ CobranzaProductosTC
+AS
+(
+/************************************PRODUCTOS LPS CLIENTES NORMALES*************************************************************************************************************************************/
+		SELECT	 ep.NoUsuario																													NoOperacion
+				,ep.NoCuentaClaro
+				,ep.NoClienteUnico																												CIF
+				,us.NumeroTarjeta																																																								
+				,'LPS'																															Moneda
+				,ep.DiasAtrasoActualML																											DíasMora
+				--,CASE 
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
+				--			 '100' --Activa
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
+				--			 '101' --Sobregirada
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
+				--			 '116' --Mas de 90 dias
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
+				--			 '118' --Arreglode Pago
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
+				--			 '119' --Cobro Judicial
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
+				--			 '117' --Cuentas incobrables
+				--		WHEN eu.EstadoCuenta = '19' THEN
+				--			 '190' --Cuenta Cerrada
+				--		ELSE '100'
+				--	END																															EstadoCuenta
+				,eu.EstadoCuenta																												EstadoCuenta 
+				,us.EstadoTarjeta
+				,us.PagoVencidoML																												SaldoVencido
+				,ep.CapitalpagominimoML																											CapitalVencido																												
+				,ep.PagoMinimoInteresFinanML																									InteresVencido
+				,ep.PagoMinimoCargoML																											CargoVencido
+				,ep.InteresSuspensoFinanciacionML																								InteresAcumulado		
+				,ep.CapitalPagoMinimoML+ep.PagoMinimoCargoML+ep.PagoMinimoInteresFinanML														PagoMinimoPeriodoActual
+				,ep.SaldoUltimaLiquidacionML																									LiquidacionAnterior
+				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
+				,ep.FechaUltimoPagoML																											FechaUltimoPago 
+				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago
+				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)												VencimientoPlastico
+				,ep.SaldoActualML																												SaldoContadoPeriodoActual 
+				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
+						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
+				 END																															Producto																													
+				,ep.FechaVencimientoProxima																										FechaVencimiento
+				,ep.Cartera
+				,eu.CodigoDeptoParticular																										DeptoParticular
+				,ep.CalificacionUsuario																											Clasificacion
+				,ep.TNAInteresConsumoFinanML																									Tasa
+				,ep.GrupoAfinidad																												
+				,ep.ModeloLiquidacion
+				,ep.DisponibleCompraML																											CreditoDisponible
+				,ep.ImporteUltimoPagoML																											MontoUltimoPago
+				,CONVERT(DECIMAL(18, 4),ep.ImporteLimiteCompra*(SELECT p.TasaCambio FROM Parametros p WITH(NOLOCK) ))											LimiteCredito
+				,CASE	WHEN ep.PeriodosImpagosActualML=0 THEN 0
+						ELSE ep.DiasAtrasoActualML/30
+				 END																															CiclosVencidos
+				 --cambio para priorización de colas
+				,ep.SaldoConsumidoML																											SaldoConsumido				
+				--,ep.ImporteCuotasPendienteLiquidacionML																							SaldoIntra
+				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
+				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
+				,0.00																															InteresAcumuladoPeriodo
+				,us.NumTarjetaTruncada                                                                                                          NumTarjetaTruncada
+		FROM EPosicionDiaria ep  WITH(NOLOCK) 
+		INNER JOIN	EUsuarios eu WITH(NOLOCK) 			ON	ep.Nousuario=eu.NoUsuario
+								INNER JOIN Saldos us	WITH(NOLOCK) 	ON	us.NoCuenta=ep.NoUsuario AND us.CategoriaTarjeta='0'
+								LEFT JOIN SaldosExtras se WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='LPS'
+								LEFT JOIN SaldosIntras si WITH(NOLOCK)  ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='LPS'
+								LEFT JOIN parBinProducto p	WITH(NOLOCK) 		ON	ep.CodigoProducto=p.Producto
+		WHERE ep.NumeroTarjeta='0000000000000000'
+		/****************************************************************************************************************************************************************************************/
+
+UNION ALL
+
+		/************************************PRODUCTOS USD CLIENTES NORMALES***************************************************************************************************************************************/
+		SELECT	 ep.NoUsuario																													NoOperacion
+				,ep.NoCuentaClaro
+				,ep.NoClienteUnico																												CIF
+				,us.NumeroTarjeta																																																								
+				,'USD'																															Moneda
+				,ep.DiasAtrasoActualUSD																											DíasMora
+				--,CASE 
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
+				--			 '100' --Activa
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
+				--			 '101' --Sobregirada
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
+				--			 '116' --Mas de 90 dias
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
+				--			 '118' --Arreglode Pago
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
+				--			 '119' --Cobro Judicial
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
+				--			 '117' --Cuentas incobrables
+				--		WHEN eu.EstadoCuenta = '19' THEN
+				--			 '190' --Cuenta Cerrada
+				--		ELSE '100'
+				--	END																															EstadoCuenta
+				,eu.EstadoCuenta																												EstadoCuenta																																	 
+				,us.EstadoTarjeta
+				,us.PagoVencidoUSD																												SaldoVencido
+				,ep.CapitalPagoMinimoUSD																										CapitalVencido																												
+				,ep.PagoMinimoInteresFinanUSD																									InteresVencido
+				,ep.PagoMinimoCargoUSD																											CargoVencido
+				,ep.InteresSuspensoFinanciacionUSD																								InteresAcumulado		
+				,ep.CapitalPagoMinimoUSD+ep.PagoMinimoCargoUSD+ep.PagoMinimoInteresFinanUSD														PagoMinimoPeriodoActual
+				,ep.SaldoUltimaLiquidacionUSD																									LiquidacionAnterior
+				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
+				,ep.FechaUltimoPagoUSD																											FechaUltimoPago 
+				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago
+				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)VencimientoPlastico
+				,ep.SaldoActualUSD																												SaldoContadoPeriodoActual
+				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
+						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
+				 END																															Producto																													
+				,ep.FechaVencimientoProxima																										FechaVencimiento
+				,ep.Cartera
+				,eu.CodigoDeptoParticular																										DeptoParticular
+				,ep.CalificacionUsuario																											Clasificacion
+				,ep.TNAInteresConsumoFinanUSD																									Tasa
+				,ep.GrupoAfinidad																												
+				,ep.ModeloLiquidacion
+				,CONVERT(DECIMAL(18, 4),ep.DisponibleCompraML/(SELECT TasaCambio FROM Parametros P WITH(NOLOCK) ))											CreditoDisponible
+				,ep.ImporteUltimoPagoUSD																										MontoUltimoPago
+				,ep.ImporteLimiteCompra																											LimiteCredito
+				,CASE	WHEN ep.PeriodosImpagosActualUSD=0 THEN 0
+						ELSE ep.DiasAtrasoActualUSD/30
+				 END																															CiclosVencidos
+				 --cambio para priorización de colas
+				 ,ep.SaldoConsumidoUSD																											SaldoConsumido				
+				--,ep.ImporteCuotasPendienteLiquidacionUSD																						SaldoIntra
+				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
+				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
+				,0.00																															InteresAcumuladoPeriodo
+				,us.NumTarjetaTruncada                                                                                                          NumTarjetaTruncada
+		FROM EPosicionDiaria ep WITH(NOLOCK)  INNER JOIN	EUsuarios eu	WITH(NOLOCK) 		ON	ep.Nousuario=eu.NoUsuario
+								INNER JOIN Saldos us WITH(NOLOCK) 		ON	us.NoCuenta=ep.NoUsuario AND us.CategoriaTarjeta='0'
+								LEFT JOIN SaldosExtras se WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='USD'
+								LEFT JOIN SaldosIntras si  WITH(NOLOCK)  ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='USD'
+								LEFT JOIN parBinProducto p		WITH(NOLOCK) 	ON	ep.CodigoProducto=p.Producto
+		WHERE ep.NumeroTarjeta='0000000000000000'
+
+		/***************************************************************************************************************************************************************************************/
+
+UNION ALL
+
+		/************************************PRODUCTOS LPS CLIENTES EMPRESARIALES***************************************************************************************************************/
+		SELECT	 ep.NoUsuario																													NoOperacion
+				,ep.NoCuentaClaro
+				,ep.NoClienteUnico																												CIF
+				,''																																NumeroTarjeta																																																								
+				,'LPS'																															Moneda
+				,ep.DiasAtrasoActualML																											DíasMora
+				--,CASE 
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
+				--			 '100' --Activa
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
+				--			 '101' --Sobregirada
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
+				--			 '116' --Mas de 90 dias
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
+				--			 '118' --Arreglode Pago
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
+				--			 '119' --Cobro Judicial
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
+				--			 '117' --Cuentas incobrables
+				--		WHEN eu.EstadoCuenta = '19' THEN
+				--			 '190' --Cuenta Cerrada
+				--		ELSE '100'
+				--	END																															EstadoCuenta 
+				,eu.EstadoCuenta																												EstadoCuenta
+				,us.Estado_Tarjeta																												EstadoTarjeta
+				,us.Pago_Vencido_ML																												SaldoVencido
+				,ep.CapitalPagoMinimoML																											CapitalVencido																												
+				,ep.PagoMinimoInteresFinanML																									InteresVencido
+				,ep.PagoMinimoCargoML																											CargoVencido
+				,ep.InteresSuspensoFinanciacionML																								InteresAcumulado		
+				,ep.CapitalPagoMinimoML+ep.PagoMinimoCargoML+ep.PagoMinimoInteresFinanML														PagoMinimoPeriodoActual
+				,ep.SaldoUltimaLiquidacionML																									LiquidacionAnterior
+				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
+				,ep.FechaUltimoPagoML																											FechaUltimoPago
+				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago 
+				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)												VencimientoPlastico
+				,ep.SaldoActualML																												SaldoContadoPeriodoActual
+				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
+						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
+				 END																															Producto																													
+				,ep.FechaVencimientoProxima																										FechaVencimiento
+				,ep.Cartera
+				,eu.CodigoDeptoParticular																										DeptoParticular
+				,ep.CalificacionUsuario																											Clasificacion
+				,ep.TNAInteresConsumoFinanML																									Tasa
+				,ep.GrupoAfinidad																												
+				,ep.ModeloLiquidacion
+				,ep.DisponibleCompraML																											CreditoDisponible
+				,ep.ImporteUltimoPagoUSD																										MontoUltimoPago
+				,CONVERT(DECIMAL(18, 4),ep.ImporteLimiteCompra*(SELECT p.TasaCambio FROM Parametros p WITH(NOLOCK) ))											LimiteCredito
+				,CASE	WHEN ep.PeriodosImpagosActualML=0 THEN 0
+						ELSE ep.DiasAtrasoActualML/30
+				 END																															CiclosVencidos
+				 --cambio para priorización de colas
+				,ep.SaldoConsumidoML																											SaldoConsumido				
+				--,ep.ImporteCuotasPendienteLiquidacionML																							SaldoIntra
+				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
+				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
+				,0.00																															InteresAcumuladoPeriodo
+				,''                                                                                                        NumTarjetaTruncada
+		FROM EPosicionDiaria ep INNER JOIN	EUsuarios eu	WITH(NOLOCK) 		ON	ep.Nousuario=eu.NoUsuario
+								INNER JOIN uvw_CobranzasCuentas us	WITH(NOLOCK) 	ON	us.No_Cuenta=ep.NoUsuario 
+								LEFT JOIN SaldosExtras se  WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='LPS'
+								LEFT JOIN SaldosIntras si WITH(NOLOCK)  ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='LPS'
+								LEFT JOIN parBinProducto p	WITH(NOLOCK) 			ON	ep.CodigoProducto=p.Producto
+		WHERE ep.NumeroTarjeta='0000000000000000'
+
+
+
+		/***************************************************************************************************************************************************************************************/
+
+UNION ALL
+
+		/************************************PRODUCTOS USD CLIENTES EMPRESARIALES***************************************************************************************************************/
+		SELECT	 ep.NoUsuario																													NoOperacion
+				,ep.NoCuentaClaro
+				,ep.NoClienteUnico																												CIF
+				,''																																NumeroTarjeta																																																								
+				,'USD'																															Moneda
+				,ep.DiasAtrasoActualUSD																											DíasMora
+				--,CASE 
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada <> 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0  THEN 
+				--			 '100' --Activa
+				--		WHEN eu.EstadoCuenta = '10' AND eu.CuentaSobregirada = 'S' AND (ep.DiasMoraML + ep.DiasMoraUSD) = 0 THEN 
+				--			 '101' --Sobregirada
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 6 Then--(p.DiasMoraML >= 90 OR p.DiasMoraUSD >= 90) THEN 
+				--			 '116' --Mas de 90 dias
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 8 Then
+				--			 '118' --Arreglode Pago
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 9 THEN 
+				--			 '119' --Cobro Judicial
+				--		WHEN eu.EstadoCuenta = '11' AND eu.SubEstado = 7 THEN
+				--			 '117' --Cuentas incobrables
+				--		WHEN eu.EstadoCuenta = '19' THEN
+				--			 '190' --Cuenta Cerrada
+				--		ELSE '100'
+				--	END																															EstadoCuenta
+				,eu.EstadoCuenta																												EstadoCuenta 
+				,us.Estado_Tarjeta																												EstadoTarjeta
+				,us.Pago_Vencido_ME																												SaldoVencido
+				,ep.CapitalPagoMinimoUSD																										CapitalVencido																												
+				,ep.PagoMinimoInteresFinanUSD																									InteresVencido
+				,ep.PagoMinimoCargoUSD																											CargoVencido
+				,ep.InteresSuspensoFinanciacionUSD																								InteresAcumulado		
+				,ep.CapitalPagoMinimoUSD+ep.PagoMinimoCargoUSD+ep.PagoMinimoInteresFinanUSD														PagoMinimoPeriodoActual
+				,ep.SaldoUltimaLiquidacionUSD																									LiquidacionAnterior
+				,(SELECT top 1 min(e.FechaAltaTarjeta) FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)											FechaOtorgado
+				,ep.FechaUltimoPagoUSD																											FechaUltimoPago
+				,ep.FechaVenceUltimaLiquidacion																									FechaProximoPago 
+				,(SELECT top 1 e.FechaFinVigencia FROM ETarjetas e WITH(NOLOCK)  WHERE e.NoUsuario=ep.NoUsuario)												VencimientoPlastico
+				,ep.SaldoActualUSD																												SaldoContadoPeriodoActual
+				,CASE	WHEN p.Producto IS NULL THEN ep.CodigoProducto
+						ELSE ep.CodigoProducto+'-'+p.DescEmisor																	
+				 END																															Producto																													
+				,ep.FechaVencimientoProxima																										FechaVencimiento
+				,ep.Cartera
+				,eu.CodigoDeptoParticular																										DeptoParticular
+				,ep.CalificacionUsuario																											Clasificacion
+				,ep.TNAInteresConsumoFinanUSD																									Tasa
+				,ep.GrupoAfinidad																												
+				,ep.ModeloLiquidacion
+				,CONVERT(DECIMAL(18, 4),ep.DisponibleCompraML/(SELECT TasaCambio FROM Parametros P WITH(NOLOCK) ))											CreditoDisponible
+				,ep.ImporteUltimoPagoUSD																										MontoUltimoPago
+				,ep.ImporteLimiteCompra																											LimiteCredito
+				,CASE	WHEN ep.PeriodosImpagosActualUSD=0 THEN 0
+						ELSE ep.DiasAtrasoActualUSD/30
+				 END																															CiclosVencidos
+				 --cambio para priorización de colas
+				,ep.SaldoConsumidoUSD																											SaldoConsumido				
+				--,ep.ImporteCuotasPendienteLiquidacionUSD																						SaldoIntra
+				,isnull(si.CapitalPendienteInt,0.00)																							SaldoIntra
+				,isnull(se.CapitalPendienteEx,0.00)																								SaldoExtra
+				,0.00																															InteresAcumuladoPeriodo		
+				,''                                                                                                         NumTarjetaTruncada
+		FROM EPosicionDiaria ep INNER JOIN	EUsuarios eu WITH(NOLOCK) 			ON	ep.Nousuario=eu.NoUsuario
+								INNER JOIN uvw_CobranzasCuentas us	WITH(NOLOCK) 	ON	us.No_Cuenta=ep.NoUsuario 
+								LEFT JOIN SaldosExtras se WITH(NOLOCK)  ON se.NoCuentaClaro=ep.NoCuentaClaro AND se.Moneda='USD'
+								LEFT JOIN SaldosIntras si  WITH(NOLOCK) ON si.NoCuentaClaro=ep.NoCuentaClaro AND si.Moneda='USD'
+								LEFT JOIN parBinProducto p WITH(NOLOCK) 				ON	ep.CodigoProducto=p.Producto
+		WHERE ep.NumeroTarjeta='0000000000000000'
+		/****************************************************************************************************************************************************************************************/
+)
+, Productos
+AS(		
+		SELECT 
+				--[NoOperacion]						AS	PROD_NCTA
+				 ROW_NUMBER() OVER(PARTITION BY NoCuentaClaro,Moneda ORDER BY NoCuentaClaro DESC) AS "NoRow" 
+				,CAST([NoCuentaClaro] AS VARCHAR(10))					AS	PROD_NCTA	--NoEquivalente
+				,CAST([CIF] AS VARCHAR(15))								AS	PROD_CIF	--NoEquivalente
+				,CAST([NumeroTarjeta] AS VARCHAR(16))					AS	PROD_NTC	--NoEquivalente
+				,CAST([Moneda] AS VARCHAR(3))							AS	PROD_MONE
+				,CAST([DíasMora] AS INT)								AS	PROD_DIAM
+				,CAST([EstadoCuenta] AS VARCHAR(3))						AS	PROD_STAT	
+				,CAST([EstadoTarjeta] AS VARCHAR(2))					AS	PROD_STATT	--NoEquivalente
+				,CAST([SaldoVencido] AS DECIMAL(18,2))					AS	PROD_SALM	--NoEquivalente
+				,CAST([CapitalVencido] AS DECIMAL(16,2))				AS	PROD_CAPM	
+				,CAST([InteresVencido] AS DECIMAL(16,2))				AS	PROD_INTM
+				,CAST([CargoVencido] AS DECIMAL(16,2))					AS	PROD_CARV	--NoEquivalente
+				,CAST([InteresAcumulado] AS DECIMAL(10,2))				AS	PROD_IMOR
+				,CAST([PagoMinimoPeriodoActual] AS DECIMAL(16,2))		AS	PROD_PAGM
+				,CAST([LiquidacionAnterior] AS DECIMAL(16,2))			AS	PROD_SAUE
+				,CAST([FechaOtorgado] AS DATE)							AS  PROD_FECO
+				,CAST([FechaUltimoPago] AS DATE)						AS	PROD_FULP
+				,CAST([FechaProximoPago] AS DATE)						AS	PROD_FPPA	--NoEquivalente
+				,CAST([VencimientoPlastico] AS DATE)					AS	PROD_FECV
+				,CAST([SaldoContadoPeriodoActual] AS DECIMAL(16,2))		AS	PROD_MCAN
+				,CAST([Producto] AS VARCHAR(37))						AS	PROD_TIPO
+				,CAST([FechaVencimiento] AS DATE)						AS	PROD_FVEN	--NoEquivalente				
+				,CAST([Cartera] AS INT)									AS	PROD_DIAC
+				,CAST([DeptoParticular] AS VARCHAR(3))					AS	PROD_DTOP	--NoEquivalente
+				,CAST([Clasificacion] AS VARCHAR(1))					AS	PROD_CLAS	--NoEquivalente
+				,CAST([Tasa] AS DECIMAL(7,4))							AS	PROD_TASA
+				,CAST([GrupoAfinidad] AS INT)							AS	PROD_GRAF	--NoEquivalente
+				,CAST([ModeloLiquidacion] AS INT)						AS	PROD_MODL	--NoEquivalente
+				,CAST([CreditoDisponible] AS DECIMAL(16,2))				AS	PROD_CRED	--NoEquivalente
+				,CAST([MontoUltimoPago] AS DECIMAL(18,2))				AS	PROD_MOUP
+				,CAST([LimiteCredito] AS DECIMAL(16,2))					AS	PROD_MNTO
+				,CAST([CiclosVencidos] AS INT)							AS	PROD_CVEN	--NoEquivalente
+				--cambio para priorización de colas
+				,CAST([SaldoConsumido] AS DECIMAL(18,2))				AS	PROD_SCON
+				,CAST([SaldoIntra] AS DECIMAL(18,2))					AS	PROD_SINT
+				,CAST([SaldoExtra] AS DECIMAL(18,2))					AS	PROD_SEXF
+				,CAST([InteresAcumuladoPeriodo] AS DECIMAL(18,2))		AS	PROD_IACP	
+				,CAST([NumTarjetaTruncada] AS VARCHAR(20))		        AS	PROD_NUMTC	--NoTarjetaTruncada
+		FROM	CobranzaProductosTC  WITH(NOLOCK) ) 
+
+		SELECT [PROD_NCTA]
+			,[PROD_CIF]
+			,[PROD_NTC]
+			,[PROD_MONE]
+			,[PROD_DIAM]
+			,[PROD_STAT]
+			,[PROD_STATT]
+			,[PROD_SALM]
+			,[PROD_CAPM]
+			,[PROD_INTM]
+			,[PROD_CARV]
+			,[PROD_IMOR]
+			,[PROD_PAGM]
+			,[PROD_SAUE]
+			,[PROD_FECO]
+			,[PROD_FPPA]
+			,[PROD_FULP]
+			,[PROD_FECV]
+			,[PROD_MCAN]
+			,[PROD_TIPO]
+			,[PROD_FVEN]
+			,[PROD_DIAC]
+			,[PROD_DTOP]
+			,[PROD_CLAS]
+			,[PROD_TASA]
+			,[PROD_GRAF]
+			,[PROD_MODL]
+			,[PROD_CRED]
+			,[PROD_MOUP]
+			,[PROD_MNTO]
+			,[PROD_CVEN]
+			--cambio para priorización de colas
+			,[PROD_SCON]
+			,[PROD_SINT]
+			,[PROD_SEXF]
+			,[PROD_IACP]
+			,PROD_NUMTC
+		FROM PRODUCTOS WITH(NOLOCK) 
+		WHERE NoRow=1
+
+
+
+
+
+
+
+
+
+
+
+
+GO
+
+
+
+
+
+Necesito saber de donde viene este campo [PROD_SALM]
