@@ -1,56 +1,15 @@
-USE [CobranzasBP_Procesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_InsertarIdGrupoProductosBandejaSaldos]    Script Date: 10/8/2026 11:42:01 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
--- ================================================================
--- Create:		Elkin Amador
--- Create date: 10/06/2016
--- Description:	Inserta el Id de grupo de productos parametrizados  en la Bandeja de SaldosDeProductos
--- ================================================================
-ALTER PROCEDURE [dbo].[usp_InsertarIdGrupoProductosBandejaSaldos]
-AS
-BEGIN
-    SET NOCOUNT ON;	
-	
-	--Inserta el Código de Grupo de productos en la Bandeja de SaldosDeProductos
-	--SELECT *
-	UPDATE SaldosDeProductos SET  idgruBanca=gp.idgruBanca
-	FROM GruposBancas gb INNER JOIN GruposProductos gp ON gb.idgruBanca=gp.idgruBanca
-						 INNER JOIN SaldosDeProductos sp ON sp.salSectorId=gp.idProducto
-						
-	--------------------------------------------------------------------------------------------
-
-	--Inserta el Código de Grupo de Sub Productos en la Bandeja de SaldosDeProductos	
-	UPDATE SaldosDeProductos SET idgruBanProducto=gsp.idgruBanProducto		
-	FROM GruposBancas gb INNER JOIN GruposProductos gp With(Nolock) ON gb.idgruBanca=gp.idgruBanca
-						 INNER JOIN GruposBancasProductos gbp With(Nolock) ON  gp.idgruBanca=gbp.idgruBanca
-						 INNER JOIN GruposSubProductos gsp With(Nolock) ON gbp.idgruBanProducto=gsp.idgruBanProducto						 
-						 INNER JOIN SaldosDeProductos sp With(Nolock)
-							ON  sp.idgruBanca = gbp.idgruBanca
-							AND (
-									CASE 
-										 WHEN sp.salTipoProducto = 'TDC' THEN LTRIM(RTRIM(sp.salSubtipoProductoId))
-										 ELSE LTRIM(RTRIM(sp.salTipoProductoId)) + LTRIM(RTRIM(sp.salSubtipoProductoId))
-									END
-								) = gsp.idSubProducto 
-
-	--order by salSectorId desc
-	--------------------------------------------------------------------------------------------
-	
-END
+SELECT * FROM GruposBancas gb 
+INNER JOIN GruposProductos gp ON gb.idgruBanca=gp.idgruBanca
+INNER JOIN SaldosDeProductos sp ON sp.salSectorId=gp.idProducto
+WHERE sp.salSectorId ='MC0101'
 
 
 
+SELECT * FROM SaldosDeProductos sp 
+INNER JOIN GruposProductos gp ON sp.salSectorId=gp.idProducto
+INNER JOIN GruposBancas gb ON gp.idgruBanca=gb.idgruBanca
+WHERE sp.salSectorId ='MC0101'
 
 
 
-
-
-
-
-
-Aqui hace la actualización.. pero segun veo no la hizo para todos .. porque?
+estos dos queries son lo mismo? no afecta?
