@@ -1,130 +1,56 @@
 USE [CobranzasBP_Procesador]
 GO
-
-/****** Object:  View [dbo].[uvw_SaldosDeProductos]    Script Date: 10/8/2026 11:08:18 ******/
+/****** Object:  StoredProcedure [dbo].[usp_InsertarIdGrupoProductosBandejaSaldos]    Script Date: 10/8/2026 11:42:01 ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
-
--- ==========================================================
--- Author:		<Elkin Amador Garcia>
--- Create date: <06-05-2015>
--- Description:	<Genera la data para Insertar en la tabla de Saldos de los productos>
--- ==========================================================
--- Modificado por: Angelica López
--- Se agregaron los campos de MontominimopagoLPS, MontominimopagoUSD, NumeroTruncadoTDC
--- REQ BH-49593 Iniciativa 33314 - Bot de Voz Cobranzas
--- Modified date: <30-01-2026>
---==============================================================================================
-
-CREATE VIEW [dbo].[uvw_SaldosDeProductos]
+-- ================================================================
+-- Create:		Elkin Amador
+-- Create date: 10/06/2016
+-- Description:	Inserta el Id de grupo de productos parametrizados  en la Bandeja de SaldosDeProductos
+-- ================================================================
+ALTER PROCEDURE [dbo].[usp_InsertarIdGrupoProductosBandejaSaldos]
 AS
-		SELECT 
-				PROD_EMPR                      salEmpresaId,
-				null						   idgruBanca,
-				null						   idgruBanProducto,
-				PROD_SECO					   salSectorId,
-				PROD_TIPOC					   salTipoProductoId,
-				PROD_STIPC					   salSubtipoProductoId,								
-				PROD_NCTA                      salNumeroOperacion,
-				PROD_NTC					   salNumeroOperacionTC,
-				isnull(PROD_TIPO,0)            salTipoProducto,
-				isnull(PROD_STIP,0)            salSubTipoProducto,
-				PROD_SECDPR                    salProductoDesc,
-				isnull(PROD_SDEPR,'OTROS')	   salSubTipoProductoDesc,
-				PROD_MONE                      salMoneda,				
-				PROD_MNTO                      salMontoOtorgado,
-				PROD_FECO                      salFechaOtorgado,
-				PROD_FECV                      salFechaVencimiento,--Agregar
-				PROD_CAPV                      salCapitalVigente,--Agregar
-				PROD_INTV                      salInteresVigente,
-				PROD_CAPM                      salCapitalMora,
-				PROD_INTM                      salInteresMora,--Agregar
-				PROD_CARV					   salCargoVencido,
-				PROD_SEGM                      salSeguroMora,
-				PROD_DIAM                      salDiasMora,
-				PROD_CUOM                      salCuotasMora,
-				PROD_MCAN                      salMontoCancelacion, --Agregar
-				PROD_FVEN					   salVencimientoPlastico,	--Agregar			
-				PROD_FPAG                      salFormaPago,
-				PROD_FLIM                      salFechaLimitePago,
-				PROD_FULP                      salFechaUltimoPago,
-				PROD_FPPA					   salFechaProximoPago,
-				PROD_MOUP                      salMontoUltimoPago,
-				PROD_TASA                      salTasaInteres,--Agregar
-				PROD_GRAF					   salGrupoAfinidad,
-				PROD_MODL					   salModeloLiquidacion,	
-				PROD_ORIG                      salOrigenCartera,
-				PROD_STAT					   salEstadoOperacion,
-				PROD_STATT					   salEstadoTC, --Agregar Nuevo
-				--PROD_BLOQ                      salProBloque,
-				PROD_PAGM                      salPagoMinimo,
-				PROD_SAUE                      salSaldoUltimoEC, --Agregar
-				PROD_PAGR                      salPagosRealizados,
-				PROD_CRED                      salCreditoDisponible,
-				PROD_DIAC                      salDiaCorte,
-				PROD_CLAS					   salClasificacion,
-				--PROD_OFIC					   salOficial,
-				PROD_VIMP                      salValorImpacto,
-				PROD_VCON                      salValorCongelamiento,
-				PROD_PIMP                      salPorcionImpacto,
-				PROD_PCON                      salPorcionCongelamiento,
-				PROD_CODP                      salCodigoProducto,
-				--SUBSTRING(PROD_STAT, 1, 1)     salEstado,
-				--PROD_STAT					   salEstado,				
-				--''							   salProNumeroOperacionAnterior,				
-				PROD_CVEN					   salCiclosVencidos,
-				PROD_SECE					   salSectorEmpresa,
-				PROD_IMOR                      salInteresMoratorio, --Agregar
-				PROD_NCON                      salInteresNoContabilizado,
-				--PROD_STIPC                     salSubCodigoProducto,				
-				PROD_CATE                      salCategoria,
-				PROD_VRESE                     salVReserva,
-				PROD_PRESE                     salPReserva,
-				PROD_CONG					   salCongelado,
-				PROD_POSI					   salPosicion,
-				0                              salCapitalVigenteAnterior,
-				0                              salInteresVigenteAnterior,
-				0                              salCapitalMoraAnterior,
-				0                              salInteresMoraAnterior,
-				0                              salSeguroMoraAnterior,
-				/****campos para requerimiento 15-2017*******/
-				PROD_SCON					   salTotalConsumoTC,
-				PROD_SINT					   salSaldoIntraTC,
-				PROD_SEXF					   salSaldoExtraTC,
-				PROD_IACP					   salInteresAcumuladoPeriodoTC,
-				/********************************************/
-				/****campos para requerimiento 207-2017*******/
-				PROD_OFIC					   salFuncionario,
-				/********************************************/						
-				/****campos para Funcionario Recuperación*******/
-				PROD_FUNC1					   salOficial,
-				PROD_AGEN					   salAgencia,
-				PROD_FETP					   salFechaCastigo									
-				/********************************************/
-				/***REQ BH-49593 Iniciativa 33314 - Bot de Voz Cobranzas******/
-				,PROD_NUMTC                    SalNumTruncado
-				,PROD_PAGOMINLPS               SalMontominimopagoLPS
-				,PROD_PAGOMINUSD               SalMontominimopagoUSD
-				/********************************************/
-		FROM   dbo.uvw_BandejaDeProductos WITH(NOLOCK)		
-		WHERE  ( CASE WHEN PROD_TIPO <> 'SOB' AND PROD_STAT='02' THEN 0 ELSE 1 END)=1
-		--WHERE	( CASE WHEN PROD_TIPO IN ('PTM','CAR','GAR') AND PROD_STAT='02' THEN 0 ELSE 1 END)=1
+BEGIN
+    SET NOCOUNT ON;	
+	
+	--Inserta el Código de Grupo de productos en la Bandeja de SaldosDeProductos
+	--SELECT *
+	UPDATE SaldosDeProductos SET  idgruBanca=gp.idgruBanca
+	FROM GruposBancas gb INNER JOIN GruposProductos gp ON gb.idgruBanca=gp.idgruBanca
+						 INNER JOIN SaldosDeProductos sp ON sp.salSectorId=gp.idProducto
+						
+	--------------------------------------------------------------------------------------------
 
+	--Inserta el Código de Grupo de Sub Productos en la Bandeja de SaldosDeProductos	
+	UPDATE SaldosDeProductos SET idgruBanProducto=gsp.idgruBanProducto		
+	FROM GruposBancas gb INNER JOIN GruposProductos gp With(Nolock) ON gb.idgruBanca=gp.idgruBanca
+						 INNER JOIN GruposBancasProductos gbp With(Nolock) ON  gp.idgruBanca=gbp.idgruBanca
+						 INNER JOIN GruposSubProductos gsp With(Nolock) ON gbp.idgruBanProducto=gsp.idgruBanProducto						 
+						 INNER JOIN SaldosDeProductos sp With(Nolock)
+							ON  sp.idgruBanca = gbp.idgruBanca
+							AND (
+									CASE 
+										 WHEN sp.salTipoProducto = 'TDC' THEN LTRIM(RTRIM(sp.salSubtipoProductoId))
+										 ELSE LTRIM(RTRIM(sp.salTipoProductoId)) + LTRIM(RTRIM(sp.salSubtipoProductoId))
+									END
+								) = gsp.idSubProducto 
 
-
-
-GO
+	--order by salSectorId desc
+	--------------------------------------------------------------------------------------------
+	
+END
 
 
 
 
 
 
-EN TIENDO QUE SIEMPRE VENDRAN NULL idgruBanca,
-				null						   idgruBanProducto,
 
-Estos dis campos?
+
+
+
+
+Aqui hace la actualización.. pero segun veo no la hizo para todos .. porque?
