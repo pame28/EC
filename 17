@@ -1,15 +1,456 @@
-SELECT * FROM GruposBancas gb 
-INNER JOIN GruposProductos gp ON gb.idgruBanca=gp.idgruBanca
-INNER JOIN SaldosDeProductos sp ON sp.salSectorId=gp.idProducto
-WHERE sp.salSectorId ='MC0101'
+USE [CobranzasBP_Procesador]
+GO
+
+/****** Object:  View [dbo].[uvw_BandejaDeProductos]    Script Date: 10/8/2026 19:16:52 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
 
 
 
-SELECT * FROM SaldosDeProductos sp 
-INNER JOIN GruposProductos gp ON sp.salSectorId=gp.idProducto
-INNER JOIN GruposBancas gb ON gp.idgruBanca=gb.idgruBanca
-WHERE sp.salSectorId ='MC0101'
+-- ====================================================================================================================
+-- Author:		<Elkin Amador Garcia>
+-- Create date: <04-05-2015>
+-- Description:	<Consolida los Productos del AS400 con los de VASA>
+-- ====================================================================================================================
+-- Modificado por: Angelica López
+-- Se agregaron los campos de MontominimopagoLPS, MontominimopagoUSD, NumeroTruncadoTDC
+-- REQ BH-49593 Iniciativa 33314 - Bot de Voz Cobranzas
+-- Modified date: <30-01-2026>
+--==================================================================================================================
+
+CREATE View [dbo].[uvw_BandejaDeProductos]
+As
+-- Consulta que une los productos de préstamos, sobregiros y tarjeta de crédito
+
+With ProductosAS As (
+					
+					Select Row_Number() Over(
+                                   Partition By
+                                   Case 
+                                        When PROD_TIPO = '0'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '1'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '2'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '3'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '4'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '7'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '8'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '9'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_TIPO = '11'
+                                   And PROD_STIP Is Not Null Then 'PTM'
+                                       When PROD_STIP = ' ' Then (
+											Select Top 1 Substring(byDescripcion, 1, 3)
+											From   OtrosProductos WITH(NOLOCK)
+											Where  Cast(idBYTE As Varchar(11)) = A.PROD_TIPO
+                                       )
+                                       Else PROD_TIPO
+                                       End,
+                                   Case 
+                                        When PROD_SECO = 1
+                                   And LTrim(RTrim(PROD_TIPO)) <> '7' Then 'CON'
+                                       When PROD_SECO = 2
+                                   And LTrim(RTrim(PROD_TIPO)) <> '7' Then 'VIV'
+                                       When PROD_SECO = 3
+                                   And LTrim(RTrim(PROD_TIPO)) <> '7' Then 'PYM'
+                                       When PROD_SECO = 4
+                                   And LTrim(RTrim(PROD_TIPO)) <> '7' Then 'EMP'
+                                       When PROD_SECO = 5
+                                   AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'COR'
+                                       WHEN PROD_SECO = 6
+                                   AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'PYM'
+                                       WHEN LTRIM(RTRIM(PROD_TIPO)) = '7' THEN 
+                                       'MCR'
+                                       WHEN PROD_SECO = 7
+                                   AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'PYP'
+                                       WHEN PROD_SECO = 8
+                                   AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'EEP'
+                                       WHEN PROD_SECO = 99
+                                   AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'OTR'
+                                       WHEN LTRIM(RTRIM(PROD_TIPO)) = 'SOB'
+                                   AND LTRIM(RTRIM(PROD_TIPO)) <>
+                                       '7' THEN 'SOB'
+                                       ELSE 'ERR'
+                                       END,
+                                   A.PROD_NCTA,
+                                   A.PROD_MONE 
+                                   ORDER BY
+                                   A.PROD_EMPR DESC
+                               ) RowNo,
+							   CONVERT(INT, LTRIM(RTRIM(ISNULL(PROD_EMPR, '1')))) AS PROD_EMPR,
+							    CAST(ISNULL(PROD_SECO, 0) AS VARCHAR(6)) AS PROD_SECO,
+								A.PROD_TIPO AS PROD_TIPOC,
+								PROD_STIP AS PROD_STIPC,
+								PROD_NCTA,
+								''	AS PROD_NTC,							   
+                               CASE 
+                                    WHEN PROD_TIPO = '0'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '1'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '2'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '3'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '4'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '7'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '8'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '11'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_TIPO = '9'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+							WHEN PROD_TIPO = '12'
+                        AND PROD_STIP IS NOT NULL THEN 'PTM'
+                            WHEN PROD_STIP = ' ' THEN (
+                                SELECT TOP 1 SUBSTRING(byDescripcion, 1, 3)
+                                FROM   OtrosProductos WITH(NOLOCK)
+                                WHERE  CAST(idBYTE AS VARCHAR(11)) = A.PROD_TIPO
+                            )
+                            ELSE PROD_TIPO
+                            END AS PROD_TIPO,						
+                        CASE 
+                             WHEN PROD_SECO = 1
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'CON'
+                            WHEN PROD_SECO = 2
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'VIV'
+                            WHEN PROD_SECO = 3
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'PYM'
+                            WHEN PROD_SECO = 4
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'EMP'
+                            WHEN PROD_SECO = 5
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'COR'
+                            WHEN PROD_SECO = 6
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'PYM'
+                            WHEN LTRIM(RTRIM(PROD_TIPO)) = '7' THEN 'MCR'
+                            WHEN PROD_SECO = 7
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'PYP'
+                            WHEN PROD_SECO = 8
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'EEP'
+                            WHEN PROD_SECO = 99
+                        AND LTRIM(RTRIM(PROD_TIPO)) <> '7' THEN 'OTR'
+                            WHEN LTRIM(RTRIM(PROD_TIPO)) = 'SOB'
+                        AND LTRIM(RTRIM(PROD_TIPO)) <>
+                            '7' THEN 'SOB'
+                            ELSE 'ERR'
+                            END AS PROD_STIP,						
+						CASE							
+							WHEN A.PRODCADSEC='' THEN 'OTROS'
+							ELSE A.PRODCADSEC 
+						END AS PROD_SECDPR,
+						CASE
+							WHEN ISNULL(A.PRODPRDEPR,'')='' THEN   (SELECT TOP 1 byDescripcion FROM OtrosProductos WHERE  CAST(idBYTE AS VARCHAR(11)) = A.PROD_TIPO)
+							ELSE ISNULL(A.PRODPRDEPR,'OTROS')
+						END AS PROD_SDEPR,
+                        CASE PROD_MONE
+                             WHEN 'L' THEN 'LPS'
+                             WHEN 'US$' THEN 'USD'
+                             ELSE 'ERR'
+                        END AS PROD_MONE,
+                        ISNULL(PROD_MNTO, 0) AS PROD_MNTO,
+                        CASE PROD_FECO
+                             WHEN '0' THEN '1900-01-01'
+                             ELSE ISNULL(CAST(CONVERT(VARCHAR(8), PROD_FECO) AS DATE), '1900-01-01')
+                        END AS PROD_FECO,
+                        CASE PROD_FECV
+                             WHEN '0' THEN '1900-01-01'
+							 WHEN '99999999' THEN '1900-01-01'
+                             ELSE ISNULL(CAST(CONVERT(VARCHAR(8), PROD_FECV) AS DATE), '1900-01-01')
+                        END AS PROD_FECV,
+                        ISNULL(PROD_CAPV, 0) AS PROD_CAPV,
+                        ISNULL(PROD_INTV, 0) AS PROD_INTV,
+                        ISNULL(PROD_CAPM, 0) AS PROD_CAPM,
+                        ISNULL(PROD_INTM, 0) AS PROD_INTM,
+						0	AS PROD_CARV,
+                        ISNULL(PROD_SEGM, 0) AS PROD_SEGM,
+                        ISNULL(PROD_DIAM, 0) AS PROD_DIAM,
+                        ISNULL(PROD_CUOM, 0) AS PROD_CUOM,
+                        ISNULL(PROD_MCAN, 0) AS PROD_MCAN,
+						'1900-01-01' AS PROD_FVEN,         
+                        ISNULL(PROD_FPAG, '') AS PROD_FPAG,
+                        CASE PROD_FLIM
+                             WHEN '0' THEN '1900-01-01'
+                             ELSE ISNULL(CAST(CONVERT(VARCHAR(8), PROD_FLIM) AS DATE), '1900-01-01')
+                        END AS PROD_FLIM,
+                        CASE PROD_FULP
+                             WHEN '0' THEN '1900-01-01'
+							 WHEN '99999999' THEN '1900-01-01'
+                             ELSE ISNULL(CAST(CONVERT(VARCHAR(8), PROD_FULP) AS DATE), '1900-01-01')
+                        END AS PROD_FULP,
+						CASE PROD_FPPA
+							WHEN '0' THEN '1900-01-01'
+                            ELSE ISNULL(CAST(CONVERT(VARCHAR(8), PROD_FPPA) AS DATE), '1900-01-01')
+                        END AS PROD_FPPA,
+						--ISNULL(PROD_FPPA,0)  AS PROD_FPPA, 
+                        ISNULL(PROD_MOUP, 0) AS PROD_MOUP,
+                        ISNULL(PROD_TASA, 0) AS PROD_TASA,
+						'' AS PROD_GRAF,
+						'' AS PROD_MODL,
+                        CASE ISNULL(PROD_EMPR, '1')
+                             WHEN 'SOB' THEN 'PRO'
+                             WHEN '1' THEN 'PRO'
+                             WHEN '2' THEN 'ADM'
+                             WHEN '3' THEN 'CAS'
+                             WHEN '4' THEN 'ADQ'
+                             ELSE 'PRO'
+                        END AS PROD_ORIG,
+                        CONVERT(
+                            CHAR(3),
+                            CASE LEN(ISNULL(PROD_STAT, '01'))
+                                 WHEN 1 THEN '0' + ISNULL(PROD_STAT, '1')
+                                 ELSE ISNULL(PROD_STAT, '01')
+                            END
+                        ) AS PROD_STAT,
+						'' AS PROD_STATT,
+                        ISNULL(PROD_PAGM, 0) AS PROD_PAGM,
+                        ISNULL(PROD_SAUE, 0) AS PROD_SAUE,
+                        ISNULL(PROD_PAGR, 0) AS PROD_PAGR,
+                        ISNULL(PROD_CRED, 0) AS PROD_CRED,
+                        ISNULL(PROD_DIAC, 0) AS PROD_DIAC,
+						'' AS PROD_CLAS,
+                        ISNULL(PROD_OFIC, '0') AS PROD_OFIC,
+                        /*ISNULL(SUBSTRING(CONVERT(VARCHAR, PROD_STAT), 1, 1), '1') 
+                        AS PROD_STAT,*/
+                        ISNULL(PROD_VIMP, 0) AS PROD_VIMP,
+                        ISNULL(PROD_VCON, 0) AS PROD_VCON,
+                        ISNULL(PROD_PIMP, 0) AS PROD_PIMP,
+                        ISNULL(PROD_PCON, 0) AS PROD_PCON,
+                        CASE 
+                             WHEN PROD_STIP = ' ' THEN PROD_TIPO
+                             ELSE ISNULL(PROD_CODP, 0)
+                        END AS PROD_CODP,
+                        0 AS PROD_CVEN,
+                        CONVERT(VARCHAR(4), PROD_SECE) AS PROD_SECE,                        
+                        ISNULL(PROD_IMOR, 0) AS PROD_IMOR,
+                        ISNULL(PROD_NCON, 0) AS PROD_NCON,                        
+                        ISNULL(PROD_CATE, '') AS PROD_CATE,
+                        ISNULL(PROD_VRESE, 0) AS PROD_VRESE,
+                        ISNULL(PROD_PRESE, 0) AS PROD_PRESE,
+                        ISNULL(A.CONGELADO,'') AS PROD_CONG,
+						ISNULL(A.POSICION,'') AS PROD_POSI,
+						/****campos para requerimiento 15-2017*******/
+						0							PROD_SCON,
+						0							PROD_SINT,
+						0							PROD_SEXF,
+						0							PROD_IACP,
+						/********************************************/
+						/****campos para Funcionario Recuperación*******/
+						ISNULL(PROD_AGEN,0) AS PROD_AGEN,
+						ISNULL(PROD_FUNC1,0) AS PROD_FUNC1,
+						CASE PROD_FETP
+							WHEN '0' THEN '1900-01-01'
+                            ELSE ISNULL(CAST(CONVERT(VARCHAR(8), PROD_FETP) AS DATE), '1900-01-01')
+                        END AS PROD_FETP
+						/*******REQ BH-49593*************************************/
+						,'' PROD_NUMTC
+						,ISNULL(PROD_PAGOMINLPS,0) AS PROD_PAGOMINLPS
+						,ISNULL(PROD_PAGOMINUSD,0) AS PROD_PAGOMINUSD
+						/********************************************/
+                        FROM BandejaPTM_Procesador.dbo.PRODUCTOS_PTM AS A WITH(NOLOCK)	
+                        WHERE (PROD_EMPR IS NOT NULL)
+						AND PROD_STAT NOT IN ('60','61','62','64')
+                        AND  ISDATE(CAST([PROD_FECO] AS VARCHAR(8))) = 1
+                        AND (PROD_EMPR IN (1, 2, 3,''))
+                        AND NOT EXISTS 
+                            (
+                                SELECT 1
+                                FROM   BandejaPTM_Procesador.dbo.PRODUCTOS_PTM--BandejaDeProductos 
+                                       bdp  WITH(NOLOCK)
+                                WHERE  bdp.PROD_NCTA = A.PROD_NCTA
+                                GROUP BY
+                                       PROD_TIPO,
+                                       PROD_NCTA,
+                                       PROD_MONE,
+                                       PROD_EMPR
+                                HAVING (COUNT(*) > 1)
+                            ) 
+	)
+
+	SELECT 
+				PROD_EMPR
+				,PROD_SECO
+				,PROD_TIPOC
+				,PROD_STIPC
+				,PROD_NCTA
+				,PROD_NTC
+				,PROD_TIPO
+				,PROD_STIP
+				,PROD_SECDPR
+				,PROD_SDEPR
+				,PROD_MONE
+				,PROD_MNTO
+				,PROD_FECO
+				,PROD_FECV
+				,PROD_CAPV
+				,PROD_INTV
+				,PROD_CAPM
+				,PROD_INTM
+				,PROD_CARV
+				,PROD_SEGM
+				,PROD_DIAM
+				,PROD_CUOM
+				,PROD_MCAN
+				,PROD_FVEN
+				,PROD_FPAG
+				,PROD_FLIM
+				,PROD_FULP
+				,PROD_FPPA
+				,PROD_MOUP
+				,PROD_TASA
+				,PROD_GRAF
+				,PROD_MODL
+				,PROD_ORIG
+				,PROD_STAT
+				,PROD_STATT
+				,PROD_PAGM
+				,PROD_SAUE
+				,PROD_PAGR
+				,PROD_CRED
+				,PROD_DIAC
+				,PROD_CLAS
+				,PROD_OFIC
+				,PROD_VIMP
+				,PROD_VCON
+				,PROD_PIMP
+				,PROD_PCON
+				,PROD_CODP
+				,PROD_CVEN
+				,PROD_SECE
+				,PROD_IMOR
+				,PROD_NCON
+				,PROD_CATE
+				,PROD_VRESE
+				,PROD_PRESE
+				,PROD_CONG
+				,PROD_POSI
+				/****campos para requerimiento 15-2017*******/
+				,PROD_SCON
+				,PROD_SINT
+				,PROD_SEXF
+				,PROD_IACP
+				/********************************************/
+				/****campos para Funcionario Recuperación*******/
+				,PROD_AGEN
+				,PROD_FUNC1
+				,PROD_FETP
+				/********************************************/
+				/***REQ BH-49593 Iniciativa 33314 - Bot de Voz Cobranzas******/
+				,PROD_NUMTC
+				,PROD_PAGOMINLPS
+				,PROD_PAGOMINUSD
+	FROM ProductosAS WITH(NOLOCK)	
+UNION ALL
+	SELECT				 
+				CASE WHEN
+				PROD_GRAF IN ('10','22') OR PROD_MODL='900' THEN '3'
+				ELSE	'1'
+				END																				AS PROD_EMPR
+				,SUBSTRING(PROD_TIPO,0,7)														AS PROD_SECO
+				,SUBSTRING(PROD_TIPO,0,7)														AS PROD_TIPOC
+				,SUBSTRING(PROD_TIPO,0,7)														AS PROD_STIPC
+				,PROD_NCTA
+				,PROD_NTC
+				,'TDC'																			AS PROD_TIPO
+				,'TDC'																			AS PROD_STIP
+				,SUBSTRING(PROD_TIPO,8,37)														AS PROD_SECDPR
+				,PROD_TIPO																		AS PROD_SDEPR
+				,PROD_MONE
+				,ISNULL(PROD_MNTO, 0)															AS PROD_MNTO
+				,CASE PROD_FECO
+					WHEN '' THEN '1900-01-01'
+					ELSE PROD_FECO
+				 END																			AS PROD_FECO
+				,CASE PROD_FECV
+					WHEN '' THEN '1900-01-01'
+					ELSE PROD_FECV
+				END																				AS PROD_FECV
+				,ISNULL(PROD_CAPM,0)															AS PROD_CAPV
+				,0																				AS PROD_INTV
+				,ISNULL(PROD_SALM, 0)															AS PROD_CAPM
+				,ISNULL(PROD_INTM, 0)															AS PROD_INTM
+				,ISNULL(PROD_CARV,0)															AS PROD_CARV
+				,0																				AS PROD_SEGM
+				,ISNULL(PROD_DIAM, 0)															AS PROD_DIAM
+				,0																				AS PROD_CUOM
+				,ISNULL(PROD_MCAN, 0)															AS PROD_MCAN
+				,CASE PROD_FVEN
+					WHEN '' THEN '1900-01-01'
+					ELSE PROD_FVEN
+				END																				AS PROD_FVEN
+				,''																				AS PROD_FPAG
+				,'1900-01-01'																	AS PROD_FLIM
+				,CASE PROD_FULP
+					WHEN '' THEN '1900-01-01'
+					ELSE PROD_FULP
+				END																				AS PROD_FULP
+				,PROD_FPPA																		AS PROD_FPPA
+				,ISNULL(PROD_MOUP, 0)															AS PROD_MOUP
+				,ISNULL(PROD_TASA, 0)															AS PROD_TASA
+				,PROD_GRAF
+				,PROD_MODL
+				,CASE WHEN
+				PROD_GRAF IN ('10','22') OR PROD_MODL='900' THEN 'CAS'
+				ELSE	'PRO'
+				END																				AS PROD_ORIG
+				,PROD_STAT
+				,PROD_STATT																		
+				,ISNULL(PROD_PAGM, 0)															AS PROD_PAGM
+				,ISNULL(PROD_SAUE, 0)															AS PROD_SAUE
+				,0																				AS PROD_PAGR
+				,ISNULL(PROD_CRED, 0)															AS PROD_CRED
+				,ISNULL(PROD_DIAC, 0)															AS PROD_DIAC
+				,PROD_CLAS
+				,''																				AS PROD_OFIC
+				,0																				AS PROD_VIMP
+				,0																				AS PROD_VCON
+				,0																				AS PROD_PIMP
+				,0																				AS PROD_PCON
+				,0																				AS PROD_CODP
+				,PROD_CVEN
+				,'VASA'																			AS PROD_SECE
+				,PROD_IMOR
+				,0																				AS PROD_NCON
+				,''																				AS PROD_CATE
+				,0																				AS PROD_VRESE
+				,0																				AS PROD_PRESE
+				,''																				AS PROD_CONG
+				,''																				AS PROD_POSI
+				/****campos para requerimiento 15-2017*******/
+				,PROD_SCON
+				,PROD_SINT
+				,PROD_SEXF
+				,PROD_IACP
+				/********************************************/
+				/****campos para Funcionario Recuperación*******/
+				,0  AS PROD_AGEN
+				,0  AS PROD_FUNC1
+				,'1900-01-01' AS PROD_FETP
+				/********************************************/
+				/*******REQ BH-49593*************************************/
+				,ISNULL(PROD_NUMTC,'') PROD_NUMTC
+				,0 AS PROD_PAGOMINLPS
+				,0 AS PROD_PAGOMINUSD
+						/********************************************/
+	FROM BandejaTC_Procesador.dbo.PRODUCTOS_TC WITH(NOLOCK)
+	WHERE PROD_STAT<>'19'
+
+
+GO
 
 
 
-estos dos queries son lo mismo? no afecta?
+
+
+
+Necesito saber de donde toma el campo PROD_PAGM
