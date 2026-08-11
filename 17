@@ -1,6 +1,303 @@
 USE [CobranzasBP_Procesador]
 GO
 
+/****** Object:  View [dbo].[uvw_BandejaDeClientes]    Script Date: 11/8/2026 16:38:01 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+-- ==========================================================
+-- Author:		<Elkin Amador Garcia>
+-- Create date: <10-12-2015>
+-- Description:	<Consolida los Clientes del AS400 con los de VASA>
+-- ==========================================================
+
+CREATE VIEW [dbo].[uvw_BandejaDeClientes]
+AS
+-- Consulta que une los clientes de préstamos, sobregiros y tarjeta de crédito 14322 IDE y CIF ATH 14615 y CIF VASA 14805
+
+
+--Nuevo paso para los clientes de TC que vienen duplicados
+	WITH SinDuplicarTC
+	AS
+	(
+	SELECT	*
+	FROM   (
+	           SELECT ROW_NUMBER() OVER(PARTITION BY cct.CLIE_CIF	ORDER BY cct.CLIE_FECA DESC) AS Row
+						,cct.[CLIE_CIF]
+						,cct.[CLIE_IDEN]
+						,cct.[CLIE_TIPD]
+						,cct.[CLIE_NAME]
+						,cct.[CLIE_TEL1]
+						,cct.[CLIE_TEL2]
+						,cct.[CLIE_DIR1]
+						,cct.[CLIE_DIR2]
+						,cct.[CLIE_FAX]
+						,cct.[CLIE_MAIL]
+						,cct.[CLIE_TIPP]
+						,cct.[CLIE_NACI]
+						,cct.[CLIE_FECA]
+	           FROM   BandejaTC_Procesador.dbo.CLIENTES_TC cct	          	           
+	      )  AS A
+		--ORDER BY 1 DESC
+		WHERE a.Row=1
+		),
+
+-----------------------------------------------------
+
+
+ CIFDUPLICADOS
+AS
+(
+	SELECT	A.CLIE_CIF
+	FROM   (
+	           SELECT RTRIM(LTRIM(CLIE_CIF))CLIE_CIF
+	           FROM   SinDuplicarTC--BandejaTC.dbo.CLIENTES_TC cct
+	           UNION ALL
+	           SELECT LTRIM(RTRIM(CLIE_CIF)) CLIE_CIF
+	          -- FROM   BandejasPrestSob.dbo.BandejaDeClientes bdc
+			   FROM	BandejaPTM_Procesador.dbo.CLIENTES_PTM bdc
+	       ) A
+	GROUP BY
+	       A.CLIE_CIF
+	HAVING COUNT(1) > 1
+),
+ BandejaPrestamos
+AS (
+       SELECT LTRIM(RTRIM(CLIE_CIF))						CLIE_CIF,
+              LTRIM(RTRIM(CLIE_IDEN))						CLIE_IDEN,
+              CLIE_TIPD										CLIE_TIPD,
+              RTRIM(LTRIM(ISNULL(CLIE_NAME, '')))			CLIE_NAME,
+              ISNULL(CLIE_TEL1, 0)   						CLIE_TEL1,
+              ISNULL(CLIE_TEL2, 0)							CLIE_TEL2,
+              ISNULL(CLIE_DIR1, '')							CLIE_DIR1,
+              ISNULL(CLIE_DIR2, '')							CLIE_DIR2,
+              ISNULL(CLIE_FAX, 0)							CLIE_FAX,
+              ISNULL(CLIE_MAIL, '')							CLIE_MAIL,
+              ISNULL(CLIE_TIPP, 'N')						CLIE_TIPP,
+              ISNULL(CLIE_NACI, 'DESCONOCIDO') AS			CLIE_NACI,
+              CASE CLIE_FECA
+                   WHEN '0' THEN '1900-01-01'
+                   ELSE ISNULL(CAST(CAST(CLIE_FECA AS VARCHAR(8)) AS date), '1900-01-01')
+              END                     AS CLIE_FECA,
+              ISNULL(CLIE_OFIC, '0')  AS CLIE_OFIC,
+              'AS400' AS ORIGEN
+       FROM   BandejaPTM_Procesador.dbo.CLIENTES_PTM 
+   )
+,
+BandejaTC
+AS (
+       -- Consulta a la bandeja de clientes de Tarjeta de Crédito
+       SELECT 
+			 --CASE 
+    --               WHEN LEN(RTRIM(LTRIM(CLIE_CIF))) <= 10 THEN RIGHT('0000000000' + RTRIM(LTRIM(CLIE_CIF)), 10)
+    --               ELSE RIGHT('0000000000000' + RTRIM(LTRIM(CLIE_CIF)), 13)
+    --          END
+    
+              LTRIM(RTRIM(CLIE_CIF))						CLIE_CIF,
+              LTRIM(RTRIM(CLIE_IDEN))						CLIE_IDEN,
+              CLIE_TIPD										CLIE_TIPD,
+              RTRIM(LTRIM(ISNULL(CLIE_NAME, '')))			CLIE_NAME,
+              ISNULL(CLIE_TEL1, 0)							CLIE_TEL1,
+              ISNULL(CLIE_TEL2, 0)							CLIE_TEL2,
+              ISNULL(CLIE_DIR1, '')							CLIE_DIR1,
+              ISNULL(CLIE_DIR2, '')							CLIE_DIR2,
+              ISNULL(CONVERT(CHAR, CLIE_FAX), '0')			CLIE_FAX,
+              ISNULL(CLIE_MAIL, '')							CLIE_MAIL,
+              ISNULL(CLIE_TIPP, 'N')						CLIE_TIPP,
+              ISNULL(CLIE_NACI, 'DESCONOCIDO')				CLIE_NACI,
+              ISNULL(convert(VARCHAR(8),cast(CLIE_FECA AS DATE),112), '1900-01-01') AS 
+              CLIE_FECA,
+              '0' AS                     CLIE_OFIC,
+              'VASA' AS ORIGEN
+       FROM   SinDuplicarTC A
+       WHERE  NOT EXISTS (
+                  SELECT 1
+                  FROM   CIFDUPLICADOS x
+                  WHERE  x.CLIE_CIF = RTRIM(LTRIM(A.CLIE_CIF))
+              )
+   )
+,
+BandejaClienteCIF
+AS(
+	--CLientes Consolidados por CIF
+		SELECT *
+		FROM   BandejaPrestamos
+		UNION ALL 
+		SELECT *
+		FROM   BandejaTC
+  )
+,
+BandejaClientesCIF2
+AS(
+	--Pone el No CIF a los clientes que en el campo de identidad esta VACIO
+	SELECT  CLIE_CIF								CLIE_CIF,
+			CASE	WHEN CLIE_IDEN='' THEN CLIE_CIF
+					ELSE CLIE_IDEN
+			END										CLIE_IDEN,
+			CLIE_TIPD								CLIE_TIPD,
+			CLIE_NAME								CLIE_NAME,
+			CLIE_TEL1								CLIE_TEL1,
+			CLIE_TEL2								CLIE_TEL2,
+			CLIE_DIR1								CLIE_DIR1,
+			CLIE_DIR2								CLIE_DIR2,
+			CLIE_FAX								CLIE_FAX,
+			CLIE_MAIL								CLIE_MAIL,
+			CLIE_TIPP								CLIE_TIPP,
+			CLIE_NACI								CLIE_NACI,
+			CLIE_FECA								CLIE_FECA,
+			CLIE_OFIC								CLIE_OFIC,
+			ORIGEN			
+	FROM 	BandejaClienteCIF
+
+  )
+,
+BandejaClientesLimpia
+AS(
+	--Limpia los clientes de la data duplicados por identidad, dejando solo uno.
+	SELECT		
+				X.CLIE_CIF,
+				X.CLIE_IDEN,
+				X.CLIE_TIPD,
+				X.CLIE_NAME,
+				X.CLIE_TEL1,
+				X.CLIE_TEL2,
+				X.CLIE_DIR1,
+				X.CLIE_DIR2,
+				X.CLIE_FAX,
+				X.CLIE_MAIL,
+				X.CLIE_TIPP,
+				X.CLIE_NACI,
+				X.CLIE_FECA,
+				X.CLIE_OFIC,
+				ORIGEN
+	FROM (SELECT  ROW_NUMBER() OVER(PARTITION BY ub.CLIE_IDEN ORDER BY ub.CLIE_FECA DESC) AS Num, * FROM	BandejaClientesCIF2 ub) AS X
+	--WHERE X.Num=1
+  )
+
+--Data Final Consolidada de los Clientes de Prestamos y Tarjetas de Crédito
+	SELECT
+																		CLIE_CIF,
+																		CLIE_IDEN,
+				CASE 
+					WHEN CLIE_TIPD = 'ID' OR CLIE_TIPD = 'I' THEN 'IDE'
+					WHEN CLIE_TIPD = 'PA' OR CLIE_TIPD = 'P' THEN 'PAS'
+					WHEN CLIE_TIPD = 'C' THEN 'RES'
+					ELSE 'IDE'
+				END														CLIE_TIPD,
+																		CLIE_NAME,
+																		CLIE_TEL1,
+																		CLIE_TEL2,
+																		CLIE_DIR1,
+																		CLIE_DIR2,
+																		CLIE_FAX,
+																		CLIE_MAIL,
+																		CLIE_TIPP,
+																		CLIE_NACI,
+																		CLIE_FECA,
+																		CLIE_OFIC,
+																		ORIGEN
+	FROM BandejaClientesLimpia 
+
+
+
+
+
+GO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+USE [CobranzasBP_Procesador]
+GO
+
+/****** Object:  View [dbo].[uvw_Clientes]    Script Date: 11/8/2026 16:37:25 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+-- ==========================================================
+-- Author:		<Elkin Amador Garcia>
+-- Create date: <29-04-2016>
+-- Description:	<Clientes PTM Y TC consolidados con estructura de la tabla Clientes>
+-- ==========================================================
+
+CREATE VIEW [dbo].[uvw_Clientes]
+AS
+	SELECT		
+		   CLIE_CIF							  cliCif,
+		   CLIE_IDEN                          cliIdentidad,
+		   CLIE_TIPD                          cliTipoDocumento,
+		   CLIE_TIPP                          cliTipoPersona,		   
+		   CAST(CLIE_NAME AS VARCHAR(50))     cliNombre,
+		   CLIE_NACI                          cliNacionalidad,
+		   ''								  cliTipoCliente,
+		   CAST(0 AS SMALLINT)                cliZona,
+		   CLIE_TEL1                          cliTelefono1,
+		   CLIE_TEL2                          cliTelefono2,
+		   ''								  cliTelefono3,
+		   CAST(CLIE_FAX AS VARCHAR(20))      CliFax,
+		   CLIE_MAIL                          cliCorreo,
+		   CLIE_DIR1                          cliDireccion1,
+		   CLIE_DIR2                          cliDireccion2,		   		   
+		   CLIE_FECA                          cliFechaUltimaActualizacion,
+		   CLIE_OFIC                          cliOficialNegocios,
+		   '0'								  cliOficialAsignado,
+		   CLIE_OFIC                          cliOficialAsignadoICBS,
+		   NULL								  cliFlujoCobranza,
+		   NULL								  cliEtapaCobranza,
+		   NULL								  cliColaCobranza,
+		   NULL								  cliDiaMora,
+		   NULL								  cliPromesaIncumplida,
+		   GETDATE()                          cliFechaUltimaGestion,
+		   --CAST(0 AS SMALLINT)                cliAgotado,		   
+		   NULL								  cliCobradorAsi,
+		   CAST(1 AS SMALLINT)                cliTipoAsignacionEtapa,
+		   Origen
+FROM   uvw_BandejaDeClientes with(nolock)
+
+
+
+
+
+
+GO
+
+
+
+
+
+
+
+
+
+
+
+
+USE [CobranzasBP_Procesador]
+GO
+
 /****** Object:  View [dbo].[uvw_ClientesNuevos]    Script Date: 11/8/2026 16:04:37 ******/
 SET ANSI_NULLS ON
 GO
@@ -126,7 +423,7 @@ WITH ClientesNuevos AS (
           [cliTipoAsignacionEtapa]
    FROM   ClientesNuevosDepurados cnd
     INNER JOIN BandejaMaestroClientes bmc
-                               ON cnd.cliCif=bmc.CIF AND cnd.cliIdentidad=bmc.Identidad
+     ON cnd.cliCif=bmc.CIF AND cnd.cliIdentidad=bmc.Identidad
 
 
 
@@ -140,4 +437,8 @@ GO
 
 
 
-Ayudmae a entender esto .. es que esta vusta .. llena una tabla con mi dtsx
+
+
+
+
+
