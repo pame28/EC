@@ -1,170 +1,524 @@
 USE [CobranzasBP_Procesador]
 GO
-/****** Object:  StoredProcedure [dbo].[usp_ProcesosCobranzasBP]    Script Date: 10/8/2026 19:52:32 ******/
+/****** Object:  StoredProcedure [dbo].[usp_consultaObtieneInfoClientes]    Script Date: 11/8/2026 06:52:21 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
 -- =============================================
 -- Author:		<Elkin Amador García>
--- Create date: <2016-05-12>
--- Description:	<Maestro de Procesos de Cobranzas Cobranzas04GC.dtsx>
+-- Create date: <2016-07-25>
+-- Description:	<Obtiene la informacíón de los clientes con sus productos para la pantalla Consulta de Clientes>
 -- =============================================
-ALTER PROCEDURE [dbo].[usp_ProcesosCobranzasBP]
+-- Modificado:  Orlin Alvarado
+-- Fecha: 2020-08-20
+-- Description:	Se agrego Telefono favorito en la consulta
+-- =============================================
+-- Modificado: Angelica López
+-- Fecha: 4/11/2024
+-- Description:	Se agregaron los campos de categoria y riesgo provenientes de la carga de campos
+-- =============================================
+-- Modificado: Edman V. Montoya
+-- Fecha: 25/11/2025
+-- Description:	Se toman en cuenta la categoria de riesgo y reserva solamente de operaciones activas
+-- =============================================
+
+ALTER PROCEDURE [dbo].[usp_consultaObtieneInfoClientes]
 	-- Add the parameters for the stored procedure here
+(
+	@idCliente int
+	,@usuario varchar(20)
+	,@Accion int
+)
 AS
 BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	
-	
+
 	SET NOCOUNT ON;
-	declare @identity int
 
-	--Recostrucción de los indices
-	insert into BitacoraProcesos values ('Recostrucción de Indices',getdate(),getdate()-1)
-	set @identity = @@identity
+	IF @Accion = 1 
+	BEGIN 
 
-	exec usp_RebuildIndex
+	--Obtiene Tasa
+	DECLARE @monTasaCambio AS DECIMAL(11,7)
+	SELECT  @monTasaCambio = monTasaCambio FROM Monedas
+	------------------------------------------------------
 
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
-	--Actualizar tipo de Actualización de Oficiales de recuperación
-	insert into BitacoraProcesos values ('Actualización de oficiales',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActualizarOficiales
-
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
-	--Actualización de funcionarios de recuperación localmente del proceso AS400
-	insert into BitacoraProcesos values ('Actualización de funcionarios proceso AS400',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_procActualizaFuncionariosLocalmente
-
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
+		SELECT	c.idCliente
+			,c.cliCif
+			,c.cliIdentidad
+			,c.cliNombre
+			,c.cliTipoCliente
+			,c.cliOficialAsignado
+			,o.ofiNombre
+			,c.cliZona
+			--Datos de Localización
+			,c.cliTelefono1
+			,c.cliTelefono2
+			,c.cliTelefono3
+			,c.cliFax
+			,c.cliDireccion1
+			,c.cliCorreo
+			,c.cliDireccion2	
+			,e.etaDescripcion	
+			--Ajuste Requerimiento 207-2017
+			,u.UsrNombre 	
+			------------------------------
+			--Ajuste telefono favorito
+			,ISNULL(fa.Telefono, '') as TelefonoFavorito
+		FROM Clientes c WITH(NOLOCK) 
+						LEFT JOIN Oficiales o WITH(NOLOCK) ON c.cliOficialAsignado=o.idOficial
+						LEFT JOIN Etapas e WITH(NOLOCK) ON e.idEtapa=c.cliEtapaCobranza
+						--Ajuste Requerimiento 207-2017----------------------------
+						LEFT JOIN colasDetalle cd WITH(NOLOCK) ON cd.idCliente=c.idCliente
+						LEFT JOIN Cobradores c2 WITH(NOLOCK) ON cd.idCobrador=c2.idCobrador and c2.cobEstado=1
+						LEFT JOIN Usuarios u WITH(NOLOCK) ON c2.idUsuario=u.idUsuario
+						--Ajuste telefono favorito
+						LEFT JOIN ClientesTelefonoFavorito fa WITH(NOLOCK) ON fa.idCliente = c.idCliente
+						-----------------------------------------------------------  
+		WHERE c.idCliente=@idCliente
 		
-	--Actualizar las zonas de Prestamos y Sobregiros.
-	insert into BitacoraProcesos values ('Actualización de zonas',getdate(),getdate()-1)
-	set @identity = @@identity
+			
+		--Obtiene Saldos Totales de los productos esto si son en dolares o Lempiras------------------------------------------------------------
+			SELECT	sp.salTipoProducto
+					,sp.salMoneda
+					,sp.salNumeroOperacion
+					/***************************Cambio requerimiento 15-2017****************************************/
+					,CASE WHEN sp.salTipoProducto='TDC' AND sp.salMoneda='USD' THEN 
+								ROUND((sp.salTotalConsumoTC
+				 				+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+								+sp.salInteresMoratorio
+								+SP.salInteresAcumuladoPeriodoTC)*@monTasaCambio,2)
+						  WHEN sp.salMoneda='USD' AND sp.salTipoProducto<>'TDC' THEN
+						  		ROUND(sp.salMontoCancelacion*@monTasaCambio,2)
+						  WHEN sp.salTipoProducto='TDC' AND sp.salMoneda='LPS'	THEN
+								sp.salTotalConsumoTC
+				 				+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+								+sp.salInteresMoratorio
+								+SP.salInteresAcumuladoPeriodoTC 
+						 ELSE sp.salMontoCancelacion	
+					END	AS cancFecha	 
+					/**********************************************************************************************/
+					,CASE WHEN sp.salMoneda ='USD' THEN (sp.salMontoUltimoPago*@monTasaCambio)
+						 ELSE sp.salMontoUltimoPago
+					END monUltiPago
 
-	exec usp_ActualizarZonas
+					,CASE
+					WHEN sp.salTipoProducto='TDC' and sp.salMoneda='USD' THEN (sp.salCapitalMora * @monTasaCambio)
+					WHEN sp.salTipoProducto='TDC' THEN sp.salCapitalMora
+					WHEN sp.salMoneda='USD' THEN  ((sp.salInteresNoContabilizado + sp.salCapitalMora + sp.salInteresMora + sp.salSeguroMora + sp.salInteresMoratorio)  * @monTasaCambio)
+					ELSE sp.salInteresNoContabilizado + sp.salCapitalMora + sp.salInteresMora + sp.salSeguroMora + sp.salInteresMoratorio
+					END	 AS saldoMora						
+					,sp.salEstadoOperacion
+					/***************************Cambio requerimiento 15-2017****************************************/
+	                ,ISNULL(
+	                CASE 
+						--Lempiras PTM
+	                    WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'LPS' AND sp.salEmpresaId=3 THEN 
+											
+	                                sp.salMontoCancelacion
+	                                           
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'LPS' AND sp.salEmpresaId<>3 AND sp.salCongelado='' THEN 
+									
+								CASE 
+									WHEN 
+										CAST(GETDATE() AS DATE)>sp.salFechaVencimiento AND sp.salTipoProducto='SOB' AND sp.salCapitalVigente<=0 THEN
+										sp.salCapitalMora
+										+ sp.salInteresVigente 
+										+ sp.salInteresMora	                                                    
+										+ sp.salInteresMoratorio
+										+ sp.salInteresNoContabilizado 
+									ELSE	
+										sp.salCapitalVigente 
+										+ sp.salInteresVigente 
+										+ sp.salInteresMora	                                                    
+										+ sp.salInteresMoratorio
+										+ sp.salInteresNoContabilizado	                                          
+								END                                            
+											
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'LPS' AND sp.salEmpresaId<>3 AND sp.salCongelado='P' THEN 
+						CASE 
+	                        WHEN 
+	                            CAST(GETDATE() AS DATE)>sp.salFechaVencimiento THEN
+	                            sp.salCapitalMora 
+	                        ELSE	
+	                            sp.salCapitalVigente	                                          
+						END
+						--Dolares PTM
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'USD' AND sp.salEmpresaId=3 THEN 
+											
+	                            ROUND (sp.salMontoCancelacion * @monTasaCambio , 2)
+	                                           
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'USD' AND sp.salEmpresaId<>3 AND sp.salCongelado='' THEN 
+											
+	                            ROUND((CASE 
+											WHEN 
+												CAST(GETDATE() AS DATE)>sp.salFechaVencimiento AND sp.salTipoProducto='SOB' AND sp.salCapitalVigente<=0 THEN
+												sp.salCapitalMora
+												+ sp.salInteresVigente 
+												+ sp.salInteresMora	                                                    
+												+ sp.salInteresMoratorio
+												+ sp.salInteresNoContabilizado 
+											ELSE	
+												sp.salCapitalVigente 
+												+ sp.salInteresVigente 
+												+ sp.salInteresMora	                                                    
+												+ sp.salInteresMoratorio
+												+ sp.salInteresNoContabilizado	                                          
+										END) *  @monTasaCambio, 2)                                           
+											
+							WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'USD' AND sp.salEmpresaId<>3 AND sp.salCongelado='P' THEN 
+							CASE 
+							WHEN 
+	                            CAST(GETDATE() AS DATE)>sp.salFechaVencimiento THEN
+	                            ROUND (sp.salCapitalMora * @monTasaCambio , 2)
+							ELSE	
+	                            ROUND (sp.salCapitalVigente * @monTasaCambio , 2)                                         
+							END
+						--Lempiras TDC
+						WHEN sp.salTipoProducto = 'TDC' AND sp.salMoneda = 'LPS' THEN
+								sp.salTotalConsumoTC
+								+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+						--Dolares TDC
+						WHEN sp.salTipoProducto = 'TDC' AND sp.salMoneda = 'USD' THEN
+								ROUND((sp.salTotalConsumoTC
+								+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC)* @monTasaCambio , 2)
+	                END,0) AS saldoContable	 	                         
+	                 /***********************************************************************************************/																												
+			FROM Clientes c WITH(NOLOCK) 
+							INNER JOIN RelacionesDeProductos rp WITH(NOLOCK) on c.idCliente=rp.idCliente AND rp.relTipoRelacion in ('SOW','JAF')
+							INNER JOIN SaldosDeProductos	sp WITH(NOLOCK)	on rp.relNumeroOperacion=sp.salNumeroOperacion AND rp.relMoneda=sp.salMoneda
+			WHERE c.idCliente=@idCliente
+			
+--------REQ.BH-5221 Carga de campos reserva y categoría de riesgos a Cobranzas BP----------------
+		DECLARE @TotalReserva AS MONEY
+		DECLARE @CategoriaRiesgo AS VARCHAR(5)
 
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
+		SELECT @TotalReserva = SUM(DISTINCT br.Reserva)
+		FROM Clientes c WITH(NOLOCK) 
+		INNER JOIN RelacionesDeProductos rp WITH(NOLOCK) ON c.idCliente = rp.idCliente AND rp.relTipoRelacion IN ('SOW','JAF')
+		INNER JOIN SaldosDeProductos sp WITH(NOLOCK) ON rp.relNumeroOperacion = sp.salNumeroOperacion AND rp.relMoneda = sp.salMoneda
+		LEFT JOIN BandejaCamposReserva br WITH(NOLOCK) ON br.idCliente = c.idCliente AND (br.operacion = sp.salNumeroOperacion OR br.operacion = sp.salNumeroOperacionTC)
+		WHERE br.idCliente = @idCliente
+
+		SELECT TOP 1 @CategoriaRiesgo=br.Categoria
+			FROM Clientes c WITH(NOLOCK) 
+						INNER JOIN RelacionesDeProductos rp WITH(NOLOCK) on c.idCliente=rp.idCliente AND rp.relTipoRelacion in ('SOW','JAF')
+						INNER JOIN SaldosDeProductos	sp WITH(NOLOCK)	on rp.relNumeroOperacion=sp.salNumeroOperacion AND rp.relMoneda=sp.salMoneda
+						LEFT JOIN BandejaCamposReserva br WITH(NOLOCK) ON br.idcliente=c.idCliente AND (br.operacion=sp.salNumeroOperacion OR br.operacion=sp.salNumeroOperacionTC )
+						INNER JOIN PrioridadCategoria pc WITH(NOLOCK) ON rtrim(ltrim(br.Categoria))=rtrim(ltrim(pc.Descripcion))
+		WHERE br.idCliente=@idCliente
+		ORDER BY pc.Prioridad asc
+
+		SELECT ISNULL(@TotalReserva ,0) ReservaRequerida
+		,ISNULL(@CategoriaRiesgo ,'') CategoriaRiesgo
 	
-	--Proceso de carga a historico de cobranzas cargas SaldoDeProductos y ClientesMora 
-	insert into BitacoraProcesos values ('Cargas al Historial Cobranza',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_cargasHistorialCobranza
-
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
+		/********************Requerimiento 104-2048******************************************************************************************/
+	--Obtiene Saldos Totales de los productos esto si son en dolares o Lempiras------------------------------------------------------------
+			SELECT	CASE WHEN sp.salTipoProducto='TDC' AND sp.salMoneda='USD' THEN 
+								ROUND((sp.salTotalConsumoTC
+				 				+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+								+sp.salInteresMoratorio
+								+SP.salInteresAcumuladoPeriodoTC)*@monTasaCambio,2)
+						  WHEN sp.salMoneda='USD' AND sp.salTipoProducto<>'TDC' THEN
+						  		ROUND(sp.salMontoCancelacion*@monTasaCambio,2)
+						  WHEN sp.salTipoProducto='TDC' AND sp.salMoneda='LPS'	THEN
+								sp.salTotalConsumoTC
+				 				+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+								+sp.salInteresMoratorio
+								+SP.salInteresAcumuladoPeriodoTC 
+						 ELSE sp.salMontoCancelacion	
+					END	AS cancFecha					
+					,CASE WHEN sp.salMoneda ='USD' THEN (sp.salMontoUltimoPago*@monTasaCambio)
+						 ELSE sp.salMontoUltimoPago
+					END monUltiPago					
+					,(CASE 
+					      WHEN (
+					               CASE 
+					                    WHEN sp.salTipoProducto = 'TDC'
+					               AND sp.salMoneda = 'USD' THEN (sp.salCapitalMora * @monTasaCambio)
+					                   WHEN sp.salTipoProducto = 'TDC' THEN sp.salCapitalMora
+					                   WHEN sp.salMoneda = 'USD' THEN (
+					                       (
+					                           sp.salInteresNoContabilizado + sp.salCapitalMora 
+					                           + sp.salInteresMora + sp.salSeguroMora 
+					                           + sp.salInteresMoratorio
+					                       ) * @monTasaCambio
+					                   )
+					                   ELSE sp.salInteresNoContabilizado + sp.salCapitalMora 
+					                   + sp.salInteresMora + sp.salSeguroMora + 
+					                   sp.salInteresMoratorio
+					                   END
+					           ) > 0 THEN (
+					               CASE 
+					                    WHEN sp.salTipoProducto = 'TDC'
+					               AND sp.salMoneda = 'USD' THEN (sp.salCapitalMora * @monTasaCambio)
+					                   WHEN sp.salTipoProducto = 'TDC' THEN sp.salCapitalMora
+					                   WHEN sp.salMoneda = 'USD' THEN (
+					                       (
+					                           sp.salInteresNoContabilizado + sp.salCapitalMora 
+					                           + sp.salInteresMora + sp.salSeguroMora 
+					                           + sp.salInteresMoratorio
+					                       ) * @monTasaCambio
+					                   )
+					                   ELSE sp.salInteresNoContabilizado + sp.salCapitalMora 
+					                   + sp.salInteresMora + sp.salSeguroMora + 
+					                   sp.salInteresMoratorio
+					                   END
+					           )
+					      ELSE 0
+					 END) AS saldoMora
+					/***************************Cambio requerimiento 15-2017****************************************/
+					,ISNULL(
+	                CASE 
+						--Lempiras PTM
+	                    WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'LPS' AND sp.salEmpresaId=3 THEN 
+											
+	                                sp.salMontoCancelacion
+	                                           
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'LPS' AND sp.salEmpresaId<>3 AND sp.salCongelado='' THEN 
+									
+								CASE 
+									WHEN 
+										CAST(GETDATE() AS DATE)>sp.salFechaVencimiento AND sp.salTipoProducto='SOB' AND sp.salCapitalVigente<=0 THEN
+										sp.salCapitalMora
+										+ sp.salInteresVigente 
+										+ sp.salInteresMora	                                                    
+										+ sp.salInteresMoratorio
+										+ sp.salInteresNoContabilizado 
+									ELSE	
+										sp.salCapitalVigente 
+										+ sp.salInteresVigente 
+										+ sp.salInteresMora	                                                    
+										+ sp.salInteresMoratorio
+										+ sp.salInteresNoContabilizado	                                          
+								END                                            
+											
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'LPS' AND sp.salEmpresaId<>3 AND sp.salCongelado='P' THEN 
+						CASE 
+	                        WHEN 
+	                            CAST(GETDATE() AS DATE)>sp.salFechaVencimiento THEN
+	                            sp.salCapitalMora 
+	                        ELSE	
+	                            sp.salCapitalVigente	                                          
+						END
+						--Dolares PTM
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'USD' AND sp.salEmpresaId=3 THEN 
+											
+	                            ROUND (sp.salMontoCancelacion * @monTasaCambio , 2)
+	                                           
+						WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'USD' AND sp.salEmpresaId<>3 AND sp.salCongelado='' THEN 
+											
+	                            ROUND((CASE 
+											WHEN 
+												CAST(GETDATE() AS DATE)>sp.salFechaVencimiento AND sp.salTipoProducto='SOB' AND sp.salCapitalVigente<=0 THEN
+												sp.salCapitalMora
+												+ sp.salInteresVigente 
+												+ sp.salInteresMora	                                                    
+												+ sp.salInteresMoratorio
+												+ sp.salInteresNoContabilizado 
+											ELSE	
+												sp.salCapitalVigente 
+												+ sp.salInteresVigente 
+												+ sp.salInteresMora	                                                    
+												+ sp.salInteresMoratorio
+												+ sp.salInteresNoContabilizado	                                          
+										END) *  @monTasaCambio, 2)                                           
+											
+							WHEN sp.salTipoProducto in ('PTM','SOB') AND sp.salMoneda = 'USD' AND sp.salEmpresaId<>3 AND sp.salCongelado='P' THEN 
+							CASE 
+							WHEN 
+	                            CAST(GETDATE() AS DATE)>sp.salFechaVencimiento THEN
+	                            ROUND (sp.salCapitalMora * @monTasaCambio , 2)
+							ELSE	
+	                            ROUND (sp.salCapitalVigente * @monTasaCambio , 2)                                         
+							END
+						--Lempiras TDC
+						WHEN sp.salTipoProducto = 'TDC' AND sp.salMoneda = 'LPS' THEN
+								sp.salTotalConsumoTC
+								+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+						--Dolares TDC
+						WHEN sp.salTipoProducto = 'TDC' AND sp.salMoneda = 'USD' THEN
+								ROUND((sp.salTotalConsumoTC
+								+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC)* @monTasaCambio , 2)
+	                END,0) AS saldoContable	                         
+	                 /***********************************************************************************************/																												
+			FROM Clientes c WITH(NOLOCK)
+							INNER JOIN RelacionesDeProductos rp WITH(NOLOCK) on c.idCliente=rp.idCliente AND rp.relTipoRelacion in ('SOW','JAF')
+							INNER JOIN SaldosDeProductos	sp WITH(NOLOCK)	on rp.relNumeroOperacion=sp.salNumeroOperacion AND rp.relMoneda=sp.salMoneda
+			WHERE c.idCliente=@idCliente
+		/*************************************************************************************************************************************/
+		
+		
+		
+		----------Inicio Requerimiento 63-2018 Ajustes Fórmula Saldo Mora---------------------------
 	
-	--Proceso evaluación de cumplimiento de promesas de pago y proxima fecha de ejecucion de clientes
-	insert into BitacoraProcesos values ('Actualización Automatica Promesas Pago ',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActulizacionAutomaticaPromesasPago
-
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
-	--Actualización de etapa, flujo, dias de mora, de cliente
-	insert into BitacoraProcesos values ('Actualización Automatica Clientes Etapas',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActulizacionAutomaticaClientesEtapas
-
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
-	--Actualización de saldo contable a clientes
-	insert into BitacoraProcesos values ('Actualización Automatica Saldo Contable Clientes',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActualizaSaldoContableClientes
+		SELECT ca2.CallAs400		   	
+		FROM CallsAS400 ca2 WITH(NOLOCK)
+		WHERE ca2.idCallAS400=1
 	
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
-	--asignación de clientes a colas principales 
-	insert into BitacoraProcesos values ('Actualización Automatica Colas',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActulizacionAutomaticaColas
+		SELECT  cca.Campo
+			   ,cca.TipoDato
+			   ,cca.Longitud
+			   ,cca.Direccion		
+		FROM CallsAS400 ca2 WITH(NOLOCK) INNER JOIN CallsCamposAS400 cca WITH(NOLOCK) ON ca2.idCallAS400=cca.idCallAS400
+		WHERE ca2.idCallAS400=1	
 	
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
-	--asignación de clientes de colas de trabajo a cobradores 
-	insert into BitacoraProcesos values ('Actualización Automatica Cobradores ',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActulizacionAutomaticaCobradores
 	
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-	
-	--asignación de clientes por oficial asignado a cobradores 
-	insert into BitacoraProcesos values ('Actualización Fija Cobradores ',getdate(),getdate()-1)
-	set @identity = @@identity
+		SELECT  cla.Libreria		
+		FROM CallsAS400 ca2 WITH(NOLOCK) INNER JOIN CallsLibreriasAS400 cla WITH(NOLOCK) ON ca2.idCallAS400=cla.idCallAS400
+		WHERE ca2.idCallAS400=1	
+		--------------------------------------------------------------------------------------------
+	END
 
-	exec usp_ActulizacionFijaCobradores
 	
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
+
+	IF @Accion = 2 
+	BEGIN
+		---Cuentas de los clientes-------------------------------------------
+		DECLARE @cif as varchar(20)
+
+		--Obtiene el Cif del Cliente
+		SELECT @cif=c.cliCif			
+		FROM Clientes c WITH(NOLOCK)
+		WHERE c.idCliente=@idCliente
+
+	END
+
 	
-	--Gestores en colas de Trabajo
-	insert into BitacoraProcesos values ('Actualización de Gestores a clientes ',getdate(),getdate()-1)
-	set @identity = @@identity
+	IF @Accion = 3 
+	BEGIN
+		--Obtiene los datos de los productos del cliente----------------------------------------------------------------------------------------
+		SELECT 
+				sp.salTipoProducto																										AS tipoProducto
+				,sp.salProductoDesc																										AS producto
+				,sp.salNumeroOperacion																									AS noOperacion	
+				,CASE
+				WHEN sp.salTipoProducto='TDC' THEN sp.salCapitalMora 
+				ELSE sp.salInteresNoContabilizado + sp.salCapitalMora + sp.salInteresMora + sp.salSeguroMora + sp.salInteresMoratorio
+				END																														AS saldoMora
+				/***************************Cambio requerimiento 15-2017****************************************/
+	            
+	            ,CASE 
+					--PTM
+	                WHEN sp.salTipoProducto in ('PTM','SOB')  AND sp.salEmpresaId=3 THEN 
+											
+	                            sp.salMontoCancelacion
+	                                           
+					WHEN sp.salTipoProducto in ('PTM','SOB')  AND sp.salEmpresaId<>3 AND sp.salCongelado='' THEN 
+								
+								CASE 
+									WHEN 
+										CAST(GETDATE() AS DATE)>sp.salFechaVencimiento AND sp.salTipoProducto='SOB' AND sp.salCapitalVigente<=0 THEN
+										sp.salCapitalMora
+										+ sp.salInteresVigente 
+										+ sp.salInteresMora	                                                    
+										+ sp.salInteresMoratorio
+										+ sp.salInteresNoContabilizado 
+									ELSE	
+										sp.salCapitalVigente 
+										+ sp.salInteresVigente 
+										+ sp.salInteresMora	                                                    
+										+ sp.salInteresMoratorio
+										+ sp.salInteresNoContabilizado	                                          
+								END	                                                                        
+											
+					WHEN sp.salTipoProducto in ('PTM','SOB')  AND sp.salEmpresaId<>3 AND sp.salCongelado='P' THEN 
+					CASE 
+	                    WHEN 
+	                        CAST(GETDATE() AS DATE)>sp.salFechaVencimiento THEN
+	                        sp.salCapitalMora 
+	                    ELSE	
+	                        sp.salCapitalVigente	                                          
+					END
+					--TDC
+					WHEN sp.salTipoProducto = 'TDC'  THEN
+							sp.salTotalConsumoTC
+							+sp.salSaldoIntraTC
+							+sp.salSaldoExtraTC					
+	            END
+	            																														AS saldoContable	                         
+	             /***********************************************************************************************/
+				,CASE WHEN sp.salTipoProducto='TDC' THEN 
+							(sp.salTotalConsumoTC
+				 				+sp.salSaldoIntraTC
+								+sp.salSaldoExtraTC
+								+sp.salInteresMoratorio
+								+SP.salInteresAcumuladoPeriodoTC)
+					  ELSE sp.salMontoCancelacion
+				 END																													AS cancFecha
+				,sp.salMontoUltimoPago																									AS monUltiPago
+				,sp.salMoneda																											AS moneda
+				,sp.salEstadoOperacion																									AS condicion
+				--Inicio Ajuste Requerimiento 56-2018----------------------------																									
+				,sp.salNumeroOperacionTC																								AS NumeroTC
+				--Fin Ajuste Requerimiento 56-2018----------------------------
+				--Inicio Ajuste Requerimiento 63-2018----------------------------																									
+				,sp.salEmpresaId
+				--Fin Ajuste Requerimiento 63-2018----------------------------	
+				--------REQ.BH-5221 Carga de campos reserva y categoría de riesgos a Cobranzas BP----------------
+				,ISNULL(br.Reserva,0)				    AS reserva
+				,ISNULL(br.Categoria,'')				AS categoriaRiesgo
+				, sp.salDiasMora            AS DiasMora
+		FROM Clientes c WITH(NOLOCK) 
+						INNER JOIN RelacionesDeProductos rp WITH(NOLOCK) on c.idCliente=rp.idCliente AND rp.relTipoRelacion in ('SOW','JAF')
+						INNER JOIN SaldosDeProductos	sp WITH(NOLOCK)	on rp.relNumeroOperacion=sp.salNumeroOperacion AND rp.relMoneda=sp.salMoneda
+						LEFT JOIN BandejaCamposReserva br WITH(NOLOCK) ON br.idcliente=c.idCliente AND (br.operacion=sp.salNumeroOperacion OR br.operacion=sp.salNumeroOperacionTC )
+		WHERE c.idCliente=@idCliente
+		ORDER BY (sp.salInteresNoContabilizado + sp.salCapitalMora + sp.salInteresMora + sp.salSeguroMora + sp.salInteresMoratorio) DESC
+		--------------------------------------------------------------------------------------------------------------------------------------------------
+	END
 
-	exec usp_procGestoresColas
+	IF @Accion = 4 
+	BEGIN
+
+			--Obtiene las gestiones del cliente Consultado
+			SELECT 
+					bg.idBitacoraGes				AS idBitacora
+					,g.idGestion
+					,g.gesDescripcion				AS gestionDes
+					,r.idResultado
+					,r.resDescripcion				AS resultadoDes
+					,bg.biGesFecha					AS fechaGestion
+					,u.UsrNombre					AS usuario
+					,bg.biGesProximaFecha			AS proximafecha
+					,bg.biGesObservaciones			AS observaciones
+					,bg.biGesGeEtiqueta1			AS geEtiqueta1
+					,bg.biGesGeValor1				AS geValor1
+					,bg.biGesGeEtiqueta2			AS geEtiqueta2
+					,bg.biGesGeValor2				AS geValor2
+					,bg.biGesMontoPromesa			AS montoPromesa
+					,isnull(np.idNoPago,1)			idNoPago 					
+					,np.Razon						AS NoPago 
+			FROM BitacoraGestionados bg WITH(NOLOCK) 
+										INNER JOIN Gestiones g WITH(NOLOCK) on bg.idGestion=g.idGestion
+										INNER JOIN Resultados r WITH(NOLOCK) on bg.idResultado=r.idResultado
+										LEFT JOIN Usuarios u WITH(NOLOCK) on u.idUsuario=bg.idUsuario
+										LEFT JOIN NoPago np WITH(NOLOCK) ON np.idNoPago=isnull(bg.idNoPago ,1)
+
+			WHERE idCliente=@idCliente
+			ORDER BY bg.idBitacoraGes DESC
+			------------------------------------------------------------------------------------------------
+	END	
 	
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-	
-	---Actualización los clientes reinsidentes en mora en el Historico cobranzas BP 
-	insert into BitacoraProcesos values ('Actualización Clientes ReinsidentesMora',getdate(),getdate()-1)
-	set @identity = @@identity
-
-	exec usp_ActulizacionClientesReinsidentesMora
-
-	update BitacoraProcesos set biFechaFinal = getdate()
-	where idBitacora = @identity
-
 END
 
 
+	
+
+	
 
 
-Message
-Microsoft (R) SQL Server Execute Package Utility
-Version 11.0.7001.0 for 64-bit
-Copyright (C) Microsoft Corporation. All rights reserved.
 
-Started:  12:58:28 p.m.
-Error: 2026-08-10 13:01:03.21
-   Code: 0x00000000
-   Source: Ejecuci¢n de Procesos CobranzasBP 
-   Description: The transaction log for database 'CobranzasBP_Procesador' is full due to 'LOG_BACKUP' and the holdup lsn is (4728214:686:1).
-End Error
-Error: 2026-08-10 13:01:03.23
-   Code: 0xC002F210
-   Source: Ejecuci¢n de Procesos CobranzasBP Execute SQL Task
-   Description: Executing the query "EXECUTE usp_ProcesosCobranzasBP" failed with the following error: "The statement has been terminated.". Possible failure reasons: Problems with the query, "ResultSet" property not set correctly, parameters not set correctly, or connection not established correctly.
-End Error
-DTExec: The package execution returned DTSER_FAILURE (1).
-Started:  12:58:28 p.m.
-Finished: 01:01:03 p.m.
-Elapsed:  155.016 seconds
 
+Necesito saber como se calculan los campos saldo mora, saldo contable, cancelacion a la fecha
 
 
 
