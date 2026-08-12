@@ -1,2 +1,7 @@
-SELECT * FROM CobranzasBP_Procesador.dbo.uvw_ClientesNuevos
+SELECT * FROM CobranzasBP_Procesador.dbo.BandejaMaestroClientes
+WHERE CIF = '2058276' OR Identidad = '0501199806046'
+
+
+
+SELECT * FROM CobranzasBP_Procesador.dbo.uvw_Clientes
 WHERE cliCif = '2058276'
