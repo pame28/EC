@@ -1,3 +1,2 @@
-SELECT *
-FROM CobranzasBP_Procesador.dbo.uvw_BandejaDeClientes
-WHERE CLIE_CIF = '2058276'
+SELECT * FROM CobranzasBP_Procesador.dbo.uvw_ClientesNuevos
+WHERE cliCif = '2058276'
