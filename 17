@@ -1,7 +1,9 @@
-SELECT * FROM CobranzasBP_Procesador.dbo.BandejaMaestroClientes
-WHERE CIF = '2058276' OR Identidad = '0501199806046'
+La DNI no es congruente, por lo que, cuando se ejecuta la carga de información de Cobranzas para agregar los clientes nuevos o que no se encuentran en la BD de CobranzasBP no es posible ya que, se hace una validación en la que, tanto el cif como dni deben ser igual
+
+
+NOTA:
+Favor su apoyo revisando y corrigiendo la discrepancia
 
 
 
-SELECT * FROM CobranzasBP_Procesador.dbo.uvw_Clientes
-WHERE cliCif = '2058276'
+Ayudame a r4edactarlo mejor, de manera que un usuario y alguien tecnico pueda emtenderlo
