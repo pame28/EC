@@ -33,8 +33,18 @@ BEGIN
         SELECT @FechaBandeja = Fecha_Corte FROM [dbo].[BandejaEstadoCuenta] GROUP BY Fecha_Corte;
         SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
 
+        -- 1.5. Caso ARRANQUE: no hay ninguna fecha activa en ParametrosCorte.
+        --      No hay nada que comparar/rebobinar/avanzar, se activa directo
+        --      la fecha que trae la bandeja.
         IF @FechaActiva IS NULL
-            THROW 50005, 'No existe ninguna fecha activa (Estado=1) en ParametrosCorte.', 1;
+        BEGIN
+            IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
+                UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
+            ELSE
+                INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
+
+            RETURN;
+        END
 
         -- 2. Caso NORMAL: no hay nada que sincronizar, se sale de una vez
         IF @FechaBandeja = @FechaActiva
@@ -117,10 +127,3 @@ BEGIN
         THROW;
     END CATCH
 END
-
-
-
-
-
-Hay un error aqui que si me gustaria atender .. bueno mejor dicho prevenir y es si en ParametrosCorte no hay ninguna en 1 
-Y podemos usar la misma logica pues .. digo yo .. que piensas?
