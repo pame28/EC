@@ -1,174 +1,80 @@
 USE [EstadosCuentaJSONProcesador]
 GO
+/****** Object:  StoredProcedure [dbo].[usp_LlenarBandejaEstadoCuenta]    Script Date: 13/8/2026 15:57:38 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
--- =====================================================================================
--- Objeto:				[dbo].[usp_SincronizarFechaCorte]
--- Autor:				(completar)
--- Fecha creacion:		21-07-2026
--- Ultima modificacion:	13-08-2026
--- Description:			Se ejecuta al inicio del DTSX de generacion de estados de
---						cuenta, justo despues de llenar BandejaEstadoCuenta. No
---						devuelve datos: todo el efecto es sobre las tablas.
---
---						1. Valida que BandejaEstadoCuenta tenga una sola FechaCorte.
---						2. Compara esa fecha contra la activa (Estado=1) en
---						   ParametrosCorte:
---							 - Igual  -> Normal, no hace nada mas.
---							 - Menor  -> Reproceso: rebobina el puntero activo a esa
---										 fecha (debe existir como corte historico) y
---										 resetea HistoricoMaestroEstadosCuentaJSON a
---										 Procesado='0' para esa fecha, para que se
---										 vuelva a generar.
---							 - Mayor  -> Avance: camina la secuencia de cortes
---										 marcando los intermedios como saltados
---										 (Estado=0) hasta activar la fecha de bandeja.
---						3. Limpieza: borra de ParametrosCorte las filas cuya
---						   FechaCorte sea mayor a la que quedo activa Y que NO
---						   tengan ningun registro en HistoricoMaestroEstadosCuentaJSON
---						   (es decir, cortes que se marcaron pero nunca se llegaron
---						   a procesar de verdad). Nunca borra un corte que si tenga
---						   data generada, para no perder rastro de un corte real.
---
---						Todo (sincronizacion + limpieza) corre en una misma
---						transaccion para evitar estados inconsistentes si algo falla
---						a la mitad.
---
---						Reemplaza a usp_ActualizarFechaCorte, que ya NO debe
---						ejecutarse al final del paquete DTSX.
---
--- Prerequisito:		Requiere la funcion [dbo].[fn_SiguienteFechaCorte]
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
--- (completar)       Se creo el procedimiento, en reemplazo de					21-07-2026
---                   usp_ActualizarFechaCorte, para soportar reprocesos
--- (completar)       Se incorporo el reseteo de HistoricoMaestro				13-08-2026
---                   EstadosCuentaJSON
--- (completar)       Se quitaron los parametros OUTPUT (no se consumen			13-08-2026
---                   en el DTSX) y se agrego la limpieza de cortes
---                   saltados sin data real en el historico
--- =======================================================================================
 
-CREATE PROCEDURE [dbo].[usp_SincronizarFechaCorte]
+ALTER PROCEDURE [dbo].[usp_LlenarBandejaEstadoCuenta]
+
 AS
 BEGIN
     SET NOCOUNT ON;
-    SET XACT_ABORT ON; -- si algo falla, revierte automaticamente toda la transaccion
 
-    BEGIN TRY
 
-        DECLARE @FechaBandeja DATE, @FechaActiva DATE;
-        DECLARE @CantidadFechasDistintas INT;
-        DECLARE @EsReproceso BIT = 0;
-        DECLARE @FechaCorteProceso DATE;
+        TRUNCATE TABLE dbo.BandejaEstadoCuenta;
+        DECLARE @Cantidad INT;
+        DECLARE @FechaCorte DATE;
 
-        -- 1. Validar que la bandeja tenga exactamente una fecha de corte cargada
-        SELECT @CantidadFechasDistintas = COUNT(DISTINCT FechaCorte)
-        FROM [dbo].[BandejaEstadoCuenta];
+        SELECT @Cantidad = COUNT(*) 
+        FROM dbo.BandejaEstadoCuenta;
 
-        IF @CantidadFechasDistintas = 0
-            THROW 50003, 'BandejaEstadoCuenta esta vacia, no hay fecha de corte que sincronizar.', 1;
+        SELECT @FechaCorte = FechaCorte
+        FROM dbo.ParametrosCorte
+        WHERE Estado = 1;
 
-        IF @CantidadFechasDistintas > 1
-            THROW 50001, 'BandejaEstadoCuenta contiene mas de una FechaCorte distinta. Revisar carga.', 1;
-
-        SELECT @FechaBandeja = FechaCorte FROM [dbo].[BandejaEstadoCuenta] GROUP BY FechaCorte;
-        SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
-
-        IF @FechaActiva IS NULL
-            THROW 50005, 'No existe ninguna fecha activa (Estado=1) en ParametrosCorte.', 1;
-
-        -- 2. Caso NORMAL: no hay nada que sincronizar, se sale de una vez
-        IF @FechaBandeja = @FechaActiva
+        IF (@Cantidad < 1)
         BEGIN
-            RETURN;
+            INSERT INTO dbo.BandejaEstadoCuenta
+            (
+               [Fecha_Corte]
+      ,[No_Tarjeta]
+      ,[No_Cuenta]
+      ,[No_Cuenta_VASA]
+      ,[Nombre]
+      ,[Correo]
+      ,[Origen]
+      ,[Estado]
+            )
+            SELECT
+                h.Fecha_Corte,
+                TRIM(h.No_Tarjeta),
+                TRIM(h.No_Cuenta),
+				TRIM(h.NoCuentaClaro) AS No_Cuenta_VASA,
+				TRIM(h.Nombre_TH_Tit) AS Nombre,
+                TRIM(h.Correo),
+				TRIM(h.Origen),
+                0
+            FROM dbo.BandejaEncabezado h
+            WHERE
+                h.Fecha_Corte = @FechaCorte
+				AND h.origen IN (SELECT Origen FROM dbo.ParametrosOrigenes WHERE Estado = 1)
+                AND h.Correo <> ''
+                AND h.Correo NOT IN
+                (
+                    SELECT Correo
+                    FROM dbo.CorreosNoValidos
+                    WHERE Estado = 1
+                )
+                AND
+                (
+                    EXISTS
+                    (
+                        SELECT 1
+                        FROM dbo.BandejaDetalle d
+                        WHERE d.EC_DetalleNo_Cuenta = h.No_Cuenta
+                        AND d.Fecha_Corte = h.Fecha_Corte
+                    )
+                    OR h.Pago_Contado_MN <> 0
+                    OR h.Pago_Contado_ME <> 0
+                );
         END
+	END
 
-        SET @EsReproceso = 1;
-        SET @FechaCorteProceso = @FechaBandeja;
 
-        BEGIN TRAN;
 
-            -- 3. Sincronizar ParametrosCorte segun direccion
-            IF @FechaBandeja < @FechaActiva
-            BEGIN
-                -- Rebobinar el puntero a un corte anterior ya existente en el historico
-                IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
-                BEGIN
-                    ROLLBACK TRAN;
-                    THROW 50002, 'La fecha de reproceso no existe como corte historico valido en ParametrosCorte.', 1;
-                END
 
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE Estado = 1;
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
-            END
-            ELSE -- @FechaBandeja > @FechaActiva
-            BEGIN
-                DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
 
-                WHILE @FechaCursor < @FechaBandeja
-                BEGIN
-                    SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
-
-                    IF @Siguiente IS NULL
-                    BEGIN
-                        ROLLBACK TRAN;
-                        THROW 50004, 'No se pudo calcular el siguiente corte; la fecha activa no corresponde a un dia de corte valido.', 1;
-                    END
-
-                    IF @Siguiente = @FechaBandeja
-                    BEGIN
-                        IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
-                            UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @Siguiente;
-                        ELSE
-                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 1);
-                    END
-                    ELSE
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
-                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 0);
-                    END
-
-                    SET @FechaCursor = @Siguiente;
-                END
-
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE FechaCorte = @FechaActiva;
-            END
-
-            -- 4. Resetear el historico SOLO si es reproceso hacia un corte anterior
-            IF @FechaBandeja < @FechaActiva
-            BEGIN
-                UPDATE [dbo].[HistoricoMaestroEstadosCuentaJSON]
-                SET Procesado = '0'
-                WHERE FechaCorte = @FechaCorteProceso
-                  AND Procesado = '1';
-            END
-
-            -- 5. Limpieza: borrar de ParametrosCorte los cortes mayores a la fecha
-            --    que quedo activa, siempre y cuando NUNCA hayan generado registros
-            --    reales en el historico (es decir, fueron saltados a proposito y
-            --    nunca se procesaron). Esto nunca borra un corte con data real.
-            DELETE p
-            FROM [dbo].[ParametrosCorte] p
-            WHERE p.FechaCorte > @FechaCorteProceso
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM [dbo].[HistoricoMaestroEstadosCuentaJSON] h
-                  WHERE h.FechaCorte = p.FechaCorte
-              );
-
-        COMMIT TRAN;
-
-    END TRY
-    BEGIN CATCH
-        IF XACT_STATE() <> 0
-            ROLLBACK TRAN;
-        THROW;
-    END CATCH
-END
-GO
+Mira que tengo un problema con este sp .. quizas si hacemos que simplemente tome la fecha mayor .. que piensas?
