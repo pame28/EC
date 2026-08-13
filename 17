@@ -1,129 +1,31 @@
-USE [EstadosCuentaJSONProcesador]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_SincronizarFechaCorte]    Script Date: 13/8/2026 16:27:37 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+Es que no se si me estas entendiendo .. yo me lo imainaba asi los casos de reproceso:
+
+Se toma la fecha maxima de BandejaEncabezado... @FECHA
 
 
-ALTER PROCEDURE [dbo].[usp_SincronizarFechaCorte]
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON; -- si algo falla, revierte automaticamente toda la transaccion
+Ok... esa fecha se busca en ParametrosCorte...
 
-    BEGIN TRY
+Casos:
 
-        DECLARE @FechaBandeja DATE, @FechaActiva DATE;
-        DECLARE @CantidadFechasDistintas INT;
-        DECLARE @EsReproceso BIT = 0;
-        DECLARE @FechaCorteProceso DATE;
+01.
+Esa  @FECHA es mayor a la fecha activa de parametros corte..
+Entonces se tiene que poner en 0 la que esta activa 
+Agregarse las que van en medio de esa  @FECHA y la fecha activa
+y esa  @FECHA se pasa a Estado 1 
 
-        -- 1. Validar que la bandeja tenga exactamente una fecha de corte cargada
-        SELECT @CantidadFechasDistintas = COUNT(DISTINCT Fecha_Corte)
-        FROM [dbo].[BandejaEstadoCuenta];
+02.
+Esa  @FECHA es menor a la fecha activa de parametros corte..
+Entonces se tiene que poner en 0 la que esta activa
+Agregarse las que van en medio de esa  @FECHA y la fecha activa
+Las que son mayor a la  @FECHA entonces se tienen que elimina
+y esa  @FECHA se pasa a Estado 1
 
-        IF @CantidadFechasDistintas = 0
-            THROW 50003, 'BandejaEstadoCuenta esta vacia, no hay fecha de corte que sincronizar.', 1;
 
-        IF @CantidadFechasDistintas > 1
-            THROW 50001, 'BandejaEstadoCuenta contiene mas de una FechaCorte distinta. Revisar carga.', 1;
+03. 
+En parametrosCorte no hay fecha activa .. todas estan en estado 0
+Entonces, ahi se toma la MAX fecha de parametroscorte 
+y dependiendo de eso .. decides .. si @FECHA puede entrar en el caso 01 o 02
 
-        SELECT @FechaBandeja = Fecha_Corte FROM [dbo].[BandejaEstadoCuenta] GROUP BY Fecha_Corte;
-        SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
 
-        -- 1.5. Caso ARRANQUE: no hay ninguna fecha activa en ParametrosCorte.
-        --      No hay nada que comparar/rebobinar/avanzar, se activa directo
-        --      la fecha que trae la bandeja.
-        IF @FechaActiva IS NULL
-        BEGIN
-            IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
-            ELSE
-                INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
 
-            RETURN;
-        END
 
-        -- 2. Caso NORMAL: no hay nada que sincronizar, se sale de una vez
-        IF @FechaBandeja = @FechaActiva
-        BEGIN
-            RETURN;
-        END
-
-        SET @EsReproceso = 1;
-        SET @FechaCorteProceso = @FechaBandeja;
-
-        BEGIN TRAN;
-
-            -- 3. Sincronizar ParametrosCorte segun direccion
-            IF @FechaBandeja < @FechaActiva
-            BEGIN
-                -- Rebobinar el puntero a un corte anterior ya existente en el historico
-                IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
-                BEGIN
-                    ROLLBACK TRAN;
-                    THROW 50002, 'La fecha de reproceso no existe como corte historico valido en ParametrosCorte.', 1;
-                END
-
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE Estado = 1;
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
-            END
-            ELSE -- @FechaBandeja > @FechaActiva
-            BEGIN
-                DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
-
-                WHILE @FechaCursor < @FechaBandeja
-                BEGIN
-                    SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
-
-                    IF @Siguiente IS NULL
-                    BEGIN
-                        ROLLBACK TRAN;
-                        THROW 50004, 'No se pudo calcular el siguiente corte; la fecha activa no corresponde a un dia de corte valido.', 1;
-                    END
-
-                    IF @Siguiente = @FechaBandeja
-                    BEGIN
-                        IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
-                            UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @Siguiente;
-                        ELSE
-                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 1);
-                    END
-                    ELSE
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
-                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 0);
-                    END
-
-                    SET @FechaCursor = @Siguiente;
-                END
-
-                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE FechaCorte = @FechaActiva;
-            END
-
-            -- 4. Resetear el historico SOLO si es reproceso hacia un corte anterior
-            IF @FechaBandeja < @FechaActiva
-            BEGIN
-                UPDATE [dbo].[HistoricoMaestroEstadosCuentaJSON]
-                SET Procesado = '0'
-                WHERE FechaCorte = @FechaCorteProceso
-                  AND Procesado = '1';
-            END
-
-            -- 5. Limpieza: borrar de ParametrosCorte los cortes mayores a la fecha
-            --    que quedo activa
-            DELETE p
-            FROM [dbo].[ParametrosCorte] p
-            WHERE p.FechaCorte > @FechaCorteProceso;
-
-        COMMIT TRAN;
-
-    END TRY
-    BEGIN CATCH
-        IF XACT_STATE() <> 0
-            ROLLBACK TRAN;
-        THROW;
-    END CATCH
-END
