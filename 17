@@ -6,11 +6,52 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
+-- =====================================================================================
+-- Objeto:				[dbo].[usp_SincronizarFechaCorte]
+-- Description:			Determina la fecha de corte a procesar comparando la fecha de
+--						BandejaEstadoCuenta contra ParametrosCorte, y sincroniza
+--						ParametrosCorte segun tres casos (01 avance, 02 reproceso,
+--						03 sin fecha activa). Ver detalle de cada caso en los
+--						comentarios dentro del cuerpo del procedimiento.
+--
+--						Validaciones de negocio esperables (bandeja vacia o con mas
+--						de una fecha) NO usan THROW: se reportan via los parametros
+--						de salida @ResultadoValidacion / @MensajeValidacion, para
+--						que el DTSX decida que hacer (ej. enviar correo y detener
+--						el paquete) usando una expression en un precedence
+--						constraint, sin necesitar Event Handlers ni que el task
+--						truene en rojo sin informacion util.
+--
+--						THROW se reserva para errores tecnicos/inesperados (fecha
+--						de reproceso con dia invalido, secuencia de corte corrupta,
+--						etc.) que si ameritan que el task falle de verdad.
+--
+-- Parametros salida:	@ResultadoValidacion VARCHAR(20)  -> 'OK', 'SIN_DATOS' o
+--													'FECHAS_MULTIPLES'
+--						@MensajeValidacion   VARCHAR(500) -> detalle del problema,
+--													NULL si @ResultadoValidacion = 'OK'
+--
+-- Prerequisito:		Requiere la funcion [dbo].[fn_SiguienteFechaCorte]
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+-- (completar)       Reestructurado para reutilizar la logica de los				13-08-2026
+--                   casos 01/02 cuando no existe ninguna fecha activa
+-- (completar)       Las validaciones de bandeja (vacia / multiples fechas)		13-08-2026
+--                   vuelven a existir, ahora como output en vez de THROW
+-- =======================================================================================
+
 ALTER PROCEDURE [dbo].[usp_SincronizarFechaCorte]
+    @ResultadoValidacion VARCHAR(20)  OUTPUT,
+    @MensajeValidacion   VARCHAR(500) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON; -- si algo falla, revierte automaticamente toda la transaccion
+
+    SET @ResultadoValidacion = 'OK';
+    SET @MensajeValidacion = NULL;
 
     BEGIN TRY
 
@@ -18,12 +59,30 @@ BEGIN
         DECLARE @EsReproceso BIT = 0;
         DECLARE @FechaCorteProceso DATE;
         DECLARE @HayActivaReal BIT = 1;
+        DECLARE @CantidadFechasDistintas INT;
 
+        -- Validaciones de negocio esperables sobre BandejaEstadoCuenta
+        SELECT @CantidadFechasDistintas = COUNT(DISTINCT Fecha_Corte)
+        FROM [dbo].[BandejaEstadoCuenta];
+
+        IF @CantidadFechasDistintas = 0
+        BEGIN
+            SET @ResultadoValidacion = 'SIN_DATOS';
+            SET @MensajeValidacion = 'BandejaEstadoCuenta esta vacia, no hay fecha de corte que sincronizar.';
+            RETURN;
+        END
+
+        IF @CantidadFechasDistintas > 1
+        BEGIN
+            SET @ResultadoValidacion = 'FECHAS_MULTIPLES';
+            SET @MensajeValidacion = 'BandejaEstadoCuenta contiene mas de una FechaCorte distinta. Revisar carga.';
+            RETURN;
+        END
 
         SELECT @FechaBandeja = Fecha_Corte FROM [dbo].[BandejaEstadoCuenta] GROUP BY Fecha_Corte;
         SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
 
-    
+        -- Caso 03: no hay ninguna fecha activa
         IF @FechaActiva IS NULL
         BEGIN
             SET @HayActivaReal = 0;
@@ -31,17 +90,19 @@ BEGIN
 
             IF @FechaActiva IS NULL
             BEGIN
-
+                -- Tabla completamente vacia: primer arranque real, nada que comparar
                 INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
                 RETURN;
             END
         END
 
+        -- Caso NORMAL real: si hay activa de verdad y coincide, no hay nada que hacer
         IF @HayActivaReal = 1 AND @FechaBandeja = @FechaActiva
         BEGIN
             RETURN;
         END
 
+        -- No hay activa real, pero la MAX coincide con la bandeja: solo activarla
         IF @HayActivaReal = 0 AND @FechaBandeja = @FechaActiva
         BEGIN
             UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
@@ -55,7 +116,7 @@ BEGIN
 
             IF @FechaBandeja > @FechaActiva
             BEGIN
-
+                -- Caso 01: avance, caminando la secuencia y agregando intermedios
                 DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
 
                 WHILE @FechaCursor < @FechaBandeja
@@ -88,7 +149,7 @@ BEGIN
             END
             ELSE -- @FechaBandeja < @FechaActiva
             BEGIN
-
+                -- Caso 02: reproceso hacia atras
                 IF DATEPART(DAY, @FechaBandeja) NOT IN (6, 10, 18, 24, 27)
                 BEGIN
                     ROLLBACK TRAN;
@@ -103,6 +164,7 @@ BEGIN
                     INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
             END
 
+            -- Resetear el historico SOLO si es reproceso hacia un corte anterior
             IF @FechaBandeja < @FechaActiva
             BEGIN
                 UPDATE [dbo].[HistoricoMaestroEstadosCuentaJSON]
@@ -111,6 +173,8 @@ BEGIN
                   AND Procesado = '1';
             END
 
+            -- Limpieza: borrar de ParametrosCorte los cortes mayores a la fecha
+            -- que quedo activa
             DELETE p
             FROM [dbo].[ParametrosCorte] p
             WHERE p.FechaCorte > @FechaCorteProceso;
@@ -124,13 +188,3 @@ BEGIN
         THROW;
     END CATCH
 END
-
-
-
-
-
-
-Sabes, eliminé las validaciones que hacias sobre BandejaEncabezado .. para ver si  tenia datos o si tenia dos o mas fechas diferntes ...
-
-Pero creo que si seria buena idea.. como para que no siga el dtsx .. no se si pasarlo como error o como un output .. que piensas? 
-no se si en un dtsx solo se puede ir a otro contenedor aen caso de OnError ... como podemos manejarlo? porque si dejo el sp tal cual .. truena todo el dtsx y hasta ahi llega el proceso .. como que si falló y sin info 
