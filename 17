@@ -1,31 +1,190 @@
-Es que no se si me estas entendiendo .. yo me lo imainaba asi los casos de reproceso:
+USE [EstadosCuentaJSONProcesador]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_SincronizarFechaCorte]    Script Date: 13/8/2026 16:27:37 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
-Se toma la fecha maxima de BandejaEncabezado... @FECHA
+-- =====================================================================================
+-- Objeto:				[dbo].[usp_SincronizarFechaCorte]
+-- Description:			Determina la fecha de corte a procesar comparando la fecha de
+--						BandejaEstadoCuenta contra ParametrosCorte, y sincroniza
+--						ParametrosCorte segun tres casos:
+--
+--						01. @FechaBandeja > activa  -> Avance: desactiva la activa,
+--							agrega (si faltan) las fechas intermedias entre la activa
+--							vieja y @FechaBandeja como Estado=0, activa @FechaBandeja.
+--
+--						02. @FechaBandeja < activa  -> Reproceso: desactiva la activa,
+--							valida que @FechaBandeja sea un dia de corte real
+--							(06/10/18/24/27), la agrega si no existe y la activa.
+--							Las fechas intermedias entre @FechaBandeja y la activa
+--							vieja NO se insertan por separado porque la limpieza
+--							final (paso comun a ambos casos) las eliminaria de
+--							inmediato al ser mayores a @FechaBandeja - insertarlas
+--							y borrarlas en el mismo procedimiento no cambia el
+--							resultado final.
+--
+--						03. No hay ninguna fecha activa (Estado=1) en ParametrosCorte:
+--							- Si la tabla esta completamente vacia: se inserta
+--							  @FechaBandeja directo con Estado=1 (primer arranque).
+--							- Si hay filas pero ninguna activa: se toma MAX(FechaCorte)
+--							  como referencia y, segun si @FechaBandeja es mayor,
+--							  menor o igual a esa referencia, se reutiliza la misma
+--							  logica del caso 01 o 02 (o solo se activa, si son
+--							  iguales).
+--
+--						Limpieza final (todos los casos, excepto el arranque total):
+--						se borra de ParametrosCorte cualquier fecha mayor a la que
+--						quedo activa al terminar.
+--
+--						Reemplaza a usp_ActualizarFechaCorte, que ya NO debe
+--						ejecutarse al final del paquete DTSX.
+--
+-- Prerequisito:		Requiere la funcion [dbo].[fn_SiguienteFechaCorte]
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+-- (completar)       Reestructurado para reutilizar la logica de los				13-08-2026
+--                   casos 01/02 cuando no existe ninguna fecha activa
+--                   (caso 03, usando MAX(FechaCorte) como referencia)
+-- =======================================================================================
 
+ALTER PROCEDURE [dbo].[usp_SincronizarFechaCorte]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON; -- si algo falla, revierte automaticamente toda la transaccion
 
-Ok... esa fecha se busca en ParametrosCorte...
+    BEGIN TRY
 
-Casos:
+        DECLARE @FechaBandeja DATE, @FechaActiva DATE;
+        DECLARE @CantidadFechasDistintas INT;
+        DECLARE @EsReproceso BIT = 0;
+        DECLARE @FechaCorteProceso DATE;
+        DECLARE @HayActivaReal BIT = 1;
 
-01.
-Esa  @FECHA es mayor a la fecha activa de parametros corte..
-Entonces se tiene que poner en 0 la que esta activa 
-Agregarse las que van en medio de esa  @FECHA y la fecha activa
-y esa  @FECHA se pasa a Estado 1 
+        -- 1. Validar que la bandeja tenga exactamente una fecha de corte cargada
+        SELECT @CantidadFechasDistintas = COUNT(DISTINCT Fecha_Corte)
+        FROM [dbo].[BandejaEstadoCuenta];
 
-02.
-Esa  @FECHA es menor a la fecha activa de parametros corte..
-Entonces se tiene que poner en 0 la que esta activa
-Agregarse las que van en medio de esa  @FECHA y la fecha activa
-Las que son mayor a la  @FECHA entonces se tienen que elimina
-y esa  @FECHA se pasa a Estado 1
+        IF @CantidadFechasDistintas = 0
+            THROW 50003, 'BandejaEstadoCuenta esta vacia, no hay fecha de corte que sincronizar.', 1;
 
+        IF @CantidadFechasDistintas > 1
+            THROW 50001, 'BandejaEstadoCuenta contiene mas de una FechaCorte distinta. Revisar carga.', 1;
 
-03. 
-En parametrosCorte no hay fecha activa .. todas estan en estado 0
-Entonces, ahi se toma la MAX fecha de parametroscorte 
-y dependiendo de eso .. decides .. si @FECHA puede entrar en el caso 01 o 02
+        SELECT @FechaBandeja = Fecha_Corte FROM [dbo].[BandejaEstadoCuenta] GROUP BY Fecha_Corte;
+        SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
 
+        -- 3. Caso 03: no hay ninguna fecha activa
+        IF @FechaActiva IS NULL
+        BEGIN
+            SET @HayActivaReal = 0;
+            SELECT @FechaActiva = MAX(FechaCorte) FROM [dbo].[ParametrosCorte];
 
+            IF @FechaActiva IS NULL
+            BEGIN
+                -- Tabla completamente vacia: primer arranque real, nada que comparar
+                INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
+                RETURN;
+            END
+        END
 
+        -- Caso NORMAL real: si hay activa de verdad y coincide, no hay nada que hacer
+        IF @HayActivaReal = 1 AND @FechaBandeja = @FechaActiva
+        BEGIN
+            RETURN;
+        END
 
+        -- No hay activa real, pero la MAX coincide con la bandeja: solo activarla
+        IF @HayActivaReal = 0 AND @FechaBandeja = @FechaActiva
+        BEGIN
+            UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
+            RETURN;
+        END
+
+        SET @EsReproceso = 1;
+        SET @FechaCorteProceso = @FechaBandeja;
+
+        BEGIN TRAN;
+
+            IF @FechaBandeja > @FechaActiva
+            BEGIN
+                -- Caso 01: avance, caminando la secuencia y agregando intermedios
+                DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
+
+                WHILE @FechaCursor < @FechaBandeja
+                BEGIN
+                    SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
+
+                    IF @Siguiente IS NULL
+                    BEGIN
+                        ROLLBACK TRAN;
+                        THROW 50004, 'No se pudo calcular el siguiente corte; la fecha de referencia no corresponde a un dia de corte valido.', 1;
+                    END
+
+                    IF @Siguiente = @FechaBandeja
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
+                            UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @Siguiente;
+                        ELSE
+                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 1);
+                    END
+                    ELSE
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
+                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 0);
+                    END
+
+                    SET @FechaCursor = @Siguiente;
+                END
+
+                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE FechaCorte = @FechaActiva;
+            END
+            ELSE -- @FechaBandeja < @FechaActiva
+            BEGIN
+                -- Caso 02: reproceso hacia atras. Se valida el dia de corte, se
+                -- agrega si no existe y se activa. No se insertan intermedios por
+                -- separado (ver nota arriba: la limpieza final los eliminaria de
+                -- inmediato de todas formas).
+                IF DATEPART(DAY, @FechaBandeja) NOT IN (6, 10, 18, 24, 27)
+                BEGIN
+                    ROLLBACK TRAN;
+                    THROW 50006, 'La fecha de reproceso no corresponde a un dia de corte valido (06, 10, 18, 24, 27).', 1;
+                END
+
+                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE Estado = 1;
+
+                IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
+                    UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
+                ELSE
+                    INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
+            END
+
+            -- 4. Resetear el historico SOLO si es reproceso hacia un corte anterior
+            IF @FechaBandeja < @FechaActiva
+            BEGIN
+                UPDATE [dbo].[HistoricoMaestroEstadosCuentaJSON]
+                SET Procesado = '0'
+                WHERE FechaCorte = @FechaCorteProceso
+                  AND Procesado = '1';
+            END
+
+            -- 5. Limpieza: borrar de ParametrosCorte los cortes mayores a la fecha
+            --    que quedo activa
+            DELETE p
+            FROM [dbo].[ParametrosCorte] p
+            WHERE p.FechaCorte > @FechaCorteProceso;
+
+        COMMIT TRAN;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRAN;
+        THROW;
+    END CATCH
+END
