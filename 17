@@ -1,79 +1,122 @@
-USE [BandejaVASA]
-GO
+using Microsoft.Extensions.Caching.Memory;
+using System.Net.Http;
+using System.Text.Json;
+using transacciones_flotantes.Models.AccessToken;
+using transacciones_flotantes.Service.Interface;
 
-/* ==========================================================================
-   DIAGNÓSTICO ESPECÍFICO: uvw_SaldosVasa
-   Traza por qué una tarjeta CategoriaTarjeta='0' no sale (o sale la '1' en su lugar)
-   ========================================================================== */
+namespace transacciones_flotantes.Service
+{
+    public class ProveedorTokenService : IProveedorTokenService
+    {
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMemoryCache _cache;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<ProveedorTokenService> _logger;
 
-DECLARE @NoCuenta VARCHAR(20) = '0000000000';  -- <-- Coloca aquí el NoCuenta (NoUsuario) a validar
--- Si no conoces el NoCuenta, puedes obtenerlo del CIF así:
--- SELECT DISTINCT NoUsuario FROM EPosicionDiaria WHERE NoClienteUnico = 'TU_CIF';
+        private static readonly SemaphoreSlim _lock = new(1, 1);
 
--- --------------------------------------------------------------------------
--- PASO A: TODAS las tarjetas del NoCuenta en MaestroSaldos + ETarjetas
---         (antes de cualquier filtro de la vista) -> aquí vemos qué categorías
---         existen realmente y con qué estados.
--- --------------------------------------------------------------------------
-SELECT 'PASO A - Tarjetas crudas en MaestroSaldos + ETarjetas' AS Paso,
-       a.NoCuenta, a.NumeroTarjeta, a.CategoriaTarjeta, a.EstadoTarjeta AS EstadoTarjeta_MaestroSaldos,
-       t.EstadoHabilitar, t.TarjetaImprimir, a.EstadoCuenta
-FROM MaestroSaldos a WITH(NOLOCK)
-INNER JOIN ETarjetas t WITH(NOLOCK) ON a.NumeroTarjeta = t.NumeroTarjeta
-WHERE a.NoCuenta = @NoCuenta
-ORDER BY a.CategoriaTarjeta, a.NumeroTarjeta;
--- Revisa: ¿aparece la tarjeta cat=0 aquí? Si NO aparece -> el problema es que
--- MaestroSaldos y ETarjetas no están haciendo match para esa tarjeta (revisar PASO B).
+        private const string CACHE_TOKEN = "ACCESS_TOKEN";
 
--- --------------------------------------------------------------------------
--- PASO B: ¿La tarjeta cat=0 existe en MaestroSaldos pero NO en ETarjetas (o viceversa)?
---         Esto detecta problemas de "join" (formato de NumeroTarjeta, etc.)
--- --------------------------------------------------------------------------
-SELECT 'PASO B1 - Solo en MaestroSaldos (no matchea en ETarjetas)' AS Paso,
-       a.NoCuenta, a.NumeroTarjeta, a.CategoriaTarjeta, a.EstadoTarjeta
-FROM MaestroSaldos a WITH(NOLOCK)
-WHERE a.NoCuenta = @NoCuenta
-  AND a.CategoriaTarjeta = '0'
-  AND NOT EXISTS (SELECT 1 FROM ETarjetas t WITH(NOLOCK) WHERE t.NumeroTarjeta = a.NumeroTarjeta);
+        public ProveedorTokenService(
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache,
+            IConfiguration configuration,
+            ILogger<ProveedorTokenService> logger)
+        {
+            _httpClientFactory = httpClientFactory;
+            _cache = cache;
+            _configuration = configuration;
+            _logger = logger;
+        }
 
--- --------------------------------------------------------------------------
--- PASO C: De las tarjetas que SÍ pasan el join (Paso A), ¿cuáles pasan el
---         filtro de EstadoHabilitar de la vista?
--- --------------------------------------------------------------------------
-SELECT 'PASO C - Filtro EstadoHabilitar' AS Paso,
-       a.NoCuenta, a.NumeroTarjeta, a.CategoriaTarjeta, a.EstadoTarjeta, t.EstadoHabilitar,
-       CASE WHEN t.EstadoHabilitar IN ('','I','*','R','U','A','B','E','D','H','G','K','J') 
-            THEN 'PASA' ELSE 'NO PASA - EXCLUIDA AQUI' END AS Resultado
-FROM MaestroSaldos a WITH(NOLOCK)
-INNER JOIN ETarjetas t WITH(NOLOCK) ON a.NumeroTarjeta = t.NumeroTarjeta
-WHERE a.NoCuenta = @NoCuenta
-ORDER BY a.CategoriaTarjeta, a.NumeroTarjeta;
+        public async Task<string> ObtenerAccessTokenAsync()
+        {
+            if (_cache.TryGetValue(CACHE_TOKEN, out string token))
+            {
+                return token;
+            }
 
--- --------------------------------------------------------------------------
--- PASO D: De las que pasan el Paso C, ¿en qué rama caen según EstadoTarjeta?
---         Solo 20, 22, 25, 29 tienen rama. Cualquier otro valor = excluida.
--- --------------------------------------------------------------------------
-SELECT 'PASO D - Clasificacion por EstadoTarjeta' AS Paso,
-       a.NoCuenta, a.NumeroTarjeta, a.CategoriaTarjeta, a.EstadoTarjeta,
-       CASE a.EstadoTarjeta
-            WHEN 20 THEN 'Normal (activa)'
-            WHEN 22 THEN 'Orden No Renovar'
-            WHEN 25 THEN 'Problema'
-            WHEN 29 THEN 'Cerrada'
-            ELSE 'SIN RAMA - EXCLUIDA (EstadoTarjeta no contemplado por la vista)'
-       END AS RamaDestino
-FROM MaestroSaldos a WITH(NOLOCK)
-INNER JOIN ETarjetas t WITH(NOLOCK) ON a.NumeroTarjeta = t.NumeroTarjeta
-WHERE a.NoCuenta = @NoCuenta
-  AND t.EstadoHabilitar IN ('','I','*','R','U','A','B','E','D','H','G','K','J')
-ORDER BY a.CategoriaTarjeta, a.NumeroTarjeta;
+            await _lock.WaitAsync();
 
--- --------------------------------------------------------------------------
--- PASO E: Resultado final de la vista para este NoCuenta (todas las categorías)
--- --------------------------------------------------------------------------
-SELECT 'PASO E - Resultado final uvw_SaldosVasa' AS Paso,
-       Cif, NoCuenta, NumeroTarjeta, CategoriaTarjeta, EstadoTarjeta, EstadoCuenta
-FROM uvw_SaldosVasa
-WHERE NoCuenta = @NoCuenta;
+            try
+            {
+                // Double check para evitar race conditions
+                if (_cache.TryGetValue(CACHE_TOKEN, out token))
+                {
+                    return token;
+                }
 
-GO
+                _logger.LogInformation("Generando nuevo accessToken...");
+
+                var tokenResponse = await GenerarTokenAsync();
+
+               
+                var expiration = DateTime.UtcNow.AddMilliseconds(tokenResponse.expiresIn);
+
+                _cache.Set(
+                    CACHE_TOKEN,
+                    tokenResponse.accessToken,
+                    expiration
+                );
+
+                _logger.LogInformation("AccessToken generado y almacenado en cache. Expira en: {Expiration:u}", expiration);
+
+                return tokenResponse.accessToken;
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        private async Task<AccessTokenResponse> GenerarTokenAsync()
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+
+                var url = $"{_configuration["ApiSettings:EndpointAccessToken"]}";
+
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+                var response = await client.SendAsync(request);
+
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                var tokenResponse = JsonSerializer.Deserialize<AccessTokenResponse>(json);
+
+                if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.accessToken))
+                {
+                    throw new InvalidOperationException("La respuesta del endpoint de accessToken es nula o no contiene accessToken.");
+                }
+
+                return tokenResponse;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo accessToken desde el endpoint centralizado.");
+                throw;
+            }
+        }
+
+        public void InvalidarToken()
+        {
+            _cache.Remove(CACHE_TOKEN);
+            _logger.LogInformation("AccessToken Invalidado del cache");
+        }
+    }
+}
+
+
+
+
+
+Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL
+Posible tipo de valor devuelto de referencia nulo.
+Se va a convertir un literal nulo o un posible valor nulo en un tipo que no acepta valores NULL
+Posible tipo de valor devuelto de referencia nulo.
+
+
+Ayudame a corregirlo
