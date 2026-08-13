@@ -1,3 +1,34 @@
-EXEC [dbo].[usp_SincronizarFechaCorte]
-    @EsReproceso = ? OUTPUT,
-    @FechaCorteProceso = ? OUTPUT;
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[HistoricoMaestroEstadosCuentaJSON]    Script Date: 13/8/2026 14:44:01 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[HistoricoMaestroEstadosCuentaJSON](
+	[IdRow] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCorte] [date] NOT NULL,
+	[NoTarjeta] [char](16) NULL,
+	[NoCuenta] [varchar](25) NOT NULL,
+	[NoCuentaVASA] [varchar](25) NOT NULL,
+	[Nombre] [varchar](255) NOT NULL,
+	[Correo] [varchar](255) NOT NULL,
+	[Origen] [varchar](4) NULL,
+	[Lote] [int] NULL,
+	[Procesado] [char](2) NOT NULL,
+	[FechaEjecucion] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[IdRow] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+
+
+
+Mira, esta es la tabla
