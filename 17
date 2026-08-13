@@ -6,52 +6,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
--- =====================================================================================
--- Objeto:				[dbo].[usp_SincronizarFechaCorte]
--- Description:			Determina la fecha de corte a procesar comparando la fecha de
---						BandejaEstadoCuenta contra ParametrosCorte, y sincroniza
---						ParametrosCorte segun tres casos:
---
---						01. @FechaBandeja > activa  -> Avance: desactiva la activa,
---							agrega (si faltan) las fechas intermedias entre la activa
---							vieja y @FechaBandeja como Estado=0, activa @FechaBandeja.
---
---						02. @FechaBandeja < activa  -> Reproceso: desactiva la activa,
---							valida que @FechaBandeja sea un dia de corte real
---							(06/10/18/24/27), la agrega si no existe y la activa.
---							Las fechas intermedias entre @FechaBandeja y la activa
---							vieja NO se insertan por separado porque la limpieza
---							final (paso comun a ambos casos) las eliminaria de
---							inmediato al ser mayores a @FechaBandeja - insertarlas
---							y borrarlas en el mismo procedimiento no cambia el
---							resultado final.
---
---						03. No hay ninguna fecha activa (Estado=1) en ParametrosCorte:
---							- Si la tabla esta completamente vacia: se inserta
---							  @FechaBandeja directo con Estado=1 (primer arranque).
---							- Si hay filas pero ninguna activa: se toma MAX(FechaCorte)
---							  como referencia y, segun si @FechaBandeja es mayor,
---							  menor o igual a esa referencia, se reutiliza la misma
---							  logica del caso 01 o 02 (o solo se activa, si son
---							  iguales).
---
---						Limpieza final (todos los casos, excepto el arranque total):
---						se borra de ParametrosCorte cualquier fecha mayor a la que
---						quedo activa al terminar.
---
---						Reemplaza a usp_ActualizarFechaCorte, que ya NO debe
---						ejecutarse al final del paquete DTSX.
---
--- Prerequisito:		Requiere la funcion [dbo].[fn_SiguienteFechaCorte]
---****************************************************************************************
---						HISTORIAL DE MODIFICACIONES
---****************************************************************************************
---Nombre:			Descripcion												Fecha
--- (completar)       Reestructurado para reutilizar la logica de los				13-08-2026
---                   casos 01/02 cuando no existe ninguna fecha activa
---                   (caso 03, usando MAX(FechaCorte) como referencia)
--- =======================================================================================
-
 ALTER PROCEDURE [dbo].[usp_SincronizarFechaCorte]
 AS
 BEGIN
@@ -61,25 +15,15 @@ BEGIN
     BEGIN TRY
 
         DECLARE @FechaBandeja DATE, @FechaActiva DATE;
-        DECLARE @CantidadFechasDistintas INT;
         DECLARE @EsReproceso BIT = 0;
         DECLARE @FechaCorteProceso DATE;
         DECLARE @HayActivaReal BIT = 1;
 
-        -- 1. Validar que la bandeja tenga exactamente una fecha de corte cargada
-        SELECT @CantidadFechasDistintas = COUNT(DISTINCT Fecha_Corte)
-        FROM [dbo].[BandejaEstadoCuenta];
-
-        IF @CantidadFechasDistintas = 0
-            THROW 50003, 'BandejaEstadoCuenta esta vacia, no hay fecha de corte que sincronizar.', 1;
-
-        IF @CantidadFechasDistintas > 1
-            THROW 50001, 'BandejaEstadoCuenta contiene mas de una FechaCorte distinta. Revisar carga.', 1;
 
         SELECT @FechaBandeja = Fecha_Corte FROM [dbo].[BandejaEstadoCuenta] GROUP BY Fecha_Corte;
         SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
 
-        -- 3. Caso 03: no hay ninguna fecha activa
+    
         IF @FechaActiva IS NULL
         BEGIN
             SET @HayActivaReal = 0;
@@ -87,19 +31,17 @@ BEGIN
 
             IF @FechaActiva IS NULL
             BEGIN
-                -- Tabla completamente vacia: primer arranque real, nada que comparar
+
                 INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
                 RETURN;
             END
         END
 
-        -- Caso NORMAL real: si hay activa de verdad y coincide, no hay nada que hacer
         IF @HayActivaReal = 1 AND @FechaBandeja = @FechaActiva
         BEGIN
             RETURN;
         END
 
-        -- No hay activa real, pero la MAX coincide con la bandeja: solo activarla
         IF @HayActivaReal = 0 AND @FechaBandeja = @FechaActiva
         BEGIN
             UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
@@ -113,7 +55,7 @@ BEGIN
 
             IF @FechaBandeja > @FechaActiva
             BEGIN
-                -- Caso 01: avance, caminando la secuencia y agregando intermedios
+
                 DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
 
                 WHILE @FechaCursor < @FechaBandeja
@@ -146,10 +88,7 @@ BEGIN
             END
             ELSE -- @FechaBandeja < @FechaActiva
             BEGIN
-                -- Caso 02: reproceso hacia atras. Se valida el dia de corte, se
-                -- agrega si no existe y se activa. No se insertan intermedios por
-                -- separado (ver nota arriba: la limpieza final los eliminaria de
-                -- inmediato de todas formas).
+
                 IF DATEPART(DAY, @FechaBandeja) NOT IN (6, 10, 18, 24, 27)
                 BEGIN
                     ROLLBACK TRAN;
@@ -164,7 +103,6 @@ BEGIN
                     INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@FechaBandeja, 1);
             END
 
-            -- 4. Resetear el historico SOLO si es reproceso hacia un corte anterior
             IF @FechaBandeja < @FechaActiva
             BEGIN
                 UPDATE [dbo].[HistoricoMaestroEstadosCuentaJSON]
@@ -173,8 +111,6 @@ BEGIN
                   AND Procesado = '1';
             END
 
-            -- 5. Limpieza: borrar de ParametrosCorte los cortes mayores a la fecha
-            --    que quedo activa
             DELETE p
             FROM [dbo].[ParametrosCorte] p
             WHERE p.FechaCorte > @FechaCorteProceso;
@@ -188,3 +124,13 @@ BEGIN
         THROW;
     END CATCH
 END
+
+
+
+
+
+
+Sabes, eliminé las validaciones que hacias sobre BandejaEncabezado .. para ver si  tenia datos o si tenia dos o mas fechas diferntes ...
+
+Pero creo que si seria buena idea.. como para que no siga el dtsx .. no se si pasarlo como error o como un output .. que piensas? 
+no se si en un dtsx solo se puede ir a otro contenedor aen caso de OnError ... como podemos manejarlo? porque si dejo el sp tal cual .. truena todo el dtsx y hasta ahi llega el proceso .. como que si falló y sin info 
