@@ -1,4 +1,11 @@
+DECLARE @EsReproceso BIT, @FechaCorteProceso DATE, @FilasHistoricoReseteadas INT;
+
 EXEC [dbo].[usp_SincronizarFechaCorte]
-    @EsReproceso = ? OUTPUT,
-    @FechaCorteProceso = ? OUTPUT,
-    @FilasHistoricoReseteadas = ? OUTPUT;
+    @EsReproceso = @EsReproceso OUTPUT,
+    @FechaCorteProceso = @FechaCorteProceso OUTPUT,
+    @FilasHistoricoReseteadas = @FilasHistoricoReseteadas OUTPUT;
+
+SELECT 
+    @EsReproceso AS EsReproceso, 
+    @FechaCorteProceso AS FechaCorteProceso,
+    @FilasHistoricoReseteadas AS FilasHistoricoReseteadas;
