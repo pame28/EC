@@ -1,34 +1,170 @@
 USE [EstadosCuentaJSONProcesador]
 GO
-
-/****** Object:  Table [dbo].[HistoricoMaestroEstadosCuentaJSON]    Script Date: 13/8/2026 14:44:01 ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE TABLE [dbo].[HistoricoMaestroEstadosCuentaJSON](
-	[IdRow] [int] IDENTITY(1,1) NOT NULL,
-	[FechaCorte] [date] NOT NULL,
-	[NoTarjeta] [char](16) NULL,
-	[NoCuenta] [varchar](25) NOT NULL,
-	[NoCuentaVASA] [varchar](25) NOT NULL,
-	[Nombre] [varchar](255) NOT NULL,
-	[Correo] [varchar](255) NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[Lote] [int] NULL,
-	[Procesado] [char](2) NOT NULL,
-	[FechaEjecucion] [datetime] NOT NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[IdRow] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+-- =====================================================================================
+-- Objeto:				[dbo].[usp_SincronizarFechaCorte]
+-- Autor:				(completar)
+-- Fecha creacion:		21-07-2026
+-- Ultima modificacion:	13-08-2026
+-- Description:			Determina si la corrida actual del proceso de generacion de
+--						estados de cuenta es un Reproceso, comparando la FechaCorte
+--						de BandejaEstadoCuenta contra la fecha activa (Estado=1) en
+--						ParametrosCorte, y sincroniza ParametrosCorte segun corresponda:
+--
+--						- Igual   -> Normal. No se modifica ParametrosCorte.
+--						- Menor   -> Reproceso. Rebobina el puntero activo a la fecha
+--									 historica solicitada (debe existir previamente) y
+--									 resetea HistoricoMaestroEstadosCuentaJSON a
+--									 Procesado='0' para esa fecha, para que se vuelva
+--									 a generar.
+--						- Mayor   -> Avance. Camina la secuencia de cortes marcando los
+--									 intermedios como saltados (Estado=0) hasta activar
+--									 la fecha que trae la bandeja.
+--
+--						Ambas operaciones (sincronizar ParametrosCorte + resetear
+--						historico) se ejecutan dentro de una misma transaccion para
+--						evitar que quede un estado inconsistente si algo falla a la
+--						mitad.
+--
+--						Este SP reemplaza a usp_ActualizarFechaCorte, que ya NO debe
+--						ejecutarse al final del paquete DTSX: el avance del calendario
+--						ahora ocurre aqui, al inicio, en funcion de la data real cargada
+--						en BandejaEstadoCuenta (no de la fecha del sistema).
+--
+-- Parametros salida:	@EsReproceso            BIT -> 0 = Normal, 1 = Reproceso
+--						@FechaCorteProceso      DATE -> Fecha de corte a usar en todo
+--													     el resto del paquete
+--						@FilasHistoricoReseteadas INT -> Cantidad de registros
+--													     reseteados en el historico
+--													     (0 si no fue reproceso)
+--
+-- Prerequisito:		Requiere la funcion [dbo].[fn_SiguienteFechaCorte]
+--****************************************************************************************
+--						HISTORIAL DE MODIFICACIONES
+--****************************************************************************************
+--Nombre:			Descripcion												Fecha
+-- (completar)       Se creo el procedimiento, en reemplazo de					21-07-2026
+--                   usp_ActualizarFechaCorte, para soportar reprocesos
+-- (completar)       Se incorporo el reseteo de HistoricoMaestro				13-08-2026
+--                   EstadosCuentaJSON (antes en un SP separado), envuelto
+--                   en la misma transaccion que la sincronizacion
+-- =======================================================================================
+
+CREATE PROCEDURE [dbo].[usp_SincronizarFechaCorte]
+    @EsReproceso              BIT  OUTPUT,
+    @FechaCorteProceso        DATE OUTPUT,
+    @FilasHistoricoReseteadas INT  OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON; -- si algo falla, revierte automaticamente toda la transaccion
+
+    BEGIN TRY
+
+        DECLARE @FechaBandeja DATE, @FechaActiva DATE;
+        DECLARE @CantidadFechasDistintas INT;
+
+        SET @FilasHistoricoReseteadas = 0;
+
+        -- 1. Validar que la bandeja tenga exactamente una fecha de corte cargada
+        SELECT @CantidadFechasDistintas = COUNT(DISTINCT FechaCorte)
+        FROM [dbo].[BandejaEstadoCuenta];
+
+        IF @CantidadFechasDistintas = 0
+            THROW 50003, 'BandejaEstadoCuenta esta vacia, no hay fecha de corte que sincronizar.', 1;
+
+        IF @CantidadFechasDistintas > 1
+            THROW 50001, 'BandejaEstadoCuenta contiene mas de una FechaCorte distinta. Revisar carga.', 1;
+
+        SELECT @FechaBandeja = FechaCorte FROM [dbo].[BandejaEstadoCuenta] GROUP BY FechaCorte;
+        SELECT @FechaActiva  = FechaCorte FROM [dbo].[ParametrosCorte] WHERE Estado = 1;
+
+        IF @FechaActiva IS NULL
+            THROW 50005, 'No existe ninguna fecha activa (Estado=1) en ParametrosCorte.', 1;
+
+        -- 2. Caso NORMAL: no hay nada que sincronizar
+        IF @FechaBandeja = @FechaActiva
+        BEGIN
+            SET @EsReproceso = 0;
+            SET @FechaCorteProceso = @FechaBandeja;
+            RETURN;
+        END
+
+        SET @EsReproceso = 1;
+        SET @FechaCorteProceso = @FechaBandeja;
+
+        BEGIN TRAN;
+
+            -- 3. Sincronizar ParametrosCorte segun direccion
+            IF @FechaBandeja < @FechaActiva
+            BEGIN
+                -- Rebobinar el puntero a un corte anterior ya existente en el historico
+                IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @FechaBandeja)
+                BEGIN
+                    ROLLBACK TRAN;
+                    THROW 50002, 'La fecha de reproceso no existe como corte historico valido en ParametrosCorte.', 1;
+                END
+
+                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE Estado = 1;
+                UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @FechaBandeja;
+            END
+            ELSE -- @FechaBandeja > @FechaActiva
+            BEGIN
+                DECLARE @FechaCursor DATE = @FechaActiva, @Siguiente DATE;
+
+                WHILE @FechaCursor < @FechaBandeja
+                BEGIN
+                    SET @Siguiente = dbo.fn_SiguienteFechaCorte(@FechaCursor);
+
+                    IF @Siguiente IS NULL
+                    BEGIN
+                        ROLLBACK TRAN;
+                        THROW 50004, 'No se pudo calcular el siguiente corte; la fecha activa no corresponde a un dia de corte valido.', 1;
+                    END
+
+                    IF @Siguiente = @FechaBandeja
+                    BEGIN
+                        IF EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
+                            UPDATE [dbo].[ParametrosCorte] SET Estado = 1 WHERE FechaCorte = @Siguiente;
+                        ELSE
+                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 1);
+                    END
+                    ELSE
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM [dbo].[ParametrosCorte] WHERE FechaCorte = @Siguiente)
+                            INSERT INTO [dbo].[ParametrosCorte] (FechaCorte, Estado) VALUES (@Siguiente, 0);
+                    END
+
+                    SET @FechaCursor = @Siguiente;
+                END
+
+                UPDATE [dbo].[ParametrosCorte] SET Estado = 0 WHERE FechaCorte = @FechaActiva;
+            END
+
+            -- 4. Resetear el historico SOLO si es reproceso hacia un corte anterior.
+            --    (En el caso de avance con saltos, los intermedios se marcan como
+            --    saltados a proposito, no se regeneran, asi que no aplica reset aqui)
+            IF @FechaBandeja < @FechaActiva
+            BEGIN
+                UPDATE [dbo].[HistoricoMaestroEstadosCuentaJSON]
+                SET Procesado = '0'
+                WHERE FechaCorte = @FechaCorteProceso
+                  AND Procesado = '1';
+
+                SET @FilasHistoricoReseteadas = @@ROWCOUNT;
+            END
+
+        COMMIT TRAN;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRAN;
+        THROW;
+    END CATCH
+END
 GO
-
-
-
-
-
-Mira, esta es la tabla
