@@ -1,108 +1,186 @@
-USE [EstadosCuentaJSONProcesador]
-GO
+using System;
+using System.IO;
+using System.Security.Cryptography;
 
--- =========================================================
--- PASO 1: Database Master Key
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = '##MS_DatabaseMasterKey##')
-BEGIN
-    CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'CAMBIA_ESTA_CLAVE_MAESTRA_LARGA_Y_UNICA';
-END
-GO
+namespace EstadosCuentaTC.Services
+{
+    public static class EncriptacionAES
+    {
+        // Tamaños recomendados para AES-GCM
+        private const int NonceSizeBytes = 12; // 96 bits, tamaño recomendado por NIST
+        private const int TagSizeBytes = 16;   // 128 bits, tamaño máximo/recomendado del tag
 
--- =========================================================
--- PASO 2: Certificado que protege la symmetric key
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM sys.certificates WHERE name = 'CertEstadosCuentaTC')
-BEGIN
-    CREATE CERTIFICATE CertEstadosCuentaTC
-        WITH SUBJECT = 'Certificado para proteger llave de encriptacion de estados de cuenta';
-END
-GO
+        /// <summary>
+        /// Encripta un archivo completo con AES-GCM.
+        /// El archivo de salida contiene: [tag (16 bytes)] + [ciphertext].
+        /// El nonce se maneja aparte (igual que antes se guardaba el IV en LlavePublica.txt).
+        /// </summary>
+        public static void EncriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string nonceBase64)
+        {
+            byte[] key = Convert.FromBase64String(keyString);
+            byte[] nonce = Convert.FromBase64String(nonceBase64);
 
--- =========================================================
--- PASO 3: Symmetric Key (esta la genera SQL Server solo,
--- nunca la ves ni la eliges)
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = 'SK_LlaveEncriptaTC')
-BEGIN
-    CREATE SYMMETRIC KEY SK_LlaveEncriptaTC
-        WITH ALGORITHM = AES_256
-        ENCRYPTION BY CERTIFICATE CertEstadosCuentaTC;
-END
-GO
+            if (nonce.Length != NonceSizeBytes)
+                throw new ArgumentException($"El nonce debe tener {NonceSizeBytes} bytes para AES-GCM.");
 
--- =========================================================
--- PASO 4: Columna nueva para la llave de la app, cifrada
--- =========================================================
-IF NOT EXISTS (
-    SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID('dbo.ParametrosGeneracionEC')
-      AND name = 'LlaveEncriptaCifrada'
-)
-BEGIN
-    ALTER TABLE dbo.ParametrosGeneracionEC
-        ADD LlaveEncriptaCifrada VARBINARY(256) NULL;
-END
-GO
+            byte[] plaintext = File.ReadAllBytes(rutaEntrada);
+            byte[] ciphertext = new byte[plaintext.Length];
+            byte[] tag = new byte[TagSizeBytes];
 
--- =========================================================
--- PASO 5: Generar la llave AES-256 de la app ALEATORIAMENTE
--- con CRYPT_GEN_RANDOM (32 bytes = 256 bits) y guardarla
--- cifrada. El valor nunca sale de esta sesion de SQL: no se
--- imprime, no se selecciona, no se ve en ningun resultado.
--- =========================================================
-OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
-    DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
+            using (var aesGcm = new AesGcm(key, TagSizeBytes))
+            {
+                aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
+            }
 
-DECLARE @NuevaLlaveBytes VARBINARY(32) = CRYPT_GEN_RANDOM(32);
+            using (var fsSalida = new FileStream(rutaSalida, FileMode.Create, FileAccess.Write))
+            {
+                fsSalida.Write(tag, 0, tag.Length);
+                fsSalida.Write(ciphertext, 0, ciphertext.Length);
+            }
+        }
 
--- Convertimos a base64 (mismo formato que espera tu app C#
--- con Convert.FromBase64String), sin que el valor salga
--- de esta variable en ningun momento.
-DECLARE @NuevaLlaveBase64 VARCHAR(100) =
-    CAST(N'' AS XML).value('xs:base64Binary(sql:variable("@NuevaLlaveBytes"))', 'VARCHAR(100)');
+        /// <summary>
+        /// Desencripta un archivo generado por EncriptarArchivo.
+        /// </summary>
+        public static void DesencriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string nonceBase64)
+        {
+            byte[] key = Convert.FromBase64String(keyString);
+            byte[] nonce = Convert.FromBase64String(nonceBase64);
 
-UPDATE dbo.ParametrosGeneracionEC
-SET LlaveEncriptaCifrada = ENCRYPTBYKEY(
-    KEY_GUID('SK_LlaveEncriptaTC'),
-    CONVERT(VARBINARY(100), @NuevaLlaveBase64)
-)
-WHERE Id = 1; -- ajusta el filtro segun tu registro real
+            byte[] contenido = File.ReadAllBytes(rutaEntrada);
 
-CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
-GO
+            if (contenido.Length < TagSizeBytes)
+                throw new InvalidDataException("El archivo encriptado está corrupto o incompleto.");
 
--- =========================================================
--- PASO 6: Verificacion. OJO: este SELECT si expone la llave
--- en texto plano en el resultado de la consulta. Ejecutalo
--- solo en un entorno seguro, y no lo dejes en un script que
--- se vuelva a correr o quede en logs de auditoria de queries.
--- =========================================================
-OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
-    DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
+            byte[] tag = new byte[TagSizeBytes];
+            byte[] ciphertext = new byte[contenido.Length - TagSizeBytes];
 
-SELECT CONVERT(VARCHAR(100), DECRYPTBYKEY(LlaveEncriptaCifrada)) AS LlaveEncriptaTextoPlano
-FROM dbo.ParametrosGeneracionEC
-WHERE Id = 1;
+            Buffer.BlockCopy(contenido, 0, tag, 0, TagSizeBytes);
+            Buffer.BlockCopy(contenido, TagSizeBytes, ciphertext, 0, ciphertext.Length);
 
-CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
-GO
+            byte[] plaintext = new byte[ciphertext.Length];
 
--- =========================================================
--- PASO 7 (ejecutar solo despues de confirmar el paso 6 y
--- de actualizar tu app para leer LlaveEncriptaCifrada):
--- =========================================================
--- ALTER TABLE dbo.ParametrosGeneracionEC DROP COLUMN LlaveEncripta;
+            using (var aesGcm = new AesGcm(key, TagSizeBytes))
+            {
+                // Si la llave/nonce/tag no coinciden exactamente, esto lanza CryptographicException
+                // (a diferencia de CBC, que podía "desencriptar" datos corruptos sin avisarte).
+                aesGcm.Decrypt(nonce, ciphertext, tag, plaintext);
+            }
 
--- =========================================================
--- NOTAS:
--- 1) Cambia la contrasena del PASO 1.
--- 2) La llave se genera y se cifra en el mismo statement
---    (PASO 5): nunca queda en texto plano en una columna,
---    en un SELECT de retorno, ni pasa por ningun cliente
---    externo (ni por mi, ni por Copilot, ni por nadie).
--- 3) Archivos ya cifrados con la llave/modo viejos (CBC)
---    no seran legibles con esta llave nueva en modo GCM.
---    Migra los historicos antes de retirar el flujo viejo.
--- =========================================================
+            File.WriteAllBytes(rutaSalida, plaintext);
+        }
+
+        /// <summary>
+        /// Genera un nonce aleatorio de 12 bytes, apto para AES-GCM.
+        /// </summary>
+        public static string GenerarNonceBase64()
+        {
+            byte[] nonce = new byte[NonceSizeBytes];
+            using (var rng = RandomNumberGenerator.Create())
+                rng.GetBytes(nonce);
+
+            return Convert.ToBase64String(nonce);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.IO.Compression;
+
+namespace EstadosCuentaTC.Services
+{
+    public class EncriptacionService
+    {
+        private readonly ILogger<EncriptacionService> _logger;
+
+        public EncriptacionService(ILogger<EncriptacionService> logger)
+        {
+            _logger = logger;
+        }
+
+        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte, string keyString)
+        {
+            try
+            {
+                _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------");
+
+                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
+                string nombreJson = $"{nombreArchivoBase}{fechaCorte.Day}.json";
+                string pathJson = Path.Combine(rutaFinal, nombreJson);
+
+                _logger.LogInformation("Archivo a encriptar: {Archivo}", pathJson);
+
+                if (!File.Exists(pathJson))
+                {
+                    _logger.LogError("El archivo JSON no existe: {Archivo}", pathJson);
+                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
+                }
+
+                // Generar nonce aleatorio (12 bytes, requerido por AES-GCM)
+                _logger.LogInformation("Generando nonce aleatorio...");
+                string nonceBase64 = EncriptacionAES.GenerarNonceBase64();
+
+                // Guardar el nonce (equivalente al IV anterior, pero de 12 bytes)
+                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
+                File.WriteAllText(rutaLlave, nonceBase64);
+                _logger.LogInformation("Nonce guardado en: {Ruta}", rutaLlave);
+
+                // Encriptar
+                string archivoEnc = pathJson + "e";
+                _logger.LogInformation("Encriptando archivo...");
+                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyString, nonceBase64);
+
+                // Reemplazar original con encriptado
+                File.Delete(pathJson);
+                File.Move(archivoEnc, pathJson);
+                _logger.LogInformation("Archivo encriptado correctamente: {Archivo}", pathJson);
+
+                // Comprimir en ZIP
+                string nombreZip = $"{nombreArchivoBase}{fechaCorte.Day}.zip";
+                string rutaZipTemp = rutaFinal + ".zip";
+                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
+
+                _logger.LogInformation("Comprimiendo carpeta en ZIP...");
+
+                if (File.Exists(rutaZipTemp))
+                {
+                    File.Delete(rutaZipTemp);
+                    _logger.LogInformation("ZIP temporal anterior eliminado: {Zip}", rutaZipTemp);
+                }
+
+                if (File.Exists(rutaZipFinal))
+                {
+                    File.Delete(rutaZipFinal);
+                    _logger.LogInformation("ZIP final anterior eliminado: {Zip}", rutaZipFinal);
+                }
+
+                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
+                File.Move(rutaZipTemp, rutaZipFinal);
+
+                _logger.LogInformation("ZIP generado en: {Zip}", rutaZipFinal);
+                _logger.LogInformation("---------- FIN ENCRIPTACIÓN Y COMPRESIÓN ----------");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en el proceso de encriptación/compresión");
+                throw;
+            }
+        }
+    }
+}
