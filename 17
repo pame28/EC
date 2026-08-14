@@ -1,11 +1,50 @@
-USE [EstadosCuentaJSONProcesador]
-GO
+using Microsoft.Extensions.Logging;
 
--- 1. Renombrar la columna
-EXEC sp_rename 'dbo.ParametrosGeneracionEC.DireccionReporte', 'RutaArchivoJsonHistorico', 'COLUMN';
-GO
+namespace EstadosCuentaTC.Logging
+{
+    public class FileLogger : ILogger
+    {
+        private readonly string _category;
+        private readonly string _filePath;
+        private static readonly object _lock = new();
 
--- 2. Cambiar el tipo de dato de varchar(max) a varchar(200)
-ALTER TABLE [dbo].[ParametrosGeneracionEC]
-ALTER COLUMN [RutaArchivoJsonHistorico] [varchar](200) NULL;
-GO
+        public FileLogger(string category, string filePath)
+        {
+            _category = category;
+            _filePath = filePath;
+        }
+
+        public IDisposable? BeginScope<TState>(TState state) => null;
+        public bool IsEnabled(LogLevel level) => true;
+
+        public void Log<TState>(LogLevel level, EventId eventId,
+            TState state, Exception? ex, Func<TState, Exception?, string> formatter)
+        {
+            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {_category}: {formatter(state, ex)}";
+            if (ex != null) line += $"\n  EXCEPCION: {ex}";
+
+            lock (_lock)
+                File.AppendAllText(_filePath, line + Environment.NewLine);
+
+            Console.WriteLine(line);
+        }
+    }
+
+    public class FileLoggerProvider : ILoggerProvider
+    {
+        private readonly string _filePath;
+        public FileLoggerProvider(string filePath) => _filePath = filePath;
+        public ILogger CreateLogger(string category) => new FileLogger(category, _filePath);
+        public void Dispose() { }
+    }
+}
+
+
+
+La nulabilidad de las restricciones del parámetro de tipo "TState" del método "FileLogger.BeginScope<TState>(TState)" no coincide con las restricciones del parámetro de tipo "TState" del método de interfaz "ILogger.BeginScope<TState>(TState)". Considere usar una implementación de interfaz explícita en su lugar.
+
+
+
+
+Ayudame a deshacerme de este warning
+
