@@ -1,48 +1,15 @@
 using System;
-using System.IO;
-using System.Security.Cryptography;
+using System.Windows.Forms;
 
 namespace EstadosCuentaTC.Desencriptador
 {
-    public static class EncriptacionAES
+    internal static class Program
     {
-        private const int NonceSizeBytes = 12;
-        private const int TagSizeBytes = 16;
-
-        /// <summary>
-        /// Desencripta un archivo generado por EncriptacionAES.EncriptarArchivo
-        /// (formato: [tag 16 bytes] + [ciphertext]).
-        /// </summary>
-        public static void DesencriptarArchivo(string rutaEntrada, string rutaSalida, string keyBase64, string nonceBase64)
+        [STAThread]
+        static void Main()
         {
-            byte[] key = Convert.FromBase64String(keyBase64);
-            byte[] nonce = Convert.FromBase64String(nonceBase64);
-
-            if (nonce.Length != NonceSizeBytes)
-                throw new ArgumentException($"El nonce debe tener {NonceSizeBytes} bytes.");
-
-            byte[] contenido = File.ReadAllBytes(rutaEntrada);
-
-            if (contenido.Length < TagSizeBytes)
-                throw new InvalidDataException("El archivo encriptado está corrupto o incompleto.");
-
-            byte[] tag = new byte[TagSizeBytes];
-            byte[] ciphertext = new byte[contenido.Length - TagSizeBytes];
-
-            Buffer.BlockCopy(contenido, 0, tag, 0, TagSizeBytes);
-            Buffer.BlockCopy(contenido, TagSizeBytes, ciphertext, 0, ciphertext.Length);
-
-            byte[] plaintext = new byte[ciphertext.Length];
-
-            using (var aesGcm = new AesGcm(key, TagSizeBytes))
-            {
-                // Si la llave, el nonce o el tag no coinciden exactamente
-                // (archivo corrupto, alterado, o llave/txt equivocados),
-                // esto lanza CryptographicException.
-                aesGcm.Decrypt(nonce, ciphertext, tag, plaintext);
-            }
-
-            File.WriteAllBytes(rutaSalida, plaintext);
+            ApplicationConfiguration.Initialize();
+            Application.Run(new MainForm());
         }
     }
 }
