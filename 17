@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
 using System.Windows.Forms;
@@ -7,12 +8,22 @@ namespace Desencriptador
 {
     public class MainForm : Form
     {
+        // Paleta de colores
+        private static readonly Color ColorHeader = Color.FromArgb(24, 35, 54);
+        private static readonly Color ColorFondo = Color.FromArgb(245, 246, 248);
+        private static readonly Color ColorAccento = Color.FromArgb(41, 128, 185);
+        private static readonly Color ColorAccentoHover = Color.FromArgb(31, 108, 160);
+        private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
+        private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
+        private static readonly Color ColorTextoSecundario = Color.FromArgb(110, 118, 130);
+
         private TextBox txtArchivoEncriptado = null!;
         private TextBox txtLlavePublica = null!;
-        private Button btnSeleccionarArchivo = null!;
-        private Button btnSeleccionarLlave = null!;
+        private Panel panelEstado = null!;
+        private Label lblEstadoIcono = null!;
+        private Label lblEstadoTexto = null!;
         private Button btnDesencriptar = null!;
-        private Label lblEstado = null!;
+        private PictureBox picLogo = null!;
 
         public MainForm()
         {
@@ -22,89 +33,237 @@ namespace Desencriptador
         private void ConstruirInterfaz()
         {
             Text = "Desencriptador de Estados de Cuenta";
-            Width = 560;
-            Height = 260;
+            ClientSize = new Size(600, 520);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
+            BackColor = ColorFondo;
+            Font = new Font("Segoe UI", 9.5f);
+
+            // ---------- Header ----------
+            var panelHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 110,
+                BackColor = ColorHeader
+            };
+
+            picLogo = new PictureBox
+            {
+                Left = 24,
+                Top = 20,
+                Width = 70,
+                Height = 70,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            CargarLogoSiExiste();
+
+            var lblTitulo = new Label
+            {
+                Text = "Desencriptador de Estados de Cuenta",
+                Left = 110,
+                Top = 34,
+                Width = 460,
+                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.Transparent
+            };
+
+            var lblSubtitulo = new Label
+            {
+                Text = "Selecciona el archivo y su llave para desencriptarlo localmente",
+                Left = 110,
+                Top = 66,
+                Width = 460,
+                Font = new Font("Segoe UI", 9.5f),
+                ForeColor = Color.FromArgb(180, 190, 205),
+                BackColor = Color.Transparent
+            };
+
+            panelHeader.Controls.Add(picLogo);
+            panelHeader.Controls.Add(lblTitulo);
+            panelHeader.Controls.Add(lblSubtitulo);
+
+            // ---------- Paso 1: archivo JSON ----------
+            var lblPaso1 = new Label
+            {
+                Text = "PASO 1",
+                Left = 30,
+                Top = 140,
+                Width = 100,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = ColorAccento
+            };
 
             var lblArchivo = new Label
             {
-                Text = "Archivo encriptado:",
-                Left = 20,
-                Top = 25,
-                Width = 150
-            };
-
-            txtArchivoEncriptado = new TextBox
-            {
-                Left = 20,
-                Top = 50,
+                Text = "Archivo JSON encriptado",
+                Left = 30,
+                Top = 160,
                 Width = 400,
-                ReadOnly = true
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 44, 52)
             };
 
-            btnSeleccionarArchivo = new Button
-            {
-                Text = "Seleccionar...",
-                Left = 430,
-                Top = 48,
-                Width = 100
-            };
+            txtArchivoEncriptado = CrearCampoTexto(30, 188, 400);
+
+            var btnSeleccionarArchivo = CrearBoton("Examinar...", 442, 187, 128);
             btnSeleccionarArchivo.Click += BtnSeleccionarArchivo_Click;
+
+            // ---------- Paso 2: llave ----------
+            var lblPaso2 = new Label
+            {
+                Text = "PASO 2",
+                Left = 30,
+                Top = 240,
+                Width = 100,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = ColorAccento
+            };
 
             var lblLlave = new Label
             {
-                Text = "Archivo LlavePublica.txt:",
-                Left = 20,
-                Top = 90,
-                Width = 180
-            };
-
-            txtLlavePublica = new TextBox
-            {
-                Left = 20,
-                Top = 115,
+                Text = "Archivo de llave (LlavePublica.txt)",
+                Left = 30,
+                Top = 260,
                 Width = 400,
-                ReadOnly = true
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 44, 52)
             };
 
-            btnSeleccionarLlave = new Button
-            {
-                Text = "Seleccionar...",
-                Left = 430,
-                Top = 113,
-                Width = 100
-            };
+            txtLlavePublica = CrearCampoTexto(30, 288, 400);
+
+            var btnSeleccionarLlave = CrearBoton("Examinar...", 442, 287, 128);
             btnSeleccionarLlave.Click += BtnSeleccionarLlave_Click;
 
+            // ---------- Botón principal ----------
             btnDesencriptar = new Button
             {
-                Text = "Desencriptar",
-                Left = 20,
-                Top = 160,
-                Width = 150,
-                Height = 35
+                Text = "🔓  Desencriptar archivo",
+                Left = 30,
+                Top = 350,
+                Width = 540,
+                Height = 46,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                BackColor = ColorAccento,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
             };
+            btnDesencriptar.FlatAppearance.BorderSize = 0;
+            btnDesencriptar.FlatAppearance.MouseOverBackColor = ColorAccentoHover;
             btnDesencriptar.Click += BtnDesencriptar_Click;
 
-            lblEstado = new Label
+            // ---------- Panel de estado (oculto al inicio) ----------
+            panelEstado = new Panel
             {
-                Left = 20,
-                Top = 205,
-                Width = 510,
-                Height = 40,
-                ForeColor = System.Drawing.Color.DarkSlateGray
+                Left = 30,
+                Top = 412,
+                Width = 540,
+                Height = 64,
+                BackColor = Color.FromArgb(236, 240, 241),
+                Visible = false
             };
 
+            lblEstadoIcono = new Label
+            {
+                Left = 16,
+                Top = 14,
+                Width = 36,
+                Height = 36,
+                Font = new Font("Segoe UI", 16f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            lblEstadoTexto = new Label
+            {
+                Left = 58,
+                Top = 0,
+                Width = 470,
+                Height = 64,
+                Font = new Font("Segoe UI", 9.5f),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            panelEstado.Controls.Add(lblEstadoIcono);
+            panelEstado.Controls.Add(lblEstadoTexto);
+
+            var lblFooter = new Label
+            {
+                Text = "El archivo se sobrescribe en la misma ubicación una vez desencriptado.",
+                Left = 30,
+                Top = 490,
+                Width = 540,
+                Font = new Font("Segoe UI", 8f),
+                ForeColor = ColorTextoSecundario
+            };
+
+            Controls.Add(panelHeader);
+            Controls.Add(lblPaso1);
             Controls.Add(lblArchivo);
             Controls.Add(txtArchivoEncriptado);
             Controls.Add(btnSeleccionarArchivo);
+            Controls.Add(lblPaso2);
             Controls.Add(lblLlave);
             Controls.Add(txtLlavePublica);
             Controls.Add(btnSeleccionarLlave);
             Controls.Add(btnDesencriptar);
-            Controls.Add(lblEstado);
+            Controls.Add(panelEstado);
+            Controls.Add(lblFooter);
+        }
+
+        private void CargarLogoSiExiste()
+        {
+            try
+            {
+                string rutaLogo = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "logo.png");
+                if (File.Exists(rutaLogo))
+                {
+                    picLogo.Image = Image.FromFile(rutaLogo);
+                }
+            }
+            catch
+            {
+                // Si el logo no carga por cualquier motivo, seguimos sin el
+                // sin romper la app.
+            }
+        }
+
+        private TextBox CrearCampoTexto(int left, int top, int width)
+        {
+            return new TextBox
+            {
+                Left = left,
+                Top = top,
+                Width = width,
+                Height = 34,
+                ReadOnly = true,
+                Font = new Font("Segoe UI", 9.5f),
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+        }
+
+        private Button CrearBoton(string texto, int left, int top, int width)
+        {
+            var boton = new Button
+            {
+                Text = texto,
+                Left = left,
+                Top = top,
+                Width = width,
+                Height = 34,
+                Font = new Font("Segoe UI", 9f),
+                BackColor = Color.White,
+                ForeColor = ColorAccento,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            boton.FlatAppearance.BorderColor = ColorAccento;
+            boton.FlatAppearance.BorderSize = 1;
+            boton.FlatAppearance.MouseOverBackColor = Color.FromArgb(235, 244, 250);
+            return boton;
         }
 
         private void BtnSeleccionarArchivo_Click(object? sender, EventArgs e)
@@ -118,6 +277,7 @@ namespace Desencriptador
             if (dialogo.ShowDialog() == DialogResult.OK)
             {
                 txtArchivoEncriptado.Text = dialogo.FileName;
+                OcultarEstado();
             }
         }
 
@@ -132,35 +292,37 @@ namespace Desencriptador
             if (dialogo.ShowDialog() == DialogResult.OK)
             {
                 txtLlavePublica.Text = dialogo.FileName;
+                OcultarEstado();
             }
         }
 
         private void BtnDesencriptar_Click(object? sender, EventArgs e)
         {
-            lblEstado.ForeColor = System.Drawing.Color.DarkSlateGray;
-            lblEstado.Text = string.Empty;
-
             if (string.IsNullOrWhiteSpace(txtArchivoEncriptado.Text) ||
                 string.IsNullOrWhiteSpace(txtLlavePublica.Text))
             {
-                MostrarError("Selecciona el archivo encriptado y el archivo LlavePublica.txt.");
+                MostrarEstado(false, "Selecciona el archivo encriptado y el archivo LlavePublica.txt.");
                 return;
             }
 
             if (!File.Exists(txtArchivoEncriptado.Text))
             {
-                MostrarError("El archivo encriptado seleccionado no existe.");
+                MostrarEstado(false, "El archivo encriptado seleccionado no existe.");
                 return;
             }
 
             if (!File.Exists(txtLlavePublica.Text))
             {
-                MostrarError("El archivo LlavePublica.txt seleccionado no existe.");
+                MostrarEstado(false, "El archivo LlavePublica.txt seleccionado no existe.");
                 return;
             }
 
             try
             {
+                btnDesencriptar.Enabled = false;
+                btnDesencriptar.Text = "Desencriptando...";
+                Cursor = Cursors.WaitCursor;
+
                 var (keyBase64, nonceBase64) = LeerLlaveYNonce(txtLlavePublica.Text);
 
                 EncriptacionAES.DesencriptarArchivo(
@@ -169,20 +331,25 @@ namespace Desencriptador
                     keyBase64,
                     nonceBase64);
 
-                lblEstado.ForeColor = System.Drawing.Color.DarkGreen;
-                lblEstado.Text = $"Archivo desencriptado correctamente: {txtArchivoEncriptado.Text}";
+                MostrarEstado(true, "¡Listo! El archivo se desencriptó correctamente y ya puedes abrirlo.");
             }
             catch (CryptographicException)
             {
-                MostrarError("No se pudo desencriptar. Verifica que el archivo y el LlavePublica.txt correspondan al mismo par (o que no estén dañados/alterados).");
+                MostrarEstado(false, "No se pudo desencriptar. Verifica que el archivo y la llave correspondan al mismo par.");
             }
             catch (FormatException)
             {
-                MostrarError("El contenido de LlavePublica.txt no tiene el formato esperado (Llave=... / Nonce=...).");
+                MostrarEstado(false, "El archivo de llave no tiene el formato esperado.");
             }
             catch (Exception ex)
             {
-                MostrarError($"Error inesperado: {ex.Message}");
+                MostrarEstado(false, $"Error inesperado: {ex.Message}");
+            }
+            finally
+            {
+                btnDesencriptar.Enabled = true;
+                btnDesencriptar.Text = "🔓  Desencriptar archivo";
+                Cursor = Cursors.Default;
             }
         }
 
@@ -205,10 +372,49 @@ namespace Desencriptador
             return (key, nonce);
         }
 
-        private void MostrarError(string mensaje)
+        private void MostrarEstado(bool exito, string mensaje)
         {
-            lblEstado.ForeColor = System.Drawing.Color.Firebrick;
-            lblEstado.Text = mensaje;
+            panelEstado.Visible = true;
+            panelEstado.BackColor = exito ? Color.FromArgb(230, 246, 236) : Color.FromArgb(253, 234, 232);
+            lblEstadoIcono.Text = exito ? "✔" : "✕";
+            lblEstadoIcono.ForeColor = exito ? ColorExito : ColorError;
+            lblEstadoTexto.Text = mensaje;
+            lblEstadoTexto.ForeColor = exito ? Color.FromArgb(20, 90, 50) : Color.FromArgb(120, 30, 25);
+        }
+
+        private void OcultarEstado()
+        {
+            panelEstado.Visible = false;
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Desencriptador</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Assets\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
