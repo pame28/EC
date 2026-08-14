@@ -1,108 +1,12 @@
-using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.IO.Compression;
-using System.Security.Cryptography;
+<Project Sdk="Microsoft.NET.Sdk">
 
-namespace EstadosCuentaTC.Services
-{
-    public class EncriptacionService
-    {
-        private readonly ILogger<EncriptacionService> _logger;
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>EstadosCuentaTC.Desencriptador</RootNamespace>
+  </PropertyGroup>
 
-        public EncriptacionService(ILogger<EncriptacionService> logger)
-        {
-            _logger = logger;
-        }
-
-        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte)
-        {
-            try
-            {
-                _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------");
-
-                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
-                string nombreJson = $"{nombreArchivoBase}{fechaCorte.Day}.json";
-                string pathJson = Path.Combine(rutaFinal, nombreJson);
-
-                _logger.LogInformation("Archivo a encriptar: {Archivo}", pathJson);
-
-                if (!File.Exists(pathJson))
-                {
-                    _logger.LogError("El archivo JSON no existe: {Archivo}", pathJson);
-                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
-                }
-
-                // Llave y nonce ALEATORIOS, generados unicamente para
-                // este archivo. NO es la llave maestra de la BD: esta
-                // llave va a viajar junto al archivo (en LlavePublica.txt)
-                // para que el cliente pueda desencriptar sin depender de
-                // la BD. Como es unica por archivo, si se filtra un par
-                // (zip + txt), solo se compromete ESE estado de cuenta,
-                // nunca los demas historicos ni futuros.
-                _logger.LogInformation("Generando llave y nonce aleatorios para este archivo...");
-                string keyBase64 = GenerarLlaveBase64();
-                string nonceBase64 = EncriptacionAES.GenerarNonceBase64();
-
-                // Guardar llave + nonce juntos: esto es todo lo que el
-                // desencriptador necesitara del lado del cliente.
-                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
-                File.WriteAllLines(rutaLlave, new[]
-                {
-                    $"Llave={keyBase64}",
-                    $"Nonce={nonceBase64}"
-                });
-                _logger.LogInformation("Llave y nonce guardados en: {Ruta}", rutaLlave);
-
-                // Encriptar
-                string archivoEnc = pathJson + "e";
-                _logger.LogInformation("Encriptando archivo...");
-                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyBase64, nonceBase64);
-
-                // Reemplazar original con encriptado
-                File.Delete(pathJson);
-                File.Move(archivoEnc, pathJson);
-                _logger.LogInformation("Archivo encriptado correctamente: {Archivo}", pathJson);
-
-                // Comprimir en ZIP
-                string nombreZip = $"{nombreArchivoBase}{fechaCorte.Day}.zip";
-                string rutaZipTemp = rutaFinal + ".zip";
-                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
-
-                _logger.LogInformation("Comprimiendo carpeta en ZIP...");
-
-                if (File.Exists(rutaZipTemp))
-                {
-                    File.Delete(rutaZipTemp);
-                    _logger.LogInformation("ZIP temporal anterior eliminado: {Zip}", rutaZipTemp);
-                }
-
-                if (File.Exists(rutaZipFinal))
-                {
-                    File.Delete(rutaZipFinal);
-                    _logger.LogInformation("ZIP final anterior eliminado: {Zip}", rutaZipFinal);
-                }
-
-                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
-                File.Move(rutaZipTemp, rutaZipFinal);
-
-                _logger.LogInformation("ZIP generado en: {Zip}", rutaZipFinal);
-                _logger.LogInformation("---------- FIN ENCRIPTACIÓN Y COMPRESIÓN ----------");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en el proceso de encriptación/compresión");
-                throw;
-            }
-        }
-
-        private static string GenerarLlaveBase64()
-        {
-            byte[] key = new byte[32]; // AES-256
-            using (var rng = RandomNumberGenerator.Create())
-                rng.GetBytes(key);
-
-            return Convert.ToBase64String(key);
-        }
-    }
-}
+</Project>
