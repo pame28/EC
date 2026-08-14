@@ -1,27 +1,24 @@
 Iniciando el paquete SSIS 'C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\GeneracionEstadoCuentaJson\GeneracionEstadoCuentaJson\CORE TC - ESTADOS CUENTA JSON.dtsx'.
-Error: 0xC00470A4 en Notificar error de validación: The expression contains unrecognized token "Error". If "Error" is a variable, it should be expressed as "@Error". The specified token is not valid. If the token is intended to be a variable name, it should be prefixed with the @ symbol.
-Error: 0xC0047098 en Notificar error de validación: Attempt to parse the expression "Error" failed and returned error code 0xC00470A4. The expression cannot be parsed. It might contain invalid elements or it might not be well-formed. There may also be an out-of-memory error.
-Error: 0xC0017003 en Notificar error de validación: The expression "Error" on property "\Package\Preparacion de la Data\Notificar error de validación.Properties[MessageSource]" cannot be evaluated. Modify the expression to be valid.
-Error: 0xC00470A4 en Notificar error de validación: The expression contains unrecognized token "Error". If "Error" is a variable, it should be expressed as "@Error". The specified token is not valid. If the token is intended to be a variable name, it should be prefixed with the @ symbol.
-Error: 0xC0047098 en Notificar error de validación: Attempt to parse the expression "Error" failed and returned error code 0xC00470A4. The expression cannot be parsed. It might contain invalid elements or it might not be well-formed. There may also be an out-of-memory error.
-Error: 0xC0017003 en Notificar error de validación: The expression "Error" on property "\Package\Preparacion de la Data\Notificar error de validación.Properties[MessageSource]" cannot be evaluated. Modify the expression to be valid.
-Error: 0xC00470A4 en Notificar error de validación: The expression contains unrecognized token "Error". If "Error" is a variable, it should be expressed as "@Error". The specified token is not valid. If the token is intended to be a variable name, it should be prefixed with the @ symbol.
-Error: 0xC0047098 en Notificar error de validación: Attempt to parse the expression "Error" failed and returned error code 0xC00470A4. The expression cannot be parsed. It might contain invalid elements or it might not be well-formed. There may also be an out-of-memory error.
-Error: 0xC0017003 en Notificar error de validación: The expression "Error" on property "\Package\Preparacion de la Data\Notificar error de validación.Properties[MessageSource]" cannot be evaluated. Modify the expression to be valid.
-Advertencia: 0x80019002 en CORE TC - ESTADOS CUENTA JSON: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (1) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
-Advertencia: 0x80019002 en Preparacion de la Data: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (1) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
-Error: 0xC00470A4 en Notificar error de validación: The expression contains unrecognized token "Error". If "Error" is a variable, it should be expressed as "@Error". The specified token is not valid. If the token is intended to be a variable name, it should be prefixed with the @ symbol.
-Error: 0xC0047098 en Notificar error de validación: Attempt to parse the expression "Error" failed and returned error code 0xC00470A4. The expression cannot be parsed. It might contain invalid elements or it might not be well-formed. There may also be an out-of-memory error.
-Error: 0xC0017003 en Notificar error de validación: The expression "Error" on property "\Package\Preparacion de la Data\Notificar error de validación.Properties[MessageSource]" cannot be evaluated. Modify the expression to be valid.
-Error: 0xC0014054 en Notificar error de validación: Failed to lock variable "" for read access with error 0xC0010001 "The variable cannot be found. This occurs when an attempt is made to retrieve a variable from the Variables collection on a container during execution of the package, and the variable is not there. The variable name may have changed or the variable is not being created.".
-Error: 0xC002F304 en Notificar error de validación, Send Mail Task: An error occurred with the following error message: "Failed to lock variable "" for read access with error 0xC0010001 "The variable cannot be found. This occurs when an attempt is made to retrieve a variable from the Variables collection on a container during execution of the package, and the variable is not there. The variable name may have changed or the variable is not being created.".
-  System.Runtime.InteropServices.COMException: Failed to lock variable "" for read access with error 0xC0010001 "The variable cannot be found. This occurs when an attempt is made to retrieve a variable from the Variables collection on a container during execution of the package, and the variable is not there. The variable name may have changed or the variable is not being created.".
+Error: 0xC0014054 en Notificar error de validación: Failed to lock variable "Estimado equipo,
+
+Se ha detectado un inconveniente durante la ejecución del proceso de  Estado de Cuenta Json. Proceso falló en la preparación de la data. 
+
+Detalle del Error:  
+SIN_DATOS:  BandejaEstadoCuenta esta vacia, no hay fecha de corte que procesar." for read access with error 0xC0010001 "The variable cannot be found. This occurs when an attempt is made to retrieve a variable from the Variables collection on a container during execution of the package, and the variable is not there. The variable name may have changed or the variable is not being created.".
+Error: 0xC002F304 en Notificar error de validación, Send Mail Task: An error occurred with the following error message: "Failed to lock variable "Estimado equipo,
+
+Se ha detectado un inconveniente durante la ejecución del proceso de  Estado de Cuenta Json. Proceso falló en la preparación de la data. 
+
+Detalle del Error:  
+SIN_DATOS:  BandejaEstadoCuenta esta vacia, no hay fecha de corte que procesar." for read access with error 0xC0010001 "The variable cannot be found. This occurs when an attempt is made to retrieve a variable from the Variables collection on a container during execution of the package, and the variable is not there. The variable name may have changed or the variable is not being created.".
+  System.Runtime.InteropServices.COMException: Failed to lock variable "Estimado equipo,
+
+Se ha detectado un inconveniente durante la ejecución del proceso de  Estado de Cuenta Json. Proceso falló en la preparación de la data. 
+
+Detalle del Error:  
+SIN_DATOS:  BandejaEstadoCuenta esta vacia, no hay fecha de corte que procesar." for read access with error 0xC0010001 "The variable cannot be found. This occurs when an attempt is made to retrieve a variable from the Variables collection on a container during execution of the package, and the variable is not there. The variable name may have changed or the variable is not being created.".
 ".
 Error de la tarea: Notificar error de validación
+Advertencia: 0x80019002 en Preparacion de la Data: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (3) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
+Advertencia: 0x80019002 en CORE TC - ESTADOS CUENTA JSON: SSIS Warning Code DTS_W_MAXIMUMERRORCOUNTREACHED.  The Execution method succeeded, but the number of errors raised (3) reached the maximum allowed (1); resulting in failure. This occurs when the number of errors reaches the number specified in MaximumErrorCount. Change the MaximumErrorCount or fix the errors.
 Paquete SSIS 'C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\GeneracionEstadoCuentaJson\GeneracionEstadoCuentaJson\CORE TC - ESTADOS CUENTA JSON.dtsx' finalizado: Error.
-
-
-
-
-
-Pero creo que es por esto
