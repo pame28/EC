@@ -1,16 +1,18 @@
+using EstadosCuentaTC.Data;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace EstadosCuentaTC.Services
+namespace EstadosCuentaTC.Repositories
 {
     public class LlaveEncriptaRepository
     {
-        private readonly string _connectionString;
+        private readonly SqlExecutor _sql;
 
-        public LlaveEncriptaRepository(string connectionString)
+        public LlaveEncriptaRepository(SqlExecutor sql)
         {
-            _connectionString = connectionString;
+            _sql = sql;
         }
 
         /// <summary>
@@ -21,9 +23,13 @@ namespace EstadosCuentaTC.Services
         /// </summary>
         public string ObtenerLlaveEncripta(int idParametro)
         {
-            using (var conn = new SqlConnection(_connectionString))
-            using (var cmd = new SqlCommand("dbo.sp_ObtenerLlaveDescifrada", conn))
-            {
+            using var conn = _sql.GetConnection();
+
+            using var cmd = new SqlCommand("usp_ObtenerLlaveDescifrada", conn);
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;        
+
+          
+         {
                 cmd.CommandType = System.Data.CommandType.StoredProcedure;
                 cmd.Parameters.AddWithValue("@Id", idParametro);
 
@@ -39,3 +45,9 @@ namespace EstadosCuentaTC.Services
         }
     }
 }
+
+
+
+
+
+Esto tambien está correcto, verdad}?
