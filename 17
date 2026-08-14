@@ -3,9 +3,6 @@ GO
 
 -- =========================================================
 -- PASO 1: Database Master Key
--- Protege el certificado del paso 2. Cambia la contraseña
--- por una propia, larga y única, y guardala en tu gestor
--- de secretos (no la dejes en este archivo).
 -- =========================================================
 IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = '##MS_DatabaseMasterKey##')
 BEGIN
@@ -24,9 +21,8 @@ END
 GO
 
 -- =========================================================
--- PASO 3: Symmetric Key real
--- SQL Server genera el material criptografico de forma
--- aleatoria automaticamente; nunca lo ves ni lo eliges.
+-- PASO 3: Symmetric Key (esta la genera SQL Server solo,
+-- nunca la ves ni la eliges)
 -- =========================================================
 IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = 'SK_LlaveEncriptaTC')
 BEGIN
@@ -37,8 +33,7 @@ END
 GO
 
 -- =========================================================
--- PASO 4: Columna nueva para guardar la llave AES de la app,
--- ya cifrada (reemplaza a LlaveEncripta en texto plano)
+-- PASO 4: Columna nueva para la llave de la app, cifrada
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
@@ -52,23 +47,26 @@ END
 GO
 
 -- =========================================================
--- PASO 5: Guardar la nueva llave AES-256 de la aplicacion,
--- cifrada con SK_LlaveEncriptaTC. Esta es la llave que usa
--- EncriptacionAES.EncriptarArchivo en tu app C#.
---
--- Llave generada aleatoriamente (32 bytes / AES-256):
---   QOUNBL5a3lerVGAzwJZNIbOE/48DL2UO7usx4l7kTkA=
---
--- Reemplaza a la llave vieja de 16 bytes (AES-128):
---   qeH8b6jBD5h9i4KjMZBqYA==
+-- PASO 5: Generar la llave AES-256 de la app ALEATORIAMENTE
+-- con CRYPT_GEN_RANDOM (32 bytes = 256 bits) y guardarla
+-- cifrada. El valor nunca sale de esta sesion de SQL: no se
+-- imprime, no se selecciona, no se ve en ningun resultado.
 -- =========================================================
 OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
 
+DECLARE @NuevaLlaveBytes VARBINARY(32) = CRYPT_GEN_RANDOM(32);
+
+-- Convertimos a base64 (mismo formato que espera tu app C#
+-- con Convert.FromBase64String), sin que el valor salga
+-- de esta variable en ningun momento.
+DECLARE @NuevaLlaveBase64 VARCHAR(100) =
+    CAST(N'' AS XML).value('xs:base64Binary(sql:variable("@NuevaLlaveBytes"))', 'VARCHAR(100)');
+
 UPDATE dbo.ParametrosGeneracionEC
 SET LlaveEncriptaCifrada = ENCRYPTBYKEY(
     KEY_GUID('SK_LlaveEncriptaTC'),
-    CONVERT(VARBINARY(100), 'QOUNBL5a3lerVGAzwJZNIbOE/48DL2UO7usx4l7kTkA=')
+    CONVERT(VARBINARY(100), @NuevaLlaveBase64)
 )
 WHERE Id = 1; -- ajusta el filtro segun tu registro real
 
@@ -76,7 +74,10 @@ CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
 GO
 
 -- =========================================================
--- PASO 6: Verificacion - confirma que quedo bien guardada
+-- PASO 6: Verificacion. OJO: este SELECT si expone la llave
+-- en texto plano en el resultado de la consulta. Ejecutalo
+-- solo en un entorno seguro, y no lo dejes en un script que
+-- se vuelva a correr o quede en logs de auditoria de queries.
 -- =========================================================
 OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
@@ -91,38 +92,17 @@ GO
 -- =========================================================
 -- PASO 7 (ejecutar solo despues de confirmar el paso 6 y
 -- de actualizar tu app para leer LlaveEncriptaCifrada):
--- elimina la columna vieja en texto plano.
 -- =========================================================
 -- ALTER TABLE dbo.ParametrosGeneracionEC DROP COLUMN LlaveEncripta;
 
 -- =========================================================
--- COMO LEER LA LLAVE DESDE TU APP (ejemplo de referencia,
--- no es lo que ejecuta la app C# directamente; esto es solo
--- para consultarla manualmente o desde un stored procedure):
--- =========================================================
--- OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
---     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
---
--- SELECT CONVERT(VARCHAR(100), DECRYPTBYKEY(LlaveEncriptaCifrada)) AS LlaveEncripta
--- FROM dbo.ParametrosGeneracionEC
--- WHERE Id = 1;
---
--- CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
--- GO
-
--- =========================================================
--- NOTAS IMPORTANTES ANTES DE EJECUTAR EN PRODUCCION:
---
--- 1) Cambia la contrasena del PASO 1 por una propia.
--- 2) Borra el literal de la llave del PASO 5 de este archivo
---    despues de ejecutarlo (no lo dejes versionado en tu repo).
--- 3) Archivos JSON ya cifrados con la llave vieja
---    (qeH8b6jBD5h9i4KjMZBqYA==) en modo CBC NO seran legibles
---    con la llave nueva en modo GCM. Si necesitas conservar
---    acceso a estados de cuenta historicos, descifralos con
---    el metodo/llave viejo y vuelve a encriptarlos con AES-GCM
---    y la llave nueva antes de retirar el codigo/llave viejos.
--- 4) El PASO 7 (borrar la columna vieja) solo debe correr
---    despues de que tu app en produccion ya este leyendo
---    LlaveEncriptaCifrada correctamente.
+-- NOTAS:
+-- 1) Cambia la contrasena del PASO 1.
+-- 2) La llave se genera y se cifra en el mismo statement
+--    (PASO 5): nunca queda en texto plano en una columna,
+--    en un SELECT de retorno, ni pasa por ningun cliente
+--    externo (ni por mi, ni por Copilot, ni por nadie).
+-- 3) Archivos ya cifrados con la llave/modo viejos (CBC)
+--    no seran legibles con esta llave nueva en modo GCM.
+--    Migra los historicos antes de retirar el flujo viejo.
 -- =========================================================
