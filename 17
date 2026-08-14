@@ -1,15 +1,47 @@
-using System;
-using System.Windows.Forms;
-
-namespace EstadosCuentaTC.Desencriptador
+namespace Desencriptador
 {
-    internal static class Program
+    partial class MainForm
     {
-        [STAThread]
-        static void Main()
+        /// <summary>
+        ///  Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        ///  Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
         {
-            ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
         }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        ///  Required method for Designer support - do not modify
+        ///  the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            components = new System.ComponentModel.Container();
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(800, 450);
+            Text = "Form1";
+        }
+
+        #endregion
     }
 }
+
+'AutoScaleMode' es tipo pero se usa como variable
+'MainForm.Dispose(bool)': no se encontró ningún miembro adecuado para invalidar
+'object' no contiene una definición para 'Dispose'
+El nombre 'ClientSize' no existe en el contexto actual
+El nombre 'Text' no existe en el contexto actual
+
+
