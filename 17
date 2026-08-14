@@ -1,46 +1,66 @@
-Log guardándose en: C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\Logs\log_20260813_204540.txt
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      ========== INICIO PROCESO ==========
-2026-08-13 20:45:41 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: ========== INICIO PROCESO ==========
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Obteniendo parámetros de generación...
-2026-08-13 20:45:41 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Obteniendo parámetros de generación...
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Fecha Corte       : 27/04/2026
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Fecha Corte       : 27/04/2026
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Tipo Generación   : LOTE
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Tipo Generación   : LOTE
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Registros por Lote: 3000
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Registros por Lote: 3000
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Cantidad Hilos    : 6
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Cantidad Hilos    : 6
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Nombre Archivo    : Estado_de_cuenta_corte_
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Nombre Archivo    : Estado_de_cuenta_corte_
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Ruta JSON         : C:\EstadosCuenta\JSON\Generados
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Ruta JSON         : C:\EstadosCuenta\JSON\Generados
-info: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      Total Estados de Cuenta encontrados: 0
-2026-08-13 20:45:43 [Information] EstadosCuentaTC.Services.ParametrosGeneracionECService: Total Estados de Cuenta encontrados: 0
-warn: EstadosCuentaTC.Services.ParametrosGeneracionECService[0]
-      No hay estados de cuenta para procesar. El proceso se detiene.
-2026-08-13 20:45:43 [Warning] EstadosCuentaTC.Services.ParametrosGeneracionECService: No hay estados de cuenta para procesar. El proceso se detiene.
+Worker 2 finalizado
+2026-08-13 20:51:59 [Information] EstadosCuentaTC.Services.GeneracionLoteService: Worker 2 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Worker 5 finalizado
+2026-08-13 20:51:59 [Information] EstadosCuentaTC.Services.GeneracionLoteService: Worker 5 finalizado
+info: EstadosCuentaTC.Services.GeneracionLoteService[0]
+      Proceso finalizado. Archivo: C:\EstadosCuenta\JSON\Generados\2026-04-27\Estado_de_cuenta_corte_27.json
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionLoteService: Proceso finalizado. Archivo: C:\EstadosCuenta\JSON\Generados\2026-04-27\Estado_de_cuenta_corte_27.json
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Total estados de cuenta generados: 1
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionEstadoCuentaService: Total estados de cuenta generados: 1
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Generando archivo contador...
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionEstadoCuentaService: Generando archivo contador...
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Generando archivo Contador.txt...
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionEstadoCuentaService: Generando archivo Contador.txt...
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Contador.txt generado en: C:\EstadosCuenta\JSON\Generados\2026-04-27\Contador.txt
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionEstadoCuentaService: Contador.txt generado en: C:\EstadosCuenta\JSON\Generados\2026-04-27\Contador.txt
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Total procesados: 1
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionEstadoCuentaService: Total procesados: 1
+info: EstadosCuentaTC.Services.GeneracionEstadoCuentaService[0]
+      Iniciando proceso de encriptación y compresión...
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.GeneracionEstadoCuentaService: Iniciando proceso de encriptación y compresión...
+info: EstadosCuentaTC.Services.EncriptacionService[0]
+      ---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.EncriptacionService: ---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------
+info: EstadosCuentaTC.Services.EncriptacionService[0]
+      Obteniendo llave de encriptacion desde la base de datos...
+2026-08-13 20:52:00 [Information] EstadosCuentaTC.Services.EncriptacionService: Obteniendo llave de encriptacion desde la base de datos...
+fail: EstadosCuentaTC.Services.EncriptacionService[0]
+      Error en el proceso de encriptación/compresión
+      System.InvalidOperationException: La conexión no se cerró. El estado actual de la conexión es abierta.
+         at Microsoft.Data.ProviderBase.DbConnectionInternal.TryOpenConnection(DbConnection outerConnection, SqlConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
+         at Microsoft.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource`1 retry)
+         at Microsoft.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource`1 retry, SqlConnectionOverrides overrides)
+         at Microsoft.Data.SqlClient.SqlConnection.Open(SqlConnectionOverrides overrides)
+         at Microsoft.Data.SqlClient.SqlConnection.Open()
+         at EstadosCuentaTC.Repositories.LlaveEncriptaRepository.ObtenerLlaveEncripta() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\LlaveEncriptaRepository.cs:line 29
+         at EstadosCuentaTC.Services.EncriptacionService.Ejecutar(String rutaJson, String nombreArchivoBase, DateTime fechaCorte) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\EncriptacionService.cs:line 29
+2026-08-13 20:52:00 [Error] EstadosCuentaTC.Services.EncriptacionService: Error en el proceso de encriptación/compresión
+  EXCEPCION: System.InvalidOperationException: La conexión no se cerró. El estado actual de la conexión es abierta.
+   at Microsoft.Data.ProviderBase.DbConnectionInternal.TryOpenConnection(DbConnection outerConnection, SqlConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
+   at Microsoft.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource`1 retry)
+   at Microsoft.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource`1 retry, SqlConnectionOverrides overrides)
+   at Microsoft.Data.SqlClient.SqlConnection.Open(SqlConnectionOverrides overrides)
+   at Microsoft.Data.SqlClient.SqlConnection.Open()
+   at EstadosCuentaTC.Repositories.LlaveEncriptaRepository.ObtenerLlaveEncripta() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\LlaveEncriptaRepository.cs:line 29
+   at EstadosCuentaTC.Services.EncriptacionService.Ejecutar(String rutaJson, String nombreArchivoBase, DateTime fechaCorte) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\EncriptacionService.cs:line 29
 
-ERROR GENERAL: No hay estados de cuenta para procesar en la fecha de corte indicada.
-DETALLE:    at EstadosCuentaTC.Services.ParametrosGeneracionECService.ObtenerParametros() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\ParametrosGeneracionECService.cs:line 43
-   at Program.<Main>$(String[] args) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Program.cs:line 66
+ERROR GENERAL: La conexión no se cerró. El estado actual de la conexión es abierta.
+DETALLE:    at Microsoft.Data.ProviderBase.DbConnectionInternal.TryOpenConnection(DbConnection outerConnection, SqlConnectionFactory connectionFactory, TaskCompletionSource`1 retry, DbConnectionOptions userOptions)
+   at Microsoft.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource`1 retry)
+   at Microsoft.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource`1 retry, SqlConnectionOverrides overrides)
+   at Microsoft.Data.SqlClient.SqlConnection.Open(SqlConnectionOverrides overrides)
+   at Microsoft.Data.SqlClient.SqlConnection.Open()
+   at EstadosCuentaTC.Repositories.LlaveEncriptaRepository.ObtenerLlaveEncripta() in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Repositories\LlaveEncriptaRepository.cs:line 29
+   at EstadosCuentaTC.Services.EncriptacionService.Ejecutar(String rutaJson, String nombreArchivoBase, DateTime fechaCorte) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\EncriptacionService.cs:line 29
+   at EstadosCuentaTC.Services.GeneracionEstadoCuentaService.Ejecutar(ParametrosGeneracionECDto parametros) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Services\GeneracionEstadoCuentaService.cs:line 85
+   at Program.<Main>$(String[] args) in C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\Program.cs:line 68
 
-C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\EstadosCuentaTC.exe (proceso 20996) se cerró con el código 0 (0x0).
+C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\bin\Debug\net10.0\EstadosCuentaTC.exe (proceso 36592) se cerró con el código 0 (0x0).
 Para cerrar automáticamente la consola cuando se detiene la depuración, habilite Herramientas ->Opciones ->Depuración ->Cerrar la consola automáticamente al detenerse la depuración.
 Presione cualquier tecla para cerrar esta ventana. . .
-
-
-
-
-
-
-No entiendo porque está tomando la fecha de hoy ;c 
