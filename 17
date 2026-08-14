@@ -1,8 +1,6 @@
 using EstadosCuentaTC.Data;
 using Microsoft.Data.SqlClient;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace EstadosCuentaTC.Repositories
 {
@@ -24,30 +22,22 @@ namespace EstadosCuentaTC.Repositories
         public string ObtenerLlaveEncripta(int idParametro)
         {
             using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("dbo.sp_ObtenerLlaveDescifrada", conn);
 
-            using var cmd = new SqlCommand("usp_ObtenerLlaveDescifrada", conn);
-            cmd.CommandType = System.Data.CommandType.StoredProcedure;        
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", idParametro);
 
-          
-         {
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@Id", idParametro);
+            // Quita esta linea si _sql.GetConnection() ya devuelve
+            // la conexion abierta en el resto de tu proyecto.
+            conn.Open();
 
-                conn.Open();
-                var resultado = cmd.ExecuteScalar() as string;
+            var resultado = cmd.ExecuteScalar() as string;
 
-                if (string.IsNullOrEmpty(resultado))
-                    throw new InvalidOperationException(
-                        $"No se pudo obtener la llave de encriptacion para el Id {idParametro}.");
+            if (string.IsNullOrEmpty(resultado))
+                throw new InvalidOperationException(
+                    $"No se pudo obtener la llave de encriptacion para el Id {idParametro}.");
 
-                return resultado;
-            }
+            return resultado;
         }
     }
 }
-
-
-
-
-
-Esto tambien está correcto, verdad}?
