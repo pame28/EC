@@ -1,12 +1,224 @@
-<Project Sdk="Microsoft.NET.Sdk">
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Windows.Forms;
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>EstadosCuentaTC.Desencriptador</RootNamespace>
-  </PropertyGroup>
+namespace EstadosCuentaTC.Desencriptador
+{
+    public class MainForm : Form
+    {
+        private TextBox txtArchivoEncriptado = null!;
+        private TextBox txtLlavePublica = null!;
+        private Button btnSeleccionarArchivo = null!;
+        private Button btnSeleccionarLlave = null!;
+        private Button btnDesencriptar = null!;
+        private Label lblEstado = null!;
 
-</Project>
+        public MainForm()
+        {
+            ConstruirInterfaz();
+        }
+
+        private void ConstruirInterfaz()
+        {
+            Text = "Desencriptador de Estados de Cuenta";
+            Width = 560;
+            Height = 260;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            StartPosition = FormStartPosition.CenterScreen;
+
+            var lblArchivo = new Label
+            {
+                Text = "Archivo encriptado:",
+                Left = 20,
+                Top = 25,
+                Width = 150
+            };
+
+            txtArchivoEncriptado = new TextBox
+            {
+                Left = 20,
+                Top = 50,
+                Width = 400,
+                ReadOnly = true
+            };
+
+            btnSeleccionarArchivo = new Button
+            {
+                Text = "Seleccionar...",
+                Left = 430,
+                Top = 48,
+                Width = 100
+            };
+            btnSeleccionarArchivo.Click += BtnSeleccionarArchivo_Click;
+
+            var lblLlave = new Label
+            {
+                Text = "Archivo LlavePublica.txt:",
+                Left = 20,
+                Top = 90,
+                Width = 180
+            };
+
+            txtLlavePublica = new TextBox
+            {
+                Left = 20,
+                Top = 115,
+                Width = 400,
+                ReadOnly = true
+            };
+
+            btnSeleccionarLlave = new Button
+            {
+                Text = "Seleccionar...",
+                Left = 430,
+                Top = 113,
+                Width = 100
+            };
+            btnSeleccionarLlave.Click += BtnSeleccionarLlave_Click;
+
+            btnDesencriptar = new Button
+            {
+                Text = "Desencriptar",
+                Left = 20,
+                Top = 160,
+                Width = 150,
+                Height = 35
+            };
+            btnDesencriptar.Click += BtnDesencriptar_Click;
+
+            lblEstado = new Label
+            {
+                Left = 20,
+                Top = 205,
+                Width = 510,
+                Height = 40,
+                ForeColor = System.Drawing.Color.DarkSlateGray
+            };
+
+            Controls.Add(lblArchivo);
+            Controls.Add(txtArchivoEncriptado);
+            Controls.Add(btnSeleccionarArchivo);
+            Controls.Add(lblLlave);
+            Controls.Add(txtLlavePublica);
+            Controls.Add(btnSeleccionarLlave);
+            Controls.Add(btnDesencriptar);
+            Controls.Add(lblEstado);
+        }
+
+        private void BtnSeleccionarArchivo_Click(object? sender, EventArgs e)
+        {
+            using var dialogo = new OpenFileDialog
+            {
+                Title = "Selecciona el archivo encriptado",
+                Filter = "Todos los archivos (*.*)|*.*"
+            };
+
+            if (dialogo.ShowDialog() == DialogResult.OK)
+            {
+                txtArchivoEncriptado.Text = dialogo.FileName;
+            }
+        }
+
+        private void BtnSeleccionarLlave_Click(object? sender, EventArgs e)
+        {
+            using var dialogo = new OpenFileDialog
+            {
+                Title = "Selecciona el archivo LlavePublica.txt",
+                Filter = "Archivos de texto (*.txt)|*.txt|Todos los archivos (*.*)|*.*"
+            };
+
+            if (dialogo.ShowDialog() == DialogResult.OK)
+            {
+                txtLlavePublica.Text = dialogo.FileName;
+            }
+        }
+
+        private void BtnDesencriptar_Click(object? sender, EventArgs e)
+        {
+            lblEstado.ForeColor = System.Drawing.Color.DarkSlateGray;
+            lblEstado.Text = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(txtArchivoEncriptado.Text) ||
+                string.IsNullOrWhiteSpace(txtLlavePublica.Text))
+            {
+                MostrarError("Selecciona el archivo encriptado y el archivo LlavePublica.txt.");
+                return;
+            }
+
+            if (!File.Exists(txtArchivoEncriptado.Text))
+            {
+                MostrarError("El archivo encriptado seleccionado no existe.");
+                return;
+            }
+
+            if (!File.Exists(txtLlavePublica.Text))
+            {
+                MostrarError("El archivo LlavePublica.txt seleccionado no existe.");
+                return;
+            }
+
+            try
+            {
+                var (keyBase64, nonceBase64) = LeerLlaveYNonce(txtLlavePublica.Text);
+
+                using var dialogoGuardar = new SaveFileDialog
+                {
+                    Title = "Guardar archivo desencriptado como...",
+                    FileName = Path.GetFileNameWithoutExtension(txtArchivoEncriptado.Text) + "_desencriptado.json",
+                    Filter = "Archivo JSON (*.json)|*.json|Todos los archivos (*.*)|*.*"
+                };
+
+                if (dialogoGuardar.ShowDialog() != DialogResult.OK)
+                    return;
+
+                EncriptacionAES.DesencriptarArchivo(
+                    txtArchivoEncriptado.Text,
+                    dialogoGuardar.FileName,
+                    keyBase64,
+                    nonceBase64);
+
+                lblEstado.ForeColor = System.Drawing.Color.DarkGreen;
+                lblEstado.Text = $"Archivo desencriptado correctamente: {dialogoGuardar.FileName}";
+            }
+            catch (CryptographicException)
+            {
+                MostrarError("No se pudo desencriptar. Verifica que el archivo y el LlavePublica.txt correspondan al mismo par (o que no estén dañados/alterados).");
+            }
+            catch (FormatException)
+            {
+                MostrarError("El contenido de LlavePublica.txt no tiene el formato esperado (Llave=... / Nonce=...).");
+            }
+            catch (Exception ex)
+            {
+                MostrarError($"Error inesperado: {ex.Message}");
+            }
+        }
+
+        private static (string keyBase64, string nonceBase64) LeerLlaveYNonce(string rutaTxt)
+        {
+            string? key = null;
+            string? nonce = null;
+
+            foreach (var linea in File.ReadAllLines(rutaTxt))
+            {
+                if (linea.StartsWith("Llave=", StringComparison.OrdinalIgnoreCase))
+                    key = linea.Substring("Llave=".Length).Trim();
+                else if (linea.StartsWith("Nonce=", StringComparison.OrdinalIgnoreCase))
+                    nonce = linea.Substring("Nonce=".Length).Trim();
+            }
+
+            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(nonce))
+                throw new FormatException("No se encontraron las líneas 'Llave=' y 'Nonce=' en el archivo.");
+
+            return (key, nonce);
+        }
+
+        private void MostrarError(string mensaje)
+        {
+            lblEstado.ForeColor = System.Drawing.Color.Firebrick;
+            lblEstado.Text = mensaje;
+        }
+    }
+}
