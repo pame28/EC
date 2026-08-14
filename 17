@@ -1,24 +1,161 @@
+using EstadosCuentaTC.Data;
+using Microsoft.Data.SqlClient;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace EstadosCuentaTC.Dtos
+namespace EstadosCuentaTC.Repositories
 {
-    public class ParametrosGeneracionECDto
+    public class LlaveEncriptaRepository
     {
+        private readonly SqlExecutor _sql;
 
-        public DateTime FechaCorteProcesar { get; set; } 
-        public string DireccionReporte { get; set; } = string.Empty;
-        public string RutaArchivoJson { get; set; } = string.Empty ;
-        public string RutaDestinoArchivoJson { get; set; } = string.Empty;
-        public string LlaveEncripta { get; set; } = string.Empty;
-        public string TipoGeneracion { get; set; } = string.Empty;
-        public string NombreArchivo { get; set; } = string.Empty;
-        public int RegistrosPorLote { get; set; }
-        public int CantidadHilos { get; set; }
+        public LlaveEncriptaRepository(SqlExecutor sql)
+        {
+            _sql = sql;
+        }
 
-        // Datos derivados
-        public int CantidadEstadosCuenta { get; set; }
+        /// <summary>
+        /// Llama al SP que abre la symmetric key, descifra el
+        /// valor y lo devuelve. Como ParametrosGeneracionEC solo
+        /// tiene un registro, no se necesita filtrar por Id.
+        /// </summary>
+        public string ObtenerLlaveEncripta()
+        {
+            using var conn = _sql.GetConnection();
+            using var cmd = new SqlCommand("dbo.sp_ObtenerLlaveDescifrada", conn);
 
+            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+            // Quita esta linea si _sql.GetConnection() ya devuelve
+            // la conexion abierta en el resto de tu proyecto.
+            conn.Open();
+
+            var resultado = cmd.ExecuteScalar() as string;
+
+            if (string.IsNullOrEmpty(resultado))
+                throw new InvalidOperationException(
+                    "No se pudo obtener la llave de encriptacion desde la base de datos.");
+
+            return resultado;
+        }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.IO.Compression;
+
+namespace EstadosCuentaTC.Services
+{
+    public class EncriptacionService
+    {
+        private readonly ILogger<EncriptacionService> _logger;
+        private readonly LlaveEncriptaRepository _llaveRepository;
+
+        public EncriptacionService(ILogger<EncriptacionService> logger, LlaveEncriptaRepository llaveRepository)
+        {
+            _logger = logger;
+            _llaveRepository = llaveRepository;
+        }
+
+        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte)
+        {
+            try
+            {
+                _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------");
+
+                // La llave se pide justo antes de usarla, nunca se
+                // recibe desde afuera ni se guarda mas tiempo del
+                // necesario en memoria. ParametrosGeneracionEC solo
+                // tiene un registro, asi que no hace falta un Id.
+                _logger.LogInformation("Obteniendo llave de encriptacion desde la base de datos...");
+                string keyString = _llaveRepository.ObtenerLlaveEncripta();
+
+                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
+                string nombreJson = $"{nombreArchivoBase}{fechaCorte.Day}.json";
+                string pathJson = Path.Combine(rutaFinal, nombreJson);
+
+                _logger.LogInformation("Archivo a encriptar: {Archivo}", pathJson);
+
+                if (!File.Exists(pathJson))
+                {
+                    _logger.LogError("El archivo JSON no existe: {Archivo}", pathJson);
+                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
+                }
+
+                // Generar nonce aleatorio (12 bytes, requerido por AES-GCM)
+                _logger.LogInformation("Generando nonce aleatorio...");
+                string nonceBase64 = EncriptacionAES.GenerarNonceBase64();
+
+                // Guardar el nonce (equivalente al IV anterior, pero de 12 bytes)
+                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
+                File.WriteAllText(rutaLlave, nonceBase64);
+                _logger.LogInformation("Nonce guardado en: {Ruta}", rutaLlave);
+
+                // Encriptar
+                string archivoEnc = pathJson + "e";
+                _logger.LogInformation("Encriptando archivo...");
+                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyString, nonceBase64);
+
+                // Reemplazar original con encriptado
+                File.Delete(pathJson);
+                File.Move(archivoEnc, pathJson);
+                _logger.LogInformation("Archivo encriptado correctamente: {Archivo}", pathJson);
+
+                // Comprimir en ZIP
+                string nombreZip = $"{nombreArchivoBase}{fechaCorte.Day}.zip";
+                string rutaZipTemp = rutaFinal + ".zip";
+                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
+
+                _logger.LogInformation("Comprimiendo carpeta en ZIP...");
+
+                if (File.Exists(rutaZipTemp))
+                {
+                    File.Delete(rutaZipTemp);
+                    _logger.LogInformation("ZIP temporal anterior eliminado: {Zip}", rutaZipTemp);
+                }
+
+                if (File.Exists(rutaZipFinal))
+                {
+                    File.Delete(rutaZipFinal);
+                    _logger.LogInformation("ZIP final anterior eliminado: {Zip}", rutaZipFinal);
+                }
+
+                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
+                File.Move(rutaZipTemp, rutaZipFinal);
+
+                _logger.LogInformation("ZIP generado en: {Zip}", rutaZipFinal);
+                _logger.LogInformation("---------- FIN ENCRIPTACIÓN Y COMPRESIÓN ----------");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en el proceso de encriptación/compresión");
+                throw;
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
