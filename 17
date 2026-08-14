@@ -1,92 +1,161 @@
+using EstadosCuentaTC.Dtos;
+using EstadosCuentaTC.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.IO.Compression;
 
 namespace EstadosCuentaTC.Services
 {
-    public class EncriptacionService
+    public class GeneracionEstadoCuentaService
     {
-        private readonly ILogger<EncriptacionService> _logger;
-        private readonly LlaveEncriptaRepository _llaveRepository;
+        private readonly GeneracionIndividualService _individualService;
+        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly JsonRepository _jsonRepo;
+        private readonly EstadoCuentaRepository _repo;
+        private readonly EncriptacionService _encriptacionService;
 
-        public EncriptacionService(ILogger<EncriptacionService> logger, LlaveEncriptaRepository llaveRepository)
+        public GeneracionEstadoCuentaService(
+            GeneracionIndividualService individualService,
+            JsonRepository jsonRepo,
+            EstadoCuentaRepository repo,
+            ILogger<GeneracionEstadoCuentaService> logger,
+            ILoggerFactory loggerFactory,
+            IConfiguration config,
+            EncriptacionService encriptacionService)
         {
+            _individualService = individualService;
             _logger = logger;
-            _llaveRepository = llaveRepository;
+            _jsonRepo = jsonRepo;
+            _repo = repo;
+            _loggerFactory = loggerFactory;
+            _encriptacionService = encriptacionService;
         }
 
-        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte, int idParametro)
+        public void Ejecutar(ParametrosGeneracionECDto parametros)
+        {
+            _logger.LogInformation("---------- GENERACIÓN DE ESTADOS DE CUENTA ----------");
+            _logger.LogInformation("Limpiando carpeta de generados...");
+            LimpiarCarpetaGenerados(parametros.RutaArchivoJson);
+
+            int totalProcesados = 0;
+
+            if (parametros.TipoGeneracion == "INDIVIDUAL")
+            {
+                _logger.LogInformation("Modo: INDIVIDUAL");
+
+                totalProcesados = _individualService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.NombreArchivo,
+                    parametros.FechaCorteProcesar
+                );
+            }
+            else if (parametros.TipoGeneracion == "LOTE")
+            {
+                _logger.LogInformation("Modo: LOTE");
+
+                var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
+                var loteService = new GeneracionLoteService(_repo, loteLogger);
+
+                totalProcesados = loteService.Ejecutar(
+                    parametros.RutaArchivoJson,
+                    parametros.NombreArchivo,
+                    parametros.FechaCorteProcesar,
+                    parametros.CantidadHilos
+                );
+            }
+            else
+            {
+                _logger.LogError("TipoGeneracion no válido: {Tipo}", parametros.TipoGeneracion);
+                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
+            }
+
+            _logger.LogInformation("Total estados de cuenta generados: {Total}", totalProcesados);
+
+            _logger.LogInformation("Generando archivo contador...");
+            GenerarArchivoContador(
+                parametros.RutaArchivoJson,
+                parametros.FechaCorteProcesar,
+                parametros.TipoGeneracion,
+                totalProcesados
+            );
+
+            _logger.LogInformation("Iniciando proceso de encriptación y compresión...");
+            _encriptacionService.Ejecutar(
+                parametros.RutaArchivoJson,
+                parametros.NombreArchivo,
+                parametros.FechaCorteProcesar,
+                parametros.LlaveEncripta
+            );
+
+            _logger.LogInformation("========== PROCESO FINALIZADO CORRECTAMENTE ==========");
+        }
+
+        private void GenerarArchivoContador(
+            string rutaBase,
+            DateTime fechaCorte,
+            string tipoGeneracion,
+            int totalProcesados)
         {
             try
             {
-                _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------");
+                _logger.LogInformation("Generando archivo Contador.txt...");
 
-                // La llave se pide justo antes de usarla, nunca se
-                // recibe desde afuera ni se guarda mas tiempo del
-                // necesario en memoria.
-                _logger.LogInformation("Obteniendo llave de encriptacion desde la base de datos...");
-                string keyString = _llaveRepository.ObtenerLlaveEncripta(idParametro);
+                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
+                var archivoContador = Path.Combine(ruta, "Contador.txt");
 
-                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
-                string nombreJson = $"{nombreArchivoBase}{fechaCorte.Day}.json";
-                string pathJson = Path.Combine(rutaFinal, nombreJson);
+                var contenido = $"Fecha Corte      : {fechaCorte:dd/MM/yyyy}{Environment.NewLine}" +
+                                $"Tipo Generacion  : {tipoGeneracion}{Environment.NewLine}" +
+                                $"Fecha Ejecucion  : {DateTime.Now:dd/MM/yyyy HH:mm:ss}{Environment.NewLine}" +
+                                $"Total Procesados : {totalProcesados}";
 
-                _logger.LogInformation("Archivo a encriptar: {Archivo}", pathJson);
+                File.WriteAllText(archivoContador, contenido);
 
-                if (!File.Exists(pathJson))
-                {
-                    _logger.LogError("El archivo JSON no existe: {Archivo}", pathJson);
-                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
-                }
-
-                // Generar nonce aleatorio (12 bytes, requerido por AES-GCM)
-                _logger.LogInformation("Generando nonce aleatorio...");
-                string nonceBase64 = EncriptacionAES.GenerarNonceBase64();
-
-                // Guardar el nonce (equivalente al IV anterior, pero de 12 bytes)
-                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
-                File.WriteAllText(rutaLlave, nonceBase64);
-                _logger.LogInformation("Nonce guardado en: {Ruta}", rutaLlave);
-
-                // Encriptar
-                string archivoEnc = pathJson + "e";
-                _logger.LogInformation("Encriptando archivo...");
-                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyString, nonceBase64);
-
-                // Reemplazar original con encriptado
-                File.Delete(pathJson);
-                File.Move(archivoEnc, pathJson);
-                _logger.LogInformation("Archivo encriptado correctamente: {Archivo}", pathJson);
-
-                // Comprimir en ZIP
-                string nombreZip = $"{nombreArchivoBase}{fechaCorte.Day}.zip";
-                string rutaZipTemp = rutaFinal + ".zip";
-                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
-
-                _logger.LogInformation("Comprimiendo carpeta en ZIP...");
-
-                if (File.Exists(rutaZipTemp))
-                {
-                    File.Delete(rutaZipTemp);
-                    _logger.LogInformation("ZIP temporal anterior eliminado: {Zip}", rutaZipTemp);
-                }
-
-                if (File.Exists(rutaZipFinal))
-                {
-                    File.Delete(rutaZipFinal);
-                    _logger.LogInformation("ZIP final anterior eliminado: {Zip}", rutaZipFinal);
-                }
-
-                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
-                File.Move(rutaZipTemp, rutaZipFinal);
-
-                _logger.LogInformation("ZIP generado en: {Zip}", rutaZipFinal);
-                _logger.LogInformation("---------- FIN ENCRIPTACIÓN Y COMPRESIÓN ----------");
+                _logger.LogInformation("Contador.txt generado en: {Ruta}", archivoContador);
+                _logger.LogInformation("Total procesados: {Total}", totalProcesados);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error en el proceso de encriptación/compresión");
+                _logger.LogError(ex, "Error al generar archivo Contador.txt");
+                throw;
+            }
+        }
+
+        private void LimpiarCarpetaGenerados(string rutaBase)
+        {
+            try
+            {
+                if (!Directory.Exists(rutaBase))
+                {
+                    _logger.LogWarning("La carpeta de generados no existe, se omite limpieza: {Ruta}", rutaBase);
+                    return;
+                }
+
+                int archivosEliminados = 0;
+                int carpetasEliminadas = 0;
+
+                foreach (string file in Directory.GetFiles(rutaBase))
+                {
+                    File.Delete(file);
+                    archivosEliminados++;
+                    _logger.LogInformation("Archivo eliminado: {Archivo}", file);
+                }
+
+                foreach (string dir in Directory.GetDirectories(rutaBase))
+                {
+                    Directory.Delete(dir, true);
+                    carpetasEliminadas++;
+                    _logger.LogInformation("Carpeta eliminada: {Carpeta}", dir);
+                }
+
+                _logger.LogInformation(
+                    "Limpieza completada. Archivos: {A}, Carpetas: {C}",
+                    archivosEliminados, carpetasEliminadas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al limpiar carpeta de generados: {Ruta}", rutaBase);
                 throw;
             }
         }
