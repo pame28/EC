@@ -1,122 +1,32 @@
-using System;
-using System.IO;
-using System.Security.Cryptography;
-
-namespace EstadosCuentaTC.Services
-{
-    public static class EncriptacionAES
-    {
-    
-        private const int NonceSizeBytes = 12; 
-        private const int TagSizeBytes = 16;   
-
-
-        public static void EncriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string nonceBase64)
-        {
-            byte[] key = Convert.FromBase64String(keyString);
-            byte[] nonce = Convert.FromBase64String(nonceBase64);
-
-            if (nonce.Length != NonceSizeBytes)
-                throw new ArgumentException($"El nonce debe tener {NonceSizeBytes} bytes para AES-GCM.");
-
-            byte[] plaintext = File.ReadAllBytes(rutaEntrada);
-            byte[] ciphertext = new byte[plaintext.Length];
-            byte[] tag = new byte[TagSizeBytes];
-
-            using (var aesGcm = new AesGcm(key, TagSizeBytes))
-            {
-                aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
-            }
-
-            using (var fsSalida = new FileStream(rutaSalida, FileMode.Create, FileAccess.Write))
-            {
-                fsSalida.Write(tag, 0, tag.Length);
-                fsSalida.Write(ciphertext, 0, ciphertext.Length);
-            }
-        }
-
-
-        public static void DesencriptarArchivo(string rutaEntrada, string rutaSalida, string keyString, string nonceBase64)
-        {
-            byte[] key = Convert.FromBase64String(keyString);
-            byte[] nonce = Convert.FromBase64String(nonceBase64);
-
-            byte[] contenido = File.ReadAllBytes(rutaEntrada);
-
-            if (contenido.Length < TagSizeBytes)
-                throw new InvalidDataException("El archivo encriptado está corrupto o incompleto.");
-
-            byte[] tag = new byte[TagSizeBytes];
-            byte[] ciphertext = new byte[contenido.Length - TagSizeBytes];
-
-            Buffer.BlockCopy(contenido, 0, tag, 0, TagSizeBytes);
-            Buffer.BlockCopy(contenido, TagSizeBytes, ciphertext, 0, ciphertext.Length);
-
-            byte[] plaintext = new byte[ciphertext.Length];
-
-            using (var aesGcm = new AesGcm(key, TagSizeBytes))
-            {
-               
-                aesGcm.Decrypt(nonce, ciphertext, tag, plaintext);
-            }
-
-            File.WriteAllBytes(rutaSalida, plaintext);
-        }
-
-
-        public static string GenerarNonceBase64()
-        {
-            byte[] nonce = new byte[NonceSizeBytes];
-            using (var rng = RandomNumberGenerator.Create())
-                rng.GetBytes(nonce);
-
-            return Convert.ToBase64String(nonce);
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Security.Cryptography;
 
 namespace EstadosCuentaTC.Services
 {
     public class EncriptacionService
     {
         private readonly ILogger<EncriptacionService> _logger;
+        private readonly LlaveEncriptaRepository _llaveRepository;
 
-        public EncriptacionService(ILogger<EncriptacionService> logger)
+        public EncriptacionService(ILogger<EncriptacionService> logger, LlaveEncriptaRepository llaveRepository)
         {
             _logger = logger;
+            _llaveRepository = llaveRepository;
         }
 
-        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte, string keyString)
+        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte, int idParametro)
         {
             try
             {
                 _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------");
+
+                // La llave se pide justo antes de usarla, nunca se
+                // recibe desde afuera ni se guarda mas tiempo del
+                // necesario en memoria.
+                _logger.LogInformation("Obteniendo llave de encriptacion desde la base de datos...");
+                string keyString = _llaveRepository.ObtenerLlaveEncripta(idParametro);
 
                 string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
                 string nombreJson = $"{nombreArchivoBase}{fechaCorte.Day}.json";
@@ -182,9 +92,3 @@ namespace EstadosCuentaTC.Services
         }
     }
 }
-
-
-
-
-
-Estan bien asi?
