@@ -1,24 +1,41 @@
-USE [EstadosCuentaJSONProcesador]
-GO
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using System;
 
-CREATE OR ALTER PROCEDURE dbo.sp_ObtenerLlaveEncripta
-    @Id INT
-AS
-BEGIN
-    SET NOCOUNT ON;
+namespace EstadosCuentaTC.Services
+{
+    public class LlaveEncriptaRepository
+    {
+        private readonly string _connectionString;
 
-    OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
-        DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
+        public LlaveEncriptaRepository(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
 
-    SELECT CONVERT(VARCHAR(100), DECRYPTBYKEY(LlaveEncriptaCifrada)) AS LlaveEncripta
-    FROM dbo.ParametrosGeneracionEC
-    WHERE Id = @Id;
+        /// <summary>
+        /// Llama al SP que abre la symmetric key, descifra el
+        /// valor y lo devuelve. La llave solo existe en texto
+        /// plano en memoria durante el tiempo que dura esta
+        /// llamada y el proceso de encriptacion que la usa.
+        /// </summary>
+        public string ObtenerLlaveEncripta(int idParametro)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            using (var cmd = new SqlCommand("dbo.sp_ObtenerLlaveDescifrada", conn))
+            {
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@Id", idParametro);
 
-    CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
-END
-GO
+                conn.Open();
+                var resultado = cmd.ExecuteScalar() as string;
 
--- Permisos: solo la cuenta de servicio de la app deberia
--- poder ejecutar este SP. No le des acceso directo a
--- LlaveEncriptaCifrada ni a abrir la symmetric key.
--- GRANT EXECUTE ON dbo.sp_ObtenerLlaveEncripta TO [CuentaDeServicioApp];
+                if (string.IsNullOrEmpty(resultado))
+                    throw new InvalidOperationException(
+                        $"No se pudo obtener la llave de encriptacion para el Id {idParametro}.");
+
+                return resultado;
+            }
+        }
+    }
+}
