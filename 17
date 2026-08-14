@@ -1,163 +1,24 @@
-using EstadosCuentaTC.Dtos;
-using EstadosCuentaTC.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Text;
 
-namespace EstadosCuentaTC.Services
+namespace EstadosCuentaTC.Dtos
 {
-    public class GeneracionEstadoCuentaService
+    public class ParametrosGeneracionECDto
     {
-        private readonly GeneracionIndividualService _individualService;
-        private readonly ILogger<GeneracionEstadoCuentaService> _logger;
-        private readonly ILoggerFactory _loggerFactory;
-        private readonly JsonRepository _jsonRepo;
-        private readonly EstadoCuentaRepository _repo;
-        private readonly EncriptacionService _encriptacionService;
 
-        public GeneracionEstadoCuentaService(
-            GeneracionIndividualService individualService,
-            JsonRepository jsonRepo,
-            EstadoCuentaRepository repo,
-            ILogger<GeneracionEstadoCuentaService> logger,
-            ILoggerFactory loggerFactory,
-            IConfiguration config,
-            EncriptacionService encriptacionService)
-        {
-            _individualService = individualService;
-            _logger = logger;
-            _jsonRepo = jsonRepo;
-            _repo = repo;
-            _loggerFactory = loggerFactory;
-            _encriptacionService = encriptacionService;
-        }
+        public DateTime FechaCorteProcesar { get; set; } 
+        public string DireccionReporte { get; set; } = string.Empty;
+        public string RutaArchivoJson { get; set; } = string.Empty ;
+        public string RutaDestinoArchivoJson { get; set; } = string.Empty;
+        public string LlaveEncripta { get; set; } = string.Empty;
+        public string TipoGeneracion { get; set; } = string.Empty;
+        public string NombreArchivo { get; set; } = string.Empty;
+        public int RegistrosPorLote { get; set; }
+        public int CantidadHilos { get; set; }
 
-        public void Ejecutar(ParametrosGeneracionECDto parametros)
-        {
-            _logger.LogInformation("---------- GENERACIÓN DE ESTADOS DE CUENTA ----------");
-            _logger.LogInformation("Limpiando carpeta de generados...");
-            LimpiarCarpetaGenerados(parametros.RutaArchivoJson);
+        // Datos derivados
+        public int CantidadEstadosCuenta { get; set; }
 
-            int totalProcesados = 0;
-
-            if (parametros.TipoGeneracion == "INDIVIDUAL")
-            {
-                _logger.LogInformation("Modo: INDIVIDUAL");
-
-                totalProcesados = _individualService.Ejecutar(
-                    parametros.RutaArchivoJson,
-                    parametros.NombreArchivo,
-                    parametros.FechaCorteProcesar
-                );
-            }
-            else if (parametros.TipoGeneracion == "LOTE")
-            {
-                _logger.LogInformation("Modo: LOTE");
-
-                var loteLogger = _loggerFactory.CreateLogger<GeneracionLoteService>();
-                var loteService = new GeneracionLoteService(_repo, loteLogger);
-
-                totalProcesados = loteService.Ejecutar(
-                    parametros.RutaArchivoJson,
-                    parametros.NombreArchivo,
-                    parametros.FechaCorteProcesar,
-                    parametros.CantidadHilos
-                );
-            }
-            else
-            {
-                _logger.LogError("TipoGeneracion no válido: {Tipo}", parametros.TipoGeneracion);
-                throw new Exception($"TipoGeneracion no válido: {parametros.TipoGeneracion}");
-            }
-
-            _logger.LogInformation("Total estados de cuenta generados: {Total}", totalProcesados);
-
-            _logger.LogInformation("Generando archivo contador...");
-            GenerarArchivoContador(
-                parametros.RutaArchivoJson,
-                parametros.FechaCorteProcesar,
-                parametros.TipoGeneracion,
-                totalProcesados
-            );
-
-            _logger.LogInformation("Iniciando proceso de encriptación y compresión...");
-            _encriptacionService.Ejecutar(
-                parametros.RutaArchivoJson,
-                parametros.NombreArchivo,
-                parametros.FechaCorteProcesar,
-                parametros.LlaveEncripta
-            );
-
-            _logger.LogInformation("========== PROCESO FINALIZADO CORRECTAMENTE ==========");
-        }
-
-        private void GenerarArchivoContador(
-            string rutaBase,
-            DateTime fechaCorte,
-            string tipoGeneracion,
-            int totalProcesados)
-        {
-            try
-            {
-                _logger.LogInformation("Generando archivo Contador.txt...");
-
-                var ruta = Path.Combine(rutaBase, fechaCorte.ToString("yyyy-MM-dd"));
-                var archivoContador = Path.Combine(ruta, "Contador.txt");
-
-                var contenido = $"Fecha Corte      : {fechaCorte:dd/MM/yyyy}{Environment.NewLine}" +
-                                $"Tipo Generacion  : {tipoGeneracion}{Environment.NewLine}" +
-                                $"Fecha Ejecucion  : {DateTime.Now:dd/MM/yyyy HH:mm:ss}{Environment.NewLine}" +
-                                $"Total Procesados : {totalProcesados}";
-
-                File.WriteAllText(archivoContador, contenido);
-
-                _logger.LogInformation("Contador.txt generado en: {Ruta}", archivoContador);
-                _logger.LogInformation("Total procesados: {Total}", totalProcesados);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al generar archivo Contador.txt");
-                throw;
-            }
-        }
-
-        private void LimpiarCarpetaGenerados(string rutaBase)
-        {
-            try
-            {
-                if (!Directory.Exists(rutaBase))
-                {
-                    _logger.LogWarning("La carpeta de generados no existe, se omite limpieza: {Ruta}", rutaBase);
-                    return;
-                }
-
-                int archivosEliminados = 0;
-                int carpetasEliminadas = 0;
-
-                foreach (string file in Directory.GetFiles(rutaBase))
-                {
-                    File.Delete(file);
-                    archivosEliminados++;
-                    _logger.LogInformation("Archivo eliminado: {Archivo}", file);
-                }
-
-                foreach (string dir in Directory.GetDirectories(rutaBase))
-                {
-                    Directory.Delete(dir, true);
-                    carpetasEliminadas++;
-                    _logger.LogInformation("Carpeta eliminada: {Carpeta}", dir);
-                }
-
-                _logger.LogInformation(
-                    "Limpieza completada. Archivos: {A}, Carpetas: {C}",
-                    archivosEliminados, carpetasEliminadas);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al limpiar carpeta de generados: {Ruta}", rutaBase);
-                throw;
-            }
-        }
     }
 }
