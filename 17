@@ -1,152 +1,81 @@
 using EstadosCuentaTC.Data;
-using Microsoft.Data.SqlClient;
-using System;
-
-namespace EstadosCuentaTC.Repositories
-{
-    public class LlaveEncriptaRepository
-    {
-        private readonly SqlExecutor _sql;
-
-        public LlaveEncriptaRepository(SqlExecutor sql)
-        {
-            _sql = sql;
-        }
-
-        /// <summary>
-        /// Llama al SP que abre la symmetric key, descifra el
-        /// valor y lo devuelve. Como ParametrosGeneracionEC solo
-        /// tiene un registro, no se necesita filtrar por Id.
-        /// </summary>
-        public string ObtenerLlaveEncripta()
-        {
-            using var conn = _sql.GetConnection();
-            using var cmd = new SqlCommand("dbo.sp_ObtenerLlaveDescifrada", conn);
-
-            cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
-            // Quita esta linea si _sql.GetConnection() ya devuelve
-            // la conexion abierta en el resto de tu proyecto.
-            conn.Open();
-
-            var resultado = cmd.ExecuteScalar() as string;
-
-            if (string.IsNullOrEmpty(resultado))
-                throw new InvalidOperationException(
-                    "No se pudo obtener la llave de encriptacion desde la base de datos.");
-
-            return resultado;
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+using EstadosCuentaTC.Logging;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.IO.Compression;
 
-namespace EstadosCuentaTC.Services
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+var connectionString = config.GetConnectionString("DefaultConnection")
+    ?? throw new Exception("ConnectionString no configurado");
+
+// Ruta del log con fecha y hora
+var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+Directory.CreateDirectory(logsDir); // la crea si no existe
+
+var logPath = Path.Combine(logsDir, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+
+Console.WriteLine($"Log guardándose en: {logPath}");
+
+// Logger con consola + archivo
+var loggerFactory = LoggerFactory.Create(b =>
 {
-    public class EncriptacionService
-    {
-        private readonly ILogger<EncriptacionService> _logger;
-        private readonly LlaveEncriptaRepository _llaveRepository;
+    b.AddConsole();
+    b.AddProvider(new FileLoggerProvider(logPath));
+});
 
-        public EncriptacionService(ILogger<EncriptacionService> logger, LlaveEncriptaRepository llaveRepository)
-        {
-            _logger = logger;
-            _llaveRepository = llaveRepository;
-        }
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+var loggerEncrypt = loggerFactory.CreateLogger<EncriptacionService>();
 
-        public void Ejecutar(string rutaJson, string nombreArchivoBase, DateTime fechaCorte)
-        {
-            try
-            {
-                _logger.LogInformation("---------- INICIO ENCRIPTACIÓN Y COMPRESIÓN (AES-GCM) ----------");
+var encriptacionService = new EncriptacionService(loggerEncrypt);
 
-                // La llave se pide justo antes de usarla, nunca se
-                // recibe desde afuera ni se guarda mas tiempo del
-                // necesario en memoria. ParametrosGeneracionEC solo
-                // tiene un registro, asi que no hace falta un Id.
-                _logger.LogInformation("Obteniendo llave de encriptacion desde la base de datos...");
-                string keyString = _llaveRepository.ObtenerLlaveEncripta();
+var sql = new SqlExecutor(config);
 
-                string rutaFinal = Path.Combine(rutaJson, fechaCorte.ToString("yyyy-MM-dd"));
-                string nombreJson = $"{nombreArchivoBase}{fechaCorte.Day}.json";
-                string pathJson = Path.Combine(rutaFinal, nombreJson);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var jsonRepo = new JsonRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
 
-                _logger.LogInformation("Archivo a encriptar: {Archivo}", pathJson);
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo,
+    jsonRepo,
+    loggerParam);
 
-                if (!File.Exists(pathJson))
-                {
-                    _logger.LogError("El archivo JSON no existe: {Archivo}", pathJson);
-                    throw new FileNotFoundException($"No existe el archivo: {pathJson}");
-                }
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
 
-                // Generar nonce aleatorio (12 bytes, requerido por AES-GCM)
-                _logger.LogInformation("Generando nonce aleatorio...");
-                string nonceBase64 = EncriptacionAES.GenerarNonceBase64();
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    jsonRepo,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config,
+    encriptacionService
+);
 
-                // Guardar el nonce (equivalente al IV anterior, pero de 12 bytes)
-                string rutaLlave = Path.Combine(rutaFinal, "LlavePublica.txt");
-                File.WriteAllText(rutaLlave, nonceBase64);
-                _logger.LogInformation("Nonce guardado en: {Ruta}", rutaLlave);
+try
+{
+    var parametros = ParametrosECService.ObtenerParametros();
+    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"\nERROR GENERAL: {ex.Message}");
+    Console.WriteLine($"DETALLE: {ex.StackTrace}");
 
-                // Encriptar
-                string archivoEnc = pathJson + "e";
-                _logger.LogInformation("Encriptando archivo...");
-                EncriptacionAES.EncriptarArchivo(pathJson, archivoEnc, keyString, nonceBase64);
-
-                // Reemplazar original con encriptado
-                File.Delete(pathJson);
-                File.Move(archivoEnc, pathJson);
-                _logger.LogInformation("Archivo encriptado correctamente: {Archivo}", pathJson);
-
-                // Comprimir en ZIP
-                string nombreZip = $"{nombreArchivoBase}{fechaCorte.Day}.zip";
-                string rutaZipTemp = rutaFinal + ".zip";
-                string rutaZipFinal = Path.Combine(rutaFinal, nombreZip);
-
-                _logger.LogInformation("Comprimiendo carpeta en ZIP...");
-
-                if (File.Exists(rutaZipTemp))
-                {
-                    File.Delete(rutaZipTemp);
-                    _logger.LogInformation("ZIP temporal anterior eliminado: {Zip}", rutaZipTemp);
-                }
-
-                if (File.Exists(rutaZipFinal))
-                {
-                    File.Delete(rutaZipFinal);
-                    _logger.LogInformation("ZIP final anterior eliminado: {Zip}", rutaZipFinal);
-                }
-
-                ZipFile.CreateFromDirectory(rutaFinal, rutaZipTemp);
-                File.Move(rutaZipTemp, rutaZipFinal);
-
-                _logger.LogInformation("ZIP generado en: {Zip}", rutaZipFinal);
-                _logger.LogInformation("---------- FIN ENCRIPTACIÓN Y COMPRESIÓN ----------");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en el proceso de encriptación/compresión");
-                throw;
-            }
-        }
-    }
+    // Escribe el error también al log
+    File.AppendAllText(logPath,
+        $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n");
 }
 
 
@@ -154,8 +83,6 @@ namespace EstadosCuentaTC.Services
 
 
 
-
-
-
+No se ha dado ningún argumento que corresponda al parámetro requerido "llaveRepository" de "EncriptacionService.EncriptacionService(ILogger<EncriptacionService>, LlaveEncriptaRepository)"
 
 
