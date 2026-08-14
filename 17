@@ -1,10 +1,67 @@
 USE [EstadosCuentaJSONProcesador]
 GO
 
--- Guarda la nueva llave AES-256 (generada aleatoriamente) cifrada
--- con la symmetric key de SQL Server. Reemplaza a la llave vieja
--- de 16 bytes (qeH8b6jBD5h9i4KjMZBqYA==).
+-- =========================================================
+-- PASO 1: Database Master Key
+-- Protege el certificado del paso 2. Cambia la contraseña
+-- por una propia, larga y única, y guardala en tu gestor
+-- de secretos (no la dejes en este archivo).
+-- =========================================================
+IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = '##MS_DatabaseMasterKey##')
+BEGIN
+    CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'CAMBIA_ESTA_CLAVE_MAESTRA_LARGA_Y_UNICA';
+END
+GO
 
+-- =========================================================
+-- PASO 2: Certificado que protege la symmetric key
+-- =========================================================
+IF NOT EXISTS (SELECT 1 FROM sys.certificates WHERE name = 'CertEstadosCuentaTC')
+BEGIN
+    CREATE CERTIFICATE CertEstadosCuentaTC
+        WITH SUBJECT = 'Certificado para proteger llave de encriptacion de estados de cuenta';
+END
+GO
+
+-- =========================================================
+-- PASO 3: Symmetric Key real
+-- SQL Server genera el material criptografico de forma
+-- aleatoria automaticamente; nunca lo ves ni lo eliges.
+-- =========================================================
+IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = 'SK_LlaveEncriptaTC')
+BEGIN
+    CREATE SYMMETRIC KEY SK_LlaveEncriptaTC
+        WITH ALGORITHM = AES_256
+        ENCRYPTION BY CERTIFICATE CertEstadosCuentaTC;
+END
+GO
+
+-- =========================================================
+-- PASO 4: Columna nueva para guardar la llave AES de la app,
+-- ya cifrada (reemplaza a LlaveEncripta en texto plano)
+-- =========================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID('dbo.ParametrosGeneracionEC')
+      AND name = 'LlaveEncriptaCifrada'
+)
+BEGIN
+    ALTER TABLE dbo.ParametrosGeneracionEC
+        ADD LlaveEncriptaCifrada VARBINARY(256) NULL;
+END
+GO
+
+-- =========================================================
+-- PASO 5: Guardar la nueva llave AES-256 de la aplicacion,
+-- cifrada con SK_LlaveEncriptaTC. Esta es la llave que usa
+-- EncriptacionAES.EncriptarArchivo en tu app C#.
+--
+-- Llave generada aleatoriamente (32 bytes / AES-256):
+--   QOUNBL5a3lerVGAzwJZNIbOE/48DL2UO7usx4l7kTkA=
+--
+-- Reemplaza a la llave vieja de 16 bytes (AES-128):
+--   qeH8b6jBD5h9i4KjMZBqYA==
+-- =========================================================
 OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
 
@@ -13,12 +70,14 @@ SET LlaveEncriptaCifrada = ENCRYPTBYKEY(
     KEY_GUID('SK_LlaveEncriptaTC'),
     CONVERT(VARBINARY(100), 'QOUNBL5a3lerVGAzwJZNIbOE/48DL2UO7usx4l7kTkA=')
 )
-WHERE Id = 1; -- ajusta el filtro según tu registro
+WHERE Id = 1; -- ajusta el filtro segun tu registro real
 
 CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
 GO
 
--- Verificación: confirma que se guardó y se puede leer bien
+-- =========================================================
+-- PASO 6: Verificacion - confirma que quedo bien guardada
+-- =========================================================
 OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
 
@@ -29,17 +88,41 @@ WHERE Id = 1;
 CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
 GO
 
--- ==========================================================
--- IMPORTANTE:
--- 1) Borra el literal de la llave de este archivo despues de
---    ejecutarlo (no lo dejes versionado en tu repo).
--- 2) Si tienes archivos JSON ya cifrados con la llave vieja
---    (qeH8b6jBD5h9i4KjMZBqYA==) y modo CBC, esos archivos NO
---    seran legibles con la llave nueva. Necesitas descifrarlos
---    con la llave/metodo viejo antes de re-encriptarlos con
---    AES-GCM y la llave nueva, o mantener ambos flujos activos
---    temporalmente para los archivos historicos.
--- 3) Una vez migrado, elimina la columna LlaveEncripta si aun
---    existe en texto plano:
---    ALTER TABLE dbo.ParametrosGeneracionEC DROP COLUMN LlaveEncripta;
--- ==========================================================
+-- =========================================================
+-- PASO 7 (ejecutar solo despues de confirmar el paso 6 y
+-- de actualizar tu app para leer LlaveEncriptaCifrada):
+-- elimina la columna vieja en texto plano.
+-- =========================================================
+-- ALTER TABLE dbo.ParametrosGeneracionEC DROP COLUMN LlaveEncripta;
+
+-- =========================================================
+-- COMO LEER LA LLAVE DESDE TU APP (ejemplo de referencia,
+-- no es lo que ejecuta la app C# directamente; esto es solo
+-- para consultarla manualmente o desde un stored procedure):
+-- =========================================================
+-- OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
+--     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
+--
+-- SELECT CONVERT(VARCHAR(100), DECRYPTBYKEY(LlaveEncriptaCifrada)) AS LlaveEncripta
+-- FROM dbo.ParametrosGeneracionEC
+-- WHERE Id = 1;
+--
+-- CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
+-- GO
+
+-- =========================================================
+-- NOTAS IMPORTANTES ANTES DE EJECUTAR EN PRODUCCION:
+--
+-- 1) Cambia la contrasena del PASO 1 por una propia.
+-- 2) Borra el literal de la llave del PASO 5 de este archivo
+--    despues de ejecutarlo (no lo dejes versionado en tu repo).
+-- 3) Archivos JSON ya cifrados con la llave vieja
+--    (qeH8b6jBD5h9i4KjMZBqYA==) en modo CBC NO seran legibles
+--    con la llave nueva en modo GCM. Si necesitas conservar
+--    acceso a estados de cuenta historicos, descifralos con
+--    el metodo/llave viejo y vuelve a encriptarlos con AES-GCM
+--    y la llave nueva antes de retirar el codigo/llave viejos.
+-- 4) El PASO 7 (borrar la columna vieja) solo debe correr
+--    despues de que tu app en produccion ya este leyendo
+--    LlaveEncriptaCifrada correctamente.
+-- =========================================================
