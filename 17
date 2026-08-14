@@ -1,85 +1,45 @@
 USE [EstadosCuentaJSONProcesador]
 GO
 
--- =========================================================
--- 1) Database Master Key: protege el certificado más abajo.
---    Guarda esta contraseña de forma segura (p. ej. en tu
---    gestor de secretos), no en un script versionado.
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = '##MS_DatabaseMasterKey##')
-BEGIN
-    CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'CAMBIA_ESTA_CLAVE_MAESTRA_LARGA_Y_UNICA';
-END
-GO
+-- Guarda la nueva llave AES-256 (generada aleatoriamente) cifrada
+-- con la symmetric key de SQL Server. Reemplaza a la llave vieja
+-- de 16 bytes (qeH8b6jBD5h9i4KjMZBqYA==).
 
--- =========================================================
--- 2) Certificado que protegerá la symmetric key
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM sys.certificates WHERE name = 'CertEstadosCuentaTC')
-BEGIN
-    CREATE CERTIFICATE CertEstadosCuentaTC
-        WITH SUBJECT = 'Certificado para proteger llave de encriptacion de estados de cuenta';
-END
-GO
-
--- =========================================================
--- 3) Symmetric Key real: esta es la que usarías para cifrar
---    el valor de LlaveEncripta. Nunca se puede leer en texto
---    plano fuera de una sesión que la haya abierto con el
---    certificado correcto.
--- =========================================================
-IF NOT EXISTS (SELECT 1 FROM sys.symmetric_keys WHERE name = 'SK_LlaveEncriptaTC')
-BEGIN
-    CREATE SYMMETRIC KEY SK_LlaveEncriptaTC
-        WITH ALGORITHM = AES_256
-        ENCRYPTION BY CERTIFICATE CertEstadosCuentaTC;
-END
-GO
-
--- =========================================================
--- 4) Agregar columna binaria para guardar la llave cifrada
---    (en vez de guardarla en texto plano en LlaveEncripta)
--- =========================================================
-IF NOT EXISTS (
-    SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID('dbo.ParametrosGeneracionEC')
-      AND name = 'LlaveEncriptaCifrada'
-)
-BEGIN
-    ALTER TABLE dbo.ParametrosGeneracionEC
-        ADD LlaveEncriptaCifrada VARBINARY(256) NULL;
-END
-GO
-
--- =========================================================
--- 5) Ejemplo: cifrar y guardar la llave AES-256 (base64) que
---    usa tu app para EncriptacionAES.EncriptarArchivo
--- =========================================================
 OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
 
 UPDATE dbo.ParametrosGeneracionEC
-SET LlaveEncriptaCifrada = ENCRYPTBYKEY(KEY_GUID('SK_LlaveEncriptaTC'), CONVERT(VARBINARY(100), LlaveEncripta))
+SET LlaveEncriptaCifrada = ENCRYPTBYKEY(
+    KEY_GUID('SK_LlaveEncriptaTC'),
+    CONVERT(VARBINARY(100), 'QOUNBL5a3lerVGAzwJZNIbOE/48DL2UO7usx4l7kTkA=')
+)
 WHERE Id = 1; -- ajusta el filtro según tu registro
 
 CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
 GO
 
--- =========================================================
--- 6) Ejemplo: leer la llave descifrada (solo cuando tu app
---    realmente la necesita, en el momento de encriptar)
--- =========================================================
--- OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
---     DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
---
--- SELECT CONVERT(VARCHAR(100), DECRYPTBYKEY(LlaveEncriptaCifrada)) AS LlaveEncriptaTextoPlano
--- FROM dbo.ParametrosGeneracionEC
--- WHERE Id = 1;
---
--- CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
--- GO
+-- Verificación: confirma que se guardó y se puede leer bien
+OPEN SYMMETRIC KEY SK_LlaveEncriptaTC
+    DECRYPTION BY CERTIFICATE CertEstadosCuentaTC;
 
--- =========================================================
--- 7) Una vez migrado, elimina la columna en texto plano
--- =========================================================
--- ALTER TABLE dbo.ParametrosGeneracionEC DROP COLUMN LlaveEncripta;
+SELECT CONVERT(VARCHAR(100), DECRYPTBYKEY(LlaveEncriptaCifrada)) AS LlaveEncriptaTextoPlano
+FROM dbo.ParametrosGeneracionEC
+WHERE Id = 1;
+
+CLOSE SYMMETRIC KEY SK_LlaveEncriptaTC;
+GO
+
+-- ==========================================================
+-- IMPORTANTE:
+-- 1) Borra el literal de la llave de este archivo despues de
+--    ejecutarlo (no lo dejes versionado en tu repo).
+-- 2) Si tienes archivos JSON ya cifrados con la llave vieja
+--    (qeH8b6jBD5h9i4KjMZBqYA==) y modo CBC, esos archivos NO
+--    seran legibles con la llave nueva. Necesitas descifrarlos
+--    con la llave/metodo viejo antes de re-encriptarlos con
+--    AES-GCM y la llave nueva, o mantener ambos flujos activos
+--    temporalmente para los archivos historicos.
+-- 3) Una vez migrado, elimina la columna LlaveEncripta si aun
+--    existe en texto plano:
+--    ALTER TABLE dbo.ParametrosGeneracionEC DROP COLUMN LlaveEncripta;
+-- ==========================================================
