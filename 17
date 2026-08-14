@@ -1,17 +1,33 @@
 USE [EstadosCuentaJSONProcesador]
 GO
 
--- Permiso para ejecutar el SP
-GRANT EXECUTE ON dbo.usp_ObtenerLlaveEncripta TO [app_estadosCuenta];
+/****** Object:  Table [dbo].[ParametrosGeneracionEC]    Script Date: 13/8/2026 21:30:27 ******/
+SET ANSI_NULLS ON
 GO
 
--- Permiso para que el SP pueda abrir la symmetric key usando
--- el certificado (esto es lo que faltaba).
-GRANT CONTROL ON CERTIFICATE::CertEstadosCuentaTC TO [app_estadosCuenta];
+SET QUOTED_IDENTIFIER ON
 GO
 
--- Permiso adicional: para abrir la symmetric key, el usuario
--- tambien necesita VIEW DEFINITION sobre la key misma (no
--- solo sobre el certificado que la protege).
-GRANT VIEW DEFINITION ON SYMMETRIC KEY::SK_LlaveEncriptaTC TO [app_estadosCuenta];
+CREATE TABLE [dbo].[ParametrosGeneracionEC](
+	[Id] [int] NOT NULL,
+	[FechaCorteProcesar] [date] NULL,
+	[DireccionReporte] [varchar](max) NULL,
+	[RutaArchivoJson] [varchar](200) NULL,
+	[RutaDestinoArchivoJson] [varchar](200) NULL,
+	[TipoGeneracion] [varchar](100) NULL,
+	[RegistrosPorLote] [int] NULL,
+	[CantidadHilos] [int] NULL,
+	[NombreArchivo] [varchar](200) NULL,
+	[LlaveEncriptaCifrada] [varbinary](256) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
+
+
+
+
+
+Como puedo hacer un alter para cambiarle el nombre 	[DireccionReporte] [varchar](max) NULL, por 	[RutaArchivoJsonHistorico] [varchar](200) NULL,
