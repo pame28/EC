@@ -1,5 +1,7 @@
 using System;
+using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows.Forms;
@@ -16,6 +18,13 @@ namespace EstadosCuentaTC.Desencriptador
         private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
         private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
 
+        // Colores del estilo "moderno" para campos y botón Examinar
+        private static readonly Color ColorCampoFondo = Color.FromArgb(243, 245, 248);
+        private static readonly Color ColorCampoBorde = Color.FromArgb(223, 227, 232);
+        private static readonly Color ColorBotonExaminarFondo = Color.FromArgb(232, 238, 243);
+        private static readonly Color ColorBotonExaminarHover = Color.FromArgb(216, 226, 234);
+        private static readonly Color ColorBotonExaminarPresionado = Color.FromArgb(200, 213, 224);
+
         // Alturas de los campos y botones "Examinar..."
         private const int AltoCampoTexto = 42;
         private const int AltoBotonExaminar = 42;
@@ -27,6 +36,9 @@ namespace EstadosCuentaTC.Desencriptador
         private Label lblEstadoTexto = null!;
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
+
+        [DllImport("user32.dll")]
+        private static extern bool DestroyIcon(IntPtr handle);
 
         public MainForm()
         {
@@ -42,6 +54,7 @@ namespace EstadosCuentaTC.Desencriptador
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = ColorFondo;
             Font = new Font("Segoe UI", 9.5f);
+            CargarIconoSiExiste();
 
             // ---------- Header ----------
             var panelHeader = new Panel
@@ -115,9 +128,10 @@ namespace EstadosCuentaTC.Desencriptador
                 ForeColor = ColorAccento
             };
 
-            txtArchivoEncriptado = CrearCampoTexto(30, 215, 470);
+            var (panelCampoArchivo, campoArchivo) = CrearCampoTexto(30, 215, 470);
+            txtArchivoEncriptado = campoArchivo;
 
-            var btnSeleccionarArchivo = CrearBoton("Examinar...", 505, 215, 150);
+            var btnSeleccionarArchivo = CrearBoton("📁  Examinar...", 505, 215, 150);
             btnSeleccionarArchivo.Click += BtnSeleccionarArchivo_Click;
 
             // ---------- Paso 2: llave ----------
@@ -142,9 +156,10 @@ namespace EstadosCuentaTC.Desencriptador
                 ForeColor = ColorAccento
             };
 
-            txtLlavePublica = CrearCampoTexto(30, 335, 470);
+            var (panelCampoLlave, campoLlave) = CrearCampoTexto(30, 335, 470);
+            txtLlavePublica = campoLlave;
 
-            var btnSeleccionarLlave = CrearBoton("Examinar...", 505, 335, 150);
+            var btnSeleccionarLlave = CrearBoton("📁  Examinar...", 505, 335, 150);
             btnSeleccionarLlave.Click += BtnSeleccionarLlave_Click;
 
             // ---------- Botón principal ----------
@@ -179,9 +194,9 @@ namespace EstadosCuentaTC.Desencriptador
             lblEstadoIcono = new Label
             {
                 Left = 16,
-                Top = 8,
+                Top = 0,
                 Width = 36,
-                Height = 43,
+                Height = 64,
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -202,14 +217,65 @@ namespace EstadosCuentaTC.Desencriptador
             Controls.Add(panelHeader);
             Controls.Add(lblPaso1);
             Controls.Add(lblArchivo);
-            Controls.Add(txtArchivoEncriptado);
+            Controls.Add(panelCampoArchivo);
             Controls.Add(btnSeleccionarArchivo);
             Controls.Add(lblPaso2);
             Controls.Add(lblLlave);
-            Controls.Add(txtLlavePublica);
+            Controls.Add(panelCampoLlave);
             Controls.Add(btnSeleccionarLlave);
             Controls.Add(btnDesencriptar);
             Controls.Add(panelEstado);
+        }
+
+        /// <summary>
+        /// Carga el ícono de la ventana / barra de tareas. Si existe un .ico
+        /// lo usa directamente (mejor calidad, admite varios tamaños). Si solo
+        /// hay un .png, lo convierte en memoria a Icon.
+        /// </summary>
+        private void CargarIconoSiExiste()
+        {
+            try
+            {
+                string carpetaAssets = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets\\Images");
+                string rutaIco = Path.Combine(carpetaAssets, "icon.ico");
+                string rutaPng = Path.Combine(carpetaAssets, "logo.png");
+
+                if (File.Exists(rutaIco))
+                {
+                    Icon = new Icon(rutaIco);
+                }
+                else if (File.Exists(rutaPng))
+                {
+                    Icon = CrearIconoDesdePng(rutaPng);
+                }
+            }
+            catch
+            {
+                // Si el ícono no carga por cualquier motivo, seguimos con el
+                // ícono por defecto sin romper la app.
+            }
+        }
+
+        /// <summary>
+        /// Convierte un PNG a Icon en tiempo de ejecución. Windows genera un
+        /// HICON nativo (GetHicon) y lo clonamos a un Icon administrado antes
+        /// de liberar el handle nativo, para no dejar el recurso GDI sin liberar.
+        /// Para mejor nitidez en la barra de tareas, usa un PNG cuadrado
+        /// (idealmente 256x256) con fondo transparente.
+        /// </summary>
+        private static Icon CrearIconoDesdePng(string rutaPng)
+        {
+            using var bitmap = new Bitmap(rutaPng);
+            IntPtr hIcon = bitmap.GetHicon();
+            try
+            {
+                using var iconTemporal = Icon.FromHandle(hIcon);
+                return (Icon)iconTemporal.Clone();
+            }
+            finally
+            {
+                DestroyIcon(hIcon);
+            }
         }
 
         private void CargarLogoSiExiste()
@@ -229,22 +295,57 @@ namespace EstadosCuentaTC.Desencriptador
             }
         }
 
-        private TextBox CrearCampoTexto(int left, int top, int width)
+        /// <summary>
+        /// Crea un "campo de texto" con look moderno: sin el borde clásico de
+        /// Windows, fondo gris muy claro y una línea de acento abajo. Se
+        /// implementa con un Panel (que sí respeta la altura que le pongas)
+        /// conteniendo un TextBox sin borde propio, porque un TextBox de una
+        /// sola línea IGNORA cualquier Height que se le asigne.
+        /// </summary>
+        private (Panel contenedor, TextBox campo) CrearCampoTexto(int left, int top, int width)
         {
-            return new TextBox
+            var contenedor = new Panel
             {
                 Left = left,
                 Top = top,
                 Width = width,
-     
+                Height = AltoCampoTexto,
+                BackColor = ColorCampoFondo
+            };
+
+            var campo = new TextBox
+            {
+                Left = 14,
+                Width = width - 28,
                 ReadOnly = true,
                 Font = new Font("Segoe UI", 10f),
-                BackColor = Color.White,
+                BackColor = ColorCampoFondo,
                 ForeColor = ColorHeader,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.None
             };
+            campo.Top = (contenedor.Height - campo.Height) / 2;
+
+            contenedor.Controls.Add(campo);
+
+            // Borde muy sutil alrededor + línea de acento abajo (look "input" moderno,
+            // sin esquinas redondas).
+            contenedor.Paint += (s, e) =>
+            {
+                using var lapizBorde = new Pen(ColorCampoBorde, 1);
+                e.Graphics.DrawRectangle(lapizBorde, 0, 0, contenedor.Width - 1, contenedor.Height - 1);
+
+                using var lapizAcento = new Pen(ColorAccento, 2);
+                e.Graphics.DrawLine(lapizAcento, 1, contenedor.Height - 1, contenedor.Width - 1, contenedor.Height - 1);
+            };
+
+            return (contenedor, campo);
         }
 
+        /// <summary>
+        /// Botón "Examinar..." con look moderno: sin borde, fondo con un tinte
+        /// claro del color de acento (en vez de blanco + borde), y un tono más
+        /// oscuro al pasar el mouse / al hacer clic.
+        /// </summary>
         private Button CrearBoton(string texto, int left, int top, int width)
         {
             var boton = new Button
@@ -253,16 +354,17 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = 35,
-                Font = new Font("Segoe UI", 9f),
-                BackColor = Color.White,
+                Height = AltoBotonExaminar,
+                Font = new Font("Segoe UI", 9.5f),
+                BackColor = ColorBotonExaminarFondo,
                 ForeColor = ColorAccento,
                 FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
             };
-            boton.FlatAppearance.BorderColor = ColorAccento;
-            boton.FlatAppearance.BorderSize = 1;
-            boton.FlatAppearance.MouseOverBackColor = Color.FromArgb(235, 244, 250);
+            boton.FlatAppearance.BorderSize = 0;
+            boton.FlatAppearance.MouseOverBackColor = ColorBotonExaminarHover;
+            boton.FlatAppearance.MouseDownBackColor = ColorBotonExaminarPresionado;
             return boton;
         }
 
@@ -439,9 +541,3 @@ namespace EstadosCuentaTC.Desencriptador
         }
     }
 }
-
-
-
-No se, pero siento que el txtbox y el boton de examinar, no se miran modernos.. como podemos hacer para que den un toque modernos? dejando de lado lo de las esquinas redondas.
-
-Hagamos lo del icono en la barra de tareas, solo que tengo la imagen en .png
