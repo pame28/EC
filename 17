@@ -1,15 +1,3 @@
-•	Tener instalado el sistema en el equipo (Windows).
-•	Contar con el archivo JSON encriptado que se desea abrir.
-•	Contar con el archivo de llave (LlavePublica.txt) correspondiente a ese mismo archivo. Cada archivo encriptado tiene su propia llave; no son intercambiables entre sí.
-
-
-
-
-me gustaria modificar esto
-
-•	Tener instalado el sistema en el equipo (Windows).  -- Pues segun entiendo es portable, no se necesita de instalcion
-•	Contar con el archivo JSON encriptado que se desea abrir.  -- Me gustaria agregar que este archivo es el que está dentro del .zip que se carga en el goanywhere
-•	Contar con el archivo de llave (LlavePublica.txt) correspondiente a ese mismo archivo. Cada archivo encriptado tiene su propia llave; no son intercambiables entre sí. y esta llave tambien está dentro del zip 
-
-
-damelo como texto, no es necesario que realices el documento de nuevo
+Tener la aplicación (Desencriptador de Estados de Cuenta) en el equipo. Es portable, no requiere instalación — basta con ejecutar el .exe.
+Contar con el archivo JSON encriptado que se desea abrir. Este archivo se encuentra dentro del .zip que se descarga desde GoAnywhere.
+Contar con el archivo de llave (LlavePublica.txt) correspondiente a ese mismo archivo. También se encuentra dentro del mismo .zip descargado de GoAnywhere. Cada archivo encriptado tiene su propia llave; no son intercambiables entre sí.
