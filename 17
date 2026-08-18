@@ -404,8 +404,11 @@ namespace EstadosCuentaTC.Desencriptador
 
 
 
+Ayudame a realizar las siguientes modificaciones:
 
-
-
-
-Necesito redondear los text box y los botones, puedes ayudarme por favor
+- Quiero redonderar las esquinas del boton de Desencriptar Archivo
+- Quiero redonder las esquinas de los botones de examinar
+-Quiero redondear las esquinas de los text box
+-Quiero que cuando uno presione el boton de Desencriptar se limpien los Text Box.
+- Que el primer textbox solo acepte .json
+- Que si el .json ya está desencriptado que tire esa alerta.. que ya está desecncriptado
