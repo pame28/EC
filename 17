@@ -1,34 +1,19 @@
 using System;
 using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Windows.Forms;
 
 namespace EstadosCuentaTC.Desencriptador
 {
-    public class MainForm : Form
+    /// <summary>
+    /// Parte de MainForm encargada del COMPORTAMIENTO: manejadores de
+    /// eventos, validaciones y orquestación del flujo de desencriptación.
+    /// La construcción visual vive en MainForm.UI.cs y la lógica pura de
+    /// negocio vive en DesencriptadorService.
+    /// </summary>
+    public partial class MainForm : Form
     {
-        // Paleta de colores
-        private static readonly Color ColorHeader = Color.FromArgb(0, 56, 101);
-        private static readonly Color ColorFondo = Color.FromArgb(245, 246, 248);
-        private static readonly Color ColorAccento = Color.FromArgb(0, 56, 101);
-        private static readonly Color ColorAccentoHover = Color.FromArgb(0, 56, 101);
-        private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
-        private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
-
-        // Colores del estilo "moderno" para campos y botón Examinar
-        private static readonly Color ColorCampoFondo = Color.FromArgb(243, 245, 248);
-        private static readonly Color ColorCampoBorde = Color.FromArgb(223, 227, 232);
-        private static readonly Color ColorBotonExaminarHover = Color.FromArgb(216, 226, 234);
-        private static readonly Color ColorBotonExaminarPresionado = Color.FromArgb(200, 213, 224);
-        private static readonly Color ColorGris = Color.FromArgb(224, 224, 224);
-
-        // Alturas de los campos y botones "Examinar..."
-        private const int AltoCampoTexto = 42;
-        private const int AltoBotonExaminar = 42;
-
         private TextBox txtArchivoEncriptado = null!;
         private TextBox txtLlavePublica = null!;
         private Panel panelEstado = null!;
@@ -37,13 +22,163 @@ namespace EstadosCuentaTC.Desencriptador
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
 
-        [DllImport("user32.dll")]
-        private static extern bool DestroyIcon(IntPtr handle);
-
         public MainForm()
         {
             ConstruirInterfaz();
         }
+
+        private void BtnSeleccionarArchivo_Click(object? sender, EventArgs e)
+        {
+            using var dialogo = new OpenFileDialog
+            {
+                Title = "Selecciona el archivo JSON encriptado",
+                Filter = "Archivos JSON (*.json)|*.json",
+                CheckFileExists = true
+            };
+
+            if (dialogo.ShowDialog() == DialogResult.OK)
+            {
+                txtArchivoEncriptado.Text = dialogo.FileName;
+                OcultarEstado();
+            }
+        }
+
+        private void BtnSeleccionarLlave_Click(object? sender, EventArgs e)
+        {
+            using var dialogo = new OpenFileDialog
+            {
+                Title = "Selecciona el archivo LlavePublica.txt",
+                Filter = "Archivos de texto (*.txt)|*.txt|Todos los archivos (*.*)|*.*"
+            };
+
+            if (dialogo.ShowDialog() == DialogResult.OK)
+            {
+                txtLlavePublica.Text = dialogo.FileName;
+                OcultarEstado();
+            }
+        }
+
+        private void BtnDesencriptar_Click(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtArchivoEncriptado.Text) ||
+                string.IsNullOrWhiteSpace(txtLlavePublica.Text))
+            {
+                MostrarEstado(false, "Selecciona el archivo encriptado y el archivo LlavePublica.txt.");
+                return;
+            }
+
+            if (!File.Exists(txtArchivoEncriptado.Text))
+            {
+                MostrarEstado(false, "El archivo encriptado seleccionado no existe.");
+                return;
+            }
+
+            if (!File.Exists(txtLlavePublica.Text))
+            {
+                MostrarEstado(false, "El archivo LlavePublica.txt seleccionado no existe.");
+                return;
+            }
+
+            // ---------- Verificar si el archivo ya está desencriptado ----------
+            if (DesencriptadorService.EsJsonValido(txtArchivoEncriptado.Text))
+            {
+                MostrarEstado(false, "Este archivo ya está desencriptado.");
+                return;
+            }
+
+            try
+            {
+                btnDesencriptar.Enabled = false;
+                btnDesencriptar.Text = "Desencriptando...";
+                Cursor = Cursors.WaitCursor;
+
+                var (keyBase64, nonceBase64) = DesencriptadorService.LeerLlaveYNonce(txtLlavePublica.Text);
+
+                EncriptacionAES.DesencriptarArchivo(
+                    txtArchivoEncriptado.Text,
+                    txtArchivoEncriptado.Text,
+                    keyBase64,
+                    nonceBase64);
+
+                MostrarEstado(true, "¡Listo! El archivo se desencriptó correctamente y ya puedes abrirlo.");
+
+                // Limpiar los campos tras una desencriptación exitosa
+                LimpiarCampos();
+            }
+            catch (CryptographicException)
+            {
+                MostrarEstado(false, "No se pudo desencriptar. Verifica que el archivo y la llave correspondan al mismo par.");
+            }
+            catch (FormatException)
+            {
+                MostrarEstado(false, "El archivo de llave no tiene el formato esperado.");
+            }
+            catch (Exception ex)
+            {
+                MostrarEstado(false, $"Error inesperado: {ex.Message}");
+            }
+            finally
+            {
+                btnDesencriptar.Enabled = true;
+                btnDesencriptar.Text = "🔓  Desencriptar archivo";
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void LimpiarCampos()
+        {
+            txtArchivoEncriptado.Text = string.Empty;
+            txtLlavePublica.Text = string.Empty;
+        }
+
+        private void MostrarEstado(bool exito, string mensaje)
+        {
+            panelEstado.Visible = true;
+            panelEstado.BackColor = exito ? Color.FromArgb(230, 246, 236) : Color.FromArgb(253, 234, 232);
+            lblEstadoIcono.Text = exito ? "✔" : "✕";
+            lblEstadoIcono.ForeColor = exito ? Theme.Exito : Theme.Error;
+            lblEstadoTexto.Text = mensaje;
+            lblEstadoTexto.ForeColor = exito ? Color.FromArgb(20, 90, 50) : Color.FromArgb(120, 30, 25);
+        }
+
+        private void OcultarEstado()
+        {
+            panelEstado.Visible = false;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+using System;
+using System.Drawing;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+
+namespace EstadosCuentaTC.Desencriptador
+{
+    /// <summary>
+    /// Parte de MainForm encargada exclusivamente de CONSTRUIR la interfaz:
+    /// creación de controles, estilos y carga de recursos (ícono/logo).
+    /// No contiene lógica de negocio ni manejadores de eventos "de verdad"
+    /// (salvo el cableado inicial de los Click, que apuntan a métodos
+    /// definidos en MainForm.cs).
+    /// </summary>
+    public partial class MainForm
+    {
+        [DllImport("user32.dll")]
+        private static extern bool DestroyIcon(IntPtr handle);
 
         private void ConstruirInterfaz()
         {
@@ -52,7 +187,7 @@ namespace EstadosCuentaTC.Desencriptador
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
-            BackColor = ColorFondo;
+            BackColor = Theme.Fondo;
             Font = new Font("Segoe UI", 9.5f);
             CargarIconoSiExiste();
 
@@ -61,7 +196,7 @@ namespace EstadosCuentaTC.Desencriptador
             {
                 Dock = DockStyle.Top,
                 Height = 130,
-                BackColor = ColorHeader
+                BackColor = Theme.Header
             };
 
             picLogo = new PictureBox
@@ -125,7 +260,7 @@ namespace EstadosCuentaTC.Desencriptador
                 Width = 400,
                 Height = 30,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = ColorAccento
+                ForeColor = Theme.Accento
             };
 
             var (panelCampoArchivo, campoArchivo) = CrearCampoTexto(30, 215, 470);
@@ -153,7 +288,7 @@ namespace EstadosCuentaTC.Desencriptador
                 Width = 500,
                 Height = 30,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
-                ForeColor = ColorAccento
+                ForeColor = Theme.Accento
             };
 
             var (panelCampoLlave, campoLlave) = CrearCampoTexto(30, 335, 470);
@@ -177,7 +312,7 @@ namespace EstadosCuentaTC.Desencriptador
                 Cursor = Cursors.Hand
             };
             btnDesencriptar.FlatAppearance.BorderSize = 0;
-            btnDesencriptar.FlatAppearance.MouseOverBackColor = ColorAccentoHover;
+            btnDesencriptar.FlatAppearance.MouseOverBackColor = Theme.AccentoHover;
             btnDesencriptar.Click += BtnDesencriptar_Click;
 
             // ---------- Panel de estado (oculto al inicio) ----------
@@ -309,9 +444,8 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = AltoCampoTexto,
-                BackColor = ColorCampoFondo
-                
+                Height = Theme.AltoCampoTexto,
+                BackColor = Theme.CampoFondo
             };
 
             var campo = new TextBox
@@ -319,10 +453,9 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = 14,
                 Width = width - 28,
                 Font = new Font("Segoe UI", 10f),
-                BackColor = ColorCampoFondo,
-                ForeColor = ColorHeader,
+                BackColor = Theme.CampoFondo,
+                ForeColor = Theme.Header,
                 BorderStyle = BorderStyle.None,
-                
             };
             campo.Top = (contenedor.Height - campo.Height) / 2;
             campo.TextChanged += (s, e) => OcultarEstado();
@@ -333,10 +466,10 @@ namespace EstadosCuentaTC.Desencriptador
             // sin esquinas redondas).
             contenedor.Paint += (s, e) =>
             {
-                using var lapizBorde = new Pen(ColorCampoBorde, 1);
+                using var lapizBorde = new Pen(Theme.CampoBorde, 1);
                 e.Graphics.DrawRectangle(lapizBorde, 0, 0, contenedor.Width - 1, contenedor.Height - 1);
 
-                using var lapizAcento = new Pen(ColorAccento, 2);
+                using var lapizAcento = new Pen(Theme.Accento, 2);
                 e.Graphics.DrawLine(lapizAcento, 1, contenedor.Height - 1, contenedor.Width - 1, contenedor.Height - 1);
             };
 
@@ -356,124 +489,54 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = AltoBotonExaminar,
+                Height = Theme.AltoBotonExaminar,
                 Font = new Font("Segoe UI", 9.5f),
-            //    BackColor = ColorBotonExaminarFondo,
-                ForeColor = ColorAccento,
+                ForeColor = Theme.Accento,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
             boton.FlatAppearance.BorderSize = 1;
-            boton.FlatAppearance.BorderColor = ColorGris;
-            boton.FlatAppearance.MouseOverBackColor = ColorBotonExaminarHover;
-            boton.FlatAppearance.MouseDownBackColor = ColorBotonExaminarPresionado;
+            boton.FlatAppearance.BorderColor = Theme.Gris;
+            boton.FlatAppearance.MouseOverBackColor = Theme.BotonExaminarHover;
+            boton.FlatAppearance.MouseDownBackColor = Theme.BotonExaminarPresionado;
             return boton;
         }
+    }
+}
 
-        private void BtnSeleccionarArchivo_Click(object? sender, EventArgs e)
-        {
-            using var dialogo = new OpenFileDialog
-            {
-                Title = "Selecciona el archivo JSON encriptado",
-                Filter = "Archivos JSON (*.json)|*.json",
-                CheckFileExists = true
-            };
 
-            if (dialogo.ShowDialog() == DialogResult.OK)
-            {
-                txtArchivoEncriptado.Text = dialogo.FileName;
-                OcultarEstado();
-            }
-        }
 
-        private void BtnSeleccionarLlave_Click(object? sender, EventArgs e)
-        {
-            using var dialogo = new OpenFileDialog
-            {
-                Title = "Selecciona el archivo LlavePublica.txt",
-                Filter = "Archivos de texto (*.txt)|*.txt|Todos los archivos (*.*)|*.*"
-            };
 
-            if (dialogo.ShowDialog() == DialogResult.OK)
-            {
-                txtLlavePublica.Text = dialogo.FileName;
-                OcultarEstado();
-            }
-        }
 
-        private void BtnDesencriptar_Click(object? sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtArchivoEncriptado.Text) ||
-                string.IsNullOrWhiteSpace(txtLlavePublica.Text))
-            {
-                MostrarEstado(false, "Selecciona el archivo encriptado y el archivo LlavePublica.txt.");
-                return;
-            }
 
-            if (!File.Exists(txtArchivoEncriptado.Text))
-            {
-                MostrarEstado(false, "El archivo encriptado seleccionado no existe.");
-                return;
-            }
 
-            if (!File.Exists(txtLlavePublica.Text))
-            {
-                MostrarEstado(false, "El archivo LlavePublica.txt seleccionado no existe.");
-                return;
-            }
 
-            // ---------- Verificar si el archivo ya está desencriptado ----------
-            if (EsJsonValido(txtArchivoEncriptado.Text))
-            {
-                MostrarEstado(false, "Este archivo ya está desencriptado.");
-                return;
-            }
 
-            try
-            {
-                btnDesencriptar.Enabled = false;
-                btnDesencriptar.Text = "Desencriptando...";
-                Cursor = Cursors.WaitCursor;
 
-                var (keyBase64, nonceBase64) = LeerLlaveYNonce(txtLlavePublica.Text);
 
-                EncriptacionAES.DesencriptarArchivo(
-                    txtArchivoEncriptado.Text,
-                    txtArchivoEncriptado.Text,
-                    keyBase64,
-                    nonceBase64);
 
-                MostrarEstado(true, "¡Listo! El archivo se desencriptó correctamente y ya puedes abrirlo.");
 
-                // Limpiar los campos tras una desencriptación exitosa
-                LimpiarCampos();
-            }
-            catch (CryptographicException)
-            {
-                MostrarEstado(false, "No se pudo desencriptar. Verifica que el archivo y la llave correspondan al mismo par.");
-            }
-            catch (FormatException)
-            {
-                MostrarEstado(false, "El archivo de llave no tiene el formato esperado.");
-            }
-            catch (Exception ex)
-            {
-                MostrarEstado(false, $"Error inesperado: {ex.Message}");
-            }
-            finally
-            {
-                btnDesencriptar.Enabled = true;
-                btnDesencriptar.Text = "🔓  Desencriptar archivo";
-                Cursor = Cursors.Default;
-            }
-        }
 
+using System;
+using System.IO;
+using System.Text.Json;
+
+namespace EstadosCuentaTC.Desencriptador
+{
+    /// <summary>
+    /// Lógica de negocio separada de la interfaz gráfica: detectar si un
+    /// archivo ya está desencriptado y leer la llave/nonce desde el .txt.
+    /// Al no depender de WinForms, esta clase se puede probar con pruebas
+    /// unitarias sin necesidad de levantar un formulario.
+    /// </summary>
+    internal static class DesencriptadorService
+    {
         /// <summary>
-        /// Verifica si el contenido del archivo ya es un JSON válido, lo cual indica
-        /// que el archivo ya fue desencriptado previamente.
+        /// Verifica si el contenido del archivo ya es un JSON válido, lo cual
+        /// indica que el archivo ya fue desencriptado previamente.
         /// </summary>
-        private static bool EsJsonValido(string ruta)
+        public static bool EsJsonValido(string ruta)
         {
             try
             {
@@ -491,13 +554,10 @@ namespace EstadosCuentaTC.Desencriptador
             }
         }
 
-        private void LimpiarCampos()
-        {
-            txtArchivoEncriptado.Text = string.Empty;
-            txtLlavePublica.Text = string.Empty;
-        }
-
-        private static (string keyBase64, string nonceBase64) LeerLlaveYNonce(string rutaTxt)
+        /// <summary>
+        /// Lee las líneas "Llave=" y "Nonce=" del archivo de llave.
+        /// </summary>
+        public static (string keyBase64, string nonceBase64) LeerLlaveYNonce(string rutaTxt)
         {
             string? key = null;
             string? nonce = null;
@@ -515,33 +575,6 @@ namespace EstadosCuentaTC.Desencriptador
 
             return (key, nonce);
         }
-
-        private void MostrarEstado(bool exito, string mensaje)
-        {
-            panelEstado.Visible = true;
-            panelEstado.BackColor = exito ? Color.FromArgb(230, 246, 236) : Color.FromArgb(253, 234, 232);
-            lblEstadoIcono.Text = exito ? "✔" : "✕";
-            lblEstadoIcono.ForeColor = exito ? ColorExito : ColorError;
-            lblEstadoTexto.Text = mensaje;
-            lblEstadoTexto.ForeColor = exito ? Color.FromArgb(20, 90, 50) : Color.FromArgb(120, 30, 25);
-        }
-
-        private void InitializeComponent()
-        {
-            SuspendLayout();
-            // 
-            // MainForm
-            // 
-            ClientSize = new Size(812, 698);
-            Name = "MainForm";
-            ResumeLayout(false);
-
-        }
-
-        private void OcultarEstado()
-        {
-            panelEstado.Visible = false;
-        }
     }
 }
 
@@ -550,4 +583,48 @@ namespace EstadosCuentaTC.Desencriptador
 
 
 
-Me gustaria ordenar este codigo, como podemos hacerlo?
+
+
+
+
+
+
+
+
+
+
+
+
+
+using System.Drawing;
+
+namespace EstadosCuentaTC.Desencriptador
+{
+    /// <summary>
+    /// Paleta de colores y medidas comunes usadas en la interfaz.
+    /// Centralizar esto evita tener "colores mágicos" repetidos
+    /// por todo el formulario y facilita cambiar el tema a futuro.
+    /// </summary>
+    internal static class Theme
+    {
+        // Colores generales
+        public static readonly Color Header = Color.FromArgb(0, 56, 101);
+        public static readonly Color Fondo = Color.FromArgb(245, 246, 248);
+        public static readonly Color Accento = Color.FromArgb(0, 56, 101);
+        public static readonly Color AccentoHover = Color.FromArgb(0, 56, 101);
+        public static readonly Color Exito = Color.FromArgb(39, 174, 96);
+        public static readonly Color Error = Color.FromArgb(231, 76, 60);
+
+        // Colores de campos y botón "Examinar"
+        public static readonly Color CampoFondo = Color.FromArgb(243, 245, 248);
+        public static readonly Color CampoBorde = Color.FromArgb(223, 227, 232);
+        public static readonly Color BotonExaminarHover = Color.FromArgb(216, 226, 234);
+        public static readonly Color BotonExaminarPresionado = Color.FromArgb(200, 213, 224);
+        public static readonly Color Gris = Color.FromArgb(224, 224, 224);
+
+        // Medidas
+        public const int AltoCampoTexto = 42;
+        public const int AltoBotonExaminar = 42;
+    }
+}
+
