@@ -362,7 +362,8 @@ namespace EstadosCuentaTC.Desencriptador
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            boton.FlatAppearance.BorderSize = 0;
+            boton.FlatAppearance.BorderSize = 1;
+            boton.FlatAppearance.BorderColor = ColorAccento;
             boton.FlatAppearance.MouseOverBackColor = ColorBotonExaminarHover;
             boton.FlatAppearance.MouseDownBackColor = ColorBotonExaminarPresionado;
             return boton;
