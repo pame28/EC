@@ -179,9 +179,9 @@ namespace EstadosCuentaTC.Desencriptador
             lblEstadoIcono = new Label
             {
                 Left = 16,
-                Top = 14,
+                Top = 8,
                 Width = 36,
-                Height = 36,
+                Height = 43,
                 Font = new Font("Segoe UI", 16f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -236,9 +236,9 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = AltoCampoTexto,
+     
                 ReadOnly = true,
-                Font = new Font("Segoe UI", 9.5f),
+                Font = new Font("Segoe UI", 10f),
                 BackColor = Color.White,
                 ForeColor = ColorHeader,
                 BorderStyle = BorderStyle.FixedSingle
@@ -253,7 +253,7 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = AltoBotonExaminar,
+                Height = 35,
                 Font = new Font("Segoe UI", 9f),
                 BackColor = Color.White,
                 ForeColor = ColorAccento,
@@ -439,3 +439,9 @@ namespace EstadosCuentaTC.Desencriptador
         }
     }
 }
+
+
+
+No se, pero siento que el txtbox y el boton de examinar, no se miran modernos.. como podemos hacer para que den un toque modernos? dejando de lado lo de las esquinas redondas.
+
+Hagamos lo del icono en la barra de tareas, solo que tengo la imagen en .png
