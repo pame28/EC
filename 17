@@ -1,6 +1,6 @@
 using System;
-using System.Drawing.Drawing2D;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows.Forms;
@@ -17,11 +17,9 @@ namespace EstadosCuentaTC.Desencriptador
         private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
         private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
 
-        // Radios de redondeo. Deben ser pequeños en relación a la altura del
-        // control (idealmente <= 1/3 de la altura) o el control se ve como
-        // una "píldora" en vez de un rectángulo con esquinas suaves.
-        private const int RadioBotones = 8;
-        private const int RadioTextBox = 6;
+        // Radios de redondeo (ajusta a gusto)
+        private const int RadioBotones = 14;
+        private const int RadioTextBox = 10;
 
         private TextBox txtArchivoEncriptado = null!;
         private TextBox txtLlavePublica = null!;
@@ -31,122 +29,21 @@ namespace EstadosCuentaTC.Desencriptador
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
 
-        // Nota sobre el enfoque: primero probamos recortando el TextBox directamente
-        // con una región GDI (CreateRoundRectRgn), pero como es un control nativo de
-        // Windows (EDIT de Win32), el borde que dibuja el propio sistema no tiene
-        // anti-aliasing y se ve tosco/dentado. La solución de abajo es la correcta:
-        // el TextBox se queda SIN borde propio (BorderStyle.None) y va montado
-        // dentro de un Panel que nosotros pintamos a mano con esquinas suaves — el
-        // "borde redondeado" que ves es del Panel, no del TextBox.
+        // ---------- P/Invoke para esquinas redondeadas ----------
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateRoundRectRgn(
+            int nLeftRect, int nTopRect, int nRightRect, int nBottomRect,
+            int nWidthEllipse, int nHeightEllipse);
 
         /// <summary>
-        /// Construye la ruta (path) de un rectángulo con esquinas redondeadas,
-        /// usada tanto para pintar como para recortar con anti-aliasing real.
+        /// Aplica una región con esquinas redondeadas a cualquier control (botones, textboxes, etc.)
         /// </summary>
-        private static GraphicsPath ObtenerRutaRedondeada(Rectangle rect, int radio)
+        private static void RedondearControl(Control control, int radio)
         {
-            int diametro = Math.Max(1, radio) * 2;
-            var path = new GraphicsPath();
+            if (control.Width <= 0 || control.Height <= 0) return;
 
-            if (diametro >= rect.Height) diametro = Math.Max(2, rect.Height - 1);
-            if (diametro >= rect.Width) diametro = Math.Max(2, rect.Width - 1);
-
-            var arco = new Rectangle(rect.Location, new Size(diametro, diametro));
-
-            path.AddArc(arco, 180, 90);                                    // esquina sup-izq
-            arco.X = rect.Right - diametro;
-            path.AddArc(arco, 270, 90);                                    // esquina sup-der
-            arco.Y = rect.Bottom - diametro;
-            path.AddArc(arco, 0, 90);                                      // esquina inf-der
-            arco.X = rect.Left;
-            path.AddArc(arco, 90, 90);                                     // esquina inf-izq
-            path.CloseFigure();
-            return path;
-        }
-
-        /// <summary>
-        /// Pinta un Panel como un rectángulo con esquinas redondeadas y
-        /// anti-aliasing real (borde liso). Se usa como "cascarón" visual
-        /// para los TextBox, que van montados adentro sin su propio borde.
-        /// </summary>
-        private static void AplicarEsquinasSuavesPanel(Panel panel, int radio, Color colorFondo, Color colorBorde, int anchoBorde)
-        {
-            panel.Paint += (s, e) =>
-            {
-                var rect = new Rectangle(0, 0, panel.Width - 1, panel.Height - 1);
-                using var ruta = ObtenerRutaRedondeada(rect, radio);
-
-                panel.Region = new Region(ruta);
-
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                e.Graphics.Clear(panel.Parent?.BackColor ?? SystemColors.Control);
-
-                using var brochaFondo = new SolidBrush(colorFondo);
-                e.Graphics.FillPath(brochaFondo, ruta);
-
-                if (anchoBorde > 0)
-                {
-                    using var lapiz = new Pen(colorBorde, anchoBorde);
-                    e.Graphics.DrawPath(lapiz, ruta);
-                }
-            };
-        }
-
-        /// <summary>
-        /// Convierte un botón normal en uno con esquinas redondeadas y
-        /// anti-aliasing real (bordes suaves, no dentados), redibujándolo
-        /// por completo en su evento Paint.
-        /// </summary>
-        private static void AplicarEsquinasSuaves(Button boton, int radio)
-        {
-            // Guardamos el borde original (si CrearBoton le puso uno) antes de
-            // desactivar el dibujado nativo, para volverlo a trazar nosotros.
-            Color colorBorde = boton.FlatAppearance.BorderColor;
-            int anchoBorde = boton.FlatAppearance.BorderSize;
-            Color colorHover = boton.FlatAppearance.MouseOverBackColor;
-
-            boton.FlatStyle = FlatStyle.Flat;
-            boton.FlatAppearance.BorderSize = 0; // el borde lo dibujamos nosotros
-
-            void Pintar(object? s, PaintEventArgs e)
-            {
-                var rect = new Rectangle(0, 0, boton.Width - 1, boton.Height - 1);
-                using var ruta = ObtenerRutaRedondeada(rect, radio);
-
-                // Recorte real del control (para el hit-test del mouse)
-                boton.Region = new Region(ruta);
-
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                e.Graphics.Clear(boton.Parent?.BackColor ?? SystemColors.Control);
-
-                bool sobreElMouse = boton.Enabled &&
-                    boton.ClientRectangle.Contains(boton.PointToClient(Cursor.Position));
-
-                Color colorFondo = sobreElMouse && colorHover != Color.Empty
-                    ? colorHover
-                    : boton.BackColor;
-
-                using var brochaFondo = new SolidBrush(colorFondo);
-                e.Graphics.FillPath(brochaFondo, ruta);
-
-                if (anchoBorde > 0 && colorBorde != Color.Empty)
-                {
-                    using var lapiz = new Pen(colorBorde, anchoBorde);
-                    e.Graphics.DrawPath(lapiz, ruta);
-                }
-
-                TextRenderer.DrawText(
-                    e.Graphics,
-                    boton.Text,
-                    boton.Font,
-                    boton.ClientRectangle,
-                    boton.ForeColor,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-            }
-
-            boton.Paint += Pintar;
-            boton.MouseEnter += (s, e) => boton.Invalidate();
-            boton.MouseLeave += (s, e) => boton.Invalidate();
+            IntPtr hRgn = CreateRoundRectRgn(0, 0, control.Width + 1, control.Height + 1, radio, radio);
+            control.Region = Region.FromHrgn(hRgn);
         }
 
         public MainForm()
@@ -231,13 +128,12 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = 30,
                 Top = 180,
                 Width = 400,
-                Height= 30,
+                Height = 30,
                 Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = ColorAccento
             };
 
-            var (panelCampoArchivo, campoArchivo) = CrearCampoTexto(30, 215, 470);
-            txtArchivoEncriptado = campoArchivo;
+            txtArchivoEncriptado = CrearCampoTexto(30, 215, 470);
 
             var btnSeleccionarArchivo = CrearBoton("Examinar...", 505, 215, 150);
             btnSeleccionarArchivo.Click += BtnSeleccionarArchivo_Click;
@@ -264,8 +160,7 @@ namespace EstadosCuentaTC.Desencriptador
                 ForeColor = ColorAccento
             };
 
-            var (panelCampoLlave, campoLlave) = CrearCampoTexto(30, 335, 470);
-            txtLlavePublica = campoLlave;
+            txtLlavePublica = CrearCampoTexto(30, 335, 470);
 
             var btnSeleccionarLlave = CrearBoton("Examinar...", 505, 335, 150);
             btnSeleccionarLlave.Click += BtnSeleccionarLlave_Click;
@@ -325,25 +220,30 @@ namespace EstadosCuentaTC.Desencriptador
             Controls.Add(panelHeader);
             Controls.Add(lblPaso1);
             Controls.Add(lblArchivo);
-            Controls.Add(panelCampoArchivo);
+            Controls.Add(txtArchivoEncriptado);
             Controls.Add(btnSeleccionarArchivo);
             Controls.Add(lblPaso2);
             Controls.Add(lblLlave);
-            Controls.Add(panelCampoLlave);
+            Controls.Add(txtLlavePublica);
             Controls.Add(btnSeleccionarLlave);
             Controls.Add(btnDesencriptar);
             Controls.Add(panelEstado);
 
             // ---------- Aplicar esquinas redondeadas ----------
-            // Botones: redibujado completo con GraphicsPath + anti-aliasing,
-            // así el borde curvo se ve liso y no "dentado".
-            AplicarEsquinasSuaves(btnDesencriptar, RadioBotones);
-            AplicarEsquinasSuaves(btnSeleccionarArchivo, RadioBotones);
-            AplicarEsquinasSuaves(btnSeleccionarLlave, RadioBotones);
+            // Los controles ya tienen Width/Height fijos (FixedDialog, sin resize), así que
+            // podemos redondearlos aquí directamente. También lo enganchamos a Resize
+            // por si en el futuro se habilita el redimensionado.
+            RedondearControl(btnDesencriptar, RadioBotones);
+            RedondearControl(btnSeleccionarArchivo, RadioBotones);
+            RedondearControl(btnSeleccionarLlave, RadioBotones);
+            RedondearControl(txtArchivoEncriptado, RadioTextBox);
+            RedondearControl(txtLlavePublica, RadioTextBox);
 
-            // Los "campos de texto" ya salen redondeados desde CrearCampoTexto:
-            // el Panel contenedor se pinta a mano y el TextBox de adentro va
-            // sin borde propio, así que no hace falta tocarlos aquí.
+            btnDesencriptar.Resize += (s, e) => RedondearControl(btnDesencriptar, RadioBotones);
+            btnSeleccionarArchivo.Resize += (s, e) => RedondearControl(btnSeleccionarArchivo, RadioBotones);
+            btnSeleccionarLlave.Resize += (s, e) => RedondearControl(btnSeleccionarLlave, RadioBotones);
+            txtArchivoEncriptado.Resize += (s, e) => RedondearControl(txtArchivoEncriptado, RadioTextBox);
+            txtLlavePublica.Resize += (s, e) => RedondearControl(txtLlavePublica, RadioTextBox);
         }
 
         private void CargarLogoSiExiste()
@@ -363,48 +263,19 @@ namespace EstadosCuentaTC.Desencriptador
             }
         }
 
-        /// <summary>
-        /// Crea un "campo de texto" visualmente redondeado: un Panel pintado
-        /// a mano (con esquinas suaves y anti-aliasing) que contiene, montado
-        /// adentro y sin su propio borde, el TextBox real donde se guarda la ruta.
-        /// </summary>
-        private (Panel contenedor, TextBox campo) CrearCampoTexto(int left, int top, int width)
+        private TextBox CrearCampoTexto(int left, int top, int width)
         {
-            const int alto = 34;
-            const int relleno = 10; // espacio entre el borde del panel y el texto
-
-            var contenedor = new Panel
+            return new TextBox
             {
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = alto,
-                BackColor = Color.White
-            };
-
-            var campo = new TextBox
-            {
-                Left = relleno,
-                Width = width - (relleno * 2),
+                Height = 34,
                 ReadOnly = true,
                 Font = new Font("Segoe UI", 9.5f),
                 BackColor = Color.White,
-                ForeColor = ColorAccento,
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.FixedSingle
             };
-            // Centrado vertical del texto dentro del panel
-            campo.Top = (alto - campo.Height) / 2;
-
-            contenedor.Controls.Add(campo);
-
-            AplicarEsquinasSuavesPanel(
-                contenedor,
-                RadioTextBox,
-                colorFondo: Color.White,
-                colorBorde: Color.FromArgb(210, 214, 220),
-                anchoBorde: 1);
-
-            return (contenedor, campo);
         }
 
         private Button CrearBoton(string texto, int left, int top, int width)
@@ -601,3 +472,8 @@ namespace EstadosCuentaTC.Desencriptador
         }
     }
 }
+
+
+
+Sabes que, mejor quitemos lo de los bordes, no me gusta...
+solo hagamoslo mas altos tanto los txtbox como los botones de examinar y que el texto de los text box no sea negro sino color ColorHeader = Color.FromArgb(0, 56, 101);
