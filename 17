@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows.Forms;
@@ -17,9 +16,9 @@ namespace EstadosCuentaTC.Desencriptador
         private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
         private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
 
-        // Radios de redondeo (ajusta a gusto)
-        private const int RadioBotones = 14;
-        private const int RadioTextBox = 10;
+        // Alturas de los campos y botones "Examinar..."
+        private const int AltoCampoTexto = 42;
+        private const int AltoBotonExaminar = 42;
 
         private TextBox txtArchivoEncriptado = null!;
         private TextBox txtLlavePublica = null!;
@@ -28,23 +27,6 @@ namespace EstadosCuentaTC.Desencriptador
         private Label lblEstadoTexto = null!;
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
-
-        // ---------- P/Invoke para esquinas redondeadas ----------
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr CreateRoundRectRgn(
-            int nLeftRect, int nTopRect, int nRightRect, int nBottomRect,
-            int nWidthEllipse, int nHeightEllipse);
-
-        /// <summary>
-        /// Aplica una región con esquinas redondeadas a cualquier control (botones, textboxes, etc.)
-        /// </summary>
-        private static void RedondearControl(Control control, int radio)
-        {
-            if (control.Width <= 0 || control.Height <= 0) return;
-
-            IntPtr hRgn = CreateRoundRectRgn(0, 0, control.Width + 1, control.Height + 1, radio, radio);
-            control.Region = Region.FromHrgn(hRgn);
-        }
 
         public MainForm()
         {
@@ -228,22 +210,6 @@ namespace EstadosCuentaTC.Desencriptador
             Controls.Add(btnSeleccionarLlave);
             Controls.Add(btnDesencriptar);
             Controls.Add(panelEstado);
-
-            // ---------- Aplicar esquinas redondeadas ----------
-            // Los controles ya tienen Width/Height fijos (FixedDialog, sin resize), así que
-            // podemos redondearlos aquí directamente. También lo enganchamos a Resize
-            // por si en el futuro se habilita el redimensionado.
-            RedondearControl(btnDesencriptar, RadioBotones);
-            RedondearControl(btnSeleccionarArchivo, RadioBotones);
-            RedondearControl(btnSeleccionarLlave, RadioBotones);
-            RedondearControl(txtArchivoEncriptado, RadioTextBox);
-            RedondearControl(txtLlavePublica, RadioTextBox);
-
-            btnDesencriptar.Resize += (s, e) => RedondearControl(btnDesencriptar, RadioBotones);
-            btnSeleccionarArchivo.Resize += (s, e) => RedondearControl(btnSeleccionarArchivo, RadioBotones);
-            btnSeleccionarLlave.Resize += (s, e) => RedondearControl(btnSeleccionarLlave, RadioBotones);
-            txtArchivoEncriptado.Resize += (s, e) => RedondearControl(txtArchivoEncriptado, RadioTextBox);
-            txtLlavePublica.Resize += (s, e) => RedondearControl(txtLlavePublica, RadioTextBox);
         }
 
         private void CargarLogoSiExiste()
@@ -270,10 +236,11 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = 34,
+                Height = AltoCampoTexto,
                 ReadOnly = true,
                 Font = new Font("Segoe UI", 9.5f),
                 BackColor = Color.White,
+                ForeColor = ColorHeader,
                 BorderStyle = BorderStyle.FixedSingle
             };
         }
@@ -286,7 +253,7 @@ namespace EstadosCuentaTC.Desencriptador
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = 34,
+                Height = AltoBotonExaminar,
                 Font = new Font("Segoe UI", 9f),
                 BackColor = Color.White,
                 ForeColor = ColorAccento,
@@ -472,8 +439,3 @@ namespace EstadosCuentaTC.Desencriptador
         }
     }
 }
-
-
-
-Sabes que, mejor quitemos lo de los bordes, no me gusta...
-solo hagamoslo mas altos tanto los txtbox como los botones de examinar y que el texto de los text box no sea negro sino color ColorHeader = Color.FromArgb(0, 56, 101);
