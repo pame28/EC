@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace EstadosCuentaTC.Desencriptador
@@ -15,6 +17,9 @@ namespace EstadosCuentaTC.Desencriptador
         private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
         private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
 
+        // Radios de redondeo (ajusta a gusto)
+        private const int RadioBotones = 14;
+        private const int RadioTextBox = 10;
 
         private TextBox txtArchivoEncriptado = null!;
         private TextBox txtLlavePublica = null!;
@@ -23,6 +28,23 @@ namespace EstadosCuentaTC.Desencriptador
         private Label lblEstadoTexto = null!;
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
+
+        // ---------- P/Invoke para esquinas redondeadas ----------
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateRoundRectRgn(
+            int nLeftRect, int nTopRect, int nRightRect, int nBottomRect,
+            int nWidthEllipse, int nHeightEllipse);
+
+        /// <summary>
+        /// Aplica una región con esquinas redondeadas a cualquier control (botones, textboxes, etc.)
+        /// </summary>
+        private static void RedondearControl(Control control, int radio)
+        {
+            if (control.Width <= 0 || control.Height <= 0) return;
+
+            IntPtr hRgn = CreateRoundRectRgn(0, 0, control.Width + 1, control.Height + 1, radio, radio);
+            control.Region = Region.FromHrgn(hRgn);
+        }
 
         public MainForm()
         {
@@ -195,8 +217,6 @@ namespace EstadosCuentaTC.Desencriptador
             panelEstado.Controls.Add(lblEstadoIcono);
             panelEstado.Controls.Add(lblEstadoTexto);
 
-
-
             Controls.Add(panelHeader);
             Controls.Add(lblPaso1);
             Controls.Add(lblArchivo);
@@ -209,6 +229,21 @@ namespace EstadosCuentaTC.Desencriptador
             Controls.Add(btnDesencriptar);
             Controls.Add(panelEstado);
 
+            // ---------- Aplicar esquinas redondeadas ----------
+            // Los controles ya tienen Width/Height fijos (FixedDialog, sin resize), así que
+            // podemos redondearlos aquí directamente. También lo enganchamos a Resize
+            // por si en el futuro se habilita el redimensionado.
+            RedondearControl(btnDesencriptar, RadioBotones);
+            RedondearControl(btnSeleccionarArchivo, RadioBotones);
+            RedondearControl(btnSeleccionarLlave, RadioBotones);
+            RedondearControl(txtArchivoEncriptado, RadioTextBox);
+            RedondearControl(txtLlavePublica, RadioTextBox);
+
+            btnDesencriptar.Resize += (s, e) => RedondearControl(btnDesencriptar, RadioBotones);
+            btnSeleccionarArchivo.Resize += (s, e) => RedondearControl(btnSeleccionarArchivo, RadioBotones);
+            btnSeleccionarLlave.Resize += (s, e) => RedondearControl(btnSeleccionarLlave, RadioBotones);
+            txtArchivoEncriptado.Resize += (s, e) => RedondearControl(txtArchivoEncriptado, RadioTextBox);
+            txtLlavePublica.Resize += (s, e) => RedondearControl(txtLlavePublica, RadioTextBox);
         }
 
         private void CargarLogoSiExiste()
@@ -268,8 +303,9 @@ namespace EstadosCuentaTC.Desencriptador
         {
             using var dialogo = new OpenFileDialog
             {
-                Title = "Selecciona el archivo encriptado",
-                Filter = "Todos los archivos (*.*)|*.*"
+                Title = "Selecciona el archivo JSON encriptado",
+                Filter = "Archivos JSON (*.json)|*.json",
+                CheckFileExists = true
             };
 
             if (dialogo.ShowDialog() == DialogResult.OK)
@@ -315,6 +351,13 @@ namespace EstadosCuentaTC.Desencriptador
                 return;
             }
 
+            // ---------- Verificar si el archivo ya está desencriptado ----------
+            if (EsJsonValido(txtArchivoEncriptado.Text))
+            {
+                MostrarEstado(false, "Este archivo ya está desencriptado.");
+                return;
+            }
+
             try
             {
                 btnDesencriptar.Enabled = false;
@@ -330,6 +373,9 @@ namespace EstadosCuentaTC.Desencriptador
                     nonceBase64);
 
                 MostrarEstado(true, "¡Listo! El archivo se desencriptó correctamente y ya puedes abrirlo.");
+
+                // Limpiar los campos tras una desencriptación exitosa
+                LimpiarCampos();
             }
             catch (CryptographicException)
             {
@@ -349,6 +395,34 @@ namespace EstadosCuentaTC.Desencriptador
                 btnDesencriptar.Text = "🔓  Desencriptar archivo";
                 Cursor = Cursors.Default;
             }
+        }
+
+        /// <summary>
+        /// Verifica si el contenido del archivo ya es un JSON válido, lo cual indica
+        /// que el archivo ya fue desencriptado previamente.
+        /// </summary>
+        private static bool EsJsonValido(string ruta)
+        {
+            try
+            {
+                string contenido = File.ReadAllText(ruta);
+
+                if (string.IsNullOrWhiteSpace(contenido))
+                    return false;
+
+                using var doc = JsonDocument.Parse(contenido);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void LimpiarCampos()
+        {
+            txtArchivoEncriptado.Text = string.Empty;
+            txtLlavePublica.Text = string.Empty;
         }
 
         private static (string keyBase64, string nonceBase64) LeerLlaveYNonce(string rutaTxt)
@@ -398,17 +472,3 @@ namespace EstadosCuentaTC.Desencriptador
         }
     }
 }
-
-
-
-
-
-
-Ayudame a realizar las siguientes modificaciones:
-
-- Quiero redonderar las esquinas del boton de Desencriptar Archivo
-- Quiero redonder las esquinas de los botones de examinar
--Quiero redondear las esquinas de los text box
--Quiero que cuando uno presione el boton de Desencriptar se limpien los Text Box.
-- Que el primer textbox solo acepte .json
-- Que si el .json ya está desencriptado que tire esa alerta.. que ya está desecncriptado
