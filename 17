@@ -1,7 +1,6 @@
 using System;
 using System.Drawing.Drawing2D;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows.Forms;
@@ -32,28 +31,13 @@ namespace EstadosCuentaTC.Desencriptador
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
 
-        // ---------- P/Invoke: solo se usa para el recorte de los TextBox ----------
-        // (los TextBox son controles nativos de Windows; no podemos redibujarlos
-        // por dentro como a un botón, así que se les recorta con una región.)
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr CreateRoundRectRgn(
-            int nLeftRect, int nTopRect, int nRightRect, int nBottomRect,
-            int nWidthEllipse, int nHeightEllipse);
-
-        /// <summary>
-        /// Recorta un control nativo (p. ej. TextBox) con esquinas redondeadas.
-        /// Nota: esto usa una región GDI clásica, por lo que el borde de la
-        /// curva no tiene anti-aliasing (se ve algo más "duro" que en un
-        /// botón redibujado con GraphicsPath). Para textboxes cortos, usar
-        /// un radio pequeño (ver RadioTextBox) para que no se deforme.
-        /// </summary>
-        private static void RedondearControlNativo(Control control, int radio)
-        {
-            if (control.Width <= 0 || control.Height <= 0) return;
-
-            IntPtr hRgn = CreateRoundRectRgn(0, 0, control.Width + 1, control.Height + 1, radio, radio);
-            control.Region = Region.FromHrgn(hRgn);
-        }
+        // Nota sobre el enfoque: primero probamos recortando el TextBox directamente
+        // con una región GDI (CreateRoundRectRgn), pero como es un control nativo de
+        // Windows (EDIT de Win32), el borde que dibuja el propio sistema no tiene
+        // anti-aliasing y se ve tosco/dentado. La solución de abajo es la correcta:
+        // el TextBox se queda SIN borde propio (BorderStyle.None) y va montado
+        // dentro de un Panel que nosotros pintamos a mano con esquinas suaves — el
+        // "borde redondeado" que ves es del Panel, no del TextBox.
 
         /// <summary>
         /// Construye la ruta (path) de un rectángulo con esquinas redondeadas,
@@ -78,6 +62,34 @@ namespace EstadosCuentaTC.Desencriptador
             path.AddArc(arco, 90, 90);                                     // esquina inf-izq
             path.CloseFigure();
             return path;
+        }
+
+        /// <summary>
+        /// Pinta un Panel como un rectángulo con esquinas redondeadas y
+        /// anti-aliasing real (borde liso). Se usa como "cascarón" visual
+        /// para los TextBox, que van montados adentro sin su propio borde.
+        /// </summary>
+        private static void AplicarEsquinasSuavesPanel(Panel panel, int radio, Color colorFondo, Color colorBorde, int anchoBorde)
+        {
+            panel.Paint += (s, e) =>
+            {
+                var rect = new Rectangle(0, 0, panel.Width - 1, panel.Height - 1);
+                using var ruta = ObtenerRutaRedondeada(rect, radio);
+
+                panel.Region = new Region(ruta);
+
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.Clear(panel.Parent?.BackColor ?? SystemColors.Control);
+
+                using var brochaFondo = new SolidBrush(colorFondo);
+                e.Graphics.FillPath(brochaFondo, ruta);
+
+                if (anchoBorde > 0)
+                {
+                    using var lapiz = new Pen(colorBorde, anchoBorde);
+                    e.Graphics.DrawPath(lapiz, ruta);
+                }
+            };
         }
 
         /// <summary>
@@ -224,7 +236,8 @@ namespace EstadosCuentaTC.Desencriptador
                 ForeColor = ColorAccento
             };
 
-            txtArchivoEncriptado = CrearCampoTexto(30, 215, 470);
+            var (panelCampoArchivo, campoArchivo) = CrearCampoTexto(30, 215, 470);
+            txtArchivoEncriptado = campoArchivo;
 
             var btnSeleccionarArchivo = CrearBoton("Examinar...", 505, 215, 150);
             btnSeleccionarArchivo.Click += BtnSeleccionarArchivo_Click;
@@ -251,7 +264,8 @@ namespace EstadosCuentaTC.Desencriptador
                 ForeColor = ColorAccento
             };
 
-            txtLlavePublica = CrearCampoTexto(30, 335, 470);
+            var (panelCampoLlave, campoLlave) = CrearCampoTexto(30, 335, 470);
+            txtLlavePublica = campoLlave;
 
             var btnSeleccionarLlave = CrearBoton("Examinar...", 505, 335, 150);
             btnSeleccionarLlave.Click += BtnSeleccionarLlave_Click;
@@ -311,11 +325,11 @@ namespace EstadosCuentaTC.Desencriptador
             Controls.Add(panelHeader);
             Controls.Add(lblPaso1);
             Controls.Add(lblArchivo);
-            Controls.Add(txtArchivoEncriptado);
+            Controls.Add(panelCampoArchivo);
             Controls.Add(btnSeleccionarArchivo);
             Controls.Add(lblPaso2);
             Controls.Add(lblLlave);
-            Controls.Add(txtLlavePublica);
+            Controls.Add(panelCampoLlave);
             Controls.Add(btnSeleccionarLlave);
             Controls.Add(btnDesencriptar);
             Controls.Add(panelEstado);
@@ -327,13 +341,9 @@ namespace EstadosCuentaTC.Desencriptador
             AplicarEsquinasSuaves(btnSeleccionarArchivo, RadioBotones);
             AplicarEsquinasSuaves(btnSeleccionarLlave, RadioBotones);
 
-            // TextBox: son controles nativos, solo se pueden recortar con una
-            // región GDI (menos suave, pero con un radio chico no se nota).
-            RedondearControlNativo(txtArchivoEncriptado, RadioTextBox);
-            RedondearControlNativo(txtLlavePublica, RadioTextBox);
-
-            txtArchivoEncriptado.Resize += (s, e) => RedondearControlNativo(txtArchivoEncriptado, RadioTextBox);
-            txtLlavePublica.Resize += (s, e) => RedondearControlNativo(txtLlavePublica, RadioTextBox);
+            // Los "campos de texto" ya salen redondeados desde CrearCampoTexto:
+            // el Panel contenedor se pinta a mano y el TextBox de adentro va
+            // sin borde propio, así que no hace falta tocarlos aquí.
         }
 
         private void CargarLogoSiExiste()
@@ -353,19 +363,48 @@ namespace EstadosCuentaTC.Desencriptador
             }
         }
 
-        private TextBox CrearCampoTexto(int left, int top, int width)
+        /// <summary>
+        /// Crea un "campo de texto" visualmente redondeado: un Panel pintado
+        /// a mano (con esquinas suaves y anti-aliasing) que contiene, montado
+        /// adentro y sin su propio borde, el TextBox real donde se guarda la ruta.
+        /// </summary>
+        private (Panel contenedor, TextBox campo) CrearCampoTexto(int left, int top, int width)
         {
-            return new TextBox
+            const int alto = 34;
+            const int relleno = 10; // espacio entre el borde del panel y el texto
+
+            var contenedor = new Panel
             {
                 Left = left,
                 Top = top,
                 Width = width,
-                Height = 34,
+                Height = alto,
+                BackColor = Color.White
+            };
+
+            var campo = new TextBox
+            {
+                Left = relleno,
+                Width = width - (relleno * 2),
                 ReadOnly = true,
                 Font = new Font("Segoe UI", 9.5f),
                 BackColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
+                ForeColor = ColorAccento,
+                BorderStyle = BorderStyle.None
             };
+            // Centrado vertical del texto dentro del panel
+            campo.Top = (alto - campo.Height) / 2;
+
+            contenedor.Controls.Add(campo);
+
+            AplicarEsquinasSuavesPanel(
+                contenedor,
+                RadioTextBox,
+                colorFondo: Color.White,
+                colorBorde: Color.FromArgb(210, 214, 220),
+                anchoBorde: 1);
+
+            return (contenedor, campo);
         }
 
         private Button CrearBoton(string texto, int left, int top, int width)
