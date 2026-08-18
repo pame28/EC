@@ -1,4 +1,5 @@
 using System;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -17,9 +18,11 @@ namespace EstadosCuentaTC.Desencriptador
         private static readonly Color ColorExito = Color.FromArgb(39, 174, 96);
         private static readonly Color ColorError = Color.FromArgb(231, 76, 60);
 
-        // Radios de redondeo (ajusta a gusto)
-        private const int RadioBotones = 14;
-        private const int RadioTextBox = 10;
+        // Radios de redondeo. Deben ser pequeños en relación a la altura del
+        // control (idealmente <= 1/3 de la altura) o el control se ve como
+        // una "píldora" en vez de un rectángulo con esquinas suaves.
+        private const int RadioBotones = 8;
+        private const int RadioTextBox = 6;
 
         private TextBox txtArchivoEncriptado = null!;
         private TextBox txtLlavePublica = null!;
@@ -29,21 +32,109 @@ namespace EstadosCuentaTC.Desencriptador
         private Button btnDesencriptar = null!;
         private PictureBox picLogo = null!;
 
-        // ---------- P/Invoke para esquinas redondeadas ----------
+        // ---------- P/Invoke: solo se usa para el recorte de los TextBox ----------
+        // (los TextBox son controles nativos de Windows; no podemos redibujarlos
+        // por dentro como a un botón, así que se les recorta con una región.)
         [DllImport("gdi32.dll")]
         private static extern IntPtr CreateRoundRectRgn(
             int nLeftRect, int nTopRect, int nRightRect, int nBottomRect,
             int nWidthEllipse, int nHeightEllipse);
 
         /// <summary>
-        /// Aplica una región con esquinas redondeadas a cualquier control (botones, textboxes, etc.)
+        /// Recorta un control nativo (p. ej. TextBox) con esquinas redondeadas.
+        /// Nota: esto usa una región GDI clásica, por lo que el borde de la
+        /// curva no tiene anti-aliasing (se ve algo más "duro" que en un
+        /// botón redibujado con GraphicsPath). Para textboxes cortos, usar
+        /// un radio pequeño (ver RadioTextBox) para que no se deforme.
         /// </summary>
-        private static void RedondearControl(Control control, int radio)
+        private static void RedondearControlNativo(Control control, int radio)
         {
             if (control.Width <= 0 || control.Height <= 0) return;
 
             IntPtr hRgn = CreateRoundRectRgn(0, 0, control.Width + 1, control.Height + 1, radio, radio);
             control.Region = Region.FromHrgn(hRgn);
+        }
+
+        /// <summary>
+        /// Construye la ruta (path) de un rectángulo con esquinas redondeadas,
+        /// usada tanto para pintar como para recortar con anti-aliasing real.
+        /// </summary>
+        private static GraphicsPath ObtenerRutaRedondeada(Rectangle rect, int radio)
+        {
+            int diametro = Math.Max(1, radio) * 2;
+            var path = new GraphicsPath();
+
+            if (diametro >= rect.Height) diametro = Math.Max(2, rect.Height - 1);
+            if (diametro >= rect.Width) diametro = Math.Max(2, rect.Width - 1);
+
+            var arco = new Rectangle(rect.Location, new Size(diametro, diametro));
+
+            path.AddArc(arco, 180, 90);                                    // esquina sup-izq
+            arco.X = rect.Right - diametro;
+            path.AddArc(arco, 270, 90);                                    // esquina sup-der
+            arco.Y = rect.Bottom - diametro;
+            path.AddArc(arco, 0, 90);                                      // esquina inf-der
+            arco.X = rect.Left;
+            path.AddArc(arco, 90, 90);                                     // esquina inf-izq
+            path.CloseFigure();
+            return path;
+        }
+
+        /// <summary>
+        /// Convierte un botón normal en uno con esquinas redondeadas y
+        /// anti-aliasing real (bordes suaves, no dentados), redibujándolo
+        /// por completo en su evento Paint.
+        /// </summary>
+        private static void AplicarEsquinasSuaves(Button boton, int radio)
+        {
+            // Guardamos el borde original (si CrearBoton le puso uno) antes de
+            // desactivar el dibujado nativo, para volverlo a trazar nosotros.
+            Color colorBorde = boton.FlatAppearance.BorderColor;
+            int anchoBorde = boton.FlatAppearance.BorderSize;
+            Color colorHover = boton.FlatAppearance.MouseOverBackColor;
+
+            boton.FlatStyle = FlatStyle.Flat;
+            boton.FlatAppearance.BorderSize = 0; // el borde lo dibujamos nosotros
+
+            void Pintar(object? s, PaintEventArgs e)
+            {
+                var rect = new Rectangle(0, 0, boton.Width - 1, boton.Height - 1);
+                using var ruta = ObtenerRutaRedondeada(rect, radio);
+
+                // Recorte real del control (para el hit-test del mouse)
+                boton.Region = new Region(ruta);
+
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.Clear(boton.Parent?.BackColor ?? SystemColors.Control);
+
+                bool sobreElMouse = boton.Enabled &&
+                    boton.ClientRectangle.Contains(boton.PointToClient(Cursor.Position));
+
+                Color colorFondo = sobreElMouse && colorHover != Color.Empty
+                    ? colorHover
+                    : boton.BackColor;
+
+                using var brochaFondo = new SolidBrush(colorFondo);
+                e.Graphics.FillPath(brochaFondo, ruta);
+
+                if (anchoBorde > 0 && colorBorde != Color.Empty)
+                {
+                    using var lapiz = new Pen(colorBorde, anchoBorde);
+                    e.Graphics.DrawPath(lapiz, ruta);
+                }
+
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    boton.Text,
+                    boton.Font,
+                    boton.ClientRectangle,
+                    boton.ForeColor,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            }
+
+            boton.Paint += Pintar;
+            boton.MouseEnter += (s, e) => boton.Invalidate();
+            boton.MouseLeave += (s, e) => boton.Invalidate();
         }
 
         public MainForm()
@@ -230,20 +321,19 @@ namespace EstadosCuentaTC.Desencriptador
             Controls.Add(panelEstado);
 
             // ---------- Aplicar esquinas redondeadas ----------
-            // Los controles ya tienen Width/Height fijos (FixedDialog, sin resize), así que
-            // podemos redondearlos aquí directamente. También lo enganchamos a Resize
-            // por si en el futuro se habilita el redimensionado.
-            RedondearControl(btnDesencriptar, RadioBotones);
-            RedondearControl(btnSeleccionarArchivo, RadioBotones);
-            RedondearControl(btnSeleccionarLlave, RadioBotones);
-            RedondearControl(txtArchivoEncriptado, RadioTextBox);
-            RedondearControl(txtLlavePublica, RadioTextBox);
+            // Botones: redibujado completo con GraphicsPath + anti-aliasing,
+            // así el borde curvo se ve liso y no "dentado".
+            AplicarEsquinasSuaves(btnDesencriptar, RadioBotones);
+            AplicarEsquinasSuaves(btnSeleccionarArchivo, RadioBotones);
+            AplicarEsquinasSuaves(btnSeleccionarLlave, RadioBotones);
 
-            btnDesencriptar.Resize += (s, e) => RedondearControl(btnDesencriptar, RadioBotones);
-            btnSeleccionarArchivo.Resize += (s, e) => RedondearControl(btnSeleccionarArchivo, RadioBotones);
-            btnSeleccionarLlave.Resize += (s, e) => RedondearControl(btnSeleccionarLlave, RadioBotones);
-            txtArchivoEncriptado.Resize += (s, e) => RedondearControl(txtArchivoEncriptado, RadioTextBox);
-            txtLlavePublica.Resize += (s, e) => RedondearControl(txtLlavePublica, RadioTextBox);
+            // TextBox: son controles nativos, solo se pueden recortar con una
+            // región GDI (menos suave, pero con un radio chico no se nota).
+            RedondearControlNativo(txtArchivoEncriptado, RadioTextBox);
+            RedondearControlNativo(txtLlavePublica, RadioTextBox);
+
+            txtArchivoEncriptado.Resize += (s, e) => RedondearControlNativo(txtArchivoEncriptado, RadioTextBox);
+            txtLlavePublica.Resize += (s, e) => RedondearControlNativo(txtLlavePublica, RadioTextBox);
         }
 
         private void CargarLogoSiExiste()
