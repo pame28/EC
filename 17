@@ -21,9 +21,9 @@ namespace EstadosCuentaTC.Desencriptador
         // Colores del estilo "moderno" para campos y botón Examinar
         private static readonly Color ColorCampoFondo = Color.FromArgb(243, 245, 248);
         private static readonly Color ColorCampoBorde = Color.FromArgb(223, 227, 232);
-        private static readonly Color ColorBotonExaminarFondo = Color.FromArgb(232, 238, 243);
         private static readonly Color ColorBotonExaminarHover = Color.FromArgb(216, 226, 234);
         private static readonly Color ColorBotonExaminarPresionado = Color.FromArgb(200, 213, 224);
+        private static readonly Color ColorGris = Color.FromArgb(224, 224, 224);
 
         // Alturas de los campos y botones "Examinar..."
         private const int AltoCampoTexto = 42;
@@ -238,7 +238,7 @@ namespace EstadosCuentaTC.Desencriptador
             {
                 string carpetaAssets = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets\\Images");
                 string rutaIco = Path.Combine(carpetaAssets, "icon.ico");
-                string rutaPng = Path.Combine(carpetaAssets, "logo.png");
+                string rutaPng = Path.Combine(carpetaAssets, "logoIco.png");
 
                 if (File.Exists(rutaIco))
                 {
@@ -260,19 +260,13 @@ namespace EstadosCuentaTC.Desencriptador
         /// Convierte un PNG a Icon en tiempo de ejecución. Windows genera un
         /// HICON nativo (GetHicon) y lo clonamos a un Icon administrado antes
         /// de liberar el handle nativo, para no dejar el recurso GDI sin liberar.
-        ///
-        /// Antes de convertir, recortamos cualquier margen transparente que
-        /// tenga el PNG: si el logo no ocupa todo el lienzo, al reducirlo a
-        /// 16x16/32x32 para la barra de tareas se ve "chico" dentro de un
-        /// cuadro casi vacío. Recortando al contenido real, el logo llena
-        /// el ícono completo y se ve más grande.
+        /// Para mejor nitidez en la barra de tareas, usa un PNG cuadrado
+        /// (idealmente 256x256) con fondo transparente.
         /// </summary>
         private static Icon CrearIconoDesdePng(string rutaPng)
         {
-            using var original = new Bitmap(rutaPng);
-            using var recortado = RecortarMargenTransparente(original);
-
-            IntPtr hIcon = recortado.GetHicon();
+            using var bitmap = new Bitmap(rutaPng);
+            IntPtr hIcon = bitmap.GetHicon();
             try
             {
                 using var iconTemporal = Icon.FromHandle(hIcon);
@@ -282,59 +276,6 @@ namespace EstadosCuentaTC.Desencriptador
             {
                 DestroyIcon(hIcon);
             }
-        }
-
-        /// <summary>
-        /// Recorta los márgenes transparentes/vacíos alrededor del contenido
-        /// visible de un bitmap y lo devuelve centrado sobre un lienzo cuadrado
-        /// (con un margen pequeño), listo para convertirse en ícono nítido.
-        /// </summary>
-        private static Bitmap RecortarMargenTransparente(Bitmap origen)
-        {
-            int left = origen.Width, right = 0, top = origen.Height, bottom = 0;
-            const byte umbralAlfa = 10; // píxeles casi transparentes cuentan como "vacío"
-
-            for (int y = 0; y < origen.Height; y++)
-            {
-                for (int x = 0; x < origen.Width; x++)
-                {
-                    if (origen.GetPixel(x, y).A > umbralAlfa)
-                    {
-                        if (x < left) left = x;
-                        if (x > right) right = x;
-                        if (y < top) top = y;
-                        if (y > bottom) bottom = y;
-                    }
-                }
-            }
-
-            // Si no encontramos contenido (imagen totalmente transparente), usamos la original
-            if (right < left || bottom < top)
-                return new Bitmap(origen);
-
-            int anchoContenido = right - left + 1;
-            int altoContenido = bottom - top + 1;
-
-            using var contenido = origen.Clone(
-                new Rectangle(left, top, anchoContenido, altoContenido),
-                origen.PixelFormat);
-
-            // Lienzo cuadrado, con ~8% de margen alrededor del contenido
-            int lado = (int)(Math.Max(anchoContenido, altoContenido) * 1.16);
-            var lienzo = new Bitmap(lado, lado);
-
-            using (var g = Graphics.FromImage(lienzo))
-            {
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-                g.Clear(Color.Transparent);
-
-                int destX = (lado - anchoContenido) / 2;
-                int destY = (lado - altoContenido) / 2;
-                g.DrawImage(contenido, destX, destY, anchoContenido, altoContenido);
-            }
-
-            return lienzo;
         }
 
         private void CargarLogoSiExiste()
@@ -370,6 +311,7 @@ namespace EstadosCuentaTC.Desencriptador
                 Width = width,
                 Height = AltoCampoTexto,
                 BackColor = ColorCampoFondo
+                
             };
 
             var campo = new TextBox
@@ -379,7 +321,8 @@ namespace EstadosCuentaTC.Desencriptador
                 Font = new Font("Segoe UI", 10f),
                 BackColor = ColorCampoFondo,
                 ForeColor = ColorHeader,
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.None,
+                
             };
             campo.Top = (contenedor.Height - campo.Height) / 2;
             campo.TextChanged += (s, e) => OcultarEstado();
@@ -415,14 +358,14 @@ namespace EstadosCuentaTC.Desencriptador
                 Width = width,
                 Height = AltoBotonExaminar,
                 Font = new Font("Segoe UI", 9.5f),
-                BackColor = ColorBotonExaminarFondo,
+            //    BackColor = ColorBotonExaminarFondo,
                 ForeColor = ColorAccento,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
                 TextAlign = ContentAlignment.MiddleCenter
             };
             boton.FlatAppearance.BorderSize = 1;
-            boton.FlatAppearance.BorderColor = ColorAccento;
+            boton.FlatAppearance.BorderColor = ColorGris;
             boton.FlatAppearance.MouseOverBackColor = ColorBotonExaminarHover;
             boton.FlatAppearance.MouseDownBackColor = ColorBotonExaminarPresionado;
             return boton;
@@ -601,3 +544,10 @@ namespace EstadosCuentaTC.Desencriptador
         }
     }
 }
+
+
+
+
+
+
+Me gustaria ordenar este codigo, como podemos hacerlo?
