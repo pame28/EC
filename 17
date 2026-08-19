@@ -1,6 +1,6 @@
-USE [BandejaVASA]
+USE [BandejaVASA_PRD]
 GO
-/****** Object:  StoredProcedure [dbo].[usp_vistaClientesImpresionContratosNP]    Script Date: 19/8/2026 15:53:12 ******/
+/****** Object:  StoredProcedure [dbo].[usp_vistaClientesImpresionContratosNP]    Script Date: 24/7/2026 14:34:02 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
