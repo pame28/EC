@@ -1,4 +1,152 @@
-  Dts.Variables["NombreArchivo"].Value = $"{nombreArchivo}{dtFechaCarga.ToString("yyMMdd")}";
+USE [BandejaVASA]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_vistaClientesImpresionContratosNP]    Script Date: 19/8/2026 15:53:12 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		<Author,,Name>
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+ALTER PROCEDURE [dbo].[usp_vistaClientesImpresionContratosNP] 
+	-- Add the parameters for the stored procedure here
+	@nombreArchivo varchar(50) 
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+	
+	SET ANSI_WARNINGS OFF;
+
+	SELECT [Origen]
+      ,[NumeroCuenta]
+      ,[NumeroTarjeta]
+      ,[Bin]
+      ,[CodigoProducto]
+      ,[DescEmisor]
+      ,[NombreCliente]
+      ,[SegundoNombre]
+      ,[Apellido1]
+      ,[Apellido2]
+      ,[NombreEmbozado]
+      ,[Identidad]
+      ,[TipoTarjeta]
+      ,[NombreEmpresa]
+      ,[CedulaJuridica]
+      ,[DireccionEstadoCuenta1]
+      ,[DireccionEstadoCuenta2]
+      ,[DireccionEstadoCuenta3]
+      ,[Ciudad]
+      ,[ApartadoPostal]
+      ,[LocalidadRetiro]
+      ,[Telefono1]
+      ,[Telefono2]
+      ,[Telefono3]
+      ,[CicloCorte]
+      ,[LimiteCreditoML]
+      ,[LimiteCreditoME]
+      ,[PlazoFinanciamiento]
+      ,[TasaCambio]
+      ,[NombreFiador1]
+      ,[Apellido1Fiador1]
+      ,[Apellido2Fiador1]
+      ,[NumCedulaFiador1]
+      ,[DireccionFiador1]
+      ,[NombreFiador2]
+      ,[Apellido1Fiador2]
+      ,[Apellido2Fiador2]
+      ,[NumCedulaFiador2]
+      ,[DireccionFiador2]
+      ,[NombreFiador3]
+      ,[Apellido1Fiador3]
+      ,[Apellido2Fiador3]
+      ,[NumCedulaFiador3]
+      ,[DireccionFiador3]
+      ,[DescripcionSeguro1]
+      ,[MontoSeguro1]
+      ,[DescripcionSeguro2]
+      ,[MontoSeguro2]
+      ,[ImprimirContrato]
+      ,[ImprimirSobre]
+      ,[OrigenEmbozado]
+      ,[TipoPersoneria]
+      ,[TipoCliente]
+      ,[S2GNIT]
+      ,[TarjetaImprimir]
+      ,[TarjetaTruncada]
+      ,[Correo]
+      ,[FechaFinVigencia]
+      --,[NoProceso]
+     -- ,[NombreArchivo]
+      ,[CodigoDistribucion]
+      ,[NombreArchivoCompleto]
+	  ,[NumeroTarjetaCore]
+  FROM(
+	SELECT  *
+	  FROM uvw_ClientesImpresionContratosNP
+	  where NombreArchivo = @nombreArchivo)x
+
+END
 
 
-Esto como va a devolver la fecha? dame un ejemplo?
+
+
+
+
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "TarjetaImprimir" with a length of 100 to data flow column "TarjetaImprimir" with a length of 4.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DireccionFiador1" with a length of 100 to data flow column "DireccionFiador1" with a length of 80.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido2Fiador2" with a length of 100 to data flow column "Apellido2Fiador2" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NumeroTarjeta" with a length of 100 to data flow column "NumeroTarjeta" with a length of 16.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DireccionEstadoCuenta2" with a length of 100 to data flow column "DireccionEstadoCuenta2" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DireccionFiador3" with a length of 100 to data flow column "DireccionFiador3" with a length of 80.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "S2GNIT" with a length of 100 to data flow column "S2GNIT" with a length of 25.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "TipoPersoneria" with a length of 100 to data flow column "TipoPersoneria" with a length of 10.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NumeroCuenta" with a length of 100 to data flow column "NumeroCuenta" with a length of 13.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Telefono2" with a length of 100 to data flow column "Telefono2" with a length of 30.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreFiador1" with a length of 100 to data flow column "NombreFiador1" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreArchivoCompleto" with a length of 100 to data flow column "NombreArchivoCompleto" with a length of 50.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DescripcionSeguro2" with a length of 100 to data flow column "DescripcionSeguro2" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "OrigenEmbozado" with a length of 100 to data flow column "OrigenEmbozado" with a length of 10.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DescEmisor" with a length of 100 to data flow column "DescEmisor" with a length of 30.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido2Fiador3" with a length of 100 to data flow column "Apellido2Fiador3" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NumCedulaFiador2" with a length of 100 to data flow column "NumCedulaFiador2" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DescripcionSeguro1" with a length of 100 to data flow column "DescripcionSeguro1" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "SegundoNombre" with a length of 100 to data flow column "SegundoNombre" with a length of 23.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "TarjetaTruncada" with a length of 100 to data flow column "TarjetaTruncada" with a length of 19.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido1Fiador3" with a length of 100 to data flow column "Apellido1Fiador3" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Origen" with a length of 100 to data flow column "Origen" with a length of 4.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "CodigoProducto" with a length of 100 to data flow column "CodigoProducto" with a length of 6.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "TipoTarjeta" with a length of 100 to data flow column "TipoTarjeta" with a length of 1.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DireccionEstadoCuenta1" with a length of 100 to data flow column "DireccionEstadoCuenta1" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido1Fiador2" with a length of 100 to data flow column "Apellido1Fiador2" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreEmpresa" with a length of 100 to data flow column "NombreEmpresa" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "CodigoDistribucion" with a length of 100 to data flow column "CodigoDistribucion" with a length of 10.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido2Fiador1" with a length of 100 to data flow column "Apellido2Fiador1" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreFiador2" with a length of 100 to data flow column "NombreFiador2" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Telefono1" with a length of 100 to data flow column "Telefono1" with a length of 30.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NumCedulaFiador3" with a length of 100 to data flow column "NumCedulaFiador3" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "CicloCorte" with a length of 100 to data flow column "CicloCorte" with a length of 2.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "LocalidadRetiro" with a length of 100 to data flow column "LocalidadRetiro" with a length of 2.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DireccionFiador2" with a length of 100 to data flow column "DireccionFiador2" with a length of 80.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "CedulaJuridica" with a length of 100 to data flow column "CedulaJuridica" with a length of 19.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Bin" with a length of 100 to data flow column "Bin" with a length of 10.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Ciudad" with a length of 100 to data flow column "Ciudad" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido2" with a length of 100 to data flow column "Apellido2" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NumCedulaFiador1" with a length of 100 to data flow column "NumCedulaFiador1" with a length of 19.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Correo" with a length of 100 to data flow column "Correo" with a length of 80.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "DireccionEstadoCuenta3" with a length of 100 to data flow column "DireccionEstadoCuenta3" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreFiador3" with a length of 100 to data flow column "NombreFiador3" with a length of 40.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido1Fiador1" with a length of 100 to data flow column "Apellido1Fiador1" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Apellido1" with a length of 100 to data flow column "Apellido1" with a length of 15.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Identidad" with a length of 100 to data flow column "Identidad" with a length of 19.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "ApartadoPostal" with a length of 100 to data flow column "ApartadoPostal" with a length of 33.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "Telefono3" with a length of 100 to data flow column "Telefono3" with a length of 30.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreCliente" with a length of 100 to data flow column "NombreCliente" with a length of 20.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "TipoCliente" with a length of 100 to data flow column "TipoCliente" with a length of 10.
+Advertencia de validación. Carga Contratos: {EE0BEC6E-F191-49A3-8853-F0243437ABBC}: Truncation may occur due to retrieving data from database column "NombreEmbozado" with a length of 100 to data flow column "NombreEmbozado" with a length of 30.
