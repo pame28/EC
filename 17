@@ -1,82 +1,144 @@
-USE [BandejaVASA_PRD]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+Compilación correcta.
 
-ALTER PROCEDURE [dbo].[usp_vistaClientesImpresionContratosNP] 
-	@nombreArchivo varchar(50) 
-AS
-BEGIN
-	SET NOCOUNT ON;
-	SET ANSI_WARNINGS OFF;
+"C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\Es
+tadosCuentaTC.slnx" (Rebuild destino) (1) ->
+"C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\Es
+tadosCuentaTC\EstadosCuentaTC.csproj" (Rebuild destino) (2) ->
+(CoreCompile destino) ->
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Repositories\EstadoCuentaRepository.cs(75,17): warning S125: Remove this commented out code. (https://ru
+les.sonarsource.com/csharp/RSPEC-125) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\E
+stados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Security\EncriptacionAES.cs(7,25): warning S101: Rename class 'EncriptacionAES' to match pascal case nam
+ing rules, consider using 'EncriptacionAes'. (https://rules.sonarsource.com/csharp/RSPEC-101) [C:\Users\80730.HN\Deskto
+p\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuen
+taTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Services\GeneracionEstadoCuentaService.cs(15,41): warning S4487: Remove this unread private field '_json
+Repo' or refactor the code to use its value. (https://rules.sonarsource.com/csharp/RSPEC-4487) [C:\Users\80730.HN\Deskt
+op\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCue
+ntaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Services\ParametrosGeneracionECService.cs(10,41): warning S4487: Remove this unread private field '_json
+Repo' or refactor the code to use its value. (https://rules.sonarsource.com/csharp/RSPEC-4487) [C:\Users\80730.HN\Deskt
+op\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCue
+ntaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Logging\FileLogger.cs(51,18): warning S3881: Fix this implementation of 'IDisposable' to conform to the
+dispose pattern. (https://rules.sonarsource.com/csharp/RSPEC-3881) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesa
+dor Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Logging\FileLogger.cs(56,21): warning S1186: Add a nested comment explaining why this method is empty, t
+hrow a 'NotSupportedException' or complete the implementation. (https://rules.sonarsource.com/csharp/RSPEC-1186) [C:\Us
+ers\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosC
+uentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Logging\FileLogger.cs(31,25): warning S1186: Add a nested comment explaining why this method is empty, t
+hrow a 'NotSupportedException' or complete the implementation. (https://rules.sonarsource.com/csharp/RSPEC-1186) [C:\Us
+ers\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosC
+uentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Program.cs(27,5): warning S4792: Make sure that this logger's configuration is safe. (https://rules.sona
+rsource.com/csharp/RSPEC-4792) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados
+de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Logging\FileLogger.cs(39,38): warning S927: Rename parameter 'ex' to 'exception' to match the interface
+declaration. (https://rules.sonarsource.com/csharp/RSPEC-927) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador R
+egional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Repositories\ParametrosGeneracionECRepository.cs(31,23): warning S112: 'System.Exception' should not be
+thrown by user code. (https://rules.sonarsource.com/csharp/RSPEC-112) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Proc
+esador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Program.cs(13,5): warning S1481: Remove the unused local variable 'connectionString'. (https://rules.son
+arsource.com/csharp/RSPEC-1481) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados
+ de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Services\GeneracionEstadoCuentaService.cs(71,23): warning S112: 'System.Exception' should not be thrown
+by user code. (https://rules.sonarsource.com/csharp/RSPEC-112) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador
+Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Services\GeneracionLoteService.cs(49,20): warning S1481: Remove the unused local variable 'lockContador'
+. (https://rules.sonarsource.com/csharp/RSPEC-1481) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Mi
+croservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
 
-	SELECT  CAST([Origen] AS VARCHAR(4))                    AS Origen
-	      , CAST([NumeroCuenta] AS VARCHAR(13))              AS NumeroCuenta
-	      , CAST([NumeroTarjeta] AS VARCHAR(16))              AS NumeroTarjeta
-	      , CAST([Bin] AS VARCHAR(10))                        AS Bin
-	      , CAST([CodigoProducto] AS VARCHAR(6))               AS CodigoProducto
-	      , CAST([DescEmisor] AS VARCHAR(30))                  AS DescEmisor
-	      , CAST([NombreCliente] AS VARCHAR(20))               AS NombreCliente
-	      , CAST([SegundoNombre] AS VARCHAR(23))               AS SegundoNombre
-	      , CAST([Apellido1] AS VARCHAR(15))                   AS Apellido1
-	      , CAST([Apellido2] AS VARCHAR(15))                   AS Apellido2
-	      , CAST([NombreEmbozado] AS VARCHAR(30))              AS NombreEmbozado
-	      , CAST([Identidad] AS VARCHAR(19))                   AS Identidad
-	      , CAST([TipoTarjeta] AS VARCHAR(1))                  AS TipoTarjeta
-	      , CAST([NombreEmpresa] AS VARCHAR(40))               AS NombreEmpresa
-	      , CAST([CedulaJuridica] AS VARCHAR(19))              AS CedulaJuridica
-	      , CAST([DireccionEstadoCuenta1] AS VARCHAR(40))      AS DireccionEstadoCuenta1
-	      , CAST([DireccionEstadoCuenta2] AS VARCHAR(40))      AS DireccionEstadoCuenta2
-	      , CAST([DireccionEstadoCuenta3] AS VARCHAR(40))      AS DireccionEstadoCuenta3
-	      , CAST([Ciudad] AS VARCHAR(15))                      AS Ciudad
-	      , CAST([ApartadoPostal] AS VARCHAR(33))              AS ApartadoPostal
-	      , CAST([LocalidadRetiro] AS VARCHAR(2))               AS LocalidadRetiro
-	      , CAST([Telefono1] AS VARCHAR(30))                   AS Telefono1
-	      , CAST([Telefono2] AS VARCHAR(30))                   AS Telefono2
-	      , CAST([Telefono3] AS VARCHAR(30))                   AS Telefono3
-	      , CAST([CicloCorte] AS VARCHAR(2))                   AS CicloCorte
-	      , [LimiteCreditoML]
-	      , [LimiteCreditoME]
-	      , [PlazoFinanciamiento]
-	      , [TasaCambio]
-	      , CAST([NombreFiador1] AS VARCHAR(40))               AS NombreFiador1
-	      , CAST([Apellido1Fiador1] AS VARCHAR(15))            AS Apellido1Fiador1
-	      , CAST([Apellido2Fiador1] AS VARCHAR(15))            AS Apellido2Fiador1
-	      , CAST([NumCedulaFiador1] AS VARCHAR(19))            AS NumCedulaFiador1
-	      , CAST([DireccionFiador1] AS VARCHAR(80))            AS DireccionFiador1
-	      , CAST([NombreFiador2] AS VARCHAR(40))               AS NombreFiador2
-	      , CAST([Apellido1Fiador2] AS VARCHAR(15))            AS Apellido1Fiador2
-	      , CAST([Apellido2Fiador2] AS VARCHAR(15))            AS Apellido2Fiador2
-	      , CAST([NumCedulaFiador2] AS VARCHAR(15))            AS NumCedulaFiador2
-	      , CAST([DireccionFiador2] AS VARCHAR(80))            AS DireccionFiador2
-	      , CAST([NombreFiador3] AS VARCHAR(40))               AS NombreFiador3
-	      , CAST([Apellido1Fiador3] AS VARCHAR(15))            AS Apellido1Fiador3
-	      , CAST([Apellido2Fiador3] AS VARCHAR(15))            AS Apellido2Fiador3
-	      , CAST([NumCedulaFiador3] AS VARCHAR(15))            AS NumCedulaFiador3
-	      , CAST([DireccionFiador3] AS VARCHAR(80))            AS DireccionFiador3
-	      , CAST([DescripcionSeguro1] AS VARCHAR(40))          AS DescripcionSeguro1
-	      , [MontoSeguro1]
-	      , CAST([DescripcionSeguro2] AS VARCHAR(40))          AS DescripcionSeguro2
-	      , [MontoSeguro2]
-	      , [ImprimirContrato]
-	      , [ImprimirSobre]
-	      , CAST([OrigenEmbozado] AS VARCHAR(10))              AS OrigenEmbozado
-	      , CAST([TipoPersoneria] AS VARCHAR(10))              AS TipoPersoneria
-	      , CAST([TipoCliente] AS VARCHAR(10))                 AS TipoCliente
-	      , CAST([S2GNIT] AS VARCHAR(25))                      AS S2GNIT
-	      , CAST([TarjetaImprimir] AS VARCHAR(4))              AS TarjetaImprimir
-	      , CAST([TarjetaTruncada] AS VARCHAR(19))             AS TarjetaTruncada
-	      , CAST([Correo] AS VARCHAR(80))                      AS Correo
-	      , [FechaFinVigencia]
-	      , CAST([CodigoDistribucion] AS VARCHAR(10))          AS CodigoDistribucion
-	      , CAST([NombreArchivoCompleto] AS VARCHAR(50))       AS NombreArchivoCompleto
-	      , [NumeroTarjetaCore]
-	FROM (
-		SELECT  *
-		FROM uvw_ClientesImpresionContratosNP
-		WHERE NombreArchivo = @nombreArchivo
-	) x
 
-END
+
+
+
+
+
+
+
+
+
+using Microsoft.Extensions.Logging;
+
+namespace EstadosCuentaTC.Logging
+{
+    public class FileLogger : ILogger
+    {
+        private readonly string _category;
+        private readonly string _filePath;
+        private static readonly object _lock = new();
+
+        public FileLogger(string category, string filePath)
+        {
+            _category = category;
+            _filePath = filePath;
+        }
+
+        public IDisposable BeginScope<TState>(TState state)
+      where TState : notnull
+        {
+            return NullScope.Instance;
+        }
+
+        internal sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+
+            private NullScope()
+            {
+            }
+
+            public void Dispose()
+            {
+            }
+        }
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId,
+            TState state, Exception? ex, Func<TState, Exception?, string> formatter)
+        {
+            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{logLevel}] {_category}: {formatter(state, ex)}";
+            if (ex != null) line += $"\n  EXCEPCION: {ex}";
+
+            lock (_lock)
+                File.AppendAllText(_filePath, line + Environment.NewLine);
+
+            Console.WriteLine(line);
+        }
+    }
+
+    public class FileLoggerProvider : ILoggerProvider
+    {
+        private readonly string _filePath;
+        public FileLoggerProvider(string filePath) => _filePath = filePath;
+        public ILogger CreateLogger(string categoryName) => new FileLogger(categoryName, _filePath);
+        public void Dispose() { }
+    }
+}
+
+
+
+
+
+
+
+Ayudame a corregir estos hallazgos por favoe
+
+
+
