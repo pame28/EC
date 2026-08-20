@@ -1,78 +1,3 @@
-Compilación correcta.
-
-"C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\Es
-tadosCuentaTC.slnx" (Rebuild destino) (1) ->
-"C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\Es
-tadosCuentaTC\EstadosCuentaTC.csproj" (Rebuild destino) (2) ->
-(CoreCompile destino) ->
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Repositories\EstadoCuentaRepository.cs(75,17): warning S125: Remove this commented out code. (https://ru
-les.sonarsource.com/csharp/RSPEC-125) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\E
-stados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Security\EncriptacionAES.cs(7,25): warning S101: Rename class 'EncriptacionAES' to match pascal case nam
-ing rules, consider using 'EncriptacionAes'. (https://rules.sonarsource.com/csharp/RSPEC-101) [C:\Users\80730.HN\Deskto
-p\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuen
-taTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Services\GeneracionEstadoCuentaService.cs(15,41): warning S4487: Remove this unread private field '_json
-Repo' or refactor the code to use its value. (https://rules.sonarsource.com/csharp/RSPEC-4487) [C:\Users\80730.HN\Deskt
-op\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCue
-ntaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Services\ParametrosGeneracionECService.cs(10,41): warning S4487: Remove this unread private field '_json
-Repo' or refactor the code to use its value. (https://rules.sonarsource.com/csharp/RSPEC-4487) [C:\Users\80730.HN\Deskt
-op\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCue
-ntaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Logging\FileLogger.cs(51,18): warning S3881: Fix this implementation of 'IDisposable' to conform to the
-dispose pattern. (https://rules.sonarsource.com/csharp/RSPEC-3881) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesa
-dor Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Logging\FileLogger.cs(56,21): warning S1186: Add a nested comment explaining why this method is empty, t
-hrow a 'NotSupportedException' or complete the implementation. (https://rules.sonarsource.com/csharp/RSPEC-1186) [C:\Us
-ers\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosC
-uentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Logging\FileLogger.cs(31,25): warning S1186: Add a nested comment explaining why this method is empty, t
-hrow a 'NotSupportedException' or complete the implementation. (https://rules.sonarsource.com/csharp/RSPEC-1186) [C:\Us
-ers\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosC
-uentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Program.cs(27,5): warning S4792: Make sure that this logger's configuration is safe. (https://rules.sona
-rsource.com/csharp/RSPEC-4792) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados
-de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Logging\FileLogger.cs(39,38): warning S927: Rename parameter 'ex' to 'exception' to match the interface
-declaration. (https://rules.sonarsource.com/csharp/RSPEC-927) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador R
-egional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Repositories\ParametrosGeneracionECRepository.cs(31,23): warning S112: 'System.Exception' should not be
-thrown by user code. (https://rules.sonarsource.com/csharp/RSPEC-112) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Proc
-esador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Program.cs(13,5): warning S1481: Remove the unused local variable 'connectionString'. (https://rules.son
-arsource.com/csharp/RSPEC-1481) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados
- de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Services\GeneracionEstadoCuentaService.cs(71,23): warning S112: 'System.Exception' should not be thrown
-by user code. (https://rules.sonarsource.com/csharp/RSPEC-112) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador
-Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Services\GeneracionLoteService.cs(49,20): warning S1481: Remove the unused local variable 'lockContador'
-. (https://rules.sonarsource.com/csharp/RSPEC-1481) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Mi
-croservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-
-
-
-
-
-
-
-
-
-
-
 using Microsoft.Extensions.Logging;
 
 namespace EstadosCuentaTC.Logging
@@ -90,7 +15,7 @@ namespace EstadosCuentaTC.Logging
         }
 
         public IDisposable BeginScope<TState>(TState state)
-      where TState : notnull
+            where TState : notnull
         {
             return NullScope.Instance;
         }
@@ -105,16 +30,17 @@ namespace EstadosCuentaTC.Logging
 
             public void Dispose()
             {
+                // No hay recursos que liberar; instancia vacía usada como marcador de ámbito.
             }
         }
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId,
-            TState state, Exception? ex, Func<TState, Exception?, string> formatter)
+            TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{logLevel}] {_category}: {formatter(state, ex)}";
-            if (ex != null) line += $"\n  EXCEPCION: {ex}";
+            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{logLevel}] {_category}: {formatter(state, exception)}";
+            if (exception != null) line += $"\n  EXCEPCION: {exception}";
 
             lock (_lock)
                 File.AppendAllText(_filePath, line + Environment.NewLine);
@@ -126,19 +52,30 @@ namespace EstadosCuentaTC.Logging
     public class FileLoggerProvider : ILoggerProvider
     {
         private readonly string _filePath;
+        private bool _disposed;
+
         public FileLoggerProvider(string filePath) => _filePath = filePath;
+
         public ILogger CreateLogger(string categoryName) => new FileLogger(categoryName, _filePath);
-        public void Dispose() { }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+
+            if (disposing)
+            {
+                // No se retienen handles ni recursos administrados: cada escritura
+                // abre y cierra el archivo con File.AppendAllText, por lo que no hay
+                // nada que liberar aquí explícitamente.
+            }
+
+            _disposed = true;
+        }
     }
 }
-
-
-
-
-
-
-
-Ayudame a corregir estos hallazgos por favoe
-
-
-
