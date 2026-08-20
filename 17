@@ -1,25 +1,82 @@
-public class FileLoggerProvider : ILoggerProvider
+  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
+stadosCuentaTC\Program.cs(28,5): warning S4792: Make sure that this logger's configuration is safe. (https://rules.sona
+rsource.com/csharp/RSPEC-4792) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados
+de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+
+
+
+using EstadosCuentaTC.Data;
+using EstadosCuentaTC.Logging;
+using EstadosCuentaTC.Repositories;
+using EstadosCuentaTC.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+var builder = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false);
+
+var config = builder.Build();
+
+_= config.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionString no configurado");
+
+// Ruta del log con fecha y hora
+var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+Directory.CreateDirectory(logsDir); // la crea si no existe
+
+var logPath = Path.Combine(logsDir, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+
+Console.WriteLine($"Log guardándose en: {logPath}");
+
+// Logger con consola + archivo
+var loggerFactory = LoggerFactory.Create(b =>
 {
-    private readonly string _filePath;
-    private bool _disposed;
+    b.SetMinimumLevel(LogLevel.Critical);
+    b.AddConsole();
+    b.AddProvider(new FileLoggerProvider(logPath));
+});
 
-    public FileLoggerProvider(string filePath) => _filePath = filePath;
+var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
+var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
+var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
+var loggerEncrypt = loggerFactory.CreateLogger<EncriptacionService>();
 
-    public ILogger CreateLogger(string categoryName) => new FileLogger(categoryName, _filePath);
+var sql = new SqlExecutor(config);
+var paramRepo = new ParametrosGeneracionECRepository(sql);
+var ecRepo = new EstadoCuentaRepository(sql);
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed) return;
-        if (disposing)
-        {
-            // No se retienen handles ni recursos administrados.
-        }
-        _disposed = true;
-    }
+var encriptacionService = new EncriptacionService(loggerEncrypt);
+
+var ParametrosECService = new ParametrosGeneracionECService(
+    paramRepo,
+    loggerParam);
+
+var individualService = new GeneracionIndividualService(
+    ecRepo,
+    loggerIndividual
+);
+
+var generacionService = new GeneracionEstadoCuentaService(
+    individualService,
+    ecRepo,
+    loggerGeneracion,
+    loggerFactory,
+    config,
+    encriptacionService
+);
+
+try
+{
+    var parametros = ParametrosECService.ObtenerParametros();
+    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
+    generacionService.Ejecutar(parametros);
+    Console.WriteLine("\n========== FIN PROCESO ==========");
+}
+catch (Exception ex)
+{
+    Console.WriteLine("\nERROR GENERAL: Se produjo un error durante la ejecución del proceso.");
+    
+    var detalleError = $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n";
+    File.AppendAllText(logPath, detalleError);
 }
