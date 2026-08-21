@@ -2,66 +2,49 @@ using EstadosCuentaTC.Data;
 using EstadosCuentaTC.Logging;
 using EstadosCuentaTC.Repositories;
 using EstadosCuentaTC.Services;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-var builder = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: false);
+// Host.CreateApplicationBuilder ya carga appsettings.json (opcional) y agrega
+// Console como proveedor de logging por defecto, leyendo niveles desde la
+// sección "Logging" del appsettings. No llamamos a AddConsole()/SetMinimumLevel()
+// a mano, que es lo que dispara S4792 en el análisis de Sonar.
+var hostBuilder = Host.CreateApplicationBuilder(args);
 
-var config = builder.Build();
+// Forzamos que sea obligatorio (por defecto el Host lo carga como opcional).
+hostBuilder.Configuration.AddJsonFile("appsettings.json", optional: false);
 
-_= config.GetConnectionString("DefaultConnection")
+_ = hostBuilder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("ConnectionString no configurado");
 
-// Ruta del log con fecha y hora
 var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
 Directory.CreateDirectory(logsDir); // la crea si no existe
 
 var logPath = Path.Combine(logsDir, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
-
 Console.WriteLine($"Log guardándose en: {logPath}");
 
-// Logger con consola + archivo
-var loggerFactory = LoggerFactory.Create(b =>
-{
-    b.SetMinimumLevel(LogLevel.Information);
-    b.AddConsole();
-    b.AddProvider(new FileLoggerProvider(logPath));
-});
+// Único agregado explícito de logging: nuestro proveedor propio de archivo.
+hostBuilder.Logging.AddProvider(new FileLoggerProvider(logPath));
 
-var loggerParam = loggerFactory.CreateLogger<ParametrosGeneracionECService>();
-var loggerGeneracion = loggerFactory.CreateLogger<GeneracionEstadoCuentaService>();
-var loggerIndividual = loggerFactory.CreateLogger<GeneracionIndividualService>();
-var loggerEncrypt = loggerFactory.CreateLogger<EncriptacionService>();
+// ── Registro de servicios en el contenedor de DI ────────────────────────
+hostBuilder.Services.AddSingleton<SqlExecutor>();
+hostBuilder.Services.AddSingleton<ParametrosGeneracionECRepository>();
+hostBuilder.Services.AddSingleton<EstadoCuentaRepository>();
+hostBuilder.Services.AddSingleton<EncriptacionService>();
+hostBuilder.Services.AddSingleton<ParametrosGeneracionECService>();
+hostBuilder.Services.AddSingleton<GeneracionIndividualService>();
+hostBuilder.Services.AddSingleton<GeneracionEstadoCuentaService>();
 
-var sql = new SqlExecutor(config);
-var paramRepo = new ParametrosGeneracionECRepository(sql);
-var ecRepo = new EstadoCuentaRepository(sql);
+using var host = hostBuilder.Build();
 
-
-var encriptacionService = new EncriptacionService(loggerEncrypt);
-
-var ParametrosECService = new ParametrosGeneracionECService(
-    paramRepo,
-    loggerParam);
-
-var individualService = new GeneracionIndividualService(
-    ecRepo,
-    loggerIndividual
-);
-
-var generacionService = new GeneracionEstadoCuentaService(
-    individualService,
-    ecRepo,
-    loggerGeneracion,
-    loggerFactory,
-    config,
-    encriptacionService
-);
+var logger = host.Services.GetRequiredService<ILogger<Program>>();
+var parametrosECService = host.Services.GetRequiredService<ParametrosGeneracionECService>();
+var generacionService = host.Services.GetRequiredService<GeneracionEstadoCuentaService>();
 
 try
 {
-    var parametros = ParametrosECService.ObtenerParametros();
+    var parametros = parametrosECService.ObtenerParametros();
     Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
     generacionService.Ejecutar(parametros);
     Console.WriteLine("\n========== FIN PROCESO ==========");
@@ -69,99 +52,11 @@ try
 catch (Exception ex)
 {
     Console.WriteLine("\nERROR GENERAL: Se produjo un error durante la ejecución del proceso.");
-    
-    var detalleError = $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n";
-    File.AppendAllText(logPath, detalleError);
+    logger.LogError(ex, "Error general durante la ejecución del proceso");
 }
 
-
-
-
-
-
-
-
-
-
-
-using Microsoft.Extensions.Logging;
-
-namespace EstadosCuentaTC.Logging
-{
-    public class FileLogger : ILogger
-    {
-        private readonly string _category;
-        private readonly string _filePath;
-        private static readonly object _lock = new();
-
-        public FileLogger(string category, string filePath)
-        {
-            _category = category;
-            _filePath = filePath;
-        }
-
-        public IDisposable BeginScope<TState>(TState state)
-            where TState : notnull
-        {
-            return NullScope.Instance;
-        }
-
-        internal sealed class NullScope : IDisposable
-        {
-            public static readonly NullScope Instance = new();
-
-            private NullScope()
-            {
-            }
-
-            public void Dispose()
-            {
-                // No hay recursos que liberar; instancia vacía usada como marcador de ámbito.
-            }
-        }
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId,
-            TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-        {
-            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{logLevel}] {_category}: {formatter(state, exception)}";
-            if (exception != null) line += $"\n  EXCEPCION: {exception}";
-
-            lock (_lock)
-                File.AppendAllText(_filePath, line + Environment.NewLine);
-
-            Console.WriteLine(line);
-        }
-    }
-
-    public class FileLoggerProvider : ILoggerProvider
-    {
-        private readonly string _filePath;
-        private bool _disposed;
-
-        public FileLoggerProvider(string filePath) => _filePath = filePath;
-
-        public ILogger CreateLogger(string categoryName) => new FileLogger(categoryName, _filePath);
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-            if (disposing)
-            {
-                // No se retienen handles ni recursos administrados.
-            }
-            _disposed = true;
-        }
-    }
-}
-
+// Marcador para poder referenciar la clase Program (útil si algún día agregas tests).
+public partial class Program { }
 
 
 
@@ -173,5 +68,12 @@ namespace EstadosCuentaTC.Logging
 {
   "ConnectionStrings": {
     "DefaultConnection": ""
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
   }
 }
