@@ -1,58 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="appsettings.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.72" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.5" />
-  </ItemGroup>
-
-</Project>
-
-
-
-
-
-
-Error al restaurar el paquete. Revirtiendo los cambios del paquete para 'EstadosCuentaTC'.
-Advertencia como error: Degradación del paquete detectada: Microsoft.Extensions.Configuration.FileExtensions de 10.0.11 a 10.0.5. Haga referencia al paquete directamente desde el proyecto para seleccionar una versión diferente. 
- EstadosCuentaTC -> Microsoft.Extensions.Hosting 10.0.11 -> Microsoft.Extensions.Configuration.FileExtensions (>= 10.0.11) 
- EstadosCuentaTC -> Microsoft.Extensions.Configuration.FileExtensions (>= 10.0.5)
-Advertencia como error: Degradación del paquete detectada: Microsoft.Extensions.Configuration de 10.0.11 a 10.0.5. Haga referencia al paquete directamente desde el proyecto para seleccionar una versión diferente. 
- EstadosCuentaTC -> Microsoft.Extensions.Hosting 10.0.11 -> Microsoft.Extensions.Configuration (>= 10.0.11) 
- EstadosCuentaTC -> Microsoft.Extensions.Configuration (>= 10.0.5)
-Advertencia como error: Degradación del paquete detectada: Microsoft.Extensions.Configuration.Json de 10.0.11 a 10.0.5. Haga referencia al paquete directamente desde el proyecto para seleccionar una versión diferente. 
- EstadosCuentaTC -> Microsoft.Extensions.Hosting 10.0.11 -> Microsoft.Extensions.Configuration.Json (>= 10.0.11) 
- EstadosCuentaTC -> Microsoft.Extensions.Configuration.Json (>= 10.0.5)
-Advertencia como error: Degradación del paquete detectada: Microsoft.Extensions.DependencyInjection de 10.0.11 a 10.0.5. Haga referencia al paquete directamente desde el proyecto para seleccionar una versión diferente. 
- EstadosCuentaTC -> Microsoft.Extensions.Hosting 10.0.11 -> Microsoft.Extensions.DependencyInjection (>= 10.0.11) 
- EstadosCuentaTC -> Microsoft.Extensions.DependencyInjection (>= 10.0.5)
-Advertencia como error: Degradación del paquete detectada: Microsoft.Extensions.Logging.Console de 10.0.11 a 10.0.5. Haga referencia al paquete directamente desde el proyecto para seleccionar una versión diferente. 
- EstadosCuentaTC -> Microsoft.Extensions.Hosting 10.0.11 -> Microsoft.Extensions.Logging.Console (>= 10.0.11) 
- EstadosCuentaTC -> Microsoft.Extensions.Logging.Console (>= 10.0.5)
-Advertencia como error: Degradación del paquete detectada: Microsoft.Extensions.Logging de 10.0.11 a 10.0.5. Haga referencia al paquete directamente desde el proyecto para seleccionar una versión diferente. 
- EstadosCuentaTC -> Microsoft.Extensions.Hosting 10.0.11 -> Microsoft.Extensions.Logging (>= 10.0.11) 
- EstadosCuentaTC -> Microsoft.Extensions.Logging (>= 10.0.5)
-El tipo o el nombre del espacio de nombres 'Hosting' no existe en el espacio de nombres 'Microsoft.Extensions' (¿falta alguna referencia de ensamblado?)
-El nombre 'Host' no existe en el contexto actual
+{
+  "ConnectionStrings": {
+    "DefaultConnection": ""
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  }
+}
