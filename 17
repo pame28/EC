@@ -1,69 +1,8 @@
-"C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\Es
-tadosCuentaTC.slnx" (Rebuild destino) (1) ->
-"C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\Es
-tadosCuentaTC\EstadosCuentaTC.csproj" (Rebuild destino) (2) ->
-(CoreCompile destino) ->
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Program.cs(57,22): warning S1118: Add a 'protected' constructor or the 'static' keyword to the class dec
-laration. (https://rules.sonarsource.com/csharp/RSPEC-1118) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Reg
-ional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
+No se puede cargar el índice de servicio del origen https://api.nuget.org/v3/index.json.
+  Error al enviar la solicitud.
+  No se puede resolver el nombre remoto: 'pxhn.corporacionbi.com'
+Error al obtener los datos de vulnerabilidad del paquete: No se puede cargar el índice de servicio del origen https://api.nuget.org/v3/index.json.
 
 
 
-using EstadosCuentaTC.Data;
-using EstadosCuentaTC.Logging;
-using EstadosCuentaTC.Repositories;
-using EstadosCuentaTC.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-
-
-var hostBuilder = Host.CreateApplicationBuilder(args);
-
-// Forzamos que sea obligatorio (por defecto el Host lo carga como opcional).
-hostBuilder.Configuration.AddJsonFile("appsettings.json", optional: false);
-
-_ = hostBuilder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("ConnectionString no configurado");
-
-var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
-Directory.CreateDirectory(logsDir); // la crea si no existe
-
-var logPath = Path.Combine(logsDir, $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
-Console.WriteLine($"Log guardándose en: {logPath}");
-
-// Único agregado explícito de logging: nuestro proveedor propio de archivo.
-hostBuilder.Logging.AddProvider(new FileLoggerProvider(logPath));
-
-// ── Registro de servicios en el contenedor de DI ────────────────────────
-hostBuilder.Services.AddSingleton<SqlExecutor>();
-hostBuilder.Services.AddSingleton<ParametrosGeneracionECRepository>();
-hostBuilder.Services.AddSingleton<EstadoCuentaRepository>();
-hostBuilder.Services.AddSingleton<EncriptacionService>();
-hostBuilder.Services.AddSingleton<ParametrosGeneracionECService>();
-hostBuilder.Services.AddSingleton<GeneracionIndividualService>();
-hostBuilder.Services.AddSingleton<GeneracionEstadoCuentaService>();
-
-using var host = hostBuilder.Build();
-
-var logger = host.Services.GetRequiredService<ILogger<Program>>();
-var parametrosECService = host.Services.GetRequiredService<ParametrosGeneracionECService>();
-var generacionService = host.Services.GetRequiredService<GeneracionEstadoCuentaService>();
-
-try
-{
-    var parametros = parametrosECService.ObtenerParametros();
-    Console.WriteLine("\nGENERACIÓN ESTADOS DE CUENTA JSON");
-    generacionService.Ejecutar(parametros);
-    Console.WriteLine("\n========== FIN PROCESO ==========");
-}
-catch (Exception ex)
-{
-    Console.WriteLine("\nERROR GENERAL: Se produjo un error durante la ejecución del proceso.");
-    logger.LogError(ex, "Error general durante la ejecución del proceso");
-}
-
-// Marcador para poder referenciar la clase Program (útil si algún día agregas tests).
-public partial class Program { }
+Como soluciono esto?
