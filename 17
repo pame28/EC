@@ -1,10 +1,3 @@
-  C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados de Cuenta TC\EstadosCuentaTC\E
-stadosCuentaTC\Program.cs(28,5): warning S4792: Make sure that this logger's configuration is safe. (https://rules.sona
-rsource.com/csharp/RSPEC-4792) [C:\Users\80730.HN\Desktop\Projects\BH-24138 Procesador Regional\Microservicios\Estados
-de Cuenta TC\EstadosCuentaTC\EstadosCuentaTC\EstadosCuentaTC.csproj]
-
-
-
 using EstadosCuentaTC.Data;
 using EstadosCuentaTC.Logging;
 using EstadosCuentaTC.Repositories;
@@ -31,7 +24,7 @@ Console.WriteLine($"Log guardándose en: {logPath}");
 // Logger con consola + archivo
 var loggerFactory = LoggerFactory.Create(b =>
 {
-    b.SetMinimumLevel(LogLevel.Critical);
+    b.SetMinimumLevel(LogLevel.Information);
     b.AddConsole();
     b.AddProvider(new FileLoggerProvider(logPath));
 });
@@ -79,4 +72,106 @@ catch (Exception ex)
     
     var detalleError = $"\nERROR GENERAL: {ex.Message}\nDETALLE: {ex.StackTrace}\n";
     File.AppendAllText(logPath, detalleError);
+}
+
+
+
+
+
+
+
+
+
+
+
+using Microsoft.Extensions.Logging;
+
+namespace EstadosCuentaTC.Logging
+{
+    public class FileLogger : ILogger
+    {
+        private readonly string _category;
+        private readonly string _filePath;
+        private static readonly object _lock = new();
+
+        public FileLogger(string category, string filePath)
+        {
+            _category = category;
+            _filePath = filePath;
+        }
+
+        public IDisposable BeginScope<TState>(TState state)
+            where TState : notnull
+        {
+            return NullScope.Instance;
+        }
+
+        internal sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+
+            private NullScope()
+            {
+            }
+
+            public void Dispose()
+            {
+                // No hay recursos que liberar; instancia vacía usada como marcador de ámbito.
+            }
+        }
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId,
+            TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{logLevel}] {_category}: {formatter(state, exception)}";
+            if (exception != null) line += $"\n  EXCEPCION: {exception}";
+
+            lock (_lock)
+                File.AppendAllText(_filePath, line + Environment.NewLine);
+
+            Console.WriteLine(line);
+        }
+    }
+
+    public class FileLoggerProvider : ILoggerProvider
+    {
+        private readonly string _filePath;
+        private bool _disposed;
+
+        public FileLoggerProvider(string filePath) => _filePath = filePath;
+
+        public ILogger CreateLogger(string categoryName) => new FileLogger(categoryName, _filePath);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                // No se retienen handles ni recursos administrados.
+            }
+            _disposed = true;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+{
+  "ConnectionStrings": {
+    "DefaultConnection": ""
+  }
 }
