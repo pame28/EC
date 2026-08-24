@@ -1,42 +1,141 @@
-using plantilla_microservicios_repository.Infrastructure.Data;
-using plantilla_microservicios_repository.Models.Validations;
-using plantilla_microservicios_repository.Repository.Interface;
+"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\ApiTerms.sln" (Rebuild destino) (1) ->
+"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj" (Rebuild dest
+ino) (2) ->
+(CoreCompile destino) ->
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(43,2
+4): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiT
+erms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(11,2
+6): warning CS0169: El campo 'TokenProvider._expiresAt' nunca se usa [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTer
+ms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
+(5,20): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
+Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
+(8,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
+Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
+(6,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
+Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
+(10,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop
+\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
+(9,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
+Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
+(7,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
+Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(149,1
+86): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
+servicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(226,1
+82): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
+servicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(11,9
+): warning S1144: Remove the unused private field '_expiresAt'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\pl
+antilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(12,9
+): warning S1144: Remove the unused private field '_lock'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantil
+la_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(10,5
+7): warning S1450: Remove the field '_cachedToken' and declare it as a local variable in the relevant methods. [C:\User
+s\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\KeyProvider.cs(31,30)
+: warning S2139: Either log this exception and handle it, or rethrow it with some contextual information. [C:\Users\807
+30.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(44,17): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\D
+esktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(47,1
+7): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\Deskto
+p\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(60,28): warning S1854: Remove this useless assignment to local variable 'mensaje'. [C:\Users\80730.HN\Desktop\Sonar\De
+sembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\ValidationsReposit
+oryImp.cs(24,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop
+\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(60,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\Sonar\De
+sembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Infrastructure\Data\DBHelper.
+cs(53,40): warning S6678: Use PascalCase for named placeholders. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\p
+lantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Infrastructure\Data\DBHelper.
+cs(70,40): warning S6678: Use PascalCase for named placeholders. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\p
+lantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(104,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\Sonar\D
+esembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(29,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\Sonar\De
+sembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(22,40): warning S2629: Don't use string interpolation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\D
+esembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(44,34): warning S2629: Don't use string interpolation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\D
+esembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(7,23):
+ warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
+ the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
+servicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(9,20):
+ warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
+ the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
+servicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(223,1
+7): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\Deskto
+p\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
+(86,21): warning S1481: Remove the unused local variable 'filasAfectadas'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-
+ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Program.cs(104,1): warning S6
+966: Await RunAsync instead. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\A
+piTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(74,22
+): warning S6444: Pass a timeout to limit the execution time. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plan
+tilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(46,17
+): warning S6664: Reduce the number of Information logging calls within this code block from 9 to the 2 allowed. [C:\Us
+ers\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(47,40
+): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
+lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(57,44
+): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
+lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(68,44
+): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
+lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(80,44
+): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
+lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(92,44
+): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
+lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(104,4
+4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
+olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(116,4
+4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
+olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(128,4
+4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
+olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(145,4
+4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
+olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(64,68
+): warning S2178: Correct this '|' to '||' and extract the right operand to a variable if it should always be evaluated
+. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(74,75
+): warning S2178: Correct this '|' to '||' and extract the right operand to a variable if it should always be evaluated
+. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(48,27
+): warning S1481: Remove the unused local variable 'dtResult'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\pla
+ntilla_microservicios_repository\ApiTerms.csproj]
 
-namespace plantilla_microservicios_repository.Repository
-{
-    public class ValidationsRepositoryImp : IValidationsRepository
-    {
-        private readonly DBHelper _dbHelper;
-        private readonly ILogger<ValidationsRepositoryImp> _logger;
 
-        public ValidationsRepositoryImp(DBHelper dbHelper, ILogger<ValidationsRepositoryImp> logger)
-        {
-            _dbHelper = dbHelper;
-            _logger = logger;
-        }
-
-        public async Task<Parametros> GetByCode(string clave)
-        {
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
-                    new Dictionary<string, object> { { "@Clave", clave } });
-
-                if (await reader.ReadAsync())
-                {
-                    return new Parametros
-                    {
-                        clave = reader.GetString(0),
-                        valor = reader.GetString(1)
-                    };
-                }
-                return new Parametros();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en ValidationsRepositoryImp(). Descripcion: {Message}", ex.Message);
-                throw new InvalidOperationException($"{ex.Message}");
-            }
-        }
-    }
-}
+Ahora ayudame a corregir estas, dime que archivos necesitas
