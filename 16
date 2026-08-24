@@ -1,47 +1,42 @@
-namespace ApiPaymentPlan.Service
-{
-    public class KeyProvider : IHostedService
-    {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<KeyProvider> _logger;
-        private readonly string _endointApiKey;
-        public static string Key { get; private set; } = string.Empty;
+using plantilla_microservicios_repository.Infrastructure.Data;
+using plantilla_microservicios_repository.Models.Validations;
+using plantilla_microservicios_repository.Repository.Interface;
 
-        public KeyProvider(HttpClient httpClient, ILogger<KeyProvider> logger, IConfiguration configuration)
+namespace plantilla_microservicios_repository.Repository
+{
+    public class ValidationsRepositoryImp : IValidationsRepository
+    {
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<ValidationsRepositoryImp> _logger;
+
+        public ValidationsRepositoryImp(DBHelper dbHelper, ILogger<ValidationsRepositoryImp> logger)
         {
-            _httpClient = httpClient;
+            _dbHelper = dbHelper;
             _logger = logger;
-            _endointApiKey = configuration["ApiSettings:EndpointGeKey"]
-                ?? throw new ArgumentNullException(nameof(configuration), "EndpointGeKey no puede ser nulo");
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public async Task<Parametros> GetByCode(string clave)
         {
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<KeyResponse>(
-                    _endointApiKey,
-                    cancellationToken);
+                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
+                    new Dictionary<string, object> { { "@Clave", clave } });
 
-                if (response != null)
+                if (await reader.ReadAsync())
                 {
-                    Key = response.authorization;
-                    _logger.LogInformation("Key inicializada correctamente");
+                    return new Parametros
+                    {
+                        clave = reader.GetString(0),
+                        valor = reader.GetString(1)
+                    };
                 }
+                return new Parametros();
             }
             catch (Exception ex)
             {
-                // Se envuelve con contexto en vez de solo loguear y relanzar la misma excepción,
-                // evitando log duplicado en niveles superiores.
-                throw new InvalidOperationException("Error obteniendo la key al iniciar el servicio", ex);
+                _logger.LogError(ex, "Error en ValidationsRepositoryImp(). Descripcion: {Message}", ex.Message);
+                throw new InvalidOperationException($"{ex.Message}");
             }
         }
-
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    public class KeyResponse
-    {
-        public string authorization { get; set; } = string.Empty;
     }
 }
