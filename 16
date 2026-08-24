@@ -1,158 +1,114 @@
-using ApiConsultaAdelantoEfectivo.Models;
 using ApiConsultaAdelantoEfectivo.Models.AccountData.Request;
 using ApiTerms.Repository.Interface;
-using ApiTerms.Service.Interface;
-using plantilla_microservicios_repository.DTOs.Response;
-using plantilla_microservicios_repository.Models;
-using plantilla_microservicios_repository.Service.Interface;
-using plantilla_microservicios_repository.Utils;
-using System.Text.RegularExpressions;
+using plantilla_microservicios_repository.Infrastructure.Data;
 
-namespace plantilla_microservicios_repository.Service
+namespace ApiTerms.Repository
 {
-    public class ConsultaAdelantoService : ITermsService
+    public class CardsRepository : ICardsRepository
     {
-        private readonly GeneralResponseFn _generalResponseFn;
-        private readonly IApiConsultaAdelanto _apiService;
-        private readonly ICardsRepository _cardsRepository;
-        private readonly ILogger<ConsultaAdelantoService> _logger;
-        private readonly string endpoint;
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<CardsRepository> _logger;
 
-        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
-
-        public ConsultaAdelantoService(GeneralResponseFn generalResponseFn, IApiConsultaAdelanto apiService, ICardsRepository cardsRepository, ILogger<ConsultaAdelantoService> logger, IConfiguration configuration)
+        public CardsRepository(DBHelper dbHelper, ILogger<CardsRepository> logger)
         {
-            _generalResponseFn = generalResponseFn;
-            _apiService = apiService;
-            _cardsRepository = cardsRepository;
-            endpoint = configuration["ApiSettings:EndpointStatements"]
-                ?? throw new ArgumentNullException(nameof(configuration), "EndpointStatements no puede ser nulo");
+            _dbHelper = dbHelper;
             _logger = logger;
         }
 
-        // Se suprime S6664 (límite de llamadas Information por bloque) de forma intencional:
-        // el flujo de validación necesita registrar cada paso para trazabilidad/auditoría.
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S6664:Limit logger calls",
-            Justification = "Trazabilidad de auditoría requerida por el negocio en cada paso de validación.")]
-        public async Task<GeneralResponse> GetTermsAsync(ConsultaAdelantoEfectivoRequest termsRequest)
+        public async Task<CardsBaseInformation> GetBaseInfo(string cardNumber)
         {
-            ConsultaAdelantoEfectivoResult consultaAdelanto = new ConsultaAdelantoEfectivoResult();
-
             try
             {
-                _logger.LogInformation("SOLICITUD RECIBIDA *******ConsultaAdelantoEfectivo*******");
-                _logger.LogInformation("Equivalente: {Equivalente} | Canal: {Canal}", termsRequest.equivalente, termsRequest.canal);
+                _logger.LogInformation("Requesting: CardsRepository.GetBaseInfo: {CardNumber}", cardNumber);
 
-                //Valida que el equivalente de la TC sea numerico, no este nulo y contenga todos los caracteres
-                _logger.LogInformation("Validacion del numero equivalente");
-                if (string.IsNullOrEmpty(termsRequest.equivalente) || string.IsNullOrWhiteSpace(termsRequest.equivalente))
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetBaseExtrafinancing",
+                    new Dictionary<string, object> { { "@NumeroTarjeta", cardNumber } });
+
+                if (await reader.ReadAsync())
                 {
-                    consultaAdelanto.Respuesta = 1;
-                    consultaAdelanto.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation("El equivalente no debe venir vacio -> Equivalente: {Equivalente}", termsRequest.equivalente);
-
-                    string mensaje = "El equivalente no debe venir vacio";
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-                }
-
-                if (!Regex.IsMatch(termsRequest.equivalente, @"^[0-9]+$", RegexOptions.None, RegexTimeout)
-                    || termsRequest.equivalente.Length < 16)
-                {
-                    await _cardsRepository.InsConsultaDisponible(termsRequest.equivalente, termsRequest.canal,
-                         "El número equivalente de la tarjeta no contiene el formato correcto", null, null);
-                    consultaAdelanto.Respuesta = 1;
-                    consultaAdelanto.Error = await _cardsRepository.GetMsjError(14);
-                    _logger.LogInformation("El número equivalente de la tarjeta no contiene el formato correcto -> Equivalente: {Equivalente}", termsRequest.equivalente);
-
-                    string mensaje = "El número equivalente de la tarjeta no contiene el formato correcto";
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-                }
-
-                _logger.LogInformation("Validando Canal");
-                if (string.IsNullOrEmpty(termsRequest.canal))
-                {
-                    consultaAdelanto.Respuesta = 1;
-                    consultaAdelanto.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation("{Error} -> Canal: {Canal}", consultaAdelanto.Error, termsRequest.canal);
-
-                    string mensaje = "Canal no puede venir vacio";
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-                }
-
-                #region Valida que la TC sea titular
-                _logger.LogInformation("Validando que la TC sea titular");
-
-                int existeTarjeta = await _cardsRepository.ValidaTarjetaTitular(termsRequest.equivalente);
-                if (existeTarjeta == 0)
-                {
-                    consultaAdelanto.Respuesta = 1;
-                    consultaAdelanto.Error = await _cardsRepository.GetMsjError(12);
-                    _logger.LogInformation("La TC consultada no es titular -> Equivalente: {Equivalente}", termsRequest.equivalente);
-
-                    string mensaje = "La TC consultada no es titular";
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-                }
-                #endregion
-
-                #region Consulta a core
-                _logger.LogInformation("Consultando core bancario");
-                var getBaseRequest = await _cardsRepository.GetBaseInfo(termsRequest.equivalente.ToString());
-
-                if (getBaseRequest == null)
-                {
-                    _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetTermsAsync), "Error al obtener información, respuesta null");
-                    return await _generalResponseFn.ResponseError(
-                            Constantes.STATUS_NOT_FOUND,
-                            Constantes.CODE_SYSTEM_ERROR,
-                            $"Error al obtener información base: respuesta null - no se encontró registro para equivalente: {termsRequest.equivalente}");
-                }
-
-                var accountDataRequest = new AccountDataRequest
-                {
-                    card = new Card
+                    return new CardsBaseInformation
                     {
-                        bin = getBaseRequest.Bin,
-                        lastFourDigits = getBaseRequest.LastFourDigits
-                    },
-                    client = new Client
-                    {
-                        documentNumber = getBaseRequest.DocumentNumber.Trim(),
-                        documentType = getBaseRequest.DocumentType,
-                        gender = getBaseRequest.Gender
-                    },
-                };
-
-                var consultaApiResponse = await _apiService.GetConsultaAdelanto(endpoint, accountDataRequest);
-
-                if (consultaApiResponse == null)
-                {
-                    consultaAdelanto.Respuesta = 1;
-                    consultaAdelanto.Error = await _cardsRepository.GetMsjError(14);
-                    _logger.LogError("Respuesta obtenida de endpoint {Endpoint} fue nula", endpoint);
-
-                    string mensaje = $"Respuesta obtenida de endpoint {endpoint} ha sido nulll";
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_ERROR, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
+                        Bin = reader.GetString(0),
+                        LastFourDigits = reader.GetString(1),
+                        DocumentNumber = reader.GetString(2),
+                        DocumentType = reader.GetString(3),
+                        Gender = reader.GetString(4),
+                    };
                 }
 
-                if (consultaApiResponse.HasError)
-                {
-                    return consultaApiResponse;
-                }
-
-                return await _generalResponseFn.Response(
-                   Constantes.STATUS_OK,
-                   "00",
-                   consultaApiResponse.DisponibleAdelanto);
-                #endregion
+                return new CardsBaseInformation();
             }
             catch (Exception ex)
             {
-                consultaAdelanto.Respuesta = 1;
-                consultaAdelanto.Error = await _cardsRepository.GetMsjError(14);
-                _logger.LogError(ex, "Error en GetTermsAsync ConsultaAdelantoEfectivo");
+                _logger.LogError(ex, "Error en CardsRepository.GetBaseInfo");
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+            }
+        }
 
-                string mensaje = ex.Message;
-                return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_ERROR, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
+        public async Task<string> GetMsjError(int id)
+        {
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetMensajeError",
+                    new Dictionary<string, object> { { "@Id", id } });
+
+                if (await reader.ReadAsync())
+                {
+                    return reader.GetString(0);
+                }
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CardsRepository.GetMsjError");
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+            }
+        }
+
+        public async Task InsConsultaDisponible(string Equivalente, string Canal, string Motivo, double? Intra, double? Extra)
+        {
+            _logger.LogInformation("Ejecutando usp_InsertaRptConsultaSaldos");
+            var parametros = new Dictionary<string, object>
+            {
+                {"@Equivalente", Equivalente },
+                {"@Canal", Canal },
+                {"@Motivo", Motivo }
+            };
+
+            if (Intra != null)
+                parametros.Add("@DisponibleIntra", "Intra");
+            if (Extra != null)
+                parametros.Add("@DisponibleExtra", "Extra");
+            try
+            {
+                await _dbHelper.ExecuteNonQueryAsync("usp_InsertaRptConsultaSaldos", parametros);
+                _logger.LogInformation("Ejecucion exitosa");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CardsRepository.InsConsultaDisponible");
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<int> ValidaTarjetaTitular(string equivalente)
+        {
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ValidaTitular",
+                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
+
+                if (await reader.ReadAsync())
+                {
+                    return reader.GetInt32(0);
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en CardsRepository.ValidaTarjetaTitular");
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
             }
         }
     }
