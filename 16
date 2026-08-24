@@ -1,52 +1,98 @@
-namespace plantilla_microservicios_repository.Models
+﻿using Criptografia.Repositories.Interfaces;
+using Criptografia.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.Logging;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+
+namespace Criptografia.Services
 {
-    public class TermsRequest
+    public class AccessTokenService : IAccessTokenService
     {
-        public string equivalente {  get; set; } = string.Empty;
-        public string canal { get; set; } = string.Empty;
-        public double monto { get; set; }
-        public string tipo { get; set; } = string.Empty;
-        public int plazo { get; set; }  
-    }
-}
+        private readonly IAccessTokenRepository _repository;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<AccessTokenService> _logger;
 
-
-
-
-using plantilla_microservicios_repository.Infrastructure.Data;
-using plantilla_microservicios_repository.Models.Validations;
-using plantilla_microservicios_repository.Repository.Interface;
-
-namespace plantilla_microservicios_repository.Repository
-{
-    public class ValidationsRepositoryImp : IValidationsRepository
-    {
-        private readonly DBHelper _dbHelper;
-        public ValidationsRepositoryImp(DBHelper dbHelper)
+        public AccessTokenService(
+            IAccessTokenRepository repository,
+            IConfiguration configuration,
+            ILogger<AccessTokenService> logger,
+            HttpClient httpClient)
         {
-            _dbHelper = dbHelper;
+            _repository = repository;
+            _configuration = configuration;
+            _logger = logger;
         }
 
-        public async Task<Parametros> GetByCode(string clave)
+        public async Task<string> GenerateAuthorizationAsync()
         {
             try
             {
-                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
-                    new Dictionary<string, object> { { "@Clave", clave } });
+                _logger.LogInformation("Iniciando generación de token de autorización.");
 
-                while (await reader.ReadAsync())
+                var token = await _repository.GetTokenAsync();
+
+                string credentials = $"{token.ClientId}:{token.SecretId}";
+
+                _logger.LogInformation("Credenciales obtenidas, procediendo a convertir a Base64.");
+
+                string base64Credentials = Convert.ToBase64String(
+                    Encoding.UTF8.GetBytes(credentials)
+                );
+
+                string secretKey = _configuration["Security:SecretKey"]!;
+
+                if (string.IsNullOrEmpty(secretKey))
                 {
-                    return new Parametros
-                    {
-                        clave = reader.GetString(0),
-                        valor = reader.GetString(1)
-                    };  
+                    _logger.LogError("La clave Security:SecretKey no está configurada.");
+                    throw new Exception("Clave de seguridad no configurada.");
                 }
-                return new Parametros();
+
+                _logger.LogInformation("Procediendo a encriptar las credenciales con AES256.");
+
+                string encrypted = AES256Utils.Encrypt(base64Credentials, secretKey);
+
+                _logger.LogInformation("Token generado correctamente.");
+
+                return $"Basic {encrypted}";
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"{ex.Message}");
+                _logger.LogError(ex, "Error generando el token de autorización.");
+                throw;
+            }
+        }
+
+        public static class AES256Utils
+        {
+            private const int IV_SIZE = 12;
+            private const int TAG_SIZE = 16;
+
+            public static string Encrypt(string plainText, string secretKey)
+            {
+                byte[] iv = RandomNumberGenerator.GetBytes(IV_SIZE);
+
+                byte[] key = SHA256.HashData(Encoding.UTF8.GetBytes(secretKey));
+
+                byte[] plaintextBytes = Encoding.UTF8.GetBytes(plainText);
+
+                byte[] cipherText = new byte[plaintextBytes.Length];
+                byte[] tag = new byte[TAG_SIZE];
+
+                using var aes = new AesGcm(key);
+
+                aes.Encrypt(iv, plaintextBytes, cipherText, tag);
+
+                byte[] result = new byte[iv.Length + cipherText.Length + tag.Length];
+
+                Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
+                Buffer.BlockCopy(cipherText, 0, result, iv.Length, cipherText.Length);
+                Buffer.BlockCopy(tag, 0, result, iv.Length + cipherText.Length, tag.Length);
+
+                return Convert.ToBase64String(result);
             }
         }
     }
@@ -55,18 +101,10 @@ namespace plantilla_microservicios_repository.Repository
 
 
 
-"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\ApiTerms.sln" (Rebuild destino) (1) ->
-"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj" (Rebuild dest
-ino) (2) ->
-(CoreCompile destino) ->
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\ValidationsReposit
-oryImp.cs(24,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop
-\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(7,23):
- warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
- the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
-servicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(9,20):
- warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
- the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
-servicios_repository\ApiTerms.csproj]
+
+
+
+
+
+
+Verdad que solo necesito del user y contraseña?
