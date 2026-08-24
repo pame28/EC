@@ -1,19 +1,12 @@
 using ApiTerms.Models;
 using ApiTerms.Models.Extrafinancing;
 using ApiTerms.Repository.Interface;
-using ApiTerms.Service;
 using ApiTerms.Service.Interface;
-using Azure;
-using Microsoft.Data.SqlClient;
 using plantilla_microservicios_repository.DTOs.Response;
 using plantilla_microservicios_repository.Models;
 using plantilla_microservicios_repository.Models.Extrafinancing;
-using plantilla_microservicios_repository.Repository.Interface;
 using plantilla_microservicios_repository.Service.Interface;
 using plantilla_microservicios_repository.Utils;
-using Serilog;
-using System.Data;
-using System.Security.Cryptography.Xml;
 using System.Text.RegularExpressions;
 
 namespace plantilla_microservicios_repository.Service
@@ -26,26 +19,31 @@ namespace plantilla_microservicios_repository.Service
         private readonly ILogger<TermsService> _logger;
         private readonly string endpoint;
 
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         public TermsService(GeneralResponseFn generalResponseFn, IApiTerms apiService, ICardsRepository cardsRepository, ILogger<TermsService> logger, IConfiguration configuration)
         {
             _generalResponseFn = generalResponseFn;
-            _apiService = apiService;   
+            _apiService = apiService;
             _cardsRepository = cardsRepository;
             endpoint = configuration["ApiSettings:EndpoinTerms"]
                 ?? throw new ArgumentNullException(nameof(configuration), "EndpoinTerms no puede ser nulo");
             _logger = logger;
         }
+
+        // Se suprime S6664 (límite de llamadas Information por bloque) de forma intencional:
+        // el flujo de validación necesita registrar cada paso para trazabilidad/auditoría.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S6664:Limit logger calls",
+            Justification = "Trazabilidad de auditoría requerida por el negocio en cada paso de validación.")]
         public async Task<GeneralResponse> GetTermsAsync(TermsRequest termsRequest)
         {
             ConsultaCuotaResult consultaCuota = new ConsultaCuotaResult();
-            #region VALIDACIONES
 
             try
             {
                 _logger.LogInformation("SOLICITUD RECIBIDA *******ConsultaCuota*******");
-                _logger.LogInformation("EQUIVALENTE =>" + termsRequest.equivalente + " | CANAL =>" + termsRequest.canal + " | MONTO =>" + termsRequest.monto.ToString() + " | TIPO =>" + termsRequest.tipo + " | PLAZO =>" + termsRequest.plazo.ToString());
-                DataTable dtResult = new DataTable();
+                _logger.LogInformation("Equivalente: {Equivalente} | Canal: {Canal} | Monto: {Monto} | Tipo: {Tipo} | Plazo: {Plazo}",
+                    termsRequest.equivalente, termsRequest.canal, termsRequest.monto, termsRequest.tipo, termsRequest.plazo);
 
                 #region Validacion de que todos los parametros traigan informacion
                 _logger.LogInformation("Validacion de que todos los parametros traigan informacion");
@@ -54,33 +52,33 @@ namespace plantilla_microservicios_repository.Service
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation(consultaCuota.Error + " -> CANAL: " + termsRequest.canal);
+                    _logger.LogInformation("{Error} -> Canal: {Canal}", consultaCuota.Error, termsRequest.canal);
 
                     var mensajeError = "El canal no puede venir vacio";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
 
                 _logger.LogInformation("Validacion del numero equivalente");
-                if (string.IsNullOrEmpty(termsRequest.equivalente) | string.IsNullOrWhiteSpace(termsRequest.equivalente))
+                if (string.IsNullOrEmpty(termsRequest.equivalente) || string.IsNullOrWhiteSpace(termsRequest.equivalente))
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation("El equivalente no debe venir vacio -> EQUIVALENTE: " + termsRequest.equivalente);
+                    _logger.LogInformation("El equivalente no debe venir vacio -> Equivalente: {Equivalente}", termsRequest.equivalente);
 
                     var mensajeError = "El equivalente no puede venir vacio";
-
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
-                if (!Regex.IsMatch(termsRequest.equivalente, @"^[0-9]+$") | termsRequest.equivalente.Length < 16)
+
+                if (!Regex.IsMatch(termsRequest.equivalente, @"^[0-9]+$", RegexOptions.None, RegexTimeout)
+                    || termsRequest.equivalente.Length < 16)
                 {
                     await _cardsRepository.InsConsultaDisponible(termsRequest.equivalente, termsRequest.canal, "El número equivalente de la tarjeta no contiene el formato correcto", null, null);
                     //Consultar si esta validacion devolveria msj estandar de error no contemplado
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(14);
-                    _logger.LogInformation("El número equivalente de la tarjeta no contiene el formato correcto -> EQUIVALENTE: " + termsRequest.equivalente);
+                    _logger.LogInformation("El número equivalente de la tarjeta no contiene el formato correcto -> Equivalente: {Equivalente}", termsRequest.equivalente);
 
-                    var mensajeError = "El número equivalente de la tarjeta no contiene el formato correctoo";
-
+                    var mensajeError = "El número equivalente de la tarjeta no contiene el formato correcto";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
 
@@ -89,10 +87,9 @@ namespace plantilla_microservicios_repository.Service
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation(consultaCuota.Error + " -> MONTO: " + termsRequest.monto);
+                    _logger.LogInformation("{Error} -> Monto: {Monto}", consultaCuota.Error, termsRequest.monto);
 
-                    var mensajeError = "El monto no puedo venir vcio";
-
+                    var mensajeError = "El monto no puede venir vacio";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
 
@@ -101,10 +98,9 @@ namespace plantilla_microservicios_repository.Service
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation(consultaCuota.Error + " -> TIPO: " + termsRequest.tipo);
+                    _logger.LogInformation("{Error} -> Tipo: {Tipo}", consultaCuota.Error, termsRequest.tipo);
 
-                    var mensajeError = "El tipo no puedo venir vcio";
-
+                    var mensajeError = "El tipo no puede venir vacio";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
 
@@ -112,11 +108,9 @@ namespace plantilla_microservicios_repository.Service
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(14);
-
-                    _logger.LogInformation("El tipo debe de ser Intra o Extra" + " -> TIPO: " + termsRequest.tipo);
+                    _logger.LogInformation("El tipo debe de ser Intra o Extra -> Tipo: {Tipo}", termsRequest.tipo);
 
                     var mensajeError = "El tipo debe de ser Intra o Extra";
-
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
 
@@ -125,32 +119,27 @@ namespace plantilla_microservicios_repository.Service
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(11);
-                    _logger.LogInformation(consultaCuota.Error + " -> PLAZO: " + termsRequest.plazo);
+                    _logger.LogInformation("{Error} -> Plazo: {Plazo}", consultaCuota.Error, termsRequest.plazo);
 
                     var mensajeError = "El plazo no debe venir vacio";
-
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
                 #endregion
 
-                    
                 #region Validacion de que exista la tarjeta equivalente
                 _logger.LogInformation("Validacion de que exista la tarjeta equivalente");
-         
+
                 int existeTarjeta = await _cardsRepository.ValidaExistenciaTc(termsRequest.equivalente);
-                if(existeTarjeta == 0)
+                if (existeTarjeta == 0)
                 {
                     consultaCuota.Respuesta = 1;
                     consultaCuota.Error = await _cardsRepository.GetMsjError(14);
-                    _logger.LogInformation("No existe la tarjeta equivalente consultada" + " -> EQUIVALENTE: " + termsRequest.equivalente);
+                    _logger.LogInformation("No existe la tarjeta equivalente consultada -> Equivalente: {Equivalente}", termsRequest.equivalente);
 
-                    var mensajeError = "\"No existe la tarjeta equivalente consultada";
-
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);                    //return consultaCuota;
+                    var mensajeError = "No existe la tarjeta equivalente consultada";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
                 }
-
                 #endregion
-
 
                 #region Obtener plazos
                 var getBaseRequest = await _cardsRepository.GetBaseInfo(termsRequest.equivalente.ToString());
@@ -161,7 +150,7 @@ namespace plantilla_microservicios_repository.Service
                     return await _generalResponseFn.ResponseError(
                             Constantes.STATUS_NOT_FOUND,
                             Constantes.CODE_SYSTEM_ERROR,
-                            $"Error al obtener información base: respuesta null - no se encontró registro para equivalente: {termsRequest.equivalente.ToString()}");
+                            $"Error al obtener información base: respuesta null - no se encontró registro para equivalente: {termsRequest.equivalente}");
                 }
 
                 var extrafinancingTermsRequest = new ExtrafinancingTermsRequest
@@ -180,7 +169,6 @@ namespace plantilla_microservicios_repository.Service
                     amount = termsRequest.monto,
                     numberPayments = termsRequest.plazo,
                     currency = "HNL"
-
                 };
 
                 var extrafinancingTermsResponse = await _apiService.GetTermsAsync(endpoint, extrafinancingTermsRequest);
@@ -196,7 +184,7 @@ namespace plantilla_microservicios_repository.Service
 
                 var respuestaApi = extrafinancingTermsResponse.response;
 
-                if(respuestaApi.code == "00")
+                if (respuestaApi.code == "00")
                 {
                     _logger.LogInformation("Exito en {Method}. Message: {Message}", nameof(GetTermsAsync), respuestaApi.description);
 
@@ -211,210 +199,17 @@ namespace plantilla_microservicios_repository.Service
                     Constantes.STATUS_OK,
                     respuestaApi.code,
                     respuestaApi.description);
-
-
                 #endregion
             }
-            
             catch (Exception ex)
             {
                 consultaCuota.Respuesta = 1;
                 consultaCuota.Error = await _cardsRepository.GetMsjError(14);
-                _logger.LogInformation("Error en public ConsultaCuotaResult ConsultaCuota");
-                _logger.LogInformation(ex.Message);
+                _logger.LogError(ex, "Error en GetTermsAsync ConsultaCuota");
+
                 var mensajeError = "Error en public ConsultaCuotaResult ConsultaCuota";
-                return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);                    //return consultaCuota;
-            }
-
-            #endregion
-        }
-    }
-}
-
-
-
-
-
-
-
-
-using ApiTerms.Models.Extrafinancing;
-using ApiTerms.Repository.Interface;
-using plantilla_microservicios_repository.Infrastructure.Data;
-
-namespace ApiTerms.Repository
-{
-    public class CardsRepository : ICardsRepository
-    {
-        private readonly DBHelper _dbHelper;
-        private readonly ILogger<CardsRepository> _logger;
-
-        public CardsRepository(DBHelper dbHelper, ILogger<CardsRepository> logger)
-        {
-            _dbHelper = dbHelper;
-            _logger = logger;
-        }
-
-        public async Task<CardsBaseInformation> GetBaseInfo(string cardNumber)
-        {
-            try
-            {
-                _logger.LogInformation($"Requesting: CardsRepository.GetBaseInfo: {cardNumber}");
-
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetBaseExtrafinancing",
-                    new Dictionary<string, object> { { "@NumeroTarjeta", cardNumber } });
-
-                while (await reader.ReadAsync())
-                {
-                    return new CardsBaseInformation
-                    {
-                        Bin = reader.GetString(0),
-                        LastFourDigits = reader.GetString(1),
-                        DocumentNumber = reader.GetString(2),
-                        DocumentType = reader.GetString(3),
-                        Gender = reader.GetString(4),
-                    };
-                }
-
-                _logger.LogInformation($"Requesting: CardsRepository.GetBaseInfo: No se encontraron resultados");
-                return new CardsBaseInformation();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error en CardsRepository.GetBaseInfo. Message: {ex.Message}");
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-
-            }
-        }
-
-        public async Task<string> GetMsjError(int id)
-        {
-            string mensaje = string.Empty;
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetMensajeError",
-                    new Dictionary<string, object> { { "@Id", id } });
-
-                while (await reader.ReadAsync())
-                {
-                    return mensaje = reader.GetString(0);
-                }
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error en CardRepository.GetMsjError: {ex.Message}", ex);
-            }
-        }
-
-        public async Task InsConsultaDisponible(string Equivalente, string Canal, string Motivo, double? Intra, double? Extra)
-        {
-            _logger.LogInformation("Ejecutando usp_InsertaRptConsultaSaldos");
-            var parametros = new Dictionary<string, object>
-            {
-                {"@Equivalente", Equivalente },
-                {"@Canal", Canal },
-                {"@Motivo", Motivo }
-            };
-
-            if (Intra != null)
-                parametros.Add("@DisponibleIntra", "Intra");
-            if (Extra != null)
-                parametros.Add("@DisponibleExtra", "Extra");
-            try
-            {
-                int filasAfectadas = await _dbHelper.ExecuteNonQueryAsync("usp_InsertaRptConsultaSaldos", parametros);
-                _logger.LogInformation("Ejecucion exitosa");
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error en CardRepository.InsConsultaDisponible: {ex.Message}", ex);
-            }
-        }
-
-        public async Task<int> ValidaExistenciaTc(string equivalente)
-        {
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ValidaExistenciaTC",
-                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
-
-                while (await reader.ReadAsync())
-                {
-                    return reader.GetInt32(0);
-                }
-
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error en CardRepository.ValidaExistenciaTc: {ex.Message}", ex);
+                return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
             }
         }
     }
 }
-
-
-
-
-
-
-
-
-using ApiTerms.Service.Interface;
-using ApiTerms.Models.AccessToken;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-
-namespace ApiTerms.Service
-{
-    public class TokenProvider : ITokenProvider
-    {
-        private readonly HttpClient _httpClient;
-        private Models.AccessToken.AccessTokenResponse? _cachedToken;
-        private DateTime _expiresAt;
-        private readonly SemaphoreSlim _lock = new(1, 1);
-        private readonly ILogger<TokenProvider> _logger;
-
-
-        //Para auth
-        private readonly string endpoint;
-
-        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
-        {
-            _httpClient = httpClient;
-            endpoint = configuration["ApiSettings:EndpointAccessToken"]
-                ?? throw new ArgumentNullException(nameof(configuration), "EndpointAccessToken no puede ser nulo");
-            _logger = logger;
-        }
-
-        public async Task<string> GetTokenAsync()
-        {
-            try
-            {
-
-                var response = await _httpClient.GetAsync(endpoint);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
-                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
-                }
-
-                _cachedToken = await response.Content.ReadFromJsonAsync<Models.AccessToken.AccessTokenResponse>();
-
-                return _cachedToken.accessToken;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Error en llamada a {Endpoint} con {Error}.", endpoint, ex.Message.ToString());
-                throw new HttpRequestException($"Error en llamada a {endpoint}.");
-            }
-        }
-    }
-}
-
-
-
-
-
