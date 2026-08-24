@@ -1,57 +1,100 @@
-using ApiPaymentPlan.Service.Interface;
-using ApiPaymentPlan.Models.AccessToken;
+using plantilla_microservicios_repository.DTOs.Response;
+using plantilla_microservicios_repository.Service.Interface;
 
-namespace ApiPaymentPlan.Service
+namespace plantilla_microservicios_repository.Utils
 {
-    public class TokenProvider : ITokenProvider
+    public class GeneralResponseFn
     {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<TokenProvider> _logger;
+        private readonly IValidationService _validationService;
 
-        //Para auth
-        private readonly string endpoint;
-
-        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
+        public GeneralResponseFn(IValidationService validationService)
         {
-            _httpClient = httpClient;
-            endpoint = configuration["ApiSettings:EndpointAccessToken"]
-                ?? throw new ArgumentNullException(nameof(configuration), "EndpointAccessToken no puede ser nulo");
-            _logger = logger;
+            _validationService = validationService;
         }
 
-        public async Task<string> GetTokenAsync()
+        public async Task<GeneralResponse> Response(int status, string code, object? data = null)
         {
-            try
+            return new GeneralResponse
             {
-                var response = await _httpClient.GetAsync(endpoint);
-
-                if (!response.IsSuccessStatusCode)
+                Status = status,
+                HasError = false,
+                PaymentPlan = data,
+                Messages = new List<Messages>
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
-                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
+                    new Messages
+                    {
+                        Code = code,
+                        Description = await _validationService.getMensajeValidacion(code)
+                    }
                 }
+            };
+        }
 
-                var accessTokenResponse = await response.Content.ReadFromJsonAsync<AccessTokenResponse>();
-
-                if (accessTokenResponse is null || string.IsNullOrEmpty(accessTokenResponse.accessToken))
+        public GeneralResponse ResponseError(int status, string description)
+        {
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = true,
+                PaymentPlan = null,
+                Messages = new List<Messages>
                 {
-                    _logger.LogError("Respuesta vacía o sin accessToken al llamar a {Endpoint}", endpoint);
-                    throw new HttpRequestException($"Respuesta inválida al llamar a {endpoint}.");
+                    new Messages
+                    {
+                        Code = Constantes.CODE_SYSTEM_ERROR,
+                        Description = description
+                    }
                 }
+            };
+        }
 
-                return accessTokenResponse.accessToken;
-            }
-            catch (HttpRequestException)
+        public async Task<GeneralResponse> ResponseError(int status, string codeError, string description)
+        {
+            var codigosEstandar = new HashSet<string> { "00", "99" };
+            string finalDescription;
+
+            if (codigosEstandar.Contains(codeError))
             {
-                // Ya se registró el detalle arriba; se propaga tal cual.
-                throw;
+                var error = await _validationService.getMensajeValidacion(codeError);
+                finalDescription = error.Replace("{descripcion}", description);
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Error en llamada a {Endpoint}.", endpoint);
-                throw new HttpRequestException($"Error en llamada a {endpoint}.", ex);
+                finalDescription = description;
             }
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = true,
+                PaymentPlan = null,
+                Messages = new List<Messages>
+                {
+                    new Messages
+                    {
+                        Code = codeError,
+                        Description = finalDescription
+                    }
+                }
+            };
+        }
+
+        public GeneralResponse ResponseErrorDesembolso(int status, int code, string description, string message)
+        {
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = true,
+                PaymentPlan = null,
+                Messages = new List<Messages>
+                {
+                    new Messages
+                    {
+                        Code = code.ToString(),
+                        Description = description,
+                        Message = message
+                    }
+                }
+            };
         }
     }
 }
