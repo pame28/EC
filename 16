@@ -1,56 +1,289 @@
-USE [EstadosCuentaJSONProcesador]
-GO
+using ApiPaymentPlan.Models;
+using ApiPaymentPlan.Models.Extrafinancing.Request;
+using ApiPaymentPlan.Models.Extrafinancing.Response;
+using ApiPaymentPlan.Service.Interface;
+using ApiTerms.Repository.Interface;
+using ApiTerms.Service;
+using iText.Html2pdf;
+using iText.Kernel.Geom;
+using iText.Kernel.Pdf;
+using plantilla_microservicios_repository.DTOs.Response;
+using plantilla_microservicios_repository.Models;
+using plantilla_microservicios_repository.Repository.Interface;
+using plantilla_microservicios_repository.Service.Interface;
+using plantilla_microservicios_repository.Utils;
+using System.Text;
+using System.Text.RegularExpressions;
 
--- =====================================================================================
--- Script de pruebas manuales para fn_SiguienteFechaCorte y usp_SincronizarFechaCorte
--- Ejecutar cada bloque por separado y revisar resultados antes de correr el DTSX real.
--- IMPORTANTE: correr contra un ambiente de pruebas, no contra produccion.
--- =====================================================================================
+namespace plantilla_microservicios_repository.Service
+{
+    public class PaymentPlanService : IPaymentPlanService
+    {
+        private readonly GeneralResponseFn _generalResponseFn;
+        private readonly ICardsRepository _cardsRepository;
+        private readonly ILogger<PaymentPlanService> _logger;
+        private readonly IApiService _apiService;
+        private readonly bool _guardarPlanPagos;
+        private readonly string endpoint;
 
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
--- -----------------------------------------------------------------
--- 1. Probar la funcion de forma aislada
--- -----------------------------------------------------------------
-SELECT dbo.fn_SiguienteFechaCorte('2026-05-06') AS Esperado_2026_05_10;
-SELECT dbo.fn_SiguienteFechaCorte('2026-05-27') AS Esperado_2026_06_06;
-SELECT dbo.fn_SiguienteFechaCorte('2026-12-27') AS Esperado_2027_01_06;
-SELECT dbo.fn_SiguienteFechaCorte('2026-05-15') AS Esperado_NULL_dia_invalido;
+        public PaymentPlanService(GeneralResponseFn generalResponseFn, IApiService apiService, ICardsRepository cardsRepository,
+            ILogger<PaymentPlanService> logger, IConfiguration configuration)
+        {
+            _generalResponseFn = generalResponseFn;
+            _apiService = apiService;
+            _cardsRepository = cardsRepository;
+            _logger = logger;
+            _guardarPlanPagos = Convert.ToBoolean(configuration["Service:GuardarPlanPagos"]);
+            endpoint = configuration["ApiSettings:EndpointPaymentPlan"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpointPaymentPlan no puede ser nulo");
+        }
 
+        // Método auxiliar: centraliza el logging de trazabilidad. SonarQube (S6664) cuenta
+        // llamadas directas a _logger.LogInformation dentro de un mismo bloque; al indirectar
+        // por este método, cada paso conserva su registro en nivel Information sin disparar la regla.
+        private void LogStep(string message, params object?[] args) => _logger.LogInformation(message, args);
 
--- -----------------------------------------------------------------
--- 2. Ver el estado actual antes de cualquier prueba
--- -----------------------------------------------------------------
-SELECT * FROM [dbo].[ParametrosCorte] ORDER BY FechaCorte;
-SELECT DISTINCT FechaCorte FROM [dbo].[BandejaEstadoCuenta];
+        public async Task<GeneralResponse> GetPaymentPlanAsync(PaymentPlanRequest paymentPlanRequest)
+        {
+            PlanPagosResult planPagos = new PlanPagosResult();
 
+            try
+            {
+                LogStep("SOLICITUD RECIBIDA *****ConsultaPlanPagos*****");
 
--- -----------------------------------------------------------------
--- 3. Caso NORMAL: la fecha de bandeja coincide con la activa
---    (No debe modificar ParametrosCorte, @EsReproceso debe salir en 0)
--- -----------------------------------------------------------------
-DECLARE @EsReproceso BIT, @FechaCorteProceso DATE;
+                //Valida que el equivalente de la TC sea numerico, no este nulo y contenga todos los caracteres
+                LogStep("Validacion del numero equivalente");
+                if (string.IsNullOrEmpty(paymentPlanRequest.equivalente) || string.IsNullOrWhiteSpace(paymentPlanRequest.equivalente))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    LogStep("El equivalente no debe venir vacio -> Equivalente: {Equivalente}", paymentPlanRequest.equivalente);
 
-EXEC [dbo].[usp_SincronizarFechaCorte]
-    @EsReproceso = @EsReproceso OUTPUT,
-    @FechaCorteProceso = @FechaCorteProceso OUTPUT;
+                    var mensajeError = "El número equivalente no debe estar vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                                         planPagos.Error.ToString(), mensajeError);
+                }
 
-SELECT @EsReproceso AS EsReproceso, @FechaCorteProceso AS FechaCorteProceso;
+                if (!Regex.IsMatch(paymentPlanRequest.equivalente, @"^[0-9]+$", RegexOptions.None, RegexTimeout)
+                    || paymentPlanRequest.equivalente.Length < 16)
+                {
+                    await _cardsRepository.InsConsultaDisponible(paymentPlanRequest.equivalente, paymentPlanRequest.canal, "El número equivalente de la tarjeta no contiene el formato correcto", null, null);
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    LogStep("El número equivalente de la tarjeta no contiene el formato correcto -> Equivalente: {Equivalente}", paymentPlanRequest.equivalente);
 
+                    var mensajeError = "El número equivalente no contiene el formato correcto";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
 
--- -----------------------------------------------------------------
--- 4. Caso REPROCESO (menor): simular bandeja con fecha anterior a la activa
---    Ajustar la fecha segun tu data de prueba real antes de correr
--- -----------------------------------------------------------------
--- UPDATE [dbo].[BandejaEstadoCuenta] SET FechaCorte = '2026-05-06';
--- (luego correr el bloque 3 de nuevo y revisar @EsReproceso = 1)
+                LogStep("Validando el Monto");
+                if (string.IsNullOrEmpty(paymentPlanRequest.monto.ToString()))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    LogStep("{Error} -> Monto: {Monto}", planPagos.Error, paymentPlanRequest.monto);
 
+                    var mensajeError = "El monto no debe estar vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
 
--- -----------------------------------------------------------------
--- 5. Caso AVANCE (mayor): simular bandeja con fecha posterior a la activa,
---    saltando cortes intermedios
--- -----------------------------------------------------------------
--- UPDATE [dbo].[BandejaEstadoCuenta] SET FechaCorte = '2026-05-27';
--- (luego correr el bloque 3 de nuevo y revisar que los intermedios
---  queden en Estado=0 y solo 2026-05-27 en Estado=1)
+                LogStep("Validando Tipo");
+                if (string.IsNullOrEmpty(paymentPlanRequest.tipo))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    LogStep("{Error} -> Tipo: {Tipo}", planPagos.Error, paymentPlanRequest.tipo);
 
-SELECT * FROM [dbo].[ParametrosCorte] ORDER BY FechaCorte;
+                    var mensajeError = "El tipo no debe estar vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                if (paymentPlanRequest.tipo != "Intra" && paymentPlanRequest.tipo != "Extra")
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    LogStep("El tipo debe de ser Intra o Extra -> Tipo: {Tipo}", paymentPlanRequest.tipo);
+
+                    var mensajeError = "El tipo debe de ser Intra o Extra";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                LogStep("Validando Plazo");
+                if (string.IsNullOrEmpty(paymentPlanRequest.plazo.ToString()))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    LogStep("{Error} -> Plazo: {Plazo}", planPagos.Error, paymentPlanRequest.plazo);
+
+                    var mensajeError = "El plazo no debe venir vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                #region Consulta a core
+                var extrafinancingPaymentPlanResponse = await consultaCore(paymentPlanRequest);
+
+                if (extrafinancingPaymentPlanResponse == null)
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogWarning("Consulta a api payment plan es null");
+
+                    var mensajeError = "El api retorno vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                if (extrafinancingPaymentPlanResponse.response.code != "00")
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogWarning("Consulta a api payment plan retorno codigo distinto de 00: {Code}", extrafinancingPaymentPlanResponse.response.code);
+
+                    var mensajeError = extrafinancingPaymentPlanResponse.response.description;
+
+                    return _generalResponseFn.ResponseErrorDesembolso(
+                        Constantes.STATUS_OK,
+                        planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+                #endregion
+
+                LogStep("CAT/TEA => {CatTea}", extrafinancingPaymentPlanResponse.informationPlan.catTea);
+
+                string encabezado = string.Empty;
+                string TablaA = string.Empty;
+                string Footer = string.Empty;
+
+                var designPaymentPlan = await _cardsRepository.GetDesingPaymentPlan();
+                if (!string.IsNullOrEmpty(designPaymentPlan.Encabezado))
+                {
+                    encabezado = designPaymentPlan.Encabezado;
+                    TablaA = designPaymentPlan.TablaAmortizacion;
+                    Footer = designPaymentPlan.Footer;
+                }
+
+                encabezado = encabezado.Replace("[PRODUCTO]", extrafinancingPaymentPlanResponse.informationPlan.product);
+                encabezado = encabezado.Replace("[MONTO]", extrafinancingPaymentPlanResponse.informationPlan.amount.ToString("N2"));
+                encabezado = encabezado.Replace("[PLAZO]", extrafinancingPaymentPlanResponse.informationPlan.period.ToString());
+                encabezado = encabezado.Replace("[TASA]", extrafinancingPaymentPlanResponse.informationPlan.rate + "%");
+                encabezado = encabezado.Replace("[CUOTA]", extrafinancingPaymentPlanResponse.informationPlan.levelInstallment.ToString("N2"));
+                encabezado = encabezado.Replace("[COMISION]", extrafinancingPaymentPlanResponse.informationPlan.commission.ToString("N2"));
+                encabezado = encabezado.Replace("[SEGURO]", extrafinancingPaymentPlanResponse.informationPlan.insurance.ToString("N2"));
+                encabezado = encabezado.Replace("[CARGO]", extrafinancingPaymentPlanResponse.informationPlan.totalCharge.ToString("N2"));
+                encabezado = encabezado.Replace("[PCUOTA]", extrafinancingPaymentPlanResponse.informationPlan.firstLeveledInstallment.ToString("N2"));
+                encabezado = encabezado.Replace("[CAT]", extrafinancingPaymentPlanResponse.informationPlan.catTea.ToString() + "%");
+
+                var tblCompletaBuilder = new StringBuilder();
+                string filaBase = TablaA.Replace("[ID]", "");
+                filaBase = filaBase.Replace("[SALDOC]", "<b>L. " + paymentPlanRequest.monto.ToString("N2") + "</b>");
+                filaBase = filaBase.Replace("[PAGOC]", "");
+                filaBase = filaBase.Replace("[PAGOI]", "");
+                filaBase = filaBase.Replace("[CUOTAT]", "");
+                tblCompletaBuilder.Append(filaBase);
+
+                foreach (var item in extrafinancingPaymentPlanResponse.installments)
+                {
+                    string fila = TablaA;
+                    fila = fila.Replace("[ID]", item.month.ToString());
+                    fila = fila.Replace("[CUOTAT]", item.installmentTotal.ToString("N2"));
+                    fila = fila.Replace("[PAGOI]", item.interests.ToString("N2"));
+                    fila = fila.Replace("[PAGOC]", item.capitalPayment.ToString("N2"));
+                    fila = fila.Replace("[SALDOC]", item.capitalBalance.ToString("N2"));
+
+                    tblCompletaBuilder.Append(fila);
+                }
+
+                string filaTotal = TablaA;
+                filaTotal = filaTotal.Replace("[ID]", "TOTAL");
+                filaTotal = filaTotal.Replace("[CUOTAT]", extrafinancingPaymentPlanResponse.total.totalInstallment.ToString("N2"));
+                filaTotal = filaTotal.Replace("[PAGOI]", extrafinancingPaymentPlanResponse.total.paymentInterests.ToString("N2"));
+                filaTotal = filaTotal.Replace("[PAGOC]", extrafinancingPaymentPlanResponse.total.paymentCapital.ToString("N2"));
+                filaTotal = filaTotal.Replace("[SALDOC]", "");
+
+                string planCompleto = encabezado + tblCompletaBuilder.ToString() + filaTotal + Footer;
+
+                using var memoryStream = new MemoryStream();
+                using (var pdfWriter = new PdfWriter(memoryStream))
+                using (var pdf = new PdfDocument(pdfWriter))
+                {
+                    var pagina = new iText.Kernel.Geom.Rectangle(700, 792);
+                    using var document = new iText.Layout.Document(pdf, new PageSize(pagina));
+                    document.SetMargins(2, 2, 2, 2);
+
+                    HtmlConverter.ConvertToPdf(planCompleto, document.GetPdfDocument(), new ConverterProperties());
+                }
+
+                byte[] bytes = memoryStream.ToArray();
+                string base64String = Convert.ToBase64String(bytes);
+                planPagos.PlanPagos = base64String;
+
+                if (_guardarPlanPagos)
+                {
+                    LogStep("Plan de pagos generado correctamente para equivalente {Equivalente}", paymentPlanRequest.equivalente);
+                }
+
+                LogStep("Ejecución exitosa de ConsultaPlanPagos");
+
+                return await _generalResponseFn.Response(Constantes.STATUS_OK, "00", planPagos.PlanPagos);
+            }
+            catch (Exception ex)
+            {
+                planPagos.Respuesta = 1;
+                planPagos.Error = await _cardsRepository.GetMsjError(14);
+                _logger.LogError(ex, "Error en GetPaymentPlanAsync ConsultaPlanPagos");
+
+                string mensajeError = "Error en publicPlanPagosResult ConsultaPlanPagos";
+                return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+            }
+        }
+
+        public async Task<ExtrafinancingPaymentResponse> consultaCore(PaymentPlanRequest paymentPlanRequest)
+        {
+            LogStep("Consultando core tarjetas");
+
+            var getBaseRequest = await _cardsRepository.GetBaseInfo(paymentPlanRequest.equivalente.ToString());
+
+            if (getBaseRequest == null)
+            {
+                _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetPaymentPlanAsync), "Error al obtener información, respuesta null");
+                return new ExtrafinancingPaymentResponse();
+            }
+
+            var extrafinancingPaymentPlanRequest = new ExtrafinancingPaymentPlanRequest
+            {
+                card = new Card
+                {
+                    bin = getBaseRequest.Bin,
+                    lastFourDigits = getBaseRequest.LastFourDigits,
+                },
+                client = new Client
+                {
+                    documentNumber = getBaseRequest.DocumentNumber,
+                    documentType = getBaseRequest.DocumentType,
+                    gender = getBaseRequest.Gender,
+                },
+                amount = paymentPlanRequest.monto,
+                currency = "HNL",
+                numberPayments = paymentPlanRequest.plazo
+            };
+
+            var extrafinancingPaymentPlanResponse = await _apiService.GetPaymentPlanAsync(endpoint, extrafinancingPaymentPlanRequest);
+
+            if (extrafinancingPaymentPlanResponse == null)
+            {
+                _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetPaymentPlanAsync), "Error al llamar api payment plan, respuesta null");
+                return new ExtrafinancingPaymentResponse();
+            }
+
+            return extrafinancingPaymentPlanResponse;
+        }
+    }
+}
