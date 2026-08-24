@@ -1,114 +1,56 @@
-using ApiConsultaAdelantoEfectivo.Models.AccountData.Request;
-using ApiTerms.Repository.Interface;
-using plantilla_microservicios_repository.Infrastructure.Data;
+using ApiConsultaAdelantoEfectivo.Service;
+using ApiTerms.Models.AccessToken;
+using ApiTerms.Service.Interface;
 
-namespace ApiTerms.Repository
+namespace ApiTerms.Service
 {
-    public class CardsRepository : ICardsRepository
+    public class TokenProvider : ITokenProvider
     {
-        private readonly DBHelper _dbHelper;
-        private readonly ILogger<CardsRepository> _logger;
+        private readonly HttpClient _httpClient;
+        private readonly ILogger<TokenProvider> _logger;
 
-        public CardsRepository(DBHelper dbHelper, ILogger<CardsRepository> logger)
+        //Para auth
+        private readonly string endpoint;
+
+        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
         {
-            _dbHelper = dbHelper;
+            _httpClient = httpClient;
+            endpoint = configuration["ApiSettings:EndpointAccessToken"]
+                                ?? throw new ArgumentNullException(nameof(configuration), "Endpoint no puede ser nulo");
             _logger = logger;
         }
 
-        public async Task<CardsBaseInformation> GetBaseInfo(string cardNumber)
+        public async Task<string> GetTokenAsync()
         {
             try
             {
-                _logger.LogInformation("Requesting: CardsRepository.GetBaseInfo: {CardNumber}", cardNumber);
+                var response = await _httpClient.GetAsync(endpoint);
 
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetBaseExtrafinancing",
-                    new Dictionary<string, object> { { "@NumeroTarjeta", cardNumber } });
-
-                if (await reader.ReadAsync())
+                if (!response.IsSuccessStatusCode)
                 {
-                    return new CardsBaseInformation
-                    {
-                        Bin = reader.GetString(0),
-                        LastFourDigits = reader.GetString(1),
-                        DocumentNumber = reader.GetString(2),
-                        DocumentType = reader.GetString(3),
-                        Gender = reader.GetString(4),
-                    };
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
+                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
                 }
 
-                return new CardsBaseInformation();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en CardsRepository.GetBaseInfo");
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
+                var accessTokenResponse = await response.Content.ReadFromJsonAsync<Models.AccessToken.AccessTokenResponse>();
 
-        public async Task<string> GetMsjError(int id)
-        {
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetMensajeError",
-                    new Dictionary<string, object> { { "@Id", id } });
-
-                if (await reader.ReadAsync())
+                if (accessTokenResponse is null || string.IsNullOrEmpty(accessTokenResponse.accessToken))
                 {
-                    return reader.GetString(0);
-                }
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en CardsRepository.GetMsjError");
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
-
-        public async Task InsConsultaDisponible(string Equivalente, string Canal, string Motivo, double? Intra, double? Extra)
-        {
-            _logger.LogInformation("Ejecutando usp_InsertaRptConsultaSaldos");
-            var parametros = new Dictionary<string, object>
-            {
-                {"@Equivalente", Equivalente },
-                {"@Canal", Canal },
-                {"@Motivo", Motivo }
-            };
-
-            if (Intra != null)
-                parametros.Add("@DisponibleIntra", "Intra");
-            if (Extra != null)
-                parametros.Add("@DisponibleExtra", "Extra");
-            try
-            {
-                await _dbHelper.ExecuteNonQueryAsync("usp_InsertaRptConsultaSaldos", parametros);
-                _logger.LogInformation("Ejecucion exitosa");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en CardsRepository.InsConsultaDisponible");
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
-
-        public async Task<int> ValidaTarjetaTitular(string equivalente)
-        {
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ValidaTitular",
-                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
-
-                if (await reader.ReadAsync())
-                {
-                    return reader.GetInt32(0);
+                    _logger.LogError("Respuesta vacía o sin accessToken al llamar a {Endpoint}", endpoint);
+                    throw new HttpRequestException($"Respuesta inválida al llamar a {endpoint}.");
                 }
 
-                return 0;
+                return accessTokenResponse.accessToken;
+            }
+            catch (HttpRequestException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error en CardsRepository.ValidaTarjetaTitular");
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+                _logger.LogError(ex, "Error en llamada a {Endpoint}.", endpoint);
+                throw new HttpRequestException($"Error en llamada a {endpoint}.", ex);
             }
         }
     }
