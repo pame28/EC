@@ -331,4 +331,4 @@ namespace plantilla_microservicios_repository.Service
             return extrafinancingPaymentPlanResponse;
         }
     }
-}
+} 
