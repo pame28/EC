@@ -13,7 +13,6 @@ namespace plantilla_microservicios_repository.Repository
         {
             _dbHelper = dbHelper;
             _logger = logger;
-
         }
 
         public async Task<Parametros> GetByCode(string clave)
@@ -23,13 +22,13 @@ namespace plantilla_microservicios_repository.Repository
                 using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
                     new Dictionary<string, object> { { "@Clave", clave } });
 
-                while (await reader.ReadAsync())
+                if (await reader.ReadAsync())
                 {
                     return new Parametros
                     {
                         clave = reader.GetString(0),
                         valor = reader.GetString(1)
-                    };  
+                    };
                 }
                 return new Parametros();
             }
@@ -41,11 +40,3 @@ namespace plantilla_microservicios_repository.Repository
         }
     }
 }
-
-
-
-
-
-
-
-
