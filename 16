@@ -1,42 +1,46 @@
--                var json = JsonSerializer.Serialize(data);
--                _logger.LogInformation("Body enviado: {Json}", json);
--
--
--                _logger.LogInformation("***** Petición recibida {Method} *****", nameof(GetConsultaAdelanto));
-+                var json = JsonSerializer.Serialize(data);
-+                _logger.LogInformation("***** Petición recibida {Method}. Body: {Json} *****", nameof(GetConsultaAdelanto), json);
+using plantilla_microservicios_repository.Infrastructure.Data;
+using plantilla_microservicios_repository.Models.Validations;
+using plantilla_microservicios_repository.Repository.Interface;
 
+namespace plantilla_microservicios_repository.Repository
+{
+    public class ValidationsRepositoryImp : IValidationsRepository
+    {
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<ValidationsRepositoryImp> _logger;
 
+        public ValidationsRepositoryImp(DBHelper dbHelper, ILogger<ValidationsRepositoryImp> logger)
+        {
+            _dbHelper = dbHelper;
+            _logger = logger;
 
+        }
 
+        public async Task<Parametros> GetByCode(string clave)
+        {
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
+                    new Dictionary<string, object> { { "@Clave", clave } });
 
-
-
-
-
-
-             catch (Exception ex)
-             {
--                _logger.LogError(ex, "Error obteniendo la key al iniciar el servicio");
--                throw;
-+                throw new InvalidOperationException("Error obteniendo la key al iniciar el servicio", ex);
-             }
-
-
-
-
-
-
--                _logger.LogInformation("***** ExecuteNonQueryAsync() - StoredProcedure={storedProcedure} *****", storedProcedure);
-+                _logger.LogInformation("***** ExecuteNonQueryAsync() - StoredProcedure={StoredProcedure} *****", storedProcedure);
-
-
-
-
-
--                _logger.LogInformation("StoredProcedure {storedProcedure} ejecutado exitosamente", storedProcedure);
-+                _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado exitosamente", storedProcedure);
-
+                while (await reader.ReadAsync())
+                {
+                    return new Parametros
+                    {
+                        clave = reader.GetString(0),
+                        valor = reader.GetString(1)
+                    };  
+                }
+                return new Parametros();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en ValidationsRepositoryImp(). Descripcion: {Message}", ex.Message);
+                throw new InvalidOperationException($"{ex.Message}");
+            }
+        }
+    }
+}
 
 
 
