@@ -1,141 +1,331 @@
-"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\ApiPaymentPlan.sln" (Rebuild destino) (1) ->
-"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj" (
-Rebuild destino) (2) ->
-(CoreCompile destino) ->
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\TokenProvider.c
-s(42,24): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\80730.HN\Desktop\Sonar\Desembols
-o-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\TokenProvider.c
-s(10,26): warning CS0169: El campo 'TokenProvider._expiresAt' nunca se usa [C:\Users\80730.HN\Desktop\Sonar\Desembolso-
-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(130,17): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPla
-n\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(195,17): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPla
-n\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(216,21): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPla
-n\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(230,121): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPl
-an\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\TokenProvider.c
-s(10,9): warning S1144: Remove the unused private field '_expiresAt'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPa
-ymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\TokenProvider.c
-s(11,9): warning S1144: Remove the unused private field '_lock'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPayment
-Plan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Utils\GeneralResponseFn
-.cs(33,32): warning S4136: All 'ResponseError' method overloads should be adjacent. [C:\Users\80730.HN\Desktop\Sonar\De
-sembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Models\PlanPagosResult.
-cs(5,20): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Deskto
-p\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Models\PlanPagosResult.
-cs(7,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Deskto
-p\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Models\PlanPagosResult.
-cs(6,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Deskto
-p\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\TokenProvider.c
-s(9,38): warning S1450: Remove the field '_cachedToken' and declare it as a local variable in the relevant methods. [C:
-\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\KeyProvider.cs(
-31,30): warning S2139: Either log this exception and handle it, or rethrow it with some contextual information. [C:\Use
-rs\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(60,26): warning S1854: Remove this useless assignment to local variable 'mensaje'. [C:\Users\80730.HN\Desktop\So
-nar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\TokenProvider.c
-s(46,17): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\
-Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(60,19): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\So
-nar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(31,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\So
-nar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\ValidationsR
-epositoryImp.cs(28,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\D
-esktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Infrastructure\Data\DBH
-elper.cs(53,40): warning S6678: Use PascalCase for named placeholders. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiP
-aymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Infrastructure\Data\DBH
-elper.cs(70,40): warning S6678: Use PascalCase for named placeholders. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiP
-aymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(106,28): warning S1854: Remove this useless assignment to local variable 'producto'. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(106,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\S
-onar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Models\PaymentPlanReque
-st.cs(7,23): warning S6964: Value type property used as input in a controller action should be nullable, required or an
-notated with the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPl
-an\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Models\PaymentPlanReque
-st.cs(9,20): warning S6964: Value type property used as input in a controller action should be nullable, required or an
-notated with the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPl
-an\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(125,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\S
-onar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(87,19): warning S1481: Remove the unused local variable 'filasAfectadas'. [C:\Users\80730.HN\Desktop\Sonar\Desem
-bolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Repository\CardsReposit
-ory.cs(118,20): warning S1481: Remove the unused local variable 'mensaje'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-
-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(276,17): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\807
-30.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Program.cs(106,1): warn
-ing S6966: Await RunAsync instead. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_
-repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(70,22): warning S6444: Pass a timeout to limit the execution time. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-A
-piPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(225,21): warning S1643: Use a StringBuilder instead. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\
-plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(55,17): warning S6664: Reduce the number of Information logging calls within this code block from 14 to the 2 al
-lowed. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.cs
-proj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(63,44): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\S
-onar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(75,44): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\S
-onar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(87,44): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\S
-onar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(99,44): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\S
-onar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(111,44): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(123,44): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(166,40): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(59,74): warning S2178: Correct this '|' to '||' and extract the right operand to a variable if it should always
-be evaluated. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPayment
-Plan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(70,81): warning S2178: Correct this '|' to '||' and extract the right operand to a variable if it should always
-be evaluated. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\ApiPayment
-Plan.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiPaymentPlan\plantilla_microservicios_repository\Service\PaymentPlanServ
-ice.cs(54,27): warning S1481: Remove the unused local variable 'dtResult'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-
-ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
+using ApiPaymentPlan.Models;
+using ApiPaymentPlan.Models.Extrafinancing.Request;
+using ApiPaymentPlan.Models.Extrafinancing.Response;
+using ApiPaymentPlan.Service.Interface;
+using ApiTerms.Repository.Interface;
+using ApiTerms.Service;
+using Azure;
+using iText.Html2pdf;
+using iText.Kernel.Geom;
+using iText.Kernel.Pdf;
+using Microsoft.Identity.Client;
+using plantilla_microservicios_repository.Controllers;
+using plantilla_microservicios_repository.DTOs.Response;
+using plantilla_microservicios_repository.Models;
+using plantilla_microservicios_repository.Repository.Interface;
+using plantilla_microservicios_repository.Service.Interface;
+using plantilla_microservicios_repository.Utils;
+using Serilog;
+using System.Data;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+
+namespace plantilla_microservicios_repository.Service
+{
+    public class PaymentPlanService : IPaymentPlanService
+    {
+        private readonly GeneralResponseFn _generalResponseFn;
+        private readonly ICardsRepository _cardsRepository;
+        private readonly ILogger<PaymentPlanService> _logger;
+        private readonly IApiService _apiService;
+        private readonly bool _guardarPlanPagos;
+        private readonly string endpoint;
+
+
+        public PaymentPlanService(GeneralResponseFn generalResponseFn, IApiService apiService, ICardsRepository cardsRepository,
+            ILogger<PaymentPlanService> logger, IConfiguration configuration)
+        {
+            _generalResponseFn = generalResponseFn;
+            _apiService = apiService;
+            _cardsRepository = cardsRepository;
+            _logger = logger;
+            _guardarPlanPagos = Convert.ToBoolean(configuration["Service:GuardarPlanPagos"]);
+            endpoint = configuration["ApiSettings:EndpointPaymentPlan"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpointPaymentPlan no puede ser nulo");
+
+        }
+        public async Task<GeneralResponse> GetPaymentPlanAsync(PaymentPlanRequest paymentPlanRequest)
+        {
+            PlanPagosResult planPagos = new PlanPagosResult();
+
+            try
+            {
+
+                DataTable dtResult = new DataTable();
+                _logger.LogInformation("SOLICITUD RECIBIDA *****ConsultaPlanPagos*****");
+
+                //Valida que el equivalente de la TC sea numerico, no este nulo y contenga todos los caracteres
+                _logger.LogInformation("Validacion del numero equivalente");
+                if (string.IsNullOrEmpty(paymentPlanRequest.equivalente) | string.IsNullOrWhiteSpace(paymentPlanRequest.equivalente))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation("El equivalente no debe venir vacio -> EQUIVALENTE: " + paymentPlanRequest.equivalente);
+                    
+                    var mensajeError = "El número equivalente no debe estar vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                                         planPagos.Error.ToString(), mensajeError);
+                }
+
+                if (!Regex.IsMatch(paymentPlanRequest.equivalente, @"^[0-9]+$") | paymentPlanRequest.equivalente.Length < 16)
+                {
+                    await _cardsRepository.InsConsultaDisponible(paymentPlanRequest.equivalente, paymentPlanRequest.canal, "El número equivalente de la tarjeta no contiene el formato correcto", null, null);
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogInformation("El número equivalente de la tarjeta no contiene el formato correcto -> EQUIVALENTE: " + paymentPlanRequest.equivalente);
+
+                    var mensajeError = "El número equivalente no contiene el formato correcto";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validando el Monto");
+                if (string.IsNullOrEmpty(paymentPlanRequest.monto.ToString()))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(planPagos.Error + " -> MONTO: " + paymentPlanRequest.monto);
+                   
+                    var mensajeError = "El monto no debe estar vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validando Tipo");
+                if (string.IsNullOrEmpty(paymentPlanRequest.tipo))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(planPagos.Error + " -> TIPO: " + paymentPlanRequest.tipo);
+
+                    var mensajeError = "El tipo no debe estar vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+
+                if (paymentPlanRequest.tipo != "Intra" && paymentPlanRequest.tipo != "Extra")
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogInformation("El tipo debe de ser Intra o Extra" + " -> TIPO: " + paymentPlanRequest.tipo);
+
+                    var mensajeError = "El tipo debe de ser Intra o Extra";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validando Plazo");
+                if (string.IsNullOrEmpty(paymentPlanRequest.plazo.ToString()))
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(planPagos.Error + " -> PLAZO: " + paymentPlanRequest.plazo);
+
+                    var mensajeError = "El plazo no debe venir vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                //_logger.LogInformation("Buscando tipo de producto");
+                //string tipoProducto = await _cardsRepository.GetProduct(paymentPlanRequest.equivalente);
+                //_logger.LogInformation("Tipo producto => " + tipoProducto);
+
+                #region Consulta a core
+                var extrafinancingPaymentPlanResponse = await consultaCore(paymentPlanRequest);
+                
+                if (extrafinancingPaymentPlanResponse == null)
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogInformation("Consulta a api payment plan es null");
+
+                    var mensajeError = "El api retorno vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+
+                if(extrafinancingPaymentPlanResponse.response.code != "00")
+                {
+                    planPagos.Respuesta = 1;
+                    planPagos.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogInformation("Consulta a api payment plan es null");
+
+                    var mensajeError = extrafinancingPaymentPlanResponse.response.description;
+
+                    return _generalResponseFn.ResponseErrorDesembolso(
+                        Constantes.STATUS_OK, 
+                        planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+                }
+                #endregion
+
+
+                _logger.LogInformation("Traer el calculo de la cuota");
+                _logger.LogInformation("Calculando CAT/TEA");
+                _logger.LogInformation("CAT/TEA =>" + extrafinancingPaymentPlanResponse.informationPlan.catTea);
+
+                _logger.LogInformation("Traer diseño HTML");
+                string encabezado = string.Empty;
+                string TablaA = string.Empty;
+                string Footer = string.Empty;
+
+                var designPaymentPlan = await _cardsRepository.GetDesingPaymentPlan();
+                if (!string.IsNullOrEmpty(designPaymentPlan.Encabezado))
+                {
+                    encabezado = designPaymentPlan.Encabezado;
+                    TablaA = designPaymentPlan.TablaAmortizacion;
+                    Footer = designPaymentPlan.Footer;
+                }
+
+
+                _logger.LogInformation("Reemplazar datos en encabezado");
+                encabezado = encabezado.Replace("[PRODUCTO]", extrafinancingPaymentPlanResponse.informationPlan.product);
+                encabezado = encabezado.Replace("[MONTO]", extrafinancingPaymentPlanResponse.informationPlan.amount.ToString("N2"));
+                encabezado = encabezado.Replace("[PLAZO]", extrafinancingPaymentPlanResponse.informationPlan.period.ToString());
+                encabezado = encabezado.Replace("[TASA]", extrafinancingPaymentPlanResponse.informationPlan.rate + "%");
+                encabezado = encabezado.Replace("[CUOTA]", extrafinancingPaymentPlanResponse.informationPlan.levelInstallment.ToString("N2"));
+                encabezado = encabezado.Replace("[COMISION]", extrafinancingPaymentPlanResponse.informationPlan.commission.ToString("N2"));
+                encabezado = encabezado.Replace("[SEGURO]", extrafinancingPaymentPlanResponse.informationPlan.insurance.ToString("N2"));
+                encabezado = encabezado.Replace("[CARGO]", (extrafinancingPaymentPlanResponse.informationPlan.totalCharge.ToString("N2")));
+                encabezado = encabezado.Replace("[PCUOTA]", (extrafinancingPaymentPlanResponse.informationPlan.firstLeveledInstallment.ToString("N2")));
+                encabezado = encabezado.Replace("[CAT]", extrafinancingPaymentPlanResponse.informationPlan.catTea.ToString() + "%");
+
+
+                //decimal SaldoC = Convert.ToDecimal(paymentPlanRequest.monto), PagoC = 0, PagoI = 0, SPagoC = 0, SPagoI = 0, Tasa = Convert.ToDecimal(extrafinancingPaymentPlanResponse.informationPlan.tasa), Cuota = Convert.ToDecimal(extrafinancingPaymentPlanResponse.informationPlan.cuotaNivelada);
+               
+                _logger.LogInformation("Creando tabla de amortización");
+                string TblCompleta, TBL = string.Empty;
+                TblCompleta = TablaA.Replace("[ID]", "");
+                TblCompleta = TblCompleta.Replace("[SALDOC]", "<b>L. " + paymentPlanRequest.monto.ToString("N2") + "</b>");
+                TblCompleta = TblCompleta.Replace("[PAGOC]", "");
+                TblCompleta = TblCompleta.Replace("[PAGOI]", "");
+                TblCompleta = TblCompleta.Replace("[CUOTAT]", "");
+
+                foreach(var item in extrafinancingPaymentPlanResponse.installments)
+                {
+                    TBL = TablaA;
+                    TBL = TBL.Replace("[ID]", item.month.ToString());
+                    TBL = TBL.Replace("[CUOTAT]", item.installmentTotal.ToString("N2"));
+                    TBL = TBL.Replace("[PAGOI]", item.interests.ToString("N2"));
+                    TBL = TBL.Replace("[PAGOC]", item.capitalPayment.ToString("N2"));
+
+
+                    TBL = TBL.Replace("[SALDOC]", item.capitalBalance.ToString("N2"));
+
+                    //if (SaldoC > 1)
+                    //{
+                    //    TBL = TBL.Replace("[SALDOC]", SaldoC.ToString("N2"));
+                    //}
+                    //else
+                    //{
+                    //    TBL = TBL.Replace("[SALDOC]", Math.Round(SaldoC, 0).ToString("N2"));
+                    //}
+
+                    TblCompleta = TblCompleta + TBL;
+                }
+
+                TBL = TablaA;
+                TBL = TBL.Replace("[ID]", "TOTAL");
+                TBL = TBL.Replace("[CUOTAT]", extrafinancingPaymentPlanResponse.total.totalInstallment.ToString("N2")); //(Cuota * paymentPlanRequest.plazo).ToString("N2"));
+                TBL = TBL.Replace("[PAGOI]", extrafinancingPaymentPlanResponse.total.paymentInterests.ToString("N2"));
+                TBL = TBL.Replace("[PAGOC]", extrafinancingPaymentPlanResponse.total.paymentCapital.ToString("N2"));
+                TBL = TBL.Replace("[SALDOC]", "");
+                _logger.LogInformation("Creando PDF");
+                string PlanCompleto = encabezado + TblCompleta + TBL + Footer;
+                MemoryStream memoryStream = new MemoryStream();
+
+
+                PdfWriter pdfWriter = new PdfWriter(memoryStream);
+                PdfDocument pdf = new PdfDocument(pdfWriter);
+
+                iText.Kernel.Geom.Rectangle Pagina = new iText.Kernel.Geom.Rectangle(700, 792);
+
+                iText.Layout.Document document = new iText.Layout.Document(pdf, new PageSize(Pagina));
+
+                document.SetMargins(2, 2, 2, 2);
+                pdf = document.GetPdfDocument();
+
+                HtmlConverter.ConvertToPdf(PlanCompleto, pdf, new ConverterProperties());
+                document.Close();
+                pdf.Close();
+                pdfWriter.Close();
+
+                _logger.LogInformation("Convirtiendo Base64");
+                byte[] bytes = memoryStream.ToArray();
+                string base64String = Convert.ToBase64String(bytes);
+                planPagos.PlanPagos = base64String;
+
+                //if (Convert.ToBoolean(System.Configuration.ConfigurationManager.AppSettings.Get("GuardarPlanPagos")))
+                if(_guardarPlanPagos)
+                {
+                    _logger.LogInformation("Plan de pagos");
+                    _logger.LogInformation(base64String);
+                }
+
+                _logger.LogInformation("Ejecución exitosa");
+
+                return await _generalResponseFn.Response(Constantes.STATUS_OK, "00", planPagos.PlanPagos);
+
+            }
+
+            catch (Exception ex)
+            {
+                planPagos.Respuesta = 1;
+                planPagos.Error = await _cardsRepository.GetMsjError(14);
+                _logger.LogInformation("Error en publicPlanPagosResult ConsultaPlanPagos");
+                _logger.LogInformation(ex.Message);
+
+                string mensajeError = "Error en publicPlanPagosResult ConsultaPlanPagos";
+                return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, planPagos.Respuesta,
+                        planPagos.Error.ToString(), mensajeError);
+
+            }
+
+        }
+
+        public async Task<ExtrafinancingPaymentResponse> consultaCore(PaymentPlanRequest paymentPlanRequest)
+        {
+            _logger.LogInformation("Consultando core tarjetas");
+
+            var getBaseRequest = await _cardsRepository.GetBaseInfo(paymentPlanRequest.equivalente.ToString());
+
+            if (getBaseRequest == null)
+            {
+                _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetPaymentPlanAsync), "Error al obtener información, respuesta null");
+                return new ExtrafinancingPaymentResponse();
+            }
+
+            var extrafinancingPaymentPlanRequest = new ExtrafinancingPaymentPlanRequest
+            {
+                card = new Card
+                {
+                    bin = getBaseRequest.Bin,
+                    lastFourDigits = getBaseRequest.LastFourDigits,
+                },
+                client = new Client
+                {
+                    documentNumber = getBaseRequest.DocumentNumber,
+                    documentType = getBaseRequest.DocumentType,
+                    gender = getBaseRequest.Gender,
+                },
+                amount = paymentPlanRequest.monto,
+                currency = "HNL",
+                numberPayments = paymentPlanRequest.plazo
+            };
+
+            var extrafinancingPaymentPlanResponse = await _apiService.GetPaymentPlanAsync(endpoint, extrafinancingPaymentPlanRequest);
+
+            if (extrafinancingPaymentPlanResponse == null)
+            {
+                _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetPaymentPlanAsync), "Error al llamar api payment plan, respuesta null");
+                return new ExtrafinancingPaymentResponse();
+            }
+
+            return extrafinancingPaymentPlanResponse;
+        }
+    }
+}
 
 
 
@@ -144,4 +334,690 @@ ApiPaymentPlan\plantilla_microservicios_repository\ApiPaymentPlan.csproj]
 
 
 
-Ayudame a resolver estas adevertencias.. dime que archivos necesitas ver
+
+using ApiPaymentPlan.Models;
+using ApiTerms.Repository.Interface;
+using plantilla_microservicios_repository.Infrastructure.Data;
+using plantilla_microservicios_repository.Models.Validations;
+using plantilla_microservicios_repository.Service;
+using System.Data;
+using System.Runtime.CompilerServices;
+
+namespace ApiTerms.Repository
+{
+    public class CardsRepository : ICardsRepository
+    {
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<CardsRepository> _logger;
+
+        public CardsRepository(DBHelper dbHelper, ILogger<CardsRepository> logger)
+        {
+            _dbHelper = dbHelper;
+            _logger = logger;
+        }
+
+        public async Task<CardsBaseInformation> GetBaseInfo(string cardNumber)
+        {
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetBaseExtrafinancing",
+                    new Dictionary<string, object> { { "@NumeroTarjeta", cardNumber } });
+
+                while (await reader.ReadAsync())
+                {
+                    return new CardsBaseInformation
+                    {
+                        Bin = reader.GetString(0),
+                        LastFourDigits = reader.GetString(1),
+                        DocumentNumber = reader.GetString(2),
+                        DocumentType = reader.GetString(3),
+                        Gender = reader.GetString(4),
+                    };
+                }
+
+                _logger.LogInformation($"Requesting: CardsRepository.GetBaseInfo: No se encontraron resultados");
+                return new CardsBaseInformation();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> GetMsjError(int id)
+        {
+            string mensaje = string.Empty;
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetMensajeError",
+                    new Dictionary<string, object> { { "@Id", id } });
+
+                while (await reader.ReadAsync())
+                {
+                  return mensaje = reader.GetString(0);
+                }
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository.GetMsjError: {ex.Message}", ex);
+            }
+        }
+
+
+        public async Task InsConsultaDisponible(string Equivalente, string Canal, string Motivo, double? Intra, double? Extra)
+        {
+            _logger.LogInformation("Ejecutando usp_InsertaRptConsultaSaldos");
+            var parametros = new Dictionary<string, object>
+            {
+                {"@Equivalente", Equivalente },
+                {"@Canal", Canal },
+                {"@Motivo", Motivo }
+            };
+
+            if (Intra != null)
+                parametros.Add("@DisponibleIntra", "Intra");
+            if(Extra != null)
+                parametros.Add("@DisponibleExtra", "Extra");
+            try
+            {
+              int filasAfectadas = await _dbHelper.ExecuteNonQueryAsync("usp_InsertaRptConsultaSaldos", parametros);
+                _logger.LogInformation("Ejecucion exitosa");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository.InsConsultaDisponible: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> GetProduct(string equivalente)
+        {
+            string producto = string.Empty;
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ObtieneProducto",
+                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
+
+                while (await reader.ReadAsync())
+                {
+                    return producto = reader.GetString(0);
+                }
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<DiseñoPlanPagos> GetDesingPaymentPlan()
+        {
+            string mensaje = string.Empty;
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ObtieneDiseñoPP");
+
+                while (await reader.ReadAsync())
+                {
+                    return new DiseñoPlanPagos
+                    {
+                        Encabezado = reader.GetString(0),
+                        TablaAmortizacion = reader.GetString(1),
+                        Footer = reader.GetString(2),
+                    };
+                }
+                return new DiseñoPlanPagos();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository.GetDesingPaymentPlan: {ex.Message}", ex);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+using ApiPaymentPlan.Service.Interface;
+using ApiPaymentPlan.Models.AccessToken;
+
+namespace ApiPaymentPlan.Service
+{
+    public class TokenProvider : ITokenProvider
+    {
+        private readonly HttpClient _httpClient;
+        private AccessTokenResponse? _cachedToken;
+        private DateTime _expiresAt;
+        private readonly SemaphoreSlim _lock = new(1, 1);
+        private readonly ILogger<TokenProvider> _logger;
+
+
+        //Para auth
+        private readonly string endpoint;
+
+        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
+        {
+            _httpClient = httpClient;
+            endpoint = configuration["ApiSettings:EndpointAccessToken"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpointAccessToken no puede ser nulo");
+            _logger = logger;
+        }
+
+        public async Task<string> GetTokenAsync()
+        {
+            try
+            {
+
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
+                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
+                }
+
+                _cachedToken = await response.Content.ReadFromJsonAsync<AccessTokenResponse>();
+
+                return _cachedToken.accessToken;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error en llamada a {Endpoint} con {Error}.", endpoint, ex.Message.ToString());
+                throw new HttpRequestException($"Error en llamada a {endpoint}.");
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+using plantilla_microservicios_repository.DTOs.Response;
+using plantilla_microservicios_repository.Service.Interface;
+
+namespace plantilla_microservicios_repository.Utils
+{
+    public class GeneralResponseFn
+    {
+        private readonly IValidationService _validationService;
+
+        public GeneralResponseFn(IValidationService validationService)
+        {
+            _validationService = validationService;
+        }
+
+        public async Task<GeneralResponse> Response(int status, string code, object? data = null)
+        {
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = false,
+                PaymentPlan = data,
+                Messages = new List<Messages>
+                {
+                    new Messages
+                    {
+                        Code = code,
+                        Description = await _validationService.getMensajeValidacion(code)
+                    }
+                }
+            };
+        }
+
+        public GeneralResponse ResponseError(int status, string description)
+        {
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = true,
+                PaymentPlan = null,
+                Messages = new List<Messages>
+                {
+                    new Messages
+                    {
+                        Code = Constantes.CODE_SYSTEM_ERROR,
+                        Description = description
+                    }
+                }
+            };
+        }
+
+        public GeneralResponse ResponseErrorDesembolso(int status, int code, string description, string message)
+        {
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = true,
+                PaymentPlan = null,
+                Messages = new List<Messages>
+                {
+                    new Messages
+                    {
+                        Code = code.ToString(),
+                        Description = description,
+                        Message = message
+                    }
+                }
+            };
+        }
+
+        public async Task<GeneralResponse> ResponseError(int status, string codeError, string description)
+        {
+            var codigosEstandar = new HashSet<string> { "00", "99" };
+            string finalDescription;
+
+            if (codigosEstandar.Contains(codeError))
+            {
+                var error = await _validationService.getMensajeValidacion(codeError);
+                finalDescription = error.Replace("{descripcion}", description);
+            }
+
+            else
+            {
+                finalDescription = description;
+            }
+            return new GeneralResponse
+            {
+                Status = status,
+                HasError = true,
+                PaymentPlan = null,
+                Messages = new List<Messages>
+                {
+                    new Messages
+                    {
+                        Code = codeError,
+                        Description = finalDescription
+                    }
+                }
+            };
+        }
+    }
+}
+
+
+
+
+
+namespace ApiPaymentPlan.Models
+{
+    public class PlanPagosResult
+    {
+        public int Respuesta;
+        public string Error = "";
+        public string PlanPagos = "";
+    }
+}
+
+
+
+
+
+
+
+namespace ApiPaymentPlan.Service
+{
+    public class KeyProvider : IHostedService
+    {
+        private readonly HttpClient _httpClient;
+        private readonly ILogger<KeyProvider> _logger;
+        private readonly string _endointApiKey;
+        public static string Key { get; private set; } = string.Empty;
+
+        public KeyProvider(HttpClient httpClient, ILogger<KeyProvider> logger, IConfiguration configuration)
+        {
+            _httpClient = httpClient;
+            _logger = logger;
+            _endointApiKey = configuration["ApiSettings:EndpointGeKey"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpointGeKey no puede ser nulo");
+        }
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<KeyResponse>(
+                    _endointApiKey,
+                    cancellationToken);
+
+                if (response != null)
+                {
+                    Key = response.authorization;
+                    _logger.LogInformation("Key inicializada correctamente: {Key}", Key);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obteniendo la key al iniciar el servicio");
+                throw;
+            }
+
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    public class KeyResponse
+    {
+        public string authorization { get; set; } = string.Empty;
+    }
+}
+
+
+
+
+
+using plantilla_microservicios_repository.Infrastructure.Data;
+using plantilla_microservicios_repository.Models.Validations;
+using plantilla_microservicios_repository.Repository.Interface;
+
+namespace plantilla_microservicios_repository.Repository
+{
+    public class ValidationsRepositoryImp : IValidationsRepository
+    {
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<ValidationsRepositoryImp> _logger;
+
+        public ValidationsRepositoryImp(DBHelper dbHelper, ILogger<ValidationsRepositoryImp> logger)
+        {
+            _dbHelper = dbHelper;
+            _logger = logger;
+
+        }
+
+        public async Task<Parametros> GetByCode(string clave)
+        {
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
+                    new Dictionary<string, object> { { "@Clave", clave } });
+
+                while (await reader.ReadAsync())
+                {
+                    return new Parametros
+                    {
+                        clave = reader.GetString(0),
+                        valor = reader.GetString(1)
+                    };  
+                }
+                return new Parametros();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en ValidationsRepositoryImp(). Descripcion: {Message}", ex.Message);
+                throw new InvalidOperationException($"{ex.Message}");
+            }
+        }
+
+        
+    }
+}
+
+
+
+
+
+using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Data;
+
+namespace plantilla_microservicios_repository.Infrastructure.Data
+{
+    public class DBHelper
+    {
+        private readonly string _connectionString;
+        private readonly ILogger<DBHelper> _logger;
+
+        public DBHelper(IConfiguration configuration, ILogger<DBHelper> logger)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            _logger = logger;
+        }
+
+        // Ejecutar un stored procedure que devuelve un SqlDataReader
+        public async Task<SqlDataReader> ExecuteReaderAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
+        {
+            try
+            {
+                SqlConnection conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using SqlCommand cmd = new SqlCommand(storedProcedure, conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
+                }
+                return await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection);
+            }
+            catch (SqlException ex)
+            {
+                // Error técnico de SQL
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+
+        // Ejecutar un stored procedure que no devuelve datos (INSERT, UPDATE, DELETE)
+        public async Task<int> ExecuteNonQueryAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
+        {
+            try
+            {
+                _logger.LogInformation("***** ExecuteNonQueryAsync() - StoredProcedure={storedProcedure} *****", storedProcedure);
+
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new SqlCommand(storedProcedure, conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
+                }
+                _logger.LogInformation("StoredProcedure {storedProcedure} ejecutado exitosamente", storedProcedure);
+                return await cmd.ExecuteNonQueryAsync();
+            }
+            catch (SqlException ex)
+            {
+                // Error técnico de SQL
+                _logger.LogError(ex, "Error en SqlException(). Descripcion: {Message}", ex.Message);
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+        // Ejecutar un query escalar (ej. COUNT(*))
+        public async Task<int> ExecuteScalarAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
+        {
+            try
+            {
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new SqlCommand(storedProcedure, conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
+                }
+
+                var result = await cmd.ExecuteScalarAsync();
+                return Convert.ToInt32(result ?? 0);
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<object?> ExecuteScalarSqlAsync(string sql)
+        {
+            try
+            {
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new SqlCommand(sql, conn)
+                {
+                    CommandType = CommandType.Text
+                };
+
+                return await cmd.ExecuteScalarAsync();
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+    }
+}
+
+
+
+
+
+namespace plantilla_microservicios_repository.Models
+{
+    public class PaymentPlanRequest
+    {
+        public string equivalente {  get; set; } = string.Empty;
+        public string canal { get; set; } = string.Empty;
+        public double monto { get; set; }
+        public string tipo { get; set; } = string.Empty;
+        public int plazo { get; set; }  
+    }
+}
+
+
+
+
+
+using ApiPaymentPlan.Service;
+using ApiPaymentPlan.Service.Interface;
+using ApiPaymentPlan.Utils;
+using ApiTerms.Repository;
+using ApiTerms.Repository.Interface;
+using ApiTerms.Service;
+using Microsoft.Extensions.DependencyInjection;
+using plantilla_microservicios_repository.Infrastructure.Data;
+using plantilla_microservicios_repository.Repository;
+using plantilla_microservicios_repository.Repository.Interface;
+using plantilla_microservicios_repository.Service;
+using plantilla_microservicios_repository.Service.Interface;
+using plantilla_microservicios_repository.Utils;
+using Serilog;
+using System.Net.Http.Headers;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+
+//Registro api token
+var baseAddressToken = builder.Configuration["ApiSettings:EndpointGeKey"];
+
+builder.Services.AddHttpClient<ITokenProvider, TokenProvider>(client =>
+{
+    client.BaseAddress = new Uri(baseAddressToken!);
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+}).ConfigurePrimaryHttpMessageHandler(() =>
+{
+    var allowInvalidCerts = bool.Parse(builder.Configuration["ApiSettings:AllowInvalidCerts"] ?? "false");
+
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = allowInvalidCerts
+        ? (message, cert, chain, errors) => true
+        : null
+    };
+});
+
+//Registro de api periods con AuthHandler para envio de token
+var baseAddressPeriods = builder.Configuration["ApiSettings:BaseAddressDesembolso"];
+builder.Services.AddTransient<AuthHandler>();
+builder.Services.AddHttpClient<IApiService, ApiService>(client =>
+{
+    client.BaseAddress = new Uri(baseAddressPeriods!);
+    client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+}).ConfigurePrimaryHttpMessageHandler(() =>
+{
+    var allowInvalidCerts = bool.Parse(builder.Configuration["ApiSettings:AllowInvalidCerts"] ?? "false");
+    return new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = allowInvalidCerts
+        ? (message, cert, chain, errors) => true
+        : null
+    };
+}).AddHttpMessageHandler<AuthHandler>();
+
+//Caché
+builder.Services.AddMemoryCache();
+// Dependency Injection
+builder.Services.AddScoped<DBHelper>();
+builder.Services.AddScoped<IValidationsRepository, ValidationsRepositoryImp>();
+builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
+
+builder.Services.AddScoped<IPaymentPlanService, PaymentPlanService>();
+builder.Services.AddScoped<ICardsRepository, CardsRepository>();
+
+builder.Services.AddScoped<GeneralResponseFn>();
+
+
+// Configuración de Serilog
+builder.Host.UseSerilog((context, services, config) =>
+    config.ReadFrom.Configuration(context.Configuration)
+          .ReadFrom.Services(services));
+
+// Opciones del CorrelationId 
+builder.Services.Configure<CorrelationIdOptions>(
+    builder.Configuration.GetSection("CorrelationIdOptions"));
+
+
+
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCorrelationId();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
