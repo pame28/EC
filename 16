@@ -1,56 +1,72 @@
-using ApiTerms.Service.Interface;
-using ApiTerms.Models.AccessToken;
-
-namespace ApiTerms.Service
+namespace plantilla_microservicios_repository.Models
 {
-    public class TokenProvider : ITokenProvider
+    public class TermsRequest
     {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<TokenProvider> _logger;
+        public string equivalente {  get; set; } = string.Empty;
+        public string canal { get; set; } = string.Empty;
+        public double monto { get; set; }
+        public string tipo { get; set; } = string.Empty;
+        public int plazo { get; set; }  
+    }
+}
 
-        //Para auth
-        private readonly string endpoint;
 
-        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
+
+
+using plantilla_microservicios_repository.Infrastructure.Data;
+using plantilla_microservicios_repository.Models.Validations;
+using plantilla_microservicios_repository.Repository.Interface;
+
+namespace plantilla_microservicios_repository.Repository
+{
+    public class ValidationsRepositoryImp : IValidationsRepository
+    {
+        private readonly DBHelper _dbHelper;
+        public ValidationsRepositoryImp(DBHelper dbHelper)
         {
-            _httpClient = httpClient;
-            endpoint = configuration["ApiSettings:EndpointAccessToken"]
-                ?? throw new ArgumentNullException(nameof(configuration), "EndpointAccessToken no puede ser nulo");
-            _logger = logger;
+            _dbHelper = dbHelper;
         }
 
-        public async Task<string> GetTokenAsync()
+        public async Task<Parametros> GetByCode(string clave)
         {
             try
             {
-                var response = await _httpClient.GetAsync(endpoint);
+                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
+                    new Dictionary<string, object> { { "@Clave", clave } });
 
-                if (!response.IsSuccessStatusCode)
+                while (await reader.ReadAsync())
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
-                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
+                    return new Parametros
+                    {
+                        clave = reader.GetString(0),
+                        valor = reader.GetString(1)
+                    };  
                 }
-
-                var accessTokenResponse = await response.Content.ReadFromJsonAsync<Models.AccessToken.AccessTokenResponse>();
-
-                if (accessTokenResponse is null || string.IsNullOrEmpty(accessTokenResponse.accessToken))
-                {
-                    _logger.LogError("Respuesta vacía o sin accessToken al llamar a {Endpoint}", endpoint);
-                    throw new HttpRequestException($"Respuesta inválida al llamar a {endpoint}.");
-                }
-
-                return accessTokenResponse.accessToken;
-            }
-            catch (HttpRequestException)
-            {
-                throw;
+                return new Parametros();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error en llamada a {Endpoint}.", endpoint);
-                throw new HttpRequestException($"Error en llamada a {endpoint}.", ex);
+                throw new InvalidOperationException($"{ex.Message}");
             }
         }
     }
 }
+
+
+
+
+"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\ApiTerms.sln" (Rebuild destino) (1) ->
+"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj" (Rebuild dest
+ino) (2) ->
+(CoreCompile destino) ->
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\ValidationsReposit
+oryImp.cs(24,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop
+\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(7,23):
+ warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
+ the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
+servicios_repository\ApiTerms.csproj]
+  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(9,20):
+ warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
+ the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
+servicios_repository\ApiTerms.csproj]
