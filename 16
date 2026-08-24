@@ -1,147 +1,11 @@
-Ok, hagamos algo .. los que tienen demasiado warnings dame los archivos completos .. y los que sean una modificacion pequeña .. dame el numero de lina que hay que corregir y la correccion.
-
-using ApiConsultaAdelantoEfectivo.Models.AccountData.Request;
-using ApiTerms.Repository.Interface;
-using plantilla_microservicios_repository.Infrastructure.Data;
-
-namespace ApiTerms.Repository
-{
-    public class CardsRepository : ICardsRepository
-    {
-        private readonly DBHelper _dbHelper;
-        private readonly ILogger<CardsRepository> _logger;
-
-        public CardsRepository(DBHelper dbHelper, ILogger<CardsRepository> logger)
-        {
-            _dbHelper = dbHelper;
-            _logger = logger;
-        }
-
-        public async Task<CardsBaseInformation> GetBaseInfo(string cardNumber)
-        {
-            try
-            {
-                _logger.LogInformation($"Requesting: CardsRepository.GetBaseInfo: {cardNumber}");
-
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetBaseExtrafinancing",
-                    new Dictionary<string, object> { { "@NumeroTarjeta", cardNumber } });
-
-                while (await reader.ReadAsync())
-                {
-                    return new CardsBaseInformation
-                    {
-                        Bin = reader.GetString(0),
-                        LastFourDigits = reader.GetString(1),
-                        DocumentNumber = reader.GetString(2),
-                        DocumentType = reader.GetString(3),
-                        Gender = reader.GetString(4),
-                    };
-                }
-
-                return new CardsBaseInformation();
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error en CardsRepository.GetBaseInfo. Message: {ex.Message}");
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
-
-        public async Task<string> GetMsjError(int id)
-        {
-            string mensaje = string.Empty;
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetMensajeError",
-                    new Dictionary<string, object> { { "@Id", id } });
-
-                while (await reader.ReadAsync())
-                {
-                    return mensaje = reader.GetString(0);
-                }
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error en CardsRepository.GetMsjError. Message: {ex.Message}");
-
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
-
-        public async Task InsConsultaDisponible(string Equivalente, string Canal, string Motivo, double? Intra, double? Extra)
-        {
-            _logger.LogInformation("Ejecutando usp_InsertaRptConsultaSaldos");
-            var parametros = new Dictionary<string, object>
-            {
-                {"@Equivalente", Equivalente },
-                {"@Canal", Canal },
-                {"@Motivo", Motivo }
-            };
-
-            if (Intra != null)
-                parametros.Add("@DisponibleIntra", "Intra");
-            if (Extra != null)
-                parametros.Add("@DisponibleExtra", "Extra");
-            try
-            {
-                int filasAfectadas = await _dbHelper.ExecuteNonQueryAsync("usp_InsertaRptConsultaSaldos", parametros);
-                _logger.LogInformation("Ejecucion exitosa");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error en CardsRepository.InsConsultaDisponible. Message: {ex.Message}");
-
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
-
-        public async Task<int> ValidaTarjetaTitular(string equivalente)
-        {
-            try
-            {
-                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ValidaTitular",
-                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
-
-                while (await reader.ReadAsync())
-                {
-                    return reader.GetInt32(0);
-                }
-
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error en CardsRepository.ValidaTarjetaTitular. Message: {ex.Message}");
-
-                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
-            }
-        }
-    }
-}
-
-
-
-
-
-
-
-
 using ApiConsultaAdelantoEfectivo.Models;
 using ApiConsultaAdelantoEfectivo.Models.AccountData.Request;
 using ApiTerms.Repository.Interface;
-using ApiTerms.Service;
 using ApiTerms.Service.Interface;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Services;
 using plantilla_microservicios_repository.DTOs.Response;
 using plantilla_microservicios_repository.Models;
 using plantilla_microservicios_repository.Service.Interface;
 using plantilla_microservicios_repository.Utils;
-using Serilog;
-using System.Data;
 using System.Text.RegularExpressions;
 
 namespace plantilla_microservicios_repository.Service
@@ -154,86 +18,85 @@ namespace plantilla_microservicios_repository.Service
         private readonly ILogger<ConsultaAdelantoService> _logger;
         private readonly string endpoint;
 
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         public ConsultaAdelantoService(GeneralResponseFn generalResponseFn, IApiConsultaAdelanto apiService, ICardsRepository cardsRepository, ILogger<ConsultaAdelantoService> logger, IConfiguration configuration)
         {
             _generalResponseFn = generalResponseFn;
-            _apiService = apiService;   
+            _apiService = apiService;
             _cardsRepository = cardsRepository;
             endpoint = configuration["ApiSettings:EndpointStatements"]
                 ?? throw new ArgumentNullException(nameof(configuration), "EndpointStatements no puede ser nulo");
             _logger = logger;
         }
-        public async Task<GeneralResponse> GetTermsAsync(ConsultaAdelantoEfectivoRequest consultaAdelantoEfectivoRequest)
-        {
-            DataTable dtResult = new DataTable();
 
+        // Se suprime S6664 (límite de llamadas Information por bloque) de forma intencional:
+        // el flujo de validación necesita registrar cada paso para trazabilidad/auditoría.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S6664:Limit logger calls",
+            Justification = "Trazabilidad de auditoría requerida por el negocio en cada paso de validación.")]
+        public async Task<GeneralResponse> GetTermsAsync(ConsultaAdelantoEfectivoRequest termsRequest)
+        {
             ConsultaAdelantoEfectivoResult consultaAdelanto = new ConsultaAdelantoEfectivoResult();
 
             try
             {
                 _logger.LogInformation("SOLICITUD RECIBIDA *******ConsultaAdelantoEfectivo*******");
-                _logger.LogInformation("EQUIVALENTE =>" + consultaAdelantoEfectivoRequest.equivalente + " | CANAL =>" + consultaAdelantoEfectivoRequest.canal);
-
+                _logger.LogInformation("Equivalente: {Equivalente} | Canal: {Canal}", termsRequest.equivalente, termsRequest.canal);
 
                 //Valida que el equivalente de la TC sea numerico, no este nulo y contenga todos los caracteres
                 _logger.LogInformation("Validacion del numero equivalente");
-                if (string.IsNullOrEmpty(consultaAdelantoEfectivoRequest.equivalente) | string.IsNullOrWhiteSpace(consultaAdelantoEfectivoRequest.equivalente))
+                if (string.IsNullOrEmpty(termsRequest.equivalente) || string.IsNullOrWhiteSpace(termsRequest.equivalente))
                 {
                     consultaAdelanto.Respuesta = 1;
                     consultaAdelanto.Error = await _cardsRepository.GetMsjError(11);
-                    string mensaje = "El equivalente no debe venir vacio -> EQUIVALENTE: " + consultaAdelantoEfectivoRequest.equivalente;
-                    _logger.LogInformation(mensaje);
+                    _logger.LogInformation("El equivalente no debe venir vacio -> Equivalente: {Equivalente}", termsRequest.equivalente);
 
+                    string mensaje = "El equivalente no debe venir vacio";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-                    //return consultaAdelanto;
                 }
-                if (!Regex.IsMatch(consultaAdelantoEfectivoRequest.equivalente, @"^[0-9]+$") | consultaAdelantoEfectivoRequest.equivalente.Length < 16)
+
+                if (!Regex.IsMatch(termsRequest.equivalente, @"^[0-9]+$", RegexOptions.None, RegexTimeout)
+                    || termsRequest.equivalente.Length < 16)
                 {
-                    await _cardsRepository.InsConsultaDisponible(consultaAdelantoEfectivoRequest.equivalente, consultaAdelantoEfectivoRequest.canal,
+                    await _cardsRepository.InsConsultaDisponible(termsRequest.equivalente, termsRequest.canal,
                          "El número equivalente de la tarjeta no contiene el formato correcto", null, null);
                     consultaAdelanto.Respuesta = 1;
                     consultaAdelanto.Error = await _cardsRepository.GetMsjError(14);
-                    string mensaje = "El número equivalente de la tarjeta no contiene el formato correcto -> EQUIVALENTE: " + consultaAdelantoEfectivoRequest.equivalente;
-                    _logger.LogInformation(mensaje);
+                    _logger.LogInformation("El número equivalente de la tarjeta no contiene el formato correcto -> Equivalente: {Equivalente}", termsRequest.equivalente);
 
+                    string mensaje = "El número equivalente de la tarjeta no contiene el formato correcto";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-
-                    //return consultaAdelanto;
                 }
 
                 _logger.LogInformation("Validando Canal");
-                if (string.IsNullOrEmpty(consultaAdelantoEfectivoRequest.canal))
+                if (string.IsNullOrEmpty(termsRequest.canal))
                 {
                     consultaAdelanto.Respuesta = 1;
                     consultaAdelanto.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation("{Error} -> Canal: {Canal}", consultaAdelanto.Error, termsRequest.canal);
 
-                    _logger.LogInformation(consultaAdelanto.Error + " CANAL =>" + consultaAdelantoEfectivoRequest.canal);
                     string mensaje = "Canal no puede venir vacio";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-
-                    //return consultaAdelanto;
                 }
 
                 #region Valida que la TC sea titular
                 _logger.LogInformation("Validando que la TC sea titular");
 
-                int existeTarjeta = await _cardsRepository.ValidaTarjetaTitular(consultaAdelantoEfectivoRequest.equivalente);
+                int existeTarjeta = await _cardsRepository.ValidaTarjetaTitular(termsRequest.equivalente);
                 if (existeTarjeta == 0)
                 {
                     consultaAdelanto.Respuesta = 1;
                     consultaAdelanto.Error = await _cardsRepository.GetMsjError(12);
-                    string mensaje = "La TC consultada no es titular EQUIVALENTE =>" + consultaAdelantoEfectivoRequest.equivalente;
-                    _logger.LogInformation(mensaje);
-                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
+                    _logger.LogInformation("La TC consultada no es titular -> Equivalente: {Equivalente}", termsRequest.equivalente);
 
-                    //return consultaAdelanto;
+                    string mensaje = "La TC consultada no es titular";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_OK, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
                 }
                 #endregion
 
-                #region Consulta a core 
+                #region Consulta a core
                 _logger.LogInformation("Consultando core bancario");
-                var getBaseRequest = await _cardsRepository.GetBaseInfo(consultaAdelantoEfectivoRequest.equivalente.ToString());
+                var getBaseRequest = await _cardsRepository.GetBaseInfo(termsRequest.equivalente.ToString());
 
                 if (getBaseRequest == null)
                 {
@@ -241,7 +104,7 @@ namespace plantilla_microservicios_repository.Service
                     return await _generalResponseFn.ResponseError(
                             Constantes.STATUS_NOT_FOUND,
                             Constantes.CODE_SYSTEM_ERROR,
-                            $"Error al obtener información base: respuesta null - no se encontró registro para equivalente: {consultaAdelantoEfectivoRequest.equivalente.ToString()}");
+                            $"Error al obtener información base: respuesta null - no se encontró registro para equivalente: {termsRequest.equivalente}");
                 }
 
                 var accountDataRequest = new AccountDataRequest
@@ -261,10 +124,12 @@ namespace plantilla_microservicios_repository.Service
 
                 var consultaApiResponse = await _apiService.GetConsultaAdelanto(endpoint, accountDataRequest);
 
-                if (consultaApiResponse == null) {
+                if (consultaApiResponse == null)
+                {
                     consultaAdelanto.Respuesta = 1;
                     consultaAdelanto.Error = await _cardsRepository.GetMsjError(14);
-                    _logger.LogInformation("Error en public ConsultaAdelantoEfectivoResult ConsultaAdelantoEfectivo");
+                    _logger.LogError("Respuesta obtenida de endpoint {Endpoint} fue nula", endpoint);
+
                     string mensaje = $"Respuesta obtenida de endpoint {endpoint} ha sido nulll";
                     return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_ERROR, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
                 }
@@ -278,496 +143,17 @@ namespace plantilla_microservicios_repository.Service
                    Constantes.STATUS_OK,
                    "00",
                    consultaApiResponse.DisponibleAdelanto);
-    
                 #endregion
             }
             catch (Exception ex)
             {
                 consultaAdelanto.Respuesta = 1;
                 consultaAdelanto.Error = await _cardsRepository.GetMsjError(14);
-                _logger.LogInformation("Error en public ConsultaAdelantoEfectivoResult ConsultaAdelantoEfectivo");
-                _logger.LogInformation(ex.Message);
+                _logger.LogError(ex, "Error en GetTermsAsync ConsultaAdelantoEfectivo");
+
                 string mensaje = ex.Message;
                 return _generalResponseFn.ResponseErrorDesembolso(Constantes.STATUS_ERROR, consultaAdelanto.Respuesta, consultaAdelanto.Error, mensaje);
-
-            }
-
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-using ApiConsultaAdelantoEfectivo.Service;
-using ApiTerms.Models.AccessToken;
-using ApiTerms.Service.Interface;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-
-namespace ApiTerms.Service
-{
-    public class TokenProvider : ITokenProvider
-    {
-        private readonly HttpClient _httpClient;
-        private Models.AccessToken.AccessTokenResponse? _cachedToken;
-        private readonly SemaphoreSlim _lock = new(1, 1);
-        private readonly ILogger<TokenProvider> _logger;
-
-
-        //Para auth
-        private readonly string endpoint;
-
-        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
-        {
-            _httpClient = httpClient;
-            endpoint = configuration["ApiSettings:EndpointAccessToken"]
-                                ?? throw new ArgumentNullException(nameof(configuration), "Endpoint no puede ser nulo"); 
-            _logger = logger;
-        }
-
-        public async Task<string> GetTokenAsync()
-        {
-            try
-            {
-
-                var response = await _httpClient.GetAsync(endpoint);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
-                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
-                }
-
-                _cachedToken = await response.Content.ReadFromJsonAsync<Models.AccessToken.AccessTokenResponse>();
-
-                return _cachedToken.accessToken;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Error en llamada a {Endpoint} con {Error}.", endpoint, ex.Message.ToString());
-                throw new HttpRequestException($"Error en llamada a {endpoint}.");
             }
         }
     }
 }
-
-
-
-
-
-using Microsoft.AspNetCore.Http;
-using System.Net;
-
-namespace ApiConsultaAdelantoEfectivo.Service
-{
-    public class KeyProvider : IHostedService
-    {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<KeyProvider> _logger;
-        private readonly string _endointApiKey;
-        public static string Key { get; private set; } = string.Empty;
-
-        public KeyProvider(HttpClient httpClient, ILogger<KeyProvider> logger, IConfiguration configuration)
-        {
-            _httpClient = httpClient;
-            _logger = logger;
-            _endointApiKey = configuration["ApiSettings:EndpointGeKey"]
-                                ?? throw new ArgumentNullException(nameof(configuration), "EndpointGeKey no puede ser nulo");
-
-        }
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<KeyResponse>(
-                    _endointApiKey,
-                    cancellationToken);
-
-                if (response != null)
-                {
-                    Key = response.authorization;
-                    _logger.LogInformation("Key inicializada correctamente: {Key}", Key);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error obteniendo la key al iniciar el servicio");
-                throw;
-            }
-
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    public class KeyResponse
-    {
-        public string authorization { get; set; } = string.Empty;
-    }
-}
-
-
-
-
-
-
-
-
-using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using System.Data;
-
-namespace plantilla_microservicios_repository.Infrastructure.Data
-{
-    public class DBHelper
-    {
-        private readonly string _connectionString;
-        private readonly ILogger<DBHelper> _logger;
-
-        public DBHelper(IConfiguration configuration, ILogger<DBHelper> logger)
-        {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
-            _logger = logger;
-        }
-
-        // Ejecutar un stored procedure que devuelve un SqlDataReader
-        public async Task<SqlDataReader> ExecuteReaderAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
-        {
-            try
-            {
-                SqlConnection conn = new SqlConnection(_connectionString);
-                await conn.OpenAsync();
-
-                await using SqlCommand cmd = new SqlCommand(storedProcedure, conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                };
-
-                if (parameters != null)
-                {
-                    foreach (var param in parameters)
-                    {
-                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-                    }
-                }
-                return await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection);
-            }
-            catch (SqlException ex)
-            {
-                // Error técnico de SQL
-                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
-            }            
-        }
-
-
-        // Ejecutar un stored procedure que no devuelve datos (INSERT, UPDATE, DELETE)
-        public async Task<int> ExecuteNonQueryAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
-        {
-            try
-            {
-                _logger.LogInformation("***** ExecuteNonQueryAsync() - StoredProcedure={storedProcedure} *****", storedProcedure);
-
-                await using var conn = new SqlConnection(_connectionString);
-                await conn.OpenAsync();
-
-                await using var cmd = new SqlCommand(storedProcedure, conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                };
-
-                if (parameters != null)
-                {
-                    foreach (var param in parameters)
-                    {
-                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-                    }
-                }
-                _logger.LogInformation("StoredProcedure {storedProcedure} ejecutado exitosamente", storedProcedure);
-                return await cmd.ExecuteNonQueryAsync();
-            }
-            catch (SqlException ex)
-            {
-                // Error técnico de SQL
-                _logger.LogError(ex, "Error en SqlException(). Descripcion: {Message}", ex.Message);
-                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
-            }
-        }
-
-        // Ejecutar un query escalar (ej. COUNT(*))
-        public async Task<int> ExecuteScalarAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
-        {
-            try
-            {
-                await using var conn = new SqlConnection(_connectionString);
-                await conn.OpenAsync();
-
-                await using var cmd = new SqlCommand(storedProcedure, conn)
-                {
-                    CommandType = CommandType.StoredProcedure
-                };
-
-                if (parameters != null)
-                {
-                    foreach (var param in parameters)
-                    {
-                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-                    }
-                }
-
-                var result = await cmd.ExecuteScalarAsync();
-                return Convert.ToInt32(result ?? 0);
-            }
-            catch (SqlException ex)
-            {
-                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
-            }
-        }
-
-        public async Task<object?> ExecuteScalarSqlAsync(string sql)
-        {
-            try
-            {
-                await using var conn = new SqlConnection(_connectionString);
-                await conn.OpenAsync();
-
-                await using var cmd = new SqlCommand(sql, conn)
-                {
-                    CommandType = CommandType.Text
-                };
-
-                return await cmd.ExecuteScalarAsync();
-            }
-            catch (SqlException ex)
-            {
-                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
-            }
-        }
-
-    }
-}
-
-
-
-
-
-
-using ApiConsultaAdelantoEfectivo.Models.AccountData.Request;
-using ApiConsultaAdelantoEfectivo.Models.AccountData.Response;
-using ApiTerms.Service.Interface;
-using Microsoft.AspNetCore.Diagnostics;
-using plantilla_microservicios_repository.DTOs.Response;
-using System.Text;
-using System.Text.Json;
-
-namespace ApiTerms.Service
-{
-    public class ApiConsultaAdelanto : IApiConsultaAdelanto
-    {
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<ApiConsultaAdelanto> _logger;
-
-
-        public ApiConsultaAdelanto(HttpClient httpClient, ILogger<ApiConsultaAdelanto> logger)
-        {
-            _httpClient = httpClient;
-            _logger = logger;
-        }
-
-        public async Task<GeneralResponse?> GetConsultaAdelanto(string endpoint, AccountDataRequest data)
-        {
-            try
-            {
-
-                var json = JsonSerializer.Serialize(data);
-                _logger.LogInformation("Body enviado: {Json}", json);
-
-
-                _logger.LogInformation("***** Petición recibida {Method} *****", nameof(GetConsultaAdelanto));
-                var response = await _httpClient.PostAsJsonAsync(endpoint, data);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadFromJsonAsync<AccountDataErrorResponse>();
-                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode.ToString(), errorContent);
-
-                    return new GeneralResponse
-                    {
-                        Status = 200, //errorContent.status,
-                        HasError = true,
-                        DisponibleAdelanto = 0,
-                        Messages = errorContent?.errors?.Select(e => new Messages
-                        {
-                            Code = e.field,
-                            Description = e.message
-                        }).ToList() ?? new List<Messages>()
-
-                    };
-                   
-                } 
-
-                var accountDataSuccessResponse = await response.Content.ReadFromJsonAsync<AccountDataSuccessResponse>();
-
-                _logger.LogInformation("***** Llamado completado {GetPeriodsAsync} *****", JsonSerializer.Serialize(response));
-
-                if (accountDataSuccessResponse != null)
-                {
-                    return new GeneralResponse
-                    {
-                        Status = 200,
-                        HasError = false,
-                        DisponibleAdelanto = accountDataSuccessResponse.availables.availableAdvanceCredit,
-                        Messages = new List<Messages>
-                        {
-
-                        }
-
-                    };
-                }
-
-                return new GeneralResponse
-                {
-                    Status = 200, //errorContent.status,
-                    HasError = true,
-                    DisponibleAdelanto = 0,
-                    Messages = new List<Messages>
-                    {
-
-                    }
-
-                };
-
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error en {Method}. Message: {Message}", nameof(GetConsultaAdelanto), ex.Message);
-                return default;
-            }
-        }
-    }
-}
-
-
-
-
-
-using ApiConsultaAdelantoEfectivo.Service;
-using ApiConsultaAdelantoEfectivo.Utils;
-using ApiTerms.Repository;
-using ApiTerms.Repository.Interface;
-using ApiTerms.Service;
-using ApiTerms.Service.Interface;
-using Microsoft.Extensions.DependencyInjection;
-using plantilla_microservicios_repository.Infrastructure.Data;
-using plantilla_microservicios_repository.Repository;
-using plantilla_microservicios_repository.Repository.Interface;
-using plantilla_microservicios_repository.Service;
-using plantilla_microservicios_repository.Service.Interface;
-using plantilla_microservicios_repository.Utils;
-using Serilog;
-using System.Net.Http.Headers;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
-//Registro api token
-var baseAddressToken = builder.Configuration["ApiSettings:EndpointGeKey"];
-
-builder.Services.AddHttpClient<ITokenProvider, TokenProvider>(client =>
-{
-    client.BaseAddress = new Uri(baseAddressToken!);
-    client.DefaultRequestHeaders.Accept.Add(
-        new MediaTypeWithQualityHeaderValue("application/json"));
-}).ConfigurePrimaryHttpMessageHandler(() =>
-{
-    var allowInvalidCerts = bool.Parse(builder.Configuration["ApiSettings:AllowInvalidCerts"] ?? "false");
-
-
-    return new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = allowInvalidCerts
-        ? (message, cert, chain, errors) => true
-        : null
-    };
-});
-
-//Registro de api periods con AuthHandler para envio de token
-var baseAddressDesembolso = builder.Configuration["ApiSettings:BaseAddressDesembolso"];
-builder.Services.AddTransient<AuthHandler>();
-builder.Services.AddHttpClient<IApiConsultaAdelanto, ApiConsultaAdelanto>(client =>
-{
-    client.BaseAddress = new Uri(baseAddressDesembolso!);
-    client.DefaultRequestHeaders.Accept.Add(
-        new MediaTypeWithQualityHeaderValue("application/json"));
-}).ConfigurePrimaryHttpMessageHandler(() =>
-{
-    var allowInvalidCerts = bool.Parse(builder.Configuration["ApiSettings:AllowInvalidCerts"] ?? "false");
-
-    return new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = allowInvalidCerts
-        ? (message, cert, chain, errors) => true
-        : null
-    };
-}).AddHttpMessageHandler<AuthHandler>();
-
-
-//Caché
-builder.Services.AddMemoryCache();
-
-// Dependency Injection
-builder.Services.AddScoped<DBHelper>();
-builder.Services.AddScoped<IValidationsRepository, ValidationsRepositoryImp>();
-builder.Services.AddScoped<IValidationService, ValidationServiceImp>();
-
-builder.Services.AddScoped<ITermsService, ConsultaAdelantoService>();
-builder.Services.AddScoped<ICardsRepository, CardsRepository>();
-
-builder.Services.AddScoped<GeneralResponseFn>();
-
-
-// Configuración de Serilog
-builder.Host.UseSerilog((context, services, config) =>
-    config.ReadFrom.Configuration(context.Configuration)
-          .ReadFrom.Services(services));
-
-// Opciones del CorrelationId 
-builder.Services.Configure<CorrelationIdOptions>(
-    builder.Configuration.GetSection("CorrelationIdOptions"));
-
-
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseCorrelationId();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
-
-
-
-
