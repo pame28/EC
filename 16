@@ -1,41 +1,128 @@
-using plantilla_microservicios_repository.Infrastructure.Data;
-using plantilla_microservicios_repository.Models.Validations;
-using plantilla_microservicios_repository.Repository.Interface;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
-namespace plantilla_microservicios_repository.Repository
+namespace plantilla_microservicios_repository.Infrastructure.Data
 {
-    public class ValidationsRepositoryImp : IValidationsRepository
+    public class DBHelper
     {
-        private readonly DBHelper _dbHelper;
-        private readonly ILogger<ValidationsRepositoryImp> _logger;
+        private readonly string _connectionString;
+        private readonly ILogger<DBHelper> _logger;
 
-        public ValidationsRepositoryImp(DBHelper dbHelper, ILogger<ValidationsRepositoryImp> logger)
+        public DBHelper(IConfiguration configuration, ILogger<DBHelper> logger)
         {
-            _dbHelper = dbHelper;
+            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
             _logger = logger;
         }
 
-        public async Task<Parametros> GetByCode(string clave)
+        // Ejecutar un stored procedure que devuelve un SqlDataReader
+        public async Task<SqlDataReader> ExecuteReaderAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
         {
             try
             {
-                using var reader = await _dbHelper.ExecuteReaderAsync("getParametroByClave",
-                    new Dictionary<string, object> { { "@Clave", clave } });
+                SqlConnection conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
 
-                if (await reader.ReadAsync())
+                await using SqlCommand cmd = new SqlCommand(storedProcedure, conn)
                 {
-                    return new Parametros
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
                     {
-                        clave = reader.GetString(0),
-                        valor = reader.GetString(1)
-                    };
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
                 }
-                return new Parametros();
+                return await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
-                _logger.LogError(ex, "Error en ValidationsRepositoryImp(). Descripcion: {Message}", ex.Message);
-                throw new InvalidOperationException($"{ex.Message}");
+                // Error técnico de SQL
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+        // Ejecutar un stored procedure que no devuelve datos (INSERT, UPDATE, DELETE)
+        public async Task<int> ExecuteNonQueryAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
+        {
+            try
+            {
+                _logger.LogInformation("***** ExecuteNonQueryAsync() - StoredProcedure={StoredProcedure} *****", storedProcedure);
+
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new SqlCommand(storedProcedure, conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
+                }
+                _logger.LogInformation("StoredProcedure {StoredProcedure} ejecutado exitosamente", storedProcedure);
+                return await cmd.ExecuteNonQueryAsync();
+            }
+            catch (SqlException ex)
+            {
+                // Error técnico de SQL
+                _logger.LogError(ex, "Error en SqlException(). Descripcion: {Message}", ex.Message);
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+        // Ejecutar un query escalar (ej. COUNT(*))
+        public async Task<int> ExecuteScalarAsync(string storedProcedure, Dictionary<string, object>? parameters = null)
+        {
+            try
+            {
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new SqlCommand(storedProcedure, conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                if (parameters != null)
+                {
+                    foreach (var param in parameters)
+                    {
+                        cmd.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
+                    }
+                }
+
+                var result = await cmd.ExecuteScalarAsync();
+                return Convert.ToInt32(result ?? 0);
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<object?> ExecuteScalarSqlAsync(string sql)
+        {
+            try
+            {
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+
+                await using var cmd = new SqlCommand(sql, conn)
+                {
+                    CommandType = CommandType.Text
+                };
+
+                return await cmd.ExecuteScalarAsync();
+            }
+            catch (SqlException ex)
+            {
+                throw new InvalidOperationException($"Error en DBHelper: {ex.Message}", ex);
             }
         }
     }
