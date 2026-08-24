@@ -1,100 +1,47 @@
-using plantilla_microservicios_repository.DTOs.Response;
-using plantilla_microservicios_repository.Service.Interface;
-
-namespace plantilla_microservicios_repository.Utils
+namespace ApiPaymentPlan.Service
 {
-    public class GeneralResponseFn
+    public class KeyProvider : IHostedService
     {
-        private readonly IValidationService _validationService;
+        private readonly HttpClient _httpClient;
+        private readonly ILogger<KeyProvider> _logger;
+        private readonly string _endointApiKey;
+        public static string Key { get; private set; } = string.Empty;
 
-        public GeneralResponseFn(IValidationService validationService)
+        public KeyProvider(HttpClient httpClient, ILogger<KeyProvider> logger, IConfiguration configuration)
         {
-            _validationService = validationService;
+            _httpClient = httpClient;
+            _logger = logger;
+            _endointApiKey = configuration["ApiSettings:EndpointGeKey"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpointGeKey no puede ser nulo");
         }
 
-        public async Task<GeneralResponse> Response(int status, string code, object? data = null)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            return new GeneralResponse
+            try
             {
-                Status = status,
-                HasError = false,
-                PaymentPlan = data,
-                Messages = new List<Messages>
+                var response = await _httpClient.GetFromJsonAsync<KeyResponse>(
+                    _endointApiKey,
+                    cancellationToken);
+
+                if (response != null)
                 {
-                    new Messages
-                    {
-                        Code = code,
-                        Description = await _validationService.getMensajeValidacion(code)
-                    }
+                    Key = response.authorization;
+                    _logger.LogInformation("Key inicializada correctamente");
                 }
-            };
-        }
-
-        public GeneralResponse ResponseError(int status, string description)
-        {
-            return new GeneralResponse
-            {
-                Status = status,
-                HasError = true,
-                PaymentPlan = null,
-                Messages = new List<Messages>
-                {
-                    new Messages
-                    {
-                        Code = Constantes.CODE_SYSTEM_ERROR,
-                        Description = description
-                    }
-                }
-            };
-        }
-
-        public async Task<GeneralResponse> ResponseError(int status, string codeError, string description)
-        {
-            var codigosEstandar = new HashSet<string> { "00", "99" };
-            string finalDescription;
-
-            if (codigosEstandar.Contains(codeError))
-            {
-                var error = await _validationService.getMensajeValidacion(codeError);
-                finalDescription = error.Replace("{descripcion}", description);
             }
-            else
+            catch (Exception ex)
             {
-                finalDescription = description;
+                // Se envuelve con contexto en vez de solo loguear y relanzar la misma excepción,
+                // evitando log duplicado en niveles superiores.
+                throw new InvalidOperationException("Error obteniendo la key al iniciar el servicio", ex);
             }
-            return new GeneralResponse
-            {
-                Status = status,
-                HasError = true,
-                PaymentPlan = null,
-                Messages = new List<Messages>
-                {
-                    new Messages
-                    {
-                        Code = codeError,
-                        Description = finalDescription
-                    }
-                }
-            };
         }
 
-        public GeneralResponse ResponseErrorDesembolso(int status, int code, string description, string message)
-        {
-            return new GeneralResponse
-            {
-                Status = status,
-                HasError = true,
-                PaymentPlan = null,
-                Messages = new List<Messages>
-                {
-                    new Messages
-                    {
-                        Code = code.ToString(),
-                        Description = description,
-                        Message = message
-                    }
-                }
-            };
-        }
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    public class KeyResponse
+    {
+        public string authorization { get; set; } = string.Empty;
     }
 }
