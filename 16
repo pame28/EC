@@ -1,141 +1,420 @@
-"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\ApiTerms.sln" (Rebuild destino) (1) ->
-"C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj" (Rebuild dest
-ino) (2) ->
-(CoreCompile destino) ->
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(43,2
-4): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiT
-erms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(11,2
-6): warning CS0169: El campo 'TokenProvider._expiresAt' nunca se usa [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTer
-ms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
-(5,20): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
-(8,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
-(6,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
-(10,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop
-\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
-(9,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\ConsultaCuotaResult.cs
-(7,23): warning S1104: Make this field 'private' and encapsulate it in a 'public' property. [C:\Users\80730.HN\Desktop\
-Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(149,1
-86): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
-servicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(226,1
-82): warning S125: Remove this commented out code. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
-servicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(11,9
-): warning S1144: Remove the unused private field '_expiresAt'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\pl
-antilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(12,9
-): warning S1144: Remove the unused private field '_lock'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantil
-la_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(10,5
-7): warning S1450: Remove the field '_cachedToken' and declare it as a local variable in the relevant methods. [C:\User
-s\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\KeyProvider.cs(31,30)
-: warning S2139: Either log this exception and handle it, or rethrow it with some contextual information. [C:\Users\807
-30.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(44,17): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\D
-esktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TokenProvider.cs(47,1
-7): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\Deskto
-p\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(60,28): warning S1854: Remove this useless assignment to local variable 'mensaje'. [C:\Users\80730.HN\Desktop\Sonar\De
-sembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\ValidationsReposit
-oryImp.cs(24,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop
-\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(60,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\Sonar\De
-sembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Infrastructure\Data\DBHelper.
-cs(53,40): warning S6678: Use PascalCase for named placeholders. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\p
-lantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Infrastructure\Data\DBHelper.
-cs(70,40): warning S6678: Use PascalCase for named placeholders. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\p
-lantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(104,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\Sonar\D
-esembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(29,21): warning S1751: Refactor the containing loop to do more than one iteration. [C:\Users\80730.HN\Desktop\Sonar\De
-sembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(22,40): warning S2629: Don't use string interpolation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\D
-esembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(44,34): warning S2629: Don't use string interpolation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\D
-esembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(7,23):
- warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
- the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
-servicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Models\TermsRequest.cs(9,20):
- warning S6964: Value type property used as input in a controller action should be nullable, required or annotated with
- the JsonRequiredAttribute to avoid under-posting. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_micro
-servicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(223,1
-7): warning S6667: Logging in a catch clause should pass the caught exception as a parameter. [C:\Users\80730.HN\Deskto
-p\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Repository\CardsRepository.cs
-(86,21): warning S1481: Remove the unused local variable 'filasAfectadas'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-
-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Program.cs(104,1): warning S6
-966: Await RunAsync instead. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\A
-piTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(74,22
-): warning S6444: Pass a timeout to limit the execution time. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plan
-tilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(46,17
-): warning S6664: Reduce the number of Information logging calls within this code block from 9 to the 2 allowed. [C:\Us
-ers\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(47,40
-): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
-lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(57,44
-): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
-lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(68,44
-): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
-lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(80,44
-): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
-lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(92,44
-): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desembo
-lso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(104,4
-4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
-olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(116,4
-4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
-olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(128,4
-4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
-olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(145,4
-4): warning S2629: Don't use string concatenation in logging message templates. [C:\Users\80730.HN\Desktop\Sonar\Desemb
-olso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(64,68
-): warning S2178: Correct this '|' to '||' and extract the right operand to a variable if it should always be evaluated
-. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(74,75
-): warning S2178: Correct this '|' to '||' and extract the right operand to a variable if it should always be evaluated
-. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\ApiTerms.csproj]
-  C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\plantilla_microservicios_repository\Service\TermsService.cs(48,27
-): warning S1481: Remove the unused local variable 'dtResult'. [C:\Users\80730.HN\Desktop\Sonar\Desembolso-ApiTerms\pla
-ntilla_microservicios_repository\ApiTerms.csproj]
+using ApiTerms.Models;
+using ApiTerms.Models.Extrafinancing;
+using ApiTerms.Repository.Interface;
+using ApiTerms.Service;
+using ApiTerms.Service.Interface;
+using Azure;
+using Microsoft.Data.SqlClient;
+using plantilla_microservicios_repository.DTOs.Response;
+using plantilla_microservicios_repository.Models;
+using plantilla_microservicios_repository.Models.Extrafinancing;
+using plantilla_microservicios_repository.Repository.Interface;
+using plantilla_microservicios_repository.Service.Interface;
+using plantilla_microservicios_repository.Utils;
+using Serilog;
+using System.Data;
+using System.Security.Cryptography.Xml;
+using System.Text.RegularExpressions;
+
+namespace plantilla_microservicios_repository.Service
+{
+    public class TermsService : ITermsService
+    {
+        private readonly GeneralResponseFn _generalResponseFn;
+        private readonly IApiTerms _apiService;
+        private readonly ICardsRepository _cardsRepository;
+        private readonly ILogger<TermsService> _logger;
+        private readonly string endpoint;
 
 
-Ahora ayudame a corregir estas, dime que archivos necesitas
+        public TermsService(GeneralResponseFn generalResponseFn, IApiTerms apiService, ICardsRepository cardsRepository, ILogger<TermsService> logger, IConfiguration configuration)
+        {
+            _generalResponseFn = generalResponseFn;
+            _apiService = apiService;   
+            _cardsRepository = cardsRepository;
+            endpoint = configuration["ApiSettings:EndpoinTerms"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpoinTerms no puede ser nulo");
+            _logger = logger;
+        }
+        public async Task<GeneralResponse> GetTermsAsync(TermsRequest termsRequest)
+        {
+            ConsultaCuotaResult consultaCuota = new ConsultaCuotaResult();
+            #region VALIDACIONES
+
+            try
+            {
+                _logger.LogInformation("SOLICITUD RECIBIDA *******ConsultaCuota*******");
+                _logger.LogInformation("EQUIVALENTE =>" + termsRequest.equivalente + " | CANAL =>" + termsRequest.canal + " | MONTO =>" + termsRequest.monto.ToString() + " | TIPO =>" + termsRequest.tipo + " | PLAZO =>" + termsRequest.plazo.ToString());
+                DataTable dtResult = new DataTable();
+
+                #region Validacion de que todos los parametros traigan informacion
+                _logger.LogInformation("Validacion de que todos los parametros traigan informacion");
+                _logger.LogInformation("Validando CANAL");
+                if (string.IsNullOrEmpty(termsRequest.canal))
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(consultaCuota.Error + " -> CANAL: " + termsRequest.canal);
+
+                    var mensajeError = "El canal no puede venir vacio";
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validacion del numero equivalente");
+                if (string.IsNullOrEmpty(termsRequest.equivalente) | string.IsNullOrWhiteSpace(termsRequest.equivalente))
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation("El equivalente no debe venir vacio -> EQUIVALENTE: " + termsRequest.equivalente);
+
+                    var mensajeError = "El equivalente no puede venir vacio";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+                if (!Regex.IsMatch(termsRequest.equivalente, @"^[0-9]+$") | termsRequest.equivalente.Length < 16)
+                {
+                    await _cardsRepository.InsConsultaDisponible(termsRequest.equivalente, termsRequest.canal, "El número equivalente de la tarjeta no contiene el formato correcto", null, null);
+                    //Consultar si esta validacion devolveria msj estandar de error no contemplado
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogInformation("El número equivalente de la tarjeta no contiene el formato correcto -> EQUIVALENTE: " + termsRequest.equivalente);
+
+                    var mensajeError = "El número equivalente de la tarjeta no contiene el formato correctoo";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validando el Monto");
+                if (string.IsNullOrEmpty(termsRequest.monto.ToString()))
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(consultaCuota.Error + " -> MONTO: " + termsRequest.monto);
+
+                    var mensajeError = "El monto no puedo venir vcio";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validando Tipo");
+                if (string.IsNullOrEmpty(termsRequest.tipo))
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(consultaCuota.Error + " -> TIPO: " + termsRequest.tipo);
+
+                    var mensajeError = "El tipo no puedo venir vcio";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+
+                if (termsRequest.tipo != "Intra" && termsRequest.tipo != "Extra")
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(14);
+
+                    _logger.LogInformation("El tipo debe de ser Intra o Extra" + " -> TIPO: " + termsRequest.tipo);
+
+                    var mensajeError = "El tipo debe de ser Intra o Extra";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+
+                _logger.LogInformation("Validando Plazo");
+                if (string.IsNullOrEmpty(termsRequest.plazo.ToString()))
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(11);
+                    _logger.LogInformation(consultaCuota.Error + " -> PLAZO: " + termsRequest.plazo);
+
+                    var mensajeError = "El plazo no debe venir vacio";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);
+                }
+                #endregion
+
+                    
+                #region Validacion de que exista la tarjeta equivalente
+                _logger.LogInformation("Validacion de que exista la tarjeta equivalente");
+         
+                int existeTarjeta = await _cardsRepository.ValidaExistenciaTc(termsRequest.equivalente);
+                if(existeTarjeta == 0)
+                {
+                    consultaCuota.Respuesta = 1;
+                    consultaCuota.Error = await _cardsRepository.GetMsjError(14);
+                    _logger.LogInformation("No existe la tarjeta equivalente consultada" + " -> EQUIVALENTE: " + termsRequest.equivalente);
+
+                    var mensajeError = "\"No existe la tarjeta equivalente consultada";
+
+                    return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);                    //return consultaCuota;
+                }
+
+                #endregion
+
+
+                #region Obtener plazos
+                var getBaseRequest = await _cardsRepository.GetBaseInfo(termsRequest.equivalente.ToString());
+
+                if (getBaseRequest == null)
+                {
+                    _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetTermsAsync), "Error al obtener información, respuesta null");
+                    return await _generalResponseFn.ResponseError(
+                            Constantes.STATUS_NOT_FOUND,
+                            Constantes.CODE_SYSTEM_ERROR,
+                            $"Error al obtener información base: respuesta null - no se encontró registro para equivalente: {termsRequest.equivalente.ToString()}");
+                }
+
+                var extrafinancingTermsRequest = new ExtrafinancingTermsRequest
+                {
+                    card = new Card
+                    {
+                        bin = getBaseRequest.Bin,
+                        lastFourDigits = getBaseRequest.LastFourDigits
+                    },
+                    client = new Client
+                    {
+                        documentNumber = getBaseRequest.DocumentNumber,
+                        documentType = getBaseRequest.DocumentType,
+                        gender = getBaseRequest.Gender
+                    },
+                    amount = termsRequest.monto,
+                    numberPayments = termsRequest.plazo,
+                    currency = "HNL"
+
+                };
+
+                var extrafinancingTermsResponse = await _apiService.GetTermsAsync(endpoint, extrafinancingTermsRequest);
+
+                if (extrafinancingTermsResponse == null)
+                {
+                    _logger.LogError("Error en {Method}. Message: {Message}", nameof(GetTermsAsync), "Error al llamar api terms, respuesta null");
+                    return await _generalResponseFn.ResponseError(
+                        Constantes.STATUS_ERROR,
+                        Constantes.CODE_SYSTEM_ERROR,
+                        $"Error al llamar api {endpoint}");
+                }
+
+                var respuestaApi = extrafinancingTermsResponse.response;
+
+                if(respuestaApi.code == "00")
+                {
+                    _logger.LogInformation("Exito en {Method}. Message: {Message}", nameof(GetTermsAsync), respuestaApi.description);
+
+                    return await _generalResponseFn.Response(
+                    Constantes.STATUS_OK,
+                    "00",
+                    extrafinancingTermsResponse.installmentDetails);
+                }
+
+                _logger.LogError("Respuesta obtenida en {Method}. Code: {Code} Message: {Message}", nameof(GetTermsAsync), respuestaApi.code, respuestaApi.description);
+                return await _generalResponseFn.ResponseError(
+                    Constantes.STATUS_OK,
+                    respuestaApi.code,
+                    respuestaApi.description);
+
+
+                #endregion
+            }
+            
+            catch (Exception ex)
+            {
+                consultaCuota.Respuesta = 1;
+                consultaCuota.Error = await _cardsRepository.GetMsjError(14);
+                _logger.LogInformation("Error en public ConsultaCuotaResult ConsultaCuota");
+                _logger.LogInformation(ex.Message);
+                var mensajeError = "Error en public ConsultaCuotaResult ConsultaCuota";
+                return _generalResponseFn.ResponseErrorDesembolso(Constantes.BAD_REQUEST, consultaCuota.Respuesta, consultaCuota.Error.ToString(), mensajeError);                    //return consultaCuota;
+            }
+
+            #endregion
+        }
+    }
+}
+
+
+
+
+
+
+
+
+using ApiTerms.Models.Extrafinancing;
+using ApiTerms.Repository.Interface;
+using plantilla_microservicios_repository.Infrastructure.Data;
+
+namespace ApiTerms.Repository
+{
+    public class CardsRepository : ICardsRepository
+    {
+        private readonly DBHelper _dbHelper;
+        private readonly ILogger<CardsRepository> _logger;
+
+        public CardsRepository(DBHelper dbHelper, ILogger<CardsRepository> logger)
+        {
+            _dbHelper = dbHelper;
+            _logger = logger;
+        }
+
+        public async Task<CardsBaseInformation> GetBaseInfo(string cardNumber)
+        {
+            try
+            {
+                _logger.LogInformation($"Requesting: CardsRepository.GetBaseInfo: {cardNumber}");
+
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetBaseExtrafinancing",
+                    new Dictionary<string, object> { { "@NumeroTarjeta", cardNumber } });
+
+                while (await reader.ReadAsync())
+                {
+                    return new CardsBaseInformation
+                    {
+                        Bin = reader.GetString(0),
+                        LastFourDigits = reader.GetString(1),
+                        DocumentNumber = reader.GetString(2),
+                        DocumentType = reader.GetString(3),
+                        Gender = reader.GetString(4),
+                    };
+                }
+
+                _logger.LogInformation($"Requesting: CardsRepository.GetBaseInfo: No se encontraron resultados");
+                return new CardsBaseInformation();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error en CardsRepository.GetBaseInfo. Message: {ex.Message}");
+                throw new InvalidOperationException($"Error en CardRepository: {ex.Message}", ex);
+
+            }
+        }
+
+        public async Task<string> GetMsjError(int id)
+        {
+            string mensaje = string.Empty;
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_GetMensajeError",
+                    new Dictionary<string, object> { { "@Id", id } });
+
+                while (await reader.ReadAsync())
+                {
+                    return mensaje = reader.GetString(0);
+                }
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository.GetMsjError: {ex.Message}", ex);
+            }
+        }
+
+        public async Task InsConsultaDisponible(string Equivalente, string Canal, string Motivo, double? Intra, double? Extra)
+        {
+            _logger.LogInformation("Ejecutando usp_InsertaRptConsultaSaldos");
+            var parametros = new Dictionary<string, object>
+            {
+                {"@Equivalente", Equivalente },
+                {"@Canal", Canal },
+                {"@Motivo", Motivo }
+            };
+
+            if (Intra != null)
+                parametros.Add("@DisponibleIntra", "Intra");
+            if (Extra != null)
+                parametros.Add("@DisponibleExtra", "Extra");
+            try
+            {
+                int filasAfectadas = await _dbHelper.ExecuteNonQueryAsync("usp_InsertaRptConsultaSaldos", parametros);
+                _logger.LogInformation("Ejecucion exitosa");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository.InsConsultaDisponible: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<int> ValidaExistenciaTc(string equivalente)
+        {
+            try
+            {
+                using var reader = await _dbHelper.ExecuteReaderAsync("usp_ValidaExistenciaTC",
+                    new Dictionary<string, object> { { "@Equivalente", equivalente } });
+
+                while (await reader.ReadAsync())
+                {
+                    return reader.GetInt32(0);
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error en CardRepository.ValidaExistenciaTc: {ex.Message}", ex);
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+using ApiTerms.Service.Interface;
+using ApiTerms.Models.AccessToken;
+using Microsoft.AspNetCore.Authentication.BearerToken;
+
+namespace ApiTerms.Service
+{
+    public class TokenProvider : ITokenProvider
+    {
+        private readonly HttpClient _httpClient;
+        private Models.AccessToken.AccessTokenResponse? _cachedToken;
+        private DateTime _expiresAt;
+        private readonly SemaphoreSlim _lock = new(1, 1);
+        private readonly ILogger<TokenProvider> _logger;
+
+
+        //Para auth
+        private readonly string endpoint;
+
+        public TokenProvider(HttpClient httpClient, IConfiguration configuration, ILogger<TokenProvider> logger)
+        {
+            _httpClient = httpClient;
+            endpoint = configuration["ApiSettings:EndpointAccessToken"]
+                ?? throw new ArgumentNullException(nameof(configuration), "EndpointAccessToken no puede ser nulo");
+            _logger = logger;
+        }
+
+        public async Task<string> GetTokenAsync()
+        {
+            try
+            {
+
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Error en llamada a {Endpoint}. StatusCode: {StatusCode}, Body: {Body}", endpoint, response.StatusCode, errorContent);
+                    throw new HttpRequestException($"Error en llamada a {endpoint}. StatusCode: {response.StatusCode}");
+                }
+
+                _cachedToken = await response.Content.ReadFromJsonAsync<Models.AccessToken.AccessTokenResponse>();
+
+                return _cachedToken.accessToken;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error en llamada a {Endpoint} con {Error}.", endpoint, ex.Message.ToString());
+                throw new HttpRequestException($"Error en llamada a {endpoint}.");
+            }
+        }
+    }
+}
+
+
+
+
+
