@@ -1,25 +1,28 @@
-Mira que tengo un problema.
-
-se hizo una modificacion en una tabla donde se agregó el campo NumeroTarjetCore (Cabe mencionar que actualmente existe u campo que se llama NumeroTarjeta los cuales tienen ese nuevo campo NULL y eso está bien)
-el objetivo de este camhio es que, hay ciertas TC que tienen un NumeroTarjetaCore (y tambien numerotarjeta) y si ese es el caso, al momento de imprimir unos documentos debe mostrarse el numerotarjatacore y no el otro, comprendes?. la cosa es que, actualmente se generan unos documentos y no viene la data completa 
-porque? porque está haciendo el filtro con el NumeroTarjetaCore y deberia hacerlo con NumeroTarjeta siempre. Me gustaria solo tener que hacer modificaciones en sql
-
-
-Te muestros:
-
 USE [ImpresionSobresTarjetas]
 GO
-/****** Object:  StoredProcedure [dbo].[usp_CreditoBandeja]    Script Date: 24/7/2026 14:47:13 ******/
+/****** Object:  StoredProcedure [dbo].[usp_CreditoBandeja]    CORREGIDO ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
 -- =============================================
 -- Author:		Eber R. Orellana
 -- Create date: <Create Date,,>
 -- Description:	<Description,,>
+-- =============================================
+-- =============================================
+-- Control de Cambios
+-- Description: Se corrige uso de NumeroTarjetaCore. El campo
+--              "numerotarjeta" (con ISNULL a NumeroTarjetaCore) queda
+--              reservado SOLO para impresion/despliegue. Se agrega
+--              "NumeroTarjetaOriginal" con el NumeroTarjeta real, y
+--              todos los JOINs internos contra TarjetasR, EFiadores,
+--              EUsuarios_ETarjetas y uvw_tipoembperclitar ahora usan
+--              ese campo original, para que la busqueda funcione
+--              siempre por NumeroTarjeta, sin importar si existe Core.
+--              Se corrige tambien un JOIN auto-referenciado
+--              (a.NumeroTarjeta = a.NumeroTarjeta) que nunca filtraba nada.
 -- =============================================
 ALTER   PROCEDURE [dbo].[usp_CreditoBandeja] --exec [dbo].[usp_CreditoBandeja] 9133, '1000000001547346', '1808196500247'
 	-- Add the parameters for the stored procedure here
@@ -95,7 +98,8 @@ BEGIN
 					  ltrim(rtrim(ic.nombrecliente)) + ' ' + ltrim(rtrim(ic.segundonombre)) + ' ' + ltrim(rtrim(ic.apellido1)) + ' ' + ltrim(rtrim(ic.apellido2)) AS nombrecompleto, 
 					  ltrim(rtrim(ic.identidad)) AS numeroidentidad, 
 					  ic.numlote, 
-					  ISNULL(ic.NumeroTarjetaCore, ic.numerotarjeta) as numerotarjeta, 
+					  ic.numerotarjeta AS NumeroTarjetaOriginal,      -- ***NUEVO*** valor real, para JOINs internos
+					  ISNULL(ic.NumeroTarjetaCore, ic.numerotarjeta) as numerotarjeta, -- Solo para impresion/despliegue
 					  ic.tipotarjeta, 				 
 					  ic.direccionestadocuenta1, 
 					  ic.direccionestadocuenta2, 
@@ -229,7 +233,7 @@ BEGIN
 			INTO #Tbltipoembperclitar
 			FROM #TblTarjetas b
 			LEFT JOIN dbo.uvw_tipoembperclitar a
-				ON a.NumeroTarjeta = b.NumeroTarjeta
+				ON a.NumeroTarjeta = b.NumeroTarjetaOriginal   -- ***CORREGIDO***
 
 			SELECT 	ltrim(rtrim(replace(replace(a.identidad, '-', ''), ' ', ''))) AS identidad,
 				 
@@ -280,7 +284,7 @@ BEGIN
 			INTO #TblTarjetasR
 			FROM TarjetasR a
 			INNER JOIN #TblTarjetas b
-				ON replace(b.numerotarjeta, '*', '') = a.numerotarjeta 
+				ON replace(b.NumeroTarjetaOriginal, '*', '') = a.numerotarjeta   -- ***CORREGIDO***
 
 
 			SELECT a.CiF,
@@ -367,7 +371,7 @@ BEGIN
 				INTO #TblFiadores
 				FROM EFiadores EF
 				INNER JOIN #TblTarjetas b
-				ON replace(b.numerotarjeta, '*', '') = EF.numerotarjeta 
+				ON replace(b.NumeroTarjetaOriginal, '*', '') = EF.numerotarjeta   -- ***CORREGIDO***
 
 				SELECT   EU.[NumeroTarjeta] 
 						,EU.[DOMICILIO1-PRISMA]
@@ -400,7 +404,7 @@ BEGIN
 				INTO #TblEUsuariosETarjetas 
 				FROM EUsuarios_ETarjetas EU
 				INNER JOIN #TblTarjetas b
-				ON replace(b.numerotarjeta, '*', '') = EU.numerotarjeta 
+				ON replace(b.NumeroTarjetaOriginal, '*', '') = EU.numerotarjeta   -- ***CORREGIDO***
 
 
 	SELECT   distinct
@@ -614,21 +618,21 @@ BEGIN
 	LEFT JOIN #TblMontos b
 		ON a.BIN = b.Bin
 	LEFT JOIN #Tbltipoembperclitar c
-		ON a.NumeroTarjeta = a.NumeroTarjeta
+		ON a.NumeroTarjetaOriginal = c.NumeroTarjeta          -- ***CORREGIDO*** (antes: a.NumeroTarjeta = a.NumeroTarjeta)
 	LEFT JOIN #TblServicios d
 		ON a.Identidad = d.identidad
 	LEFT JOIN #TblClientes e
 		ON e.identidad = a.identidad
 	LEFT JOIN #TblTarjetasR f
-		ON f.numerotarjeta = a.NumeroTarjeta and f.numlote = a.numlote
+		ON f.numerotarjeta = a.NumeroTarjetaOriginal and f.numlote = a.numlote   -- ***CORREGIDO***
 	LEFT JOIN Lotes g
 		ON g.NumeroLote = a.NumLote
 	LEFT JOIN #TblSolicitudesCRM h
 		ON h.CiF = e.Cif
 	LEFT JOIN #TblFiadores EF WITH(NOLOCK) 
-		ON a.NumeroTarjeta = EF.NumeroTarjeta
+		ON a.NumeroTarjetaOriginal = EF.NumeroTarjeta        -- ***CORREGIDO***
 	LEFT JOIN #TblEUsuariosETarjetas EU WITH(NOLOCK) 
-		ON a.NumeroTarjeta = EU.NumeroTarjeta
+		ON a.NumeroTarjetaOriginal = EU.NumeroTarjeta        -- ***CORREGIDO***
 	LEFT JOIN #TblReferenciasTC RTC WITH(NOLOCK) 
 		ON RTRIM(LTRIM(RTC.Cif)) = e.Cif
 
@@ -636,113 +640,3 @@ BEGIN
 /************************************************************************************************/
 
 END
-
-
-
-
-
-
-
-
-
-
-
-
-USE [ImpresionSobresTarjetas]
-GO
-/****** Object:  StoredProcedure [dbo].[usp_ValoresDocumentosParametrizados]    Script Date: 25/8/2026 14:17:11 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
--- =============================================
--- Author:		Ebero R. Orellana
--- Create date: <Create Date,,>
--- Description:	Obtiene los valores y las etiquetas
--- =============================================
-
--- =============================================
--- Control de Cambios
--- Author:		Alejandra García
--- Create date: 09-05-2022
--- Description:Se cambio como se obtiene la bandeja de Débito
--- =============================================
-ALTER     PROCEDURE [dbo].[usp_ValoresDocumentosParametrizados] 
-	-- Add the parameters for the stored procedure here
-	@idBandeja INT,
-	@Lote VARCHAR(20),
-	@NumeroTarjeta VARCHAR(20),
-	@Identidad VARCHAR(20)
-AS
-BEGIN
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-	
-    -- Insert statements for procedure here
-	--Obtiene la bandeja con sus etiquetas
-	exec usp_getBandeja @idbandeja
-
-	--Obtiene el valor consultado por el usuario
-	IF @idBandeja = 1
-	BEGIN
-		
-		exec usp_CreditoBandeja @lote, @NumeroTarjeta, @Identidad		
-
-
-	END
-
-	IF @idBandeja = 2
-	BEGIN
-		
-		exec usp_BandejaDebito @lote, @NumeroTarjeta, @Identidad		
-
-	END
-
-
-	--IF @idBandeja = 2
-	--BEGIN
-	--	SELECT *FROM uvw_BandejaDebito a
-	--	WHERE CONVERT(VARCHAR(10), FechaCarga, 103) = @Lote AND a.NumeroTarjeta = @NumeroTarjeta AND rtrim(ltrim(a.Identidad))  = rtrim(ltrim(@Identidad))
-	--END
-	IF @idBandeja = 3
-	BEGIN
-		SELECT *FROM uvw_BandejaPriorityPass a
-		WHERE CONVERT(VARCHAR(10), RfUltActualizacion, 103) = @Lote AND a.RfNoTarjeta = @NumeroTarjeta AND rtrim(ltrim(a.identidad))  = rtrim(ltrim(@Identidad))
-	END
-
-END
-
-
-
-
-
-
-
-
-      //Obtiene la bandeja de los datos 
-        private DataSet dsBandejaDatos(string Lote, string numeroTarjeta, string identidad)
-        {
-           
-
-            SQLSrv queryParametros = new SQLSrv(Properties.Settings.Default.ConnImpresionContratos, "usp_ValoresDocumentosParametrizados");
-            queryParametros.Parametros.Add(new SqlParameter("@idBandeja", 1));// Tipo de bandeja
-            queryParametros.Parametros.Add(new SqlParameter("@Lote", Lote));// lote
-            queryParametros.Parametros.Add(new SqlParameter("@NumeroTarjeta", numeroTarjeta));// Numero de gtarjeta
-            queryParametros.Parametros.Add(new SqlParameter("@Identidad", identidad));// Identidad del cliente
-
-            DataSet dsBandeja = queryParametros.getDataSetWithParameters();
-
-            if (!queryParametros.Success)
-            {
-                MessageBox.Show("ERROR: Se ha capturado el siguiente Error al consultar los datos del cliente: " + queryParametros.Mensaje, "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            return dsBandeja;
-
-        }
-
-
-
-
-
-
