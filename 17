@@ -1,1 +1,748 @@
-	SELECT '{{'+ c.name+'}}' as Etiqueta, c.name as Campo	FROM sys.columns c JOIN sys.views v		ON c.object_id = v.object_id	WHERE v.name = 'uvw_BandejaTCredito'como puedo saber de donde viene cada campo? de que vista?
+Mira que tengo un problema.
+
+se hizo una modificacion en una tabla donde se agregó el campo NumeroTarjetCore (Cabe mencionar que actualmente existe u campo que se llama NumeroTarjeta los cuales tienen ese nuevo campo NULL y eso está bien)
+el objetivo de este camhio es que, hay ciertas TC que tienen un NumeroTarjetaCore (y tambien numerotarjeta) y si ese es el caso, al momento de imprimir unos documentos debe mostrarse el numerotarjatacore y no el otro, comprendes?. la cosa es que, actualmente se generan unos documentos y no viene la data completa 
+porque? porque está haciendo el filtro con el NumeroTarjetaCore y deberia hacerlo con NumeroTarjeta siempre. Me gustaria solo tener que hacer modificaciones en sql
+
+
+Te muestros:
+
+USE [ImpresionSobresTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_CreditoBandeja]    Script Date: 24/7/2026 14:47:13 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- =============================================
+-- Author:		Eber R. Orellana
+-- Create date: <Create Date,,>
+-- Description:	<Description,,>
+-- =============================================
+ALTER   PROCEDURE [dbo].[usp_CreditoBandeja] --exec [dbo].[usp_CreditoBandeja] 9133, '1000000001547346', '1808196500247'
+	-- Add the parameters for the stored procedure here
+	@NumLote bigint,
+	@NumeroTarjeta VARCHAR(20),
+	@Identidad VARCHAR(20)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+    -- Insert statements for procedure here
+	SET LANGUAGE SPANISH
+/***********************************************************************************************/
+
+	IF OBJECT_ID('tempdb..#TblTarjetas') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblTarjetas
+	END
+
+
+	IF OBJECT_ID('tempdb..#TblMontos') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblMontos
+	END
+
+
+
+	IF OBJECT_ID('tempdb..#Tbltipoembperclitar') IS NOT NULL
+	BEGIN
+				DROP TABLE #Tbltipoembperclitar
+	END
+
+
+
+	IF OBJECT_ID('tempdb..#TblClientes') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblClientes
+	END
+
+
+
+
+	IF OBJECT_ID('tempdb..#TblServicios') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblServicios
+	END
+
+
+	IF OBJECT_ID('tempdb..#TblFiadores') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblFiadores
+	END
+
+
+	IF OBJECT_ID('tempdb..#TblEUsuariosETarjetas') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblEUsuariosETarjetas
+	END
+
+	IF OBJECT_ID('tempdb..#TblReferenciasTC') IS NOT NULL
+	BEGIN
+				DROP TABLE #TblReferenciasTC
+	END
+
+	SELECT DISTINCT 
+					  IC.imprimircontrato, 				  
+					  ic.nombrecliente, 
+					  ic.segundonombre, 
+					  ic.apellido1, 
+					  ic.apellido2, 
+					  ltrim(rtrim(ic.nombrecliente)) + ' ' + ltrim(rtrim(ic.segundonombre)) + ' ' + ltrim(rtrim(ic.apellido1)) + ' ' + ltrim(rtrim(ic.apellido2)) AS nombrecompleto, 
+					  ltrim(rtrim(ic.identidad)) AS numeroidentidad, 
+					  ic.numlote, 
+					  ISNULL(ic.NumeroTarjetaCore, ic.numerotarjeta) as numerotarjeta, 
+					  ic.tipotarjeta, 				 
+					  ic.direccionestadocuenta1, 
+					  ic.direccionestadocuenta2, 
+					  ic.direccionestadocuenta3, 
+					  ic.telefono1, 
+					  ic.telefono2, 
+					  ic.telefono3,
+					   (SELECT TOP (1) codigocrm
+					   FROM   dbo.splitstring(ic.telefono1 + '/' + ic.telefono2 + '/' + ic.telefono3, '/') AS splitstring_1
+					   WHERE  (  tam >= 9)) AS codigocrm, 
+					   isnull(ic.codigodistribucion, '') AS codigodistribucion, 
+					   ic.bin, 
+					   ic.codigoproducto,
+					   ic.TasaCambio, 
+					   rtrim(ltrim(ic.tarjetaimprimir)) AS terminaciontc, 
+					   rtrim(ltrim(ic.nombreempresa)) AS nombreempresatitular, 
+					   ic.limitecreditoml, 
+					   ic.limitecreditome, 
+					   ic.cedulajuridica, 
+					   day(getdate()) AS dia,
+						CASE month(getdate())
+						WHEN 1 THEN  'Enero'
+						WHEN 2 THEN  'Febrero'
+						WHEN 3 THEN  'Marzo'
+						WHEN 4 THEN  'Abril'
+						WHEN 5 THEN  'Mayo'
+						WHEN 6 THEN  'Junio'
+						WHEN 7 THEN  'Julio'
+						WHEN 8 THEN  'Agosto'
+						WHEN 9 THEN  'Septiembre'
+						WHEN 10 THEN  'Octubre'
+						WHEN 11 THEN  'Noviembre'
+						WHEN 12 THEN  'Diciembre'
+						END
+						AS mes, year(getdate()) AS ano, 
+						ltrim(rtrim(ic.nombrefiador1)) + ' ' + ltrim(rtrim(ic.apellido1fiador1)) + ' ' + ltrim(rtrim(ic.apellido2fiador1)) AS fiador1, 
+						ltrim(rtrim(ic.nombrefiador2)) + ' ' + ltrim(rtrim(ic.apellido1fiador2)) + ' ' + ltrim(rtrim(ic.apellido2fiador2)) AS fiador2, 
+						ltrim(rtrim(ic.nombrefiador3)) + ' ' + ltrim(rtrim(ic.apellido1fiador3)) + ' ' + ltrim(rtrim(ic.apellido2fiador3)) AS fiador3, 
+						ltrim(rtrim(ic.numcedulafiador1)) AS cedulafiador1, 
+						ltrim(rtrim(ic.numcedulafiador2)) AS cedulafiador2, 
+						ltrim(rtrim(ic.numcedulafiador3)) AS cedulafiador3, 					
+						ltrim(rtrim(ic.s2gnit)) AS rtn, 					
+						ic.ciclocorte, 
+						ic.ciudad, 					
+						isnull(ic.cat, 0) AS cat, 					
+						ic.plazofinanciamiento,
+						Convert(VarChar(10),GetDate(),103) as fechaactual, 				
+						CASE
+						WHEN
+						  ( SELECT count(a.bin)
+							FROM   parbinproductoprepagada a
+							WHERE  a.bin = ic.bin) > 0 
+							THEN  '1'
+						  ELSE '0'
+						END
+						AS esprepagada, 
+						ic.numerocuenta, 
+						ltrim(rtrim(replace(replace(ic.identidad, '-', ''), ' ', '')))  identidad, 
+						ic.fechafinvigencia,				
+						CASE month(ic.fechafinvigencia) - 1
+						WHEN 1 THEN  'Enero'
+						WHEN 2 THEN  'Febrero'
+						WHEN 3 THEN  'Marzo'
+						WHEN 4 THEN  'Abril'
+						WHEN 5 THEN  'Mayo'
+						WHEN 6 THEN  'Junio'
+						WHEN 7 THEN  'Julio'
+						WHEN 8 THEN  'Agosto'
+						WHEN 9 THEN  'Septiembre'
+						WHEN 10 THEN  'Octubre'
+						WHEN 11 THEN  'Noviembre'
+						WHEN 12 THEN  'Diciembre'
+						WHEN 0 THEN  'Diciembre'
+						END	AS mesvencimiento 
+				INTO #TblTarjetas
+				FROM Tarjetas AS ic 
+				WHERE IC.NumLote = @NumLote
+				AND NumeroTarjeta = rtrim(ltrim( @NumeroTarjeta))
+
+			
+				SELECT	DISTINCT	
+						a.Bin,
+						a.CodigoProducto,
+						a.maximo, 
+						a.maximo * b.tasacambio AS maximolps, 
+						a.cobertura, 
+						a.maximoanual, 
+						a.tasalps AS tasaintereslocal, 
+						a.tasadls AS tasainteresinternacional, 
+						a.membresiaanualtitular, 
+						a.comisionretirosefectivo, 
+						a.comisionretirosefectivodls, 
+						a.segurocoberturadeuda, 
+						a.membresiaadicional, 
+						a.rehabilitacion30dias, 
+						a.rehabilitacion60dias, 
+						a.rehabilitacionm60dias, 
+						a.sobregirolineacred, 
+						a.chequesmndevueltosmn, 
+						a.chequesmndevueltosme, 
+						a.chequesmedevueltosme, 
+						a.servicioselectronicos, 
+						a.deteriororeposiciontit, 
+						a.deteriororeposicionadi, 
+						a.coberturahre, 
+						a.copiascomptrndisputamn, 
+						a.copiascomptrndisputame, 
+						a.reposicionec, 
+						a.reposicionnip, 
+						a.bpprotege AS montobpprotege, 
+						a.emisionconstanciasref, 
+						a.descripciontarjeta, 
+						a.bpasistmed, 
+						a.cargoshonorarios, 
+						a.calculohonorarios, 
+						a.monedalimite, 
+						a.empresarial,
+						a.Tipo_Prod
+				INTO #TblMontos
+				FROM Montos a
+				INNER JOIN #TblTarjetas b
+					ON a.Bin = b.BIN
+					and a.CodigoProducto = b.CodigoProducto
+
+		
+
+			SELECT  DISTINCT
+					a.NumeroTarjeta,
+					a.tipocliente,
+					rtrim(ltrim(a.tipopersoneria)) AS tipopersoneria
+			INTO #Tbltipoembperclitar
+			FROM #TblTarjetas b
+			LEFT JOIN dbo.uvw_tipoembperclitar a
+				ON a.NumeroTarjeta = b.NumeroTarjeta
+
+			SELECT 	ltrim(rtrim(replace(replace(a.identidad, '-', ''), ' ', ''))) AS identidad,
+				 
+					isnull(a.bpmovil, '') AS bpmovil,
+					isnull(a.tipoplan, '') AS tipoplan, 
+					isnull(a.bpprotege, '') AS bpprotege, 
+					isnull(a.serviciobxi, '') AS serviciobxi, 
+					isnull(a.estadocuenta, '') AS estadocuenta, 
+					isnull(a.serviciohre, '') AS serviciohre, 
+					isnull(a.pagoautomatico, '') AS pagoautomatico, 
+					a.tiposervicio
+			INTO #TblServicios
+			FROM uvw_servicioafiliadosaclientes a
+			INNER JOIN #TblTarjetas b
+				ON ltrim(rtrim(replace(replace(a.identidad, '-', ''), ' ', ''))) = b.identidad
+
+
+			SELECT  a.cif,
+					ltrim(rtrim(replace(replace(a.identidad, '-', ''), ' ', ''))) AS identidad,
+					a.departamento, 
+					a.municipio,
+					a.TipoPersona,
+					a.CodActEconomica,
+					a.ActividadEconomica,
+					a.CodCIIU,
+					a.CIIU,
+					a.FuenteIngreso,
+					a.RepresentanteLegal,
+					a.NacionalidadRepresentante,
+					a.Identidad_RepresentanteLegal
+			INTO #TblClientes
+			FROM Clientes a
+			INNER JOIN #TblTarjetas b
+				ON ltrim(rtrim(replace(replace(a.identidad, '-', ''), ' ', ''))) = b.identidad
+		
+
+
+			SELECT  replace(a.numerotarjeta, '*', '') AS numerotarjeta,
+					a.numlote,
+					a.origentc,
+					a.direccion,
+					a.tarjetatruncada, 
+					a.nombreempresa, 
+					a.NumeroTarjeta numerotarjeta2, 
+					a.Equivalencia_ATH Equivalencia_ATH2,
+					'*' + a.Equivalencia_ATH + '*' Equivalencia_ATH					
+					--Convert(VarChar(10),GetDate(),103) as fechaactual					
+			INTO #TblTarjetasR
+			FROM TarjetasR a
+			INNER JOIN #TblTarjetas b
+				ON replace(b.numerotarjeta, '*', '') = a.numerotarjeta 
+
+
+			SELECT a.CiF,
+				   a.Incidente,	
+				   a.Estado, 
+				   a.FechaCreacion,
+				   a.Descripcion,
+				   a.EmpleadoAsignado,
+				   a.EmpleadoCreador,
+				   a.AreaAtencion,
+				   a.UltimaEtapa
+			INTO #TblSolicitudesCRM	   
+			FROM SolicitudesCRM a
+			INNER JOIN #TblClientes b
+				ON a.CiF = b.Cif
+
+			SELECT a.[Cif]
+				  ,a.[Nombre_Patrono]
+				  ,a.[Direccion_Ref_Laboral]
+				  ,a.[Puesto_o_Cargo]
+				  ,a.[Fecha_Ingreso]
+				  ,a.[Salario]
+				  ,a.[Nombre_Patrono2]
+				  ,a.[Direccion_Ref_Laboral2]
+				  ,a.[Puesto_o_Cargo2]
+				  ,a.[Fecha_Ingreso2]
+				  ,a.[Salario2]
+				  ,a.[Nombre_Patrono3]
+				  ,a.[Direccion_Ref_Laboral3]
+				  ,a.[Puesto_o_Cargo3]
+				  ,a.[Fecha_Ingreso3]
+				  ,a.[Salario3]
+				  ,a.[Sector_Economico_Patrono]
+				  ,a.[Profesion]
+				  ,a.[Fuente_Ingresos]
+				  ,a.[Nombre_Conyugue]
+				  ,a.[Nombre_Ref_Per/Fam]
+				  ,a.[Parentesco_Ref_Per/Fam]
+				  ,a.[Direccion_Ref_Per/Fam]
+				  ,a.[Telefono_Ref_Per/Fam]
+				  ,a.[Telefono_Ofi_Ref_Per/Fam]
+				  ,a.[Nombre_Ref_Per/Fam2]
+				  ,a.[Parentesco_Ref_Per/Fam2]
+				  ,a.[Direccion_Ref_Per/Fam2]
+				  ,a.[Telefono_Ref_Per/Fam2]
+				  ,a.[Telefono_Ofi_Ref_Per/Fam2]
+				  ,a.[Nombre_Ref_Per/Fam3]
+				  ,a.[Parentesco_Ref_Per/Fam3]
+				  ,a.[Direccion_Ref_Per/Fam3]
+				  ,a.[Telefono_Ref_Per/Fam3]
+				  ,a.[Telefono_Ofi_Ref_Per/Fam3]
+			INTO #TblReferenciasTC   
+			FROM ReferenciasTC a
+			INNER JOIN #TblClientes b
+				ON rtrim(ltrim(a.Cif)) = b.Cif
+
+
+				SELECT	   EF.[NumeroTarjeta] 
+						  ,EF.[NoCuentaClaro]
+						  ,EF.[NOMBRE-FIADOR-PRISMA]
+						  ,EF.[NUMDOC-FIADOR-PRISMA]
+						  ,EF.[DOMICILIO1-FIADOR-PRISMA]
+						  ,EF.[DOMICILIO2-FIADOR-PRISMA]
+						  ,EF.[DOMICILIO3-FIADOR-PRISMA]
+						  ,EF.[TELEFONO-FIADOR-PRISMA]
+						  ,EF.[E-MAIL-USUARIO FIADOR-PRISMA]
+						  ,EF.[E-MAIL-DOMINIO FIADOR-PRISMA]
+						  ,EF.[NOMBRE-FIADOR-PRISMA2]
+						  ,EF.[NUMDOC-FIADOR-PRISMA2]
+						  ,EF.[DOMICILIO1-FIADOR-PRISMA2]
+						  ,EF.[DOMICILIO2-FIADOR-PRISMA2]
+						  ,EF.[DOMICILIO3-FIADOR-PRISMA2]
+						  ,EF.[TELEFONO-FIADOR-PRISMA2]
+						  ,EF.[E-MAIL-USUARIO FIADOR-PRISMA2]
+						  ,EF.[E-MAIL-DOMINIO FIADOR-PRISMA2]
+						  ,EF.[NOMBRE-FIADOR-PRISMA3]
+						  ,EF.[NUMDOC-FIADOR-PRISMA3]
+						  ,EF.[DOMICILIO1-FIADOR-PRISMA3]
+						  ,EF.[DOMICILIO2-FIADOR-PRISMA3]
+						  ,EF.[DOMICILIO3-FIADOR-PRISMA3]
+						  ,EF.[TELEFONO-FIADOR-PRISMA3]
+						  ,EF.[E-MAIL-USUARIO FIADOR-PRISMA3]
+						  ,EF.[E-MAIL-DOMINIO FIADOR-PRISMA3]
+				INTO #TblFiadores
+				FROM EFiadores EF
+				INNER JOIN #TblTarjetas b
+				ON replace(b.numerotarjeta, '*', '') = EF.numerotarjeta 
+
+				SELECT   EU.[NumeroTarjeta] 
+						,EU.[DOMICILIO1-PRISMA]
+						,EU.[PUERTA-PRISMA]
+						,EU.[DOMICILIO2-PRISMA]
+						,EU.[DOMICILIO3-PRISMA]
+						,EU.[COD-POSTAL-PRISMA]
+						,EU.[BARRIO-COMUNA-PRISMA]
+						,EU.[CIUDAD-LOCALIDAD-PRISMA]
+						,EU.[COD-DEPARTAMENTO-PRISMA]
+						,EU.[COD-PAIS-PRISMA]
+						,EU.[TELEFONO-PRISMA]
+						,EU.[DOMICILIO1-CORR-PRISMA]
+						,EU.[DOMICILIO2-CORR-PRISMA]
+						,EU.[DOMICILIO3-CORR-PRISMA]
+						,EU.[PUERTA-CORR-PRISMA]
+						,EU.[COD-POSTAL-CORR-PRISMA]
+						,EU.[BARRIO-COMUNA-CORR-PRISMA]
+						,EU.[CIUDAD-LOCALIDAD-CORR-PRISMA]
+						,EU.[COD-DEPARTAMENTO-CORR PRISMA]
+						,EU.[COD-PAIS-CORR-PRISMA]
+						,EU.[CASILLA-CORREO-CORR-PRISMA]
+						,EU.[E-MAIL-USUARIO-PRISMA]
+						,EU.[E-MAIL-DOMINIO-PRISMA]
+						,EU.[NAC-PRISMA]
+						,EU.[SEXO-PRISMA]
+						,EU.[ESTCIV-PRISMA]
+						,EU.[FNAC-PRISMA]
+						,EU.[OCUPACION-PRISMA]
+				INTO #TblEUsuariosETarjetas 
+				FROM EUsuarios_ETarjetas EU
+				INNER JOIN #TblTarjetas b
+				ON replace(b.numerotarjeta, '*', '') = EU.numerotarjeta 
+
+
+	SELECT   distinct
+			 a.imprimircontrato
+			,a.nombrecliente
+			,a.segundonombre
+			,a.apellido1
+			,a.apellido2
+			,a.nombrecompleto
+			,a.numeroidentidad
+			,a.numlote
+			,a.numerotarjeta
+			,a.tipotarjeta
+			,a.direccionestadocuenta1
+			,a.direccionestadocuenta2
+			,a.direccionestadocuenta3
+			,a.telefono1
+			,a.telefono2
+			,a.telefono3
+			,a.codigocrm
+			,a.codigodistribucion
+			,a.bin
+			,a.codigoproducto
+			,a.TasaCambio
+			,a.terminaciontc
+			,a.nombreempresatitular
+			,FORMAT(a.limitecreditoml,'###,###,###.00') limitecreditoml
+			,FORMAT(a.limitecreditome,'###,###,###.00') limitecreditome
+			,a.cedulajuridica
+			,a.dia
+			,a.mes
+			,DATENAME(MONTH,DATEADD(MONTH,MONTH(g.FechaCarga),'20190101')) MesSiguiente
+			,a.ano
+			,a.fiador1
+			,a.fiador2
+			,a.fiador3
+			,a.cedulafiador1
+			,a.cedulafiador2
+			,a.cedulafiador3
+			,a.rtn
+			,a.ciclocorte
+			,a.ciudad
+			,a.cat
+			,a.plazofinanciamiento
+			,a.fechaactual
+			,a.esprepagada
+			,a.numerocuenta
+			,a.identidad
+			,a.fechafinvigencia
+			,a.mesvencimiento		
+			,FORMAT(b.maximo,'###,###,###.00') as maximo
+			,FORMAT(b.maximolps,'###,###,###.00') as maximolps
+			,b.cobertura
+			,b.maximoanual
+			,b.tasaintereslocal
+			,b.tasainteresinternacional
+			,b.membresiaanualtitular
+			,b.comisionretirosefectivo
+			,b.comisionretirosefectivodls
+			,b.segurocoberturadeuda
+			,b.membresiaadicional
+			,b.rehabilitacion30dias
+			,b.rehabilitacion60dias
+			,b.rehabilitacionm60dias
+			,b.sobregirolineacred
+			,b.chequesmndevueltosmn
+			,b.chequesmndevueltosme
+			,b.chequesmedevueltosme
+			,b.servicioselectronicos
+			,b.deteriororeposiciontit
+			,b.deteriororeposicionadi
+			,b.coberturahre
+			,b.copiascomptrndisputamn
+			,b.copiascomptrndisputame
+			,b.reposicionec
+			,b.reposicionnip
+			,b.montobpprotege
+			,b.emisionconstanciasref
+			,b.descripciontarjeta
+			,b.bpasistmed
+			,b.cargoshonorarios
+			,b.calculohonorarios
+			,b.monedalimite
+			,b.empresarial
+			,b.Tipo_Prod
+			,c.NumeroTarjeta
+			,c.tipocliente
+			,c.tipopersoneria
+			,d.bpmovil, 
+			d.tipoplan, 
+			d.bpprotege, 
+			d.serviciobxi, 
+			d.estadocuenta, 
+			d.serviciohre, 
+			d.pagoautomatico, 
+			d.tiposervicio,
+			e.Cif,
+			e.Departamento,
+			e.Municipio,
+			f.origentc,
+			f.direccion,
+			f.tarjetatruncada, 
+			f.nombreempresa, 
+			f.numerotarjeta2, 
+			f.Equivalencia_ATH2,
+			Equivalencia_ATH,
+			g.FechaCarga,
+			e.TipoPersona,
+			e.CodActEconomica,
+			e.ActividadEconomica,
+			e.CodCIIU,
+			e.CIIU,
+			e.FuenteIngreso,
+			e.RepresentanteLegal,
+			e.NacionalidadRepresentante,
+			e.Identidad_RepresentanteLegal,
+			h.Incidente,	
+			h.Estado, 
+			h.FechaCreacion,
+			h.Descripcion,
+			h.EmpleadoAsignado,
+			h.EmpleadoCreador,
+			h.AreaAtencion,
+			h.UltimaEtapa
+			,	EF.[NOMBRE-FIADOR-PRISMA]
+			,	EF.[NUMDOC-FIADOR-PRISMA]
+			,	EF.[DOMICILIO1-FIADOR-PRISMA]
+			,	EF.[DOMICILIO2-FIADOR-PRISMA]
+			,	EF.[DOMICILIO3-FIADOR-PRISMA]
+			,	EF.[TELEFONO-FIADOR-PRISMA]
+			,	EF.[E-MAIL-USUARIO FIADOR-PRISMA]
+			,	EF.[E-MAIL-DOMINIO FIADOR-PRISMA]
+			,	EF.[NOMBRE-FIADOR-PRISMA2]
+			,	EF.[NUMDOC-FIADOR-PRISMA2]
+			,	EF.[DOMICILIO1-FIADOR-PRISMA2]
+			,	EF.[DOMICILIO2-FIADOR-PRISMA2]
+			,	EF.[DOMICILIO3-FIADOR-PRISMA2]
+			,	EF.[TELEFONO-FIADOR-PRISMA2]
+			,	EF.[E-MAIL-USUARIO FIADOR-PRISMA2]
+			,	EF.[E-MAIL-DOMINIO FIADOR-PRISMA2]
+			,	EF.[NOMBRE-FIADOR-PRISMA3]
+			,	EF.[NUMDOC-FIADOR-PRISMA3]
+			,	EF.[DOMICILIO1-FIADOR-PRISMA3]
+			,	EF.[DOMICILIO2-FIADOR-PRISMA3]
+			,	EF.[DOMICILIO3-FIADOR-PRISMA3]
+			,	EF.[TELEFONO-FIADOR-PRISMA3]
+			,	EF.[E-MAIL-USUARIO FIADOR-PRISMA3]
+			,	EF.[E-MAIL-DOMINIO FIADOR-PRISMA3]
+			,	EU.[DOMICILIO1-PRISMA]
+			,	EU.[PUERTA-PRISMA]
+			,	EU.[DOMICILIO2-PRISMA]
+			,	EU.[DOMICILIO3-PRISMA]
+			,	EU.[COD-POSTAL-PRISMA]
+			,	EU.[BARRIO-COMUNA-PRISMA]
+			,	EU.[CIUDAD-LOCALIDAD-PRISMA]
+			,	EU.[COD-DEPARTAMENTO-PRISMA]
+			,	EU.[COD-PAIS-PRISMA]
+			,	EU.[TELEFONO-PRISMA]
+			,	EU.[DOMICILIO1-CORR-PRISMA]
+			,	EU.[DOMICILIO2-CORR-PRISMA]
+			,	EU.[DOMICILIO3-CORR-PRISMA]
+			,	EU.[PUERTA-CORR-PRISMA]
+			,	EU.[COD-POSTAL-CORR-PRISMA]
+			,	EU.[BARRIO-COMUNA-CORR-PRISMA]
+			,	EU.[CIUDAD-LOCALIDAD-CORR-PRISMA]
+			,	EU.[COD-DEPARTAMENTO-CORR PRISMA]
+			,	EU.[COD-PAIS-CORR-PRISMA]
+			,	EU.[CASILLA-CORREO-CORR-PRISMA]
+			,	EU.[E-MAIL-USUARIO-PRISMA]
+			,	EU.[E-MAIL-DOMINIO-PRISMA]
+			,	EU.[NAC-PRISMA]
+			,	EU.[SEXO-PRISMA]
+			,	EU.[ESTCIV-PRISMA]
+			,	EU.[FNAC-PRISMA]
+			,	EU.[OCUPACION-PRISMA]
+			,	RTC.[Nombre_Patrono]
+			,	RTC.[Direccion_Ref_Laboral]
+			,	RTC.[Puesto_o_Cargo]
+			,	RTC.[Fecha_Ingreso]
+			,	RTC.[Salario]
+			,	RTC.[Nombre_Patrono2]
+			,	RTC.[Direccion_Ref_Laboral2]
+			,	RTC.[Puesto_o_Cargo2]
+			,	RTC.[Fecha_Ingreso2]
+			,	RTC.[Salario2]
+			,	RTC.[Nombre_Patrono3]
+			,	RTC.[Direccion_Ref_Laboral3]
+			,	RTC.[Puesto_o_Cargo3]
+			,	RTC.[Fecha_Ingreso3]
+			,	RTC.[Salario3]
+			,	RTC.[Sector_Economico_Patrono]
+			,	RTC.[Profesion]
+			,	RTC.[Fuente_Ingresos]
+			,	RTC.[Nombre_Conyugue]
+			,	RTC.[Nombre_Ref_Per/Fam]
+			,	RTC.[Parentesco_Ref_Per/Fam]
+			,	RTC.[Direccion_Ref_Per/Fam]
+			,	RTC.[Telefono_Ref_Per/Fam]
+			,	RTC.[Telefono_Ofi_Ref_Per/Fam]
+			,	RTC.[Nombre_Ref_Per/Fam2]
+			,	RTC.[Parentesco_Ref_Per/Fam2]
+			,	RTC.[Direccion_Ref_Per/Fam2]
+			,	RTC.[Telefono_Ref_Per/Fam2]
+			,	RTC.[Telefono_Ofi_Ref_Per/Fam2]
+			,	RTC.[Nombre_Ref_Per/Fam3]
+			,	RTC.[Parentesco_Ref_Per/Fam3]
+			,	RTC.[Direccion_Ref_Per/Fam3]
+			,	RTC.[Telefono_Ref_Per/Fam3]
+			,	RTC.[Telefono_Ofi_Ref_Per/Fam3]
+	FROM #TblTarjetas a
+	LEFT JOIN #TblMontos b
+		ON a.BIN = b.Bin
+	LEFT JOIN #Tbltipoembperclitar c
+		ON a.NumeroTarjeta = a.NumeroTarjeta
+	LEFT JOIN #TblServicios d
+		ON a.Identidad = d.identidad
+	LEFT JOIN #TblClientes e
+		ON e.identidad = a.identidad
+	LEFT JOIN #TblTarjetasR f
+		ON f.numerotarjeta = a.NumeroTarjeta and f.numlote = a.numlote
+	LEFT JOIN Lotes g
+		ON g.NumeroLote = a.NumLote
+	LEFT JOIN #TblSolicitudesCRM h
+		ON h.CiF = e.Cif
+	LEFT JOIN #TblFiadores EF WITH(NOLOCK) 
+		ON a.NumeroTarjeta = EF.NumeroTarjeta
+	LEFT JOIN #TblEUsuariosETarjetas EU WITH(NOLOCK) 
+		ON a.NumeroTarjeta = EU.NumeroTarjeta
+	LEFT JOIN #TblReferenciasTC RTC WITH(NOLOCK) 
+		ON RTRIM(LTRIM(RTC.Cif)) = e.Cif
+
+
+/************************************************************************************************/
+
+END
+
+
+
+
+
+
+
+
+
+
+
+
+USE [ImpresionSobresTarjetas]
+GO
+/****** Object:  StoredProcedure [dbo].[usp_ValoresDocumentosParametrizados]    Script Date: 25/8/2026 14:17:11 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- Author:		Ebero R. Orellana
+-- Create date: <Create Date,,>
+-- Description:	Obtiene los valores y las etiquetas
+-- =============================================
+
+-- =============================================
+-- Control de Cambios
+-- Author:		Alejandra García
+-- Create date: 09-05-2022
+-- Description:Se cambio como se obtiene la bandeja de Débito
+-- =============================================
+ALTER     PROCEDURE [dbo].[usp_ValoresDocumentosParametrizados] 
+	-- Add the parameters for the stored procedure here
+	@idBandeja INT,
+	@Lote VARCHAR(20),
+	@NumeroTarjeta VARCHAR(20),
+	@Identidad VARCHAR(20)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+	
+    -- Insert statements for procedure here
+	--Obtiene la bandeja con sus etiquetas
+	exec usp_getBandeja @idbandeja
+
+	--Obtiene el valor consultado por el usuario
+	IF @idBandeja = 1
+	BEGIN
+		
+		exec usp_CreditoBandeja @lote, @NumeroTarjeta, @Identidad		
+
+
+	END
+
+	IF @idBandeja = 2
+	BEGIN
+		
+		exec usp_BandejaDebito @lote, @NumeroTarjeta, @Identidad		
+
+	END
+
+
+	--IF @idBandeja = 2
+	--BEGIN
+	--	SELECT *FROM uvw_BandejaDebito a
+	--	WHERE CONVERT(VARCHAR(10), FechaCarga, 103) = @Lote AND a.NumeroTarjeta = @NumeroTarjeta AND rtrim(ltrim(a.Identidad))  = rtrim(ltrim(@Identidad))
+	--END
+	IF @idBandeja = 3
+	BEGIN
+		SELECT *FROM uvw_BandejaPriorityPass a
+		WHERE CONVERT(VARCHAR(10), RfUltActualizacion, 103) = @Lote AND a.RfNoTarjeta = @NumeroTarjeta AND rtrim(ltrim(a.identidad))  = rtrim(ltrim(@Identidad))
+	END
+
+END
+
+
+
+
+
+
+
+
+      //Obtiene la bandeja de los datos 
+        private DataSet dsBandejaDatos(string Lote, string numeroTarjeta, string identidad)
+        {
+           
+
+            SQLSrv queryParametros = new SQLSrv(Properties.Settings.Default.ConnImpresionContratos, "usp_ValoresDocumentosParametrizados");
+            queryParametros.Parametros.Add(new SqlParameter("@idBandeja", 1));// Tipo de bandeja
+            queryParametros.Parametros.Add(new SqlParameter("@Lote", Lote));// lote
+            queryParametros.Parametros.Add(new SqlParameter("@NumeroTarjeta", numeroTarjeta));// Numero de gtarjeta
+            queryParametros.Parametros.Add(new SqlParameter("@Identidad", identidad));// Identidad del cliente
+
+            DataSet dsBandeja = queryParametros.getDataSetWithParameters();
+
+            if (!queryParametros.Success)
+            {
+                MessageBox.Show("ERROR: Se ha capturado el siguiente Error al consultar los datos del cliente: " + queryParametros.Mensaje, "ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return dsBandeja;
+
+        }
+
+
+
+
+
+
