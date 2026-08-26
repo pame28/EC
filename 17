@@ -1,8 +1,3 @@
-
-
-
-
-Si lo que quiero es mostrarles como implemetar este método:
    public static void DesencriptarArchivo(string rutaEntrada, string rutaSalida, string keyBase64, string nonceBase64)
    {
        byte[] key = Convert.FromBase64String(keyBase64);
@@ -26,9 +21,7 @@ Si lo que quiero es mostrarles como implemetar este método:
 
        using (var aesGcm = new AesGcm(key, TagSizeBytes))
        {
-           // Si la llave, el nonce o el tag no coinciden exactamente
-           // (archivo corrupto, alterado, o llave/txt equivocados),
-           // esto lanza CryptographicException.
+
            aesGcm.Decrypt(nonce, ciphertext, tag, plaintext);
        }
 
@@ -36,13 +29,59 @@ Si lo que quiero es mostrarles como implemetar este método:
    }
 
 
-Seria asi verrdad:
 
 
-                var (keyBase64, nonceBase64) = DesencriptadorService.LeerLlaveYNonce(txtLlavePublica.Text);
 
-                EncriptacionAES.DesencriptarArchivo(
-                    txtArchivoEncriptado.Text,
-                    txtArchivoEncriptado.Text,
-                    keyBase64,
-                    nonceBase64);
+
+
+
+
+
+        public static (string keyBase64, string nonceBase64) LeerLlaveYNonce(string rutaTxt)
+        {
+            string? key = null;
+            string? nonce = null;
+
+            foreach (var linea in File.ReadAllLines(rutaTxt))
+            {
+                if (linea.StartsWith("Llave=", StringComparison.OrdinalIgnoreCase))
+                    key = linea.Substring("Llave=".Length).Trim();
+                else if (linea.StartsWith("Nonce=", StringComparison.OrdinalIgnoreCase))
+                    nonce = linea.Substring("Nonce=".Length).Trim();
+            }
+
+            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(nonce))
+                throw new FormatException("No se encontraron las líneas 'Llave=' y 'Nonce=' en el archivo.");
+
+            return (key, nonce);
+        }
+
+
+
+
+
+
+
+
+       var (keyBase64, nonceBase64) = DesencriptadorService.LeerLlaveYNonce(txtLlavePublica.Text);
+
+       EncriptacionAES.DesencriptarArchivo(
+           txtArchivoEncriptado.Text,
+           txtArchivoEncriptado.Text,
+           keyBase64,
+           nonceBase64);
+
+
+
+
+
+
+
+
+
+
+
+
+
+Asi quiero hacerlo. ayudame a explicarselos paso a paso (3 pasos) 
+Lo que necesito es hacer un manual de como desencriptar un archivo para alguien externo
