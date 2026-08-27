@@ -1,11 +1,119 @@
-Estimado equipo,
+using dllwsDivideloTodoBXI.Models.GatewayLogin;
+using Log4NetLogger;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
 
-Según lo acordado en la reunión de hoy, les comparto el documento que contiene el fragmento de código necesario para realizar la desencriptación del archivo JSON.
+namespace dllwsDivideloTodoBXI.Services
+{
+    public class BaseApiService
+    {
+        protected HttpClient client;
 
-Quedo atento a cualquier consulta, duda o comentario que pueda surgir durante su revisión.
+        protected BaseApiService(string baseUrl, bool ignoreSslErrors)
+        {
+          
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            if (ignoreSslErrors)
+            {
+                ServicePointManager.ServerCertificateValidationCallback =
+                      delegate (object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+                      {
+                          return true;
+                      };
+            }
+          
+            client = new HttpClient
+            {
+                BaseAddress = new Uri(baseUrl)
+            };
 
-Saludos cordiales.
+            client.DefaultRequestHeaders.Accept.Clear();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
 
+        protected async Task<T> GetAsync<T>(string url)
+        {
+            HttpResponseMessage response = await client.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Error consumiendo API {url} - GET");
 
+            string json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<T>(json);
+        }
 
-Ayudame a redactarlo mejor
+        protected async Task<T> PostAsync<T>(string url, object data)
+        {
+            var jsonData = JsonConvert.SerializeObject(data);
+
+            var content = new StringContent(
+                JsonConvert.SerializeObject(data),
+                Encoding.UTF8,
+                "application/json"
+                );
+
+            // Log del request
+            AppLogger.Info($"Request a endpoint {url} con body: {jsonData}");
+
+            HttpResponseMessage response = await client.PostAsync(url, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                AppLogger.Info($"Llamado a endpoint {url} fallo con statuscode: {response.StatusCode.ToString()}");
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+
+                AppLogger.Info($"Llamado a endpoint {url} fallo con ERROR: {errorContent}");
+
+                return JsonConvert.DeserializeObject<T>(errorContent);
+
+            }
+
+            AppLogger.Info($"Llamado a endpoint {url} exitoso");
+
+            string json = await response.Content.ReadAsStringAsync();
+
+            AppLogger.Info($"Llamado a endpoint {url} exitoso, respuesta: {json}");
+
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+
+        protected async Task<string> LoginAsync(string url, string user, string password)
+        {
+            var loginRequest = new 
+            {
+                username = user,
+                password = password
+            };
+
+            var content = new StringContent(
+                JsonConvert.SerializeObject(loginRequest),
+                Encoding.UTF8,
+                "application/json");
+
+            HttpResponseMessage responseMessage = await client.PostAsync(url, content);
+
+            if(!responseMessage.IsSuccessStatusCode)
+                throw new Exception($"Error consumiendo API {url} - POST");
+
+            string json = await responseMessage.Content.ReadAsStringAsync();
+
+            GatewayLoginResponse response = JsonConvert.DeserializeObject<GatewayLoginResponse>(json);
+            if (!response.hasError)
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", response.data.accessToken);
+                return response.data.accessToken;
+            }
+
+            return string.Empty;
+        }
+    }
+}
