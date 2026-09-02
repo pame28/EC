@@ -6,3 +6,41 @@
 
 
 ayudame a hacer un insert a esta tabla con los datos de arriba+
+
+
+USE [EstadosCuentaJSONProcesador]
+GO
+
+/****** Object:  Table [dbo].[BandejaDetalle]    Script Date: 2/9/2026 10:14:11 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[BandejaDetalle](
+	[idRow] [int] NOT NULL,
+	[Origen] [varchar](4) NULL,
+	[FechaCarga] [date] NULL,
+	[Codigo_Emisor] [char](8) NULL,
+	[EC_DetalleNo_Cuenta] [char](13) NULL,
+	[Fecha_Corte] [datetime] NULL,
+	[EC_DetalleNo_Tarjeta] [char](16) NULL,
+	[Nombre_TH_P] [varchar](40) NULL,
+	[EC_DetalleEmisor_Madre] [char](8) NULL,
+	[EC_DetalleCuenta_Madre] [char](5) NULL,
+	[No_Autorizacion] [varchar](12) NULL,
+	[Fecha_Consumo] [datetime] NULL,
+	[Codigo_Mov] [char](2) NULL,
+	[Descripcion_Mov] [varchar](45) NULL,
+	[Moneda_Mov] [char](2) NULL,
+	[Monto_Mov] [money] NULL,
+	[Tarjeta_Imprimir] [varchar](4) NULL,
+	[Tasa_Efectiva_Anual_EF_MN] [money] NULL,
+	[Tasa_Efectiva_Anual_EF_ME] [money] NULL,
+	[NoCuentaClaro] [varchar](10) NULL,
+	[ProcesadorOrigen] [varchar](6) NULL
+) ON [PRIMARY]
+GO
+
+
