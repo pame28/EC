@@ -1,46 +1,34 @@
-	106785847	VASA	2026-04-21	404181  	5000001844912	2026-04-27 00:00:00.000	1000000004203142	CLAUDIA MORALES	NULL	NULL	NULL	1900-01-01 00:00:00.000	NULL	DOLARES                  RIVERSIDE CA US	DO	2800.0000	3793	0.0000	0.0000	0000000014	LOCAL
-	106785848	VASA	2026-04-21	404181  	5000001844912	2026-04-27 00:00:00.000	1000000004203142	CLAUDIA MORALES	NULL	NULL	504417	2026-04-10 00:00:00.000	NULL	DOLARES                  RIVERSIDE CA US	HN	13.0000	3793	0.0000	0.0000	0000000014	LOCAL
-	106785849	VASA	2026-04-21	404181  	5000001844912	2026-04-27 00:00:00.000	1000000004203142	CLAUDIA MORALES	NULL	NULL	NULL	1900-01-01 00:00:00.000	NULL	PROGRAMA DE COBERTURA DE DEUDA	DO	275.0000	3793	0.0000	0.0000	0000000014	LOCAL
-	106785850	VASA	2026-04-21	404181  	5000001844912	2026-04-27 00:00:00.000	1000000004203142	CLAUDIA MORALES	NULL	NULL	NULL	1900-01-01 00:00:00.000	NULL	PROGRAMA DE COBERTURA DE DEUDA	DO	275.0000	3793	0.0000	0.0000	0000000014	LOCAL
-
-
-
-ayudame a hacer un insert a esta tabla con los datos de arriba+
-
-
 USE [EstadosCuentaJSONProcesador]
 GO
 
-/****** Object:  Table [dbo].[BandejaDetalle]    Script Date: 2/9/2026 10:14:11 ******/
-SET ANSI_NULLS ON
+INSERT INTO [dbo].[BandejaDetalle]
+    ([idRow], [Origen], [FechaCarga], [Codigo_Emisor], [EC_DetalleNo_Cuenta],
+     [Fecha_Corte], [EC_DetalleNo_Tarjeta], [Nombre_TH_P], [EC_DetalleEmisor_Madre],
+     [EC_DetalleCuenta_Madre], [No_Autorizacion], [Fecha_Consumo], [Codigo_Mov],
+     [Descripcion_Mov], [Moneda_Mov], [Monto_Mov], [Tarjeta_Imprimir],
+     [Tasa_Efectiva_Anual_EF_MN], [Tasa_Efectiva_Anual_EF_ME], [NoCuentaClaro], [ProcesadorOrigen])
+VALUES
+    (106785847, 'VASA', '2026-04-21', '404181  ', '5000001844912',
+     '2026-04-27 00:00:00.000', '1000000004203142', 'CLAUDIA MORALES', NULL,
+     NULL, NULL, '1900-01-01 00:00:00.000', NULL,
+     'DOLARES                  RIVERSIDE CA US', 'DO', 2800.0000, '3793',
+     0.0000, 0.0000, '0000000014', 'LOCAL'),
+
+    (106785848, 'VASA', '2026-04-21', '404181  ', '5000001844912',
+     '2026-04-27 00:00:00.000', '1000000004203142', 'CLAUDIA MORALES', NULL,
+     NULL, '504417', '2026-04-10 00:00:00.000', NULL,
+     'DOLARES                  RIVERSIDE CA US', 'HN', 13.0000, '3793',
+     0.0000, 0.0000, '0000000014', 'LOCAL'),
+
+    (106785849, 'VASA', '2026-04-21', '404181  ', '5000001844912',
+     '2026-04-27 00:00:00.000', '1000000004203142', 'CLAUDIA MORALES', NULL,
+     NULL, NULL, '1900-01-01 00:00:00.000', NULL,
+     'PROGRAMA DE COBERTURA DE DEUDA', 'DO', 275.0000, '3793',
+     0.0000, 0.0000, '0000000014', 'LOCAL'),
+
+    (106785850, 'VASA', '2026-04-21', '404181  ', '5000001844912',
+     '2026-04-27 00:00:00.000', '1000000004203142', 'CLAUDIA MORALES', NULL,
+     NULL, NULL, '1900-01-01 00:00:00.000', NULL,
+     'PROGRAMA DE COBERTURA DE DEUDA', 'DO', 275.0000, '3793',
+     0.0000, 0.0000, '0000000014', 'LOCAL');
 GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-CREATE TABLE [dbo].[BandejaDetalle](
-	[idRow] [int] NOT NULL,
-	[Origen] [varchar](4) NULL,
-	[FechaCarga] [date] NULL,
-	[Codigo_Emisor] [char](8) NULL,
-	[EC_DetalleNo_Cuenta] [char](13) NULL,
-	[Fecha_Corte] [datetime] NULL,
-	[EC_DetalleNo_Tarjeta] [char](16) NULL,
-	[Nombre_TH_P] [varchar](40) NULL,
-	[EC_DetalleEmisor_Madre] [char](8) NULL,
-	[EC_DetalleCuenta_Madre] [char](5) NULL,
-	[No_Autorizacion] [varchar](12) NULL,
-	[Fecha_Consumo] [datetime] NULL,
-	[Codigo_Mov] [char](2) NULL,
-	[Descripcion_Mov] [varchar](45) NULL,
-	[Moneda_Mov] [char](2) NULL,
-	[Monto_Mov] [money] NULL,
-	[Tarjeta_Imprimir] [varchar](4) NULL,
-	[Tasa_Efectiva_Anual_EF_MN] [money] NULL,
-	[Tasa_Efectiva_Anual_EF_ME] [money] NULL,
-	[NoCuentaClaro] [varchar](10) NULL,
-	[ProcesadorOrigen] [varchar](6) NULL
-) ON [PRIMARY]
-GO
-
-
