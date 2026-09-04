@@ -1,12 +1,3 @@
-Mira que tengo un problema.
-
-se hizo una modificacion en una tabla donde se agregó el campo NumeroTarjetCore (Cabe mencionar que actualmente existe u campo que se llama NumeroTarjeta los cuales tienen ese nuevo campo NULL y eso está bien)
-el objetivo de este camhio es que, hay ciertas TC que tienen un NumeroTarjetaCore (y tambien numerotarjeta) y si ese es el caso, al momento de imprimir unos documentos debe mostrarse el numerotarjatacore y no el otro, comprendes?. la cosa es que, actualmente se generan unos documentos y no viene la data completa 
-porque? porque está haciendo el filtro con el NumeroTarjetaCore y deberia hacerlo con NumeroTarjeta siempre. Me gustaria solo tener que hacer modificaciones en sql
-
-
-Te muestros:
-
 USE [ImpresionSobresTarjetas]
 GO
 /****** Object:  StoredProcedure [dbo].[usp_CreditoBandeja]    Script Date: 24/7/2026 14:47:13 ******/
@@ -746,3 +737,11 @@ END
 
 
 
+
+
+
+
+Necesito que habgamos una actualizacion en esta linea  ISNULL(ic.NumeroTarjetaCore, ic.numerotarjeta) as numerotarjeta, 
+
+
+No quiero que aplique solo para NULL Sino tambien para vacios
