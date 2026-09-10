@@ -1,13 +1,30 @@
-C:\Users\80730.HN\Desktop\Projects\2026\BH-59681 Sistema de Feedback\SistemaFeedbackColaboradores\FrontEnd\feedbackColaboradores>npm install
-npm error code ENOTFOUND
-npm error syscall getaddrinfo
-npm error errno ENOTFOUND
-npm error network request to https://registry.npmjs.org/zod-validation-error/-/zod-validation-error-4.0.2.tgz failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org
-npm error network This is a problem related to network connectivity.
-npm error network In most cases you are behind a proxy or have bad network settings.
-npm error network
-npm error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'    
-npm error A complete log of this run can be found in: C:\Users\80730.HN\AppData\Local\npm-cache\_logs\2026-09-10T18_23_09_901Z-debug-0.log
+C:\Users\80730.HN\Desktop\Projects\2026\BH-59681 Sistema de Feedback\SistemaFeedbackColaboradores\FrontEnd\feedbackColaboradores>npm config get https-config                                                        
+undefined
+
+C:\Users\80730.HN\Desktop\Projects\2026\BH-59681 Sistema de Feedback\SistemaFeedbackColaboradores\FrontEnd\feedbackColaboradores>n
+pm config list
+; "builtin" config from C:\Program Files\nodejs\node_modules\npm\npmrc
+
+prefix = "C:\\Users\\80730.HN\\AppData\\Roaming\\npm"
+
+; "user" config from C:\Users\80730.HN\.npmrc
+
+https-proxy = "http://80730:***@pxhn.corporacionbi.com:9090"
+proxy = "http://80730:***@pxhn.corporacionbi.com:9090"
+strict-ssl = false
+
+; node bin location = C:\Program Files\nodejs\node.exe
+; node version = v24.18.0
+; npm local prefix = C:\Users\80730.HN\Desktop\Projects\2026\BH-59681 Sistema de Feedback\SistemaFeedbackColaboradores\FrontEnd\feedbackColaboradores
+; npm version = 11.16.0
+; cwd = C:\Users\80730.HN\Desktop\Projects\2026\BH-59681 Sistema de Feedback\SistemaFeedbackColaboradores\FrontEnd\feedbackColaboradores
+; HOME = C:\Users\80730.HN
+; Run `npm config ls -l` to show all defaults.
+
+C:\Users\80730.HN\Desktop\Projects\2026\BH-59681 Sistema de Feedback\SistemaFeedbackColaboradores\FrontEnd\feedbackColaboradores> 
 
 
-mira que tengo este probelma lo mas raro es que yo desde el navegador si tengo acceso. Y cuando yo abro el vs code me pide que coloque las credenciales de proxy y aun asi las bloquea :c o o no se que hacer ayudame porfis
+
+
+npm config set proxy http://80730:PASS@pxhn.corporacionbi.com:9090
+npm config set https-proxy http://80730:PASS@pxhn.corporacionbi.com:9090
