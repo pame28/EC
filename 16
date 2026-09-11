@@ -1,18 +1,142 @@
-[plugin:vite:import-analysis] Failed to resolve import "lucide-react" from "src/pages/PlantillaPage.jsx". Does the file exist?
-C:/Users/80730.HN/Desktop/Projects/2026/BH-59681 Sistema de Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/src/pages/PlantillaPage.jsx:5:34
-3  |  import "../shared/styles.css";
-4  |  import { Heading, Text, Button, Badge, Navbar, Sidebar, Card } from "../shared/components";
-5  |  import { Check, ArrowRight } from "lucide-react";
-   |                                     ^
-6  |  var _jsxFileName = "C:/Users/80730.HN/Desktop/Projects/2026/BH-59681 Sistema de Feedback/SistemaFeedbackColaboradores...
-7  |  import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
-    at TransformPluginContext._formatLog (file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:8393:39)
-    at TransformPluginContext.error (file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:8390:14)
-    at normalizeUrl (file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:26058:18)
-    at async file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:26128:30
-    at async Promise.all (index 3)
-    at async TransformPluginContext.transform (file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:26094:4)
-    at async EnvironmentPluginContainer.transform (file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:8172:14)
-    at async loadAndTransform (file:///C:/Users/80730.HN/Desktop/Projects/2026/BH-59681%20Sistema%20de%20Feedback/SistemaFeedbackColaboradores/FrontEnd/feedbackColaboradores/node_modules/vite/dist/node/chunks/node.js:19634:26)
-Click outside, press Esc key, or fix the code to dismiss.
-You can also disable this overlay by setting server.hmr.overlay to false in vite.config.js.
+Mira que se me ejecuta bien, ya se levanta bien. Pero lo que no entiendo es, porque sale todo en blanc, todo vacio y si comento lo de la plantilla todo funciona bien jaja
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { LoginPage } from '../pages/LoginPage'
+
+import { useAuthStore } from '../hooks/useAuthStore'
+
+import { useEffect, useState } from 'react'
+import { apiFeedbackAuthorized } from '../api/APIS'
+import { endpointsAPI } from '../api/endpointApi'
+import { messagesFunctions } from '../helpers/messagesFunctions'
+import { useUiStore } from '../hooks/useUiStore'
+import { useIDBStore } from '../hooks/useIDBStore'
+import { ModalConfirmation } from '../components/ModalConfirmation'
+import { HomePage } from '../pages/HomePage'
+import { PlantillaPage } from '../pages/PlantillaPage'
+
+export const AppRouter = () => {
+    const { status, logout } = useAuthStore();
+    const [modal, setModal] = useState();
+
+    const { getMessage } = messagesFunctions();
+    const { openModalConfirmation, closeModalConfirmation } = useUiStore();
+    const { crearIDB, addData } = useIDBStore();
+
+    //Inicializa el proceso de validación de los tiempos de inactividad
+    const init = () => {
+        window.addEventListener("mousemove", resetTimer, false);
+        window.addEventListener("mousedown", resetTimer, false);
+        window.addEventListener("mousewheel", resetTimer, false);
+        window.addEventListener("touchmove", resetTimer, false);
+        window.addEventListener("touchstart", resetTimer, false);
+        window.addEventListener("MSPointerMove", resetTimer, false);
+        window.addEventListener("keypress", resetTimer, false);
+        window.addEventListener("DOMMouseScroll", resetTimer, false);
+        window.addEventListener("unload", resetTimer, false);
+        startTimer();
+        // console.log("init")
+    }
+
+
+    return (
+        <>
+            {modal}
+            <Routes>
+                {status != "authenticated"
+                    ?
+                    <>
+                        {/* <Route path="/home" element={<HomePage />} />
+                        <Route path="/*" element={<HomePage />} /> */}
+                        <Route path="/plantilla" element={<PlantillaPage />} />
+                        <Route path="/*" element={<PlantillaPage />} />
+
+                    </>
+                    :
+                    <>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/*" element={<Navigate to="/login" />} />
+                    </>
+                }
+
+            </Routes>
+        </>
+    )
+}
+
+
+
+
+
+
+// App.example.jsx
+import { useState } from "react";
+import "../shared/styles.css"; 
+import { Heading, Text, Button, Badge, Navbar, Sidebar, Card } from "../shared/components";
+import { Check, ArrowRight } from "lucide-react";
+
+export const PlantillaPage = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [active, setActive] = useState("lideres");
+
+  return (
+    <div className="app-root">
+      <Navbar onMenuClick={() => setSidebarOpen((v) => !v)} />
+
+      <div style={{ display: "flex" }}>
+        <Sidebar
+          open={sidebarOpen}
+          active={active}
+          onSelect={(k) => {
+            setActive(k);
+            setSidebarOpen(false);
+          }}
+        />
+
+        <main style={{ flex: 1, padding: "28px 24px", maxWidth: 1180, margin: "0 auto", width: "100%" }}>
+          <Heading level={1}>Mantenimiento de líder</Heading>
+          <Text variant="body" style={{ marginTop: 6, marginBottom: 24 }}>
+            Crea y administra equipos de trabajo por área.
+          </Text>
+
+          <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+            <Button variant="primary" size="md" icon={Check}>Nuevo equipo</Button>
+            <Button variant="secondary" size="md">Gestión de líderes</Button>
+            <Button variant="tertiary" size="md" icon={ArrowRight}>Ver reportes</Button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
+            <Card
+              area="HN - Agencias"
+              name="Equipo La Ceiba A"
+              leader="Ana Rodríguez"
+              members={[
+                { name: "Jorge Flores", role: "Cajero — La Ceiba", status: "activo", statusLabel: "Activo" },
+                { name: "Miguel Torres", role: "Cajero — La Ceiba", status: "vacaciones", statusLabel: "Vacaciones" },
+                { name: "Pedro Álvarez", role: "Cajero — Tegucigalpa Norte", status: "inactivo", statusLabel: "Inactivo" },
+              ]}
+            />
+            <Card
+              area="HN - Agencias"
+              name="Equipo SPS Norte"
+              leader="Jorge Mendoza"
+              members={[
+                { name: "Patricia Reyes", role: "Asesora — SPS", status: "activo", statusLabel: "Activo" },
+                { name: "Sofía Gutiérrez", role: "Asesora — SPS Sur", status: "activo", statusLabel: "Activo" },
+              ]}
+            />
+          </div>
+
+          <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
+            <Badge status="activo">Activo</Badge>
+            <Badge status="vacaciones">Vacaciones</Badge>
+            <Badge status="inactivo">Inactivo</Badge>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+
+
