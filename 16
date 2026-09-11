@@ -1,9 +1,191 @@
-Yo lo modifiqué
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { LoginPage } from '../pages/LoginPage'
+
+import { useAuthStore } from '../hooks/useAuthStore'
+
+import { useEffect, useState } from 'react'
+import { apiFeedbackAuthorized } from '../api/APIS'
+import { endpointsAPI } from '../api/endpointApi'
+import { messagesFunctions } from '../helpers/messagesFunctions'
+import { useUiStore } from '../hooks/useUiStore'
+import { useIDBStore } from '../hooks/useIDBStore'
+import { ModalConfirmation } from '../components/ModalConfirmation'
+import { HomePage } from '../pages/HomePage'
+import { PlantillaPage } from '../pages/PlantillaPage'
+
+export const AppRouter = () => {
+    const { status, logout } = useAuthStore();
+    const [modal, setModal] = useState();
+
+    const { getMessage } = messagesFunctions();
+    const { openModalConfirmation, closeModalConfirmation } = useUiStore();
+    const { crearIDB, addData } = useIDBStore();
+
+    //Inicializa el proceso de validación de los tiempos de inactividad
+    const init = () => {
+        window.addEventListener("mousemove", resetTimer, false);
+        window.addEventListener("mousedown", resetTimer, false);
+        window.addEventListener("mousewheel", resetTimer, false);
+        window.addEventListener("touchmove", resetTimer, false);
+        window.addEventListener("touchstart", resetTimer, false);
+        window.addEventListener("MSPointerMove", resetTimer, false);
+        window.addEventListener("keypress", resetTimer, false);
+        window.addEventListener("DOMMouseScroll", resetTimer, false);
+        window.addEventListener("unload", resetTimer, false);
+        startTimer();
+        // console.log("init")
+    }
+
+
+    return (
+        <>
+            {modal}
+            <Routes>
+                {status != "authenticated"
+                    ?
+                    <>
+                        {/* <Route path="/home" element={<HomePage />} />
+                        <Route path="/*" element={<HomePage />} /> */}
+                        <Route path="/plantilla" element={<PlantillaPage />} />
+                        <Route path="/*" element={<PlantillaPage />} />
+
+                    </>
+                    :
+                    <>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/*" element={<Navigate to="/login" />} />
+                    </>
+                }
+
+            </Routes>
+        </>
+    )
+}
+
+
+
+
+
+
+export { Navbar } from "./navbar";
+export { Sidebar, NAV_ITEMS } from "./SideBar";
+export { Button } from "./Button";
+export { Badge } from "./Badge";
+export { Heading, Text } from "./Typography";
+export { Card } from "./Card";
+
+
+
+
+import styles from "./Typography.module.css";
+
+
+export function Heading({ level = 1, children, className = "" }) {
+  const Tag = `h${level}`;
+  return <Tag className={`${styles[`h${level}`]} ${className}`}>{children}</Tag>;
+}
+
+export function Text({ variant = "body", children, className = "" }) {
+  return <p className={`${styles[variant]} ${className}`}>{children}</p>;
+}
+
+
+
+
+
+
+
+import { LayoutDashboard, Users, UserCog, BarChart3, Settings, LogOut } from "lucide-react";
+import styles from "./Sidebar.module.css";
+
+// Edita esta lista para cambiar las opciones del menú.
+export const NAV_ITEMS = [
+  { key: "dashboard", label: "Panel general", icon: LayoutDashboard },
+  { key: "usuarios", label: "Mantenimiento de usuarios", icon: Users },
+  { key: "lideres", label: "Mantenimiento de líder", icon: UserCog },
+  { key: "reportes", label: "Reportes", icon: BarChart3 },
+  { key: "config", label: "Configuración", icon: Settings },
+];
+
+
+export function Sidebar({ open, active, onSelect, items = NAV_ITEMS }) {
+  return (
+    <>
+      {open && <div className={styles.overlay} onClick={() => onSelect(active)} />}
+      <aside className={`${styles.sidebar} ${open ? styles.open : ""}`}>
+        <span className={styles.label}>MÓDULO</span>
+        {items.map(({ key, label, icon: Icon }) => (
+          <div
+            key={key}
+            className={`${styles.navlink} ${active === key ? styles.active : ""}`}
+            onClick={() => onSelect(key)}
+          >
+            <Icon size={17} strokeWidth={2.25} />
+            {label}
+          </div>
+        ))}
+        <div className={styles.footer}>
+          <div className={styles.navlink}>
+            <LogOut size={17} /> Cerrar sesión
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+
+
+
+import { Menu, Search, Bell } from "lucide-react";
+import styles from "./NavBar.module.css";
+
+/**
+ * <Navbar user={{ name, role, initials }} onMenuClick={() => {}} />
+ */
+export function Navbar({
+  user = { name: "Pamela Suazo", role: "Administrador", initials: "CM" },
+  onMenuClick,
+}) {
+  return (
+    <header className={styles.header}>
+      <div className={styles.brandGroup}>
+        <button className={`${styles.iconBtn} ${styles.menuBtn}`} onClick={onMenuClick}>
+          <Menu size={20} />
+        </button>
+        <div className={styles.brand}>
+          <div className={styles.logo}>eC</div>
+          <span className={styles.brandName}>eCoaching</span>
+        </div>
+      </div>
+
+      <div className={styles.search}>
+        <Search size={16} className={styles.searchIcon} />
+        <input className={styles.searchInput} placeholder="Buscar lo que sea que busques xd ..." />
+      </div>
+
+      <div className={styles.actions}>
+        <button className={styles.iconBtn}>
+          <Bell size={19} />
+        </button>
+        <div className={styles.userGroup}>
+          <div className={styles.userMeta}>
+            <div className={styles.userName}>{user.name}</div>
+            <div className={styles.userRole}>{user.role}</div>
+          </div>
+          <div className={styles.avatar}>{user.initials}</div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+
 import { Plus, Pencil, Trash2, RotateCcw, X } from "lucide-react";
 import { Heading, Text } from "../Typography";
 import { Button } from "../Button";
 import { Badge } from "../Badge";
-import styles from "./Card.css";
+import styles from "./Card.module.css";
 
 function initials(name) {
   return name.split(" ").map((w) => w[0]).slice(0, 2).join("");
@@ -60,3 +242,34 @@ export function Card({ area, name, leader, members, onAddMember, onEdit, onDelet
     </div>
   );
 }
+
+
+
+
+import styles from "./Button.module.css";
+
+export function Button({ variant = "primary", size = "md", icon: Icon, children, ...props }) {
+  return (
+    <button className={`${styles.btn} ${styles[variant]} ${styles[size]}`} {...props}>
+      {Icon && <Icon size={16} strokeWidth={2.25} />}
+      {children}
+    </button>
+  );
+}
+
+
+
+
+
+import styles from "./Badge.module.css"
+export function Badge({ status = "activo", children }) {
+  return (
+    <span className={`${styles.badge} ${styles[status]}`}>
+      <span className={styles.dot} />
+      {children}
+    </span>
+  );
+}
+
+
+
