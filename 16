@@ -1,142 +1,62 @@
-Mira que se me ejecuta bien, ya se levanta bien. Pero lo que no entiendo es, porque sale todo en blanc, todo vacio y si comento lo de la plantilla todo funciona bien jaja
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { LoginPage } from '../pages/LoginPage'
+Yo lo modifiqué
+import { Plus, Pencil, Trash2, RotateCcw, X } from "lucide-react";
+import { Heading, Text } from "../Typography";
+import { Button } from "../Button";
+import { Badge } from "../Badge";
+import styles from "./Card.css";
 
-import { useAuthStore } from '../hooks/useAuthStore'
-
-import { useEffect, useState } from 'react'
-import { apiFeedbackAuthorized } from '../api/APIS'
-import { endpointsAPI } from '../api/endpointApi'
-import { messagesFunctions } from '../helpers/messagesFunctions'
-import { useUiStore } from '../hooks/useUiStore'
-import { useIDBStore } from '../hooks/useIDBStore'
-import { ModalConfirmation } from '../components/ModalConfirmation'
-import { HomePage } from '../pages/HomePage'
-import { PlantillaPage } from '../pages/PlantillaPage'
-
-export const AppRouter = () => {
-    const { status, logout } = useAuthStore();
-    const [modal, setModal] = useState();
-
-    const { getMessage } = messagesFunctions();
-    const { openModalConfirmation, closeModalConfirmation } = useUiStore();
-    const { crearIDB, addData } = useIDBStore();
-
-    //Inicializa el proceso de validación de los tiempos de inactividad
-    const init = () => {
-        window.addEventListener("mousemove", resetTimer, false);
-        window.addEventListener("mousedown", resetTimer, false);
-        window.addEventListener("mousewheel", resetTimer, false);
-        window.addEventListener("touchmove", resetTimer, false);
-        window.addEventListener("touchstart", resetTimer, false);
-        window.addEventListener("MSPointerMove", resetTimer, false);
-        window.addEventListener("keypress", resetTimer, false);
-        window.addEventListener("DOMMouseScroll", resetTimer, false);
-        window.addEventListener("unload", resetTimer, false);
-        startTimer();
-        // console.log("init")
-    }
-
-
-    return (
-        <>
-            {modal}
-            <Routes>
-                {status != "authenticated"
-                    ?
-                    <>
-                        {/* <Route path="/home" element={<HomePage />} />
-                        <Route path="/*" element={<HomePage />} /> */}
-                        <Route path="/plantilla" element={<PlantillaPage />} />
-                        <Route path="/*" element={<PlantillaPage />} />
-
-                    </>
-                    :
-                    <>
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/*" element={<Navigate to="/login" />} />
-                    </>
-                }
-
-            </Routes>
-        </>
-    )
+function initials(name) {
+  return name.split(" ").map((w) => w[0]).slice(0, 2).join("");
 }
 
 
-
-
-
-
-// App.example.jsx
-import { useState } from "react";
-import "../shared/styles.css"; 
-import { Heading, Text, Button, Badge, Navbar, Sidebar, Card } from "../shared/components";
-import { Check, ArrowRight } from "lucide-react";
-
-export const PlantillaPage = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [active, setActive] = useState("lideres");
-
+export function Card({ area, name, leader, members, onAddMember, onEdit, onDelete, onChange }) {
   return (
-    <div className="app-root">
-      <Navbar onMenuClick={() => setSidebarOpen((v) => !v)} />
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <Text variant="label" className={styles.area}>{area}</Text>
+        <div className={styles.headerActions}>
+          <button className={styles.iconBtn} onClick={onEdit}><Pencil size={15} /></button>
+          <button className={styles.iconBtn} onClick={onDelete}><Trash2 size={15} /></button>
+        </div>
+      </div>
 
-      <div style={{ display: "flex" }}>
-        <Sidebar
-          open={sidebarOpen}
-          active={active}
-          onSelect={(k) => {
-            setActive(k);
-            setSidebarOpen(false);
-          }}
-        />
+      <Heading level={3} className={styles.name}>{name}</Heading>
 
-        <main style={{ flex: 1, padding: "28px 24px", maxWidth: 1180, margin: "0 auto", width: "100%" }}>
-          <Heading level={1}>Mantenimiento de líder</Heading>
-          <Text variant="body" style={{ marginTop: 6, marginBottom: 24 }}>
-            Crea y administra equipos de trabajo por área.
-          </Text>
-
-          <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-            <Button variant="primary" size="md" icon={Check}>Nuevo equipo</Button>
-            <Button variant="secondary" size="md">Gestión de líderes</Button>
-            <Button variant="tertiary" size="md" icon={ArrowRight}>Ver reportes</Button>
+      <div className={styles.leaderRow}>
+        <div className={styles.leaderInfo}>
+          <div className={styles.leaderAvatar}>{initials(leader)}</div>
+          <div>
+            <div className={styles.leaderName}>{leader}</div>
+            <Text variant="muted">Líder del equipo</Text>
           </div>
+        </div>
+        <Button variant="tertiary" size="sm" onClick={onChange}>Cambiar líder</Button>
+      </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
-            <Card
-              area="HN - Agencias"
-              name="Equipo La Ceiba A"
-              leader="Ana Rodríguez"
-              members={[
-                { name: "Jorge Flores", role: "Cajero — La Ceiba", status: "activo", statusLabel: "Activo" },
-                { name: "Miguel Torres", role: "Cajero — La Ceiba", status: "vacaciones", statusLabel: "Vacaciones" },
-                { name: "Pedro Álvarez", role: "Cajero — Tegucigalpa Norte", status: "inactivo", statusLabel: "Inactivo" },
-              ]}
-            />
-            <Card
-              area="HN - Agencias"
-              name="Equipo SPS Norte"
-              leader="Jorge Mendoza"
-              members={[
-                { name: "Patricia Reyes", role: "Asesora — SPS", status: "activo", statusLabel: "Activo" },
-                { name: "Sofía Gutiérrez", role: "Asesora — SPS Sur", status: "activo", statusLabel: "Activo" },
-              ]}
-            />
-          </div>
+      <div className={styles.membersHeader}>
+        <Text variant="label">Miembros ({members.length})</Text>
+        <Button variant="primary" size="sm" icon={Plus} onClick={onAddMember}>Agregar</Button>
+      </div>
 
-          <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
-            <Badge status="activo">Activo</Badge>
-            <Badge status="vacaciones">Vacaciones</Badge>
-            <Badge status="inactivo">Inactivo</Badge>
+      <div className={styles.memberList}>
+        {members.map((m) => (
+          <div key={m.name} className={styles.memberRow}>
+            <div className={styles.memberInfo}>
+              <div className={styles.memberAvatar}>{initials(m.name)}</div>
+              <div>
+                <div className={styles.memberName}>{m.name}</div>
+                <Text variant="muted">{m.role}</Text>
+              </div>
+            </div>
+            <div className={styles.memberActions}>
+              <Badge status={m.status}>{m.statusLabel}</Badge>
+              <button className={styles.iconBtn}><RotateCcw size={14} /></button>
+              <button className={styles.iconBtn}><X size={14} /></button>
+            </div>
           </div>
-        </main>
+        ))}
       </div>
     </div>
   );
 }
-
-
-
-
