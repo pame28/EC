@@ -1,17 +1,110 @@
-Mira que, me estan pidiendo que cree una plantilla que sea responsive y muy profersional, que sea 10/10 de verdaderos especialista en React.
-Necesito que esa plantilla tenga navbar, sidebar títulos, párrafos, botones primarios, secundarios terciarios, colores, y muchas cosas que se pueden necesitar, creo que es eso lo que necesitan una plantilla para solo utilizar los objetos, no? 
-hay que ver la forma de hacer los componentes bien fácil de usar y modificar en caso de que se requiera. 
+// design-system/components/Navbar.jsx
+import { Menu, Search, Bell } from "lucide-react";
+import { colors } from "../tokens";
 
-Colores:
+/**
+ * <Navbar user={{ name, role, initials }} onMenuClick={() => {}} />
+ */
+export function Navbar({
+  user = { name: "Carlos Méndez", role: "Administrador operativo", initials: "CM" },
+  onMenuClick,
+}) {
+  return (
+    <header
+      style={{
+        height: 64,
+        background: colors.azulExperto,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 20px",
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        borderBottom: `3px solid ${colors.amarilloOptimista}`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <button className="icon-btn ds-menu-btn" style={{ color: "#fff" }} onClick={onMenuClick}>
+          <Menu size={20} />
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: colors.amarilloOptimista,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 800,
+              color: colors.azulExperto,
+              fontSize: 14,
+            }}
+          >
+            eC
+          </div>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, letterSpacing: "-0.01em" }}>
+            eCoaching
+          </span>
+        </div>
+      </div>
 
-AZUL EXPERTO: #003865
-AZUL FINANCIERO: #2D8C9E
-AQUA DIGITAL: #00C1D4
-AMARILLO OPTIMISTA: #FFB81C
-AMARILLO EMPATICO: #FDD26E
-BALNCO: #FFFFFFF
-GRIS NEUTRO: #9EA2A2
+      <div style={{ flex: 1, maxWidth: 420, margin: "0 24px", position: "relative" }}>
+        <Search size={16} color="rgba(255,255,255,0.55)" style={{ position: "absolute", left: 12, top: 10 }} />
+        <input
+          placeholder="Buscar equipo, usuario..."
+          style={{
+            width: "100%",
+            height: 36,
+            background: "rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.16)",
+            borderRadius: 8,
+            color: "#fff",
+            fontSize: 13.5,
+            padding: "0 12px 0 36px",
+            outline: "none",
+          }}
+        />
+      </div>
 
-
-
-Como podemos ordenar los componentes en react? para que se puedan usar bien facil y de forma profesional
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <button className="icon-btn" style={{ color: "#fff" }}>
+          <Bell size={19} />
+        </button>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginLeft: 8,
+            paddingLeft: 12,
+            borderLeft: "1px solid rgba(255,255,255,0.16)",
+          }}
+        >
+          <div className="ds-user-meta" style={{ textAlign: "right" }}>
+            <div style={{ color: "#fff", fontSize: 13.5, fontWeight: 700 }}>{user.name}</div>
+            <div style={{ color: colors.amarilloEmpatico, fontSize: 11.5, fontWeight: 700 }}>{user.role}</div>
+          </div>
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              background: colors.aquaDigital,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 800,
+              fontSize: 13,
+              color: colors.azulExperto,
+            }}
+          >
+            {user.initials}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
