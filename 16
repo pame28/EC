@@ -1,20 +1,17 @@
-FECHA_GENERACION	HORA_GENERACION	USUARIO_GENERACION	ARCHIVO_GENERADO	ESTADO_REGISTRO	FECHA_PROCESADO	HORA_PROCESADO	USUARIO_PROCESO
-24/8/2026	110000	BYTE01    	CONTRATO  	G	          	      	          
-24/8/2026	111900	HN40653   	CONTRATO  	G	          	      	          
-24/8/2026	113200	HN40653   	CONTRATO  	G	          	      	          
-24/8/2026	114545	HN40653   	CONTRATO  	G	          	      	          
+Mira que, me estan pidiendo que cree una plantilla que sea responsive y muy profersional, que sea 10/10 de verdaderos especialista en React.
+Necesito que esa plantilla tenga navbar, sidebar títulos, párrafos, botones primarios, secundarios terciarios, colores, y muchas cosas que se pueden necesitar, creo que es eso lo que necesitan una plantilla para solo utilizar los objetos, no? 
+hay que ver la forma de hacer los componentes bien fácil de usar y modificar en caso de que se requiera. 
+
+Colores:
+
+AZUL EXPERTO: #003865
+AZUL FINANCIERO: #2D8C9E
+AQUA DIGITAL: #00C1D4
+AMARILLO OPTIMISTA: #FFB81C
+AMARILLO EMPATICO: #FDD26E
+BALNCO: #FFFFFFF
+GRIS NEUTRO: #9EA2A2
 
 
 
-
-Ayudame a hacer un insert a esta tabla  TCATV3DAT.TCCTRARC
-
-TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN
-C70DD220	TCATV3DAT	TCCTRARC	FECHA_GENERACION	1	CHAR	10	10	(null)	(null)	0	(null)	' '	1	(null)	10	1	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	HORA_GENERACION	1	CHAR	6	6	(null)	(null)	0	(null)	' '	1	(null)	6	2	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	USUARIO_GENERACION	1	CHAR	10	10	(null)	(null)	0	(null)	' '	1	(null)	10	3	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	ARCHIVO_GENERADO	1	CHAR	10	10	(null)	(null)	0	(null)	' '	1	(null)	10	4	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	ESTADO_REGISTRO	1	CHAR	1	1	(null)	(null)	0	(null)	' '	1	(null)	1	5	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	FECHA_PROCESADO	1	CHAR	10	10	(null)	(null)	0	(null)	' '	1	(null)	10	6	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	HORA_PROCESADO	1	CHAR	6	6	(null)	(null)	0	(null)	' '	1	(null)	6	7	NO	(null)	(null)	(null)	(null)	NO	NO
-C70DD220	TCATV3DAT	TCCTRARC	USUARIO_PROCESO	1	CHAR	10	10	(null)	(null)	0	(null)	' '	1	(null)	10	8	NO	(null)	(null)	(null)	(null)	NO	NO
+Como podemos ordenar los componentes en react? para que se puedan usar bien facil y de forma profesional
