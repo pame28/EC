@@ -1,192 +1,38 @@
- public async Task<IActionResult> BXIRegistrosCongeladosAsync([FromBody] RequestDto requestDto)
- {
-     LogicalThreadContext.Properties["activityid"] = _uuid;
-     CatalogoResponseDto catalogoResponseDto = new CatalogoResponseDto();
-     List<AuthorizationResponseDto> lstAuthorizationDto = new List<AuthorizationResponseDto>();
+if (modoMicroservicio)
+{
+    _logger.Info("ModoMicroservicio ACTIVO -> consumiendo microservicio directamente");
+    try
+    {
+        return await _microservicioClient.ConsultarAsync(requestDto);
+    }
+    catch (Exception ex)
+    {
+        _logger.Error($"Error en modoMicroservicio | Card: {requestDto.counterpart_card} | Canal: {requestDto.channel}", ex);
+        return BadRequest(ex.Message);
+    }
+}
 
-     _logger.Info("***** BXIRegistrosCongeladosAsync *****");
-     _logger.Info($"Equivalente: {requestDto.counterpart_card} | Canal: {requestDto.channel}");
+bool esMigrada;
+try
+{
+    esMigrada = _repo.EsTarjetaMigrada(requestDto.counterpart_card);
+}
+catch (Exception ex)
+{
+    _logger.Error($"Error en EsTarjetaMigrada | Card: {requestDto.counterpart_card}", ex);
+    return BadRequest(ex.Message);
+}
 
-
-     bool modoMicroservicio =
-         _configuration.GetValue<bool>("Migracion:ModoMicroservicio");
-
-     _logger.Info($"ModoMicroservicio ={modoMicroservicio}");
-
-     if (modoMicroservicio)
-     {
-         _logger.Info("ModoMicroservicio ACTIVO -> consumiendo microservicio directamente");
-
-         // var microResponse =
-         return await _microservicioClient.ConsultarAsync(requestDto);
-         // return Ok(microResponse);
-
-     }
-
-     bool esMigrada = _repo.EsTarjetaMigrada(requestDto.counterpart_card);
-
-     if (esMigrada)
-     {
-         _logger.Info("Tarjeta MIGRADA, consumiendo microservicio");
-
-         // var microResponse =
-         return await _microservicioClient.ConsultarAsync(requestDto);
-
-     }
-
-
-
-     _logger.Info("Tarjeta NO migrada, usando flujo local");
-
-     CatalogoResponse catalogoResponse = new CatalogoResponse();
-
-
-     try
-     {
-
-
-         //Obtener los datos del cliente
-         Client cliente = _repo.GetClient(requestDto.counterpart_card);
-         if (cliente.document_number == "-1")
-         {
-             _logger.Debug("No se encontró informacion");
-             catalogoResponse = _repo.GetCatalogoResponse(2);
-             catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-             var response = new Response<int>(catalogoResponseDto, 0);
-             _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
-             return StatusCode(StatusCodes.Status200OK, response);
-         }
-
-         //Obtener los datos de la tarjeta
-         Card card = _repo.GetCard(requestDto.counterpart_card);
-         if (card.bin == "-1")
-         {
-             _logger.Debug("No se encontró informacion");
-             catalogoResponse = _repo.GetCatalogoResponse(2);
-             catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-             var response = new Response<int>(catalogoResponseDto, 0);
-             _logger.Debug($"Respuesta: {StatusCode(StatusCodes.Status200OK, response)}");
-             return StatusCode(StatusCodes.Status200OK, response);
-         }
-
-         //Obtener el token
-         _logger.Info("Obtener el token ");
-
-         Token token = new Token();
-
-         _logger.Debug("Consultando si existe un token en cache");
-         if (memoryCache.Contains("BearerCache"))
-         {
-             _logger.Debug("Existe un token en cache");
-             token.access_token = memoryCache.Get("BearerCache").ToString() ?? string.Empty;
-         }
-
-         if (string.IsNullOrEmpty(token.access_token) || string.IsNullOrWhiteSpace(token.access_token))
-         {
-             _logger.Debug("No existe un token en cache");
-             token = await _repo.GetToken();
-             apiPrismaMemoryCacheOAUTH(token.access_token, Convert.ToInt32(token.expires_in));
-         }
-
-         TokenDto tokenDto = _mapper.Map<TokenDto>(token);
-
-         //Obtener los registros 
-         var lstRegistros = await _repo.GetAll(card, cliente, tokenDto.access_token);
-
-         if (!lstRegistros.IsNullOrEmpty())
-         {
-             catalogoResponse = _repo.GetCatalogoResponse(1);
-             catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-             int DiasVigenciaFlotantes = 0;
-             string EstadoFlotantes = string.Empty;
-             ParamTransacciones DiasVigencia = _repo.GetVigenciaFlotante();
-             DiasVigenciaFlotantes = Convert.ToInt32(DiasVigencia.DiasVigencia.ToString());
-
-             EstadoFlotantes = DiasVigencia.Estado.ToString();
-
-             object parametrotrxReplace = _repo.GetReemplazarMerchantName();
-             List<ParamTransaccionesFlotantes> parametrosTransacciones = parametrotrxReplace as List<ParamTransaccionesFlotantes>;
-
-             var itemsToProcess = from item in lstRegistros
-                                  from data in parametrosTransacciones
-                                  where item.merchant_name == ""
-              && data.TipoTransaccion == item.transaction_type
-              && data.Estado == "1"
-              && data.Reemplazar == "1"
-                                  select new { item, data };
-
-             foreach (var pair in itemsToProcess)
-             {
-                 pair.item.merchant_name = pair.data.Descripcion;
-             }
-
-             DateTime FechaActual = DateTime.Now;
-
-             foreach (var item in lstRegistros)
-             {
-                 if (!item.transaction_type.ToUpper().StartsWith("PAG "))
-                 {
-                     if (item.currency == "LOC")
-                     {
-                         item.currency = "HNL";
-                     }
-                     else if (item.currency == "U$S")
-                     {
-                         item.currency = "USD";
-                     }
-
-                     if (EstadoFlotantes == "1")
-                     {
-                         DateTime FechaTransaccion = Convert.ToDateTime(item.date);
-                         int diasAntiguedad = Convert.ToInt32(Math.Round((FechaActual - FechaTransaccion).TotalDays, 0));
-
-                         if (DiasVigenciaFlotantes >= diasAntiguedad)
-                         {
-                             lstAuthorizationDto.Add(_mapper.Map<AuthorizationResponseDto>(item));
-                         }
-                     }
-                     else
-                     {
-                         lstAuthorizationDto.Add(_mapper.Map<AuthorizationResponseDto>(item));
-                     }
-                 }
-
-
-             }
-
-             SumaFlotantesDto sumaFlotantesDto = new SumaFlotantesDto();
-             SumaFlotantes flotan = _repo.GetSumaFlotantes(lstAuthorizationDto);
-             sumaFlotantesDto = _mapper.Map<SumaFlotantesDto>(flotan);
-
-             ResponseRegistros<List<AuthorizationResponseDto>> response = new ResponseRegistros<List<AuthorizationResponseDto>>(catalogoResponseDto, lstAuthorizationDto, sumaFlotantesDto);
-             _logger.Debug($"Respuesta: {Ok(response)}");
-             _logger.Info("Ejecucion exitosa");
-             return Ok(response);
-         }
-         else
-         {
-             catalogoResponse = _repo.GetCatalogoResponse(2);
-             catalogoResponseDto = _mapper.Map<CatalogoResponseDto>(catalogoResponse);
-
-             var response = new Response<int>(catalogoResponseDto, 0);
-             _logger.Debug($"Respuesta: {Ok(response)}");
-             _logger.Info("Ejecucion exitosa");
-             return Ok(response);
-         }
-     }
-     catch (Exception ex)
-     {
-         _logger.Error("Error en BXIRegistrosCongeladosAsync: ", ex);
-         return BadRequest(ex.Message);
-     }
- }
-
-
-
-
-
-
-Mira, parece que no estoy imprimiendo bien los errores, es asi? o estoy equivocada?
+if (esMigrada)
+{
+    _logger.Info("Tarjeta MIGRADA, consumiendo microservicio");
+    try
+    {
+        return await _microservicioClient.ConsultarAsync(requestDto);
+    }
+    catch (Exception ex)
+    {
+        _logger.Error($"Error consultando microservicio (migrada) | Card: {requestDto.counterpart_card}", ex);
+        return BadRequest(ex.Message);
+    }
+}
