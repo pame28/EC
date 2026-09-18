@@ -1,38 +1,247 @@
-if (modoMicroservicio)
-{
-    _logger.Info("ModoMicroservicio ACTIVO -> consumiendo microservicio directamente");
-    try
-    {
-        return await _microservicioClient.ConsultarAsync(requestDto);
-    }
-    catch (Exception ex)
-    {
-        _logger.Error($"Error en modoMicroservicio | Card: {requestDto.counterpart_card} | Canal: {requestDto.channel}", ex);
-        return BadRequest(ex.Message);
-    }
-}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Renci.SshNet;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
 
-bool esMigrada;
-try
+namespace SFTPManager
 {
-    esMigrada = _repo.EsTarjetaMigrada(requestDto.counterpart_card);
-}
-catch (Exception ex)
-{
-    _logger.Error($"Error en EsTarjetaMigrada | Card: {requestDto.counterpart_card}", ex);
-    return BadRequest(ex.Message);
-}
+    class Program
+    {
+        static string DirectorioDescargaSFTP = SFTPManager.Properties.Settings.Default.DirectorioDescargaSFTP;
+        static string DirectorioSubidaSFTP = SFTPManager.Properties.Settings.Default.DirectorioSubidaSFTP;
+        static string Servidor = SFTPManager.Properties.Settings.Default.Servidor;
+        static string Usuario = SFTPManager.Properties.Settings.Default.Usuario;
+        static string Contrasena = SFTPManager.Properties.Settings.Default.Contrasena;
+        static int Puerto = SFTPManager.Properties.Settings.Default.Puerto;
 
-if (esMigrada)
-{
-    _logger.Info("Tarjeta MIGRADA, consumiendo microservicio");
-    try
-    {
-        return await _microservicioClient.ConsultarAsync(requestDto);
-    }
-    catch (Exception ex)
-    {
-        _logger.Error($"Error consultando microservicio (migrada) | Card: {requestDto.counterpart_card}", ex);
-        return BadRequest(ex.Message);
+        static string DirectorioArchivosDescargados = SFTPManager.Properties.Settings.Default.DirectorioArchivosDescargados;
+        static string DirectorioArchivosParaEnvio = SFTPManager.Properties.Settings.Default.DirectorioArchivosParaEnvio;
+
+        static string DirectorioArchivosDescargadosHistorico = SFTPManager.Properties.Settings.Default.DirectorioArchivosDescargadosHistorico;
+        static string DirectorioArchivosParaEnvioHistorico = SFTPManager.Properties.Settings.Default.DirectorioArchivosParaEnvioHistorico;
+
+        static string Conexion = SFTPManager.Properties.Settings.Default.ConectionString;
+
+        // Uso:
+        //   SFTPManager.exe 1            -> descarga del SFTP (como antes)
+        //   SFTPManager.exe 2            -> sube al SFTP (como antes)
+        //   SFTPManager.exe 3            -> LOCAL: registra en BD los archivos de DirectorioArchivosDescargados (sin SFTP)
+        //   SFTPManager.exe 3 mover      -> igual que 3, y luego mueve cada archivo a la carpeta historico
+        [STAThread]
+        static void Main(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                Log("Falta el argumento. Use 1 (descargar), 2 (subir) o 3 (procesar carpeta local).");
+                return;
+            }
+
+            try
+            {
+                if (args[0] == "1")
+                {
+                    Descargar();
+                }
+                else if (args[0] == "2")
+                {
+                    Subir();
+                }
+                else if (args[0] == "3")
+                {
+                    bool mover = args.Length > 1 && args[1].ToLower() == "mover";
+                    ProcesarLocal(mover);
+                }
+                else
+                {
+                    Log("Argumento no reconocido: " + args[0]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("ERROR GENERAL: " + ex.ToString());
+            }
+        }
+
+        // ---------- MODO 3: sin SFTP ----------
+        static void ProcesarLocal(bool mover)
+        {
+            Log("Modo 3 - carpeta local: " + DirectorioArchivosDescargados);
+            Log("Base de datos: " + new SqlConnectionStringBuilder(Conexion).DataSource + " / " + new SqlConnectionStringBuilder(Conexion).InitialCatalog);
+
+            if (!Directory.Exists(DirectorioArchivosDescargados))
+            {
+                Log("La carpeta no existe: " + DirectorioArchivosDescargados);
+                return;
+            }
+
+            string[] archivos = Directory.GetFiles(DirectorioArchivosDescargados, "*");
+            Log("Archivos encontrados: " + archivos.Length);
+
+            int ok = 0, error = 0;
+
+            foreach (string ruta in archivos)
+            {
+                string nombre = Path.GetFileName(ruta);
+
+                try
+                {
+                    if (!nombre.StartsWith("BPAIS"))
+                    {
+                        Log("OMITIDO (no empieza con BPAIS, el SP no lo registraria): " + nombre);
+                        continue;
+                    }
+
+                    InsertaLote(nombre);
+                    InsetaLog(nombre);
+                    Log("REGISTRADO: " + nombre);
+
+                    if (mover)
+                    {
+                        MoverAHistorico(ruta, DirectorioArchivosDescargadosHistorico);
+                        Log("MOVIDO a historico: " + nombre);
+                    }
+
+                    ok++;
+                }
+                catch (Exception ex)
+                {
+                    error++;
+                    Log("ERROR con " + nombre + ": " + ex.Message);
+                }
+            }
+
+            Log("Terminado. Correctos: " + ok + " / Con error: " + error);
+        }
+
+        static void MoverAHistorico(string rutaArchivo, string carpetaHistorico)
+        {
+            if (!Directory.Exists(carpetaHistorico))
+                Directory.CreateDirectory(carpetaHistorico);
+
+            string nombre = Path.GetFileName(rutaArchivo);
+            string destino = Path.Combine(carpetaHistorico, nombre);
+
+            // Si ya existe en el historico, no falla: le agrega fecha y hora
+            if (File.Exists(destino))
+            {
+                destino = Path.Combine(carpetaHistorico,
+                    Path.GetFileNameWithoutExtension(nombre) + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + Path.GetExtension(nombre));
+            }
+
+            File.Move(rutaArchivo, destino);
+        }
+
+        // ---------- MODO 1: descarga del SFTP ----------
+        static void Descargar()
+        {
+            using (SftpClient sftp = new SftpClient(Servidor, Puerto, Usuario, Contrasena))
+            {
+                sftp.Connect();
+
+                var files = sftp.ListDirectory(DirectorioDescargaSFTP).ToList();
+                Log("Elementos encontrados en SFTP: " + files.Count);
+
+                foreach (var file in files)
+                {
+                    if (file.IsDirectory || file.Name == "." || file.Name == "..") continue;
+
+                    try
+                    {
+                        InsertaLote(file.Name);
+
+                        string destino = Path.Combine(DirectorioArchivosDescargados, file.Name);
+                        using (FileStream fs = new FileStream(destino, FileMode.Create))
+                        {
+                            sftp.DownloadFile(file.FullName, fs);
+                        }
+
+                        InsetaLog(file.Name);
+                        //sftp.DeleteFile(file.FullName);
+                        Log("DESCARGADO: " + file.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log("ERROR con " + file.Name + ": " + ex.Message);
+                    }
+                }
+
+                sftp.Disconnect();
+            }
+        }
+
+        // ---------- MODO 2: subida al SFTP ----------
+        static void Subir()
+        {
+            using (SftpClient sftp = new SftpClient(Servidor, Puerto, Usuario, Contrasena))
+            {
+                sftp.Connect();
+
+                string[] filePaths = Directory.GetFiles(DirectorioArchivosParaEnvio, "*.txt");
+
+                foreach (string archivo in filePaths)
+                {
+                    string nombre = Path.GetFileName(archivo);
+
+                    try
+                    {
+                        using (FileStream fs = File.OpenRead(archivo))
+                        {
+                            sftp.UploadFile(fs, DirectorioSubidaSFTP + "/" + nombre);
+                        }
+
+                        MoverAHistorico(archivo, DirectorioArchivosParaEnvioHistorico);
+                        Log("SUBIDO: " + nombre);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log("ERROR con " + nombre + ": " + ex.Message);
+                    }
+                }
+
+                sftp.Disconnect();
+            }
+        }
+
+        // ---------- Base de datos (con parametros y sin ocultar errores) ----------
+        static void InsertaLote(string nombre)
+        {
+            using (SqlConnection con = new SqlConnection(Conexion))
+            using (SqlCommand cmd = new SqlCommand("dbo.USP_InsertaLote", con))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@NombreArchivo", nombre);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        static void InsetaLog(string archivo)
+        {
+            using (SqlConnection con = new SqlConnection(Conexion))
+            using (SqlCommand cmd = new SqlCommand(
+                "UPDATE dbo.Lotes SET DESCARGADO = GETDATE() WHERE ARCHIVO = @Archivo AND DESCARGADO IS NULL", con))
+            {
+                cmd.Parameters.AddWithValue("@Archivo", archivo);
+                con.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        // ---------- Log a consola y a archivo ----------
+        static void Log(string mensaje)
+        {
+            string linea = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " - " + mensaje;
+            Console.WriteLine(linea);
+            try
+            {
+                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SFTPManager.log"),
+                    linea + Environment.NewLine);
+            }
+            catch { }
+        }
     }
 }
