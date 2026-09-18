@@ -1,130 +1,51 @@
-Ayudame a entender este codigo .. el comportamiento que veo actualmente es que no pasa de una ruta a otra.. pero no se que condiciones tiene que cumplir el archivo para pasarse de una carpeta a otra 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Renci.SshNet;
-using System.Data;
-using System.Data.SqlClient;
-using System.IO;
-
-namespace SFTPManager
-{
-    class Program
-    {
-
-        static string DirectorioDescargaSFTP = SFTPManager.Properties.Settings.Default.DirectorioDescargaSFTP;
-        static string DirectorioSubidaSFTP = SFTPManager.Properties.Settings.Default.DirectorioSubidaSFTP;
-        static string Servidor = SFTPManager.Properties.Settings.Default.Servidor;
-        static string Usuario = SFTPManager.Properties.Settings.Default.Usuario;
-        static string Contrasena = SFTPManager.Properties.Settings.Default.Contrasena;
-        static int Puerto = SFTPManager.Properties.Settings.Default.Puerto;
-
-        static string DirectorioArchivosDescargados = SFTPManager.Properties.Settings.Default.DirectorioArchivosDescargados;
-        static string DirectorioArchivosParaEnvio = SFTPManager.Properties.Settings.Default.DirectorioArchivosParaEnvio;
-
-        static string DirectorioArchivosDescargadosHistorico = SFTPManager.Properties.Settings.Default.DirectorioArchivosDescargadosHistorico;
-        static string DirectorioArchivosParaEnvioHistorico = SFTPManager.Properties.Settings.Default.DirectorioArchivosParaEnvioHistorico;
-
-        static string Conexion = SFTPManager.Properties.Settings.Default.ConectionString;
-
-
-        [STAThread]
-        static void Main(string[] args)
-        {
-
-            if (args[0] == "1")
-            {
-                //Descarga archivos del SFTP
-                SftpClient sftp = new SftpClient(Servidor, Puerto, Usuario, Contrasena);
-                sftp.Connect();
-
-                var files = sftp.ListDirectory(DirectorioDescargaSFTP);
-
-                foreach (var file in files)
-                {
-                    if (file.Name != "." && file.Name != "..")
-                    {
-                        string x = file.Name.ToString();
-                        InsertaLote(x);
-                        FileStream TxtFile = new FileStream(DirectorioArchivosDescargados + x, FileMode.Create);
-                        sftp.DownloadFile(DirectorioDescargaSFTP + @"\" + x, TxtFile);
-                        InsetaLog(x);
-                        //sftp.DeleteFile(DirectorioDescargaSFTP + @"\" + x);
-                       
-                    }
-                }
-                sftp.Disconnect();
-            }
-            else if (args[0] == "2")
-            {
-                //Sube Archivos del SFTP
-                SftpClient sftp = new SftpClient(Servidor, Puerto, Usuario, Contrasena);
-                sftp.Connect();
-
-                string[] filePaths = Directory.GetFiles(DirectorioArchivosParaEnvio, "*.txt");
-
-                foreach (string archivo in filePaths)
-                {
-                    var TxtFile = File.OpenRead(archivo);
-                    string Y = DirectorioSubidaSFTP + @"\" + (archivo.Replace(DirectorioArchivosParaEnvio, ""));
-                    sftp.UploadFile(TxtFile, Y);
-
-                    string q = archivo.Replace(DirectorioArchivosParaEnvio, "");
-
-                    TxtFile.Dispose();
-                    System.IO.File.Move(archivo, DirectorioArchivosParaEnvioHistorico + q);
-                }
-                sftp.Disconnect();
-            }
-         }
-
-
-        static void InsertaLote(string nombre)
-        {
-            //string Query = "INSERT INTO dbo.Lotes (ARCHIVO) VALUES ('{0}')";
-            string Query = "EXEC USP_InsertaLote '{0}'";
-            Query = string.Format(Query, nombre);
-            DataTable Data = QuerySQL(Query);
-        }
-
-        static void InsetaLog(string Archivo)
-        {
-            string Query = "UPDATE dbo.Lotes SET DESCARGADO = GETDATE() WHERE ARCHIVO = '{0}' AND DESCARGADO IS NULL";
-            Query = string.Format(Query, Archivo);
-            DataTable Data = QuerySQL(Query);
-        }
-
-        static DataTable QuerySQL(string Query)
-        {
-            SqlCommand SQLCmd = new SqlCommand();
-            SqlDataAdapter SQLAdap = new SqlDataAdapter();
-            DataTable dtResult = new DataTable("Result");
-            SqlConnection SQLCon;
-            try
-            {
-
-                using (SQLCon = new SqlConnection(Conexion))
-                {
-                    if (SQLCon.State == ConnectionState.Closed)
-                        SQLCon.Open();
-
-                    SQLCmd.Connection = SQLCon;
-                    SQLCmd.CommandText = Query;
-                    SQLAdap.SelectCommand = SQLCmd;
-                    SQLAdap.Fill(dtResult);
-
-                }
-            }
-            catch (Exception ex)
-            {
-                //MessageBox.Show(ex.Message, "Carga Masiva", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-
-            return dtResult;
-        }
+Hagamos algo .. quiero modificar la consola a tal punto que mp se conrcte al SFT porque ya coloqué yo manualmente los archovos en esta ruta: C:\Pagos Affinity\Recibidos\
 
 
 
-    }
-}
+<?xml version="1.0"?>
+<configuration>
+<configSections>
+    <sectionGroup name="userSettings" type="System.Configuration.UserSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" >
+        <section name="SFTPManager.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" allowExeDefinition="MachineToLocalUser" requirePermission="false" />
+    </sectionGroup>
+</configSections>
+<connectionStrings>
+  <!--DESBE04-PSBP-->
+  <add name="SFTPManager.Properties.Settings.ConectionString" connectionString="Data Source=DES-APLICABE01;Initial Catalog=Affinity_PRD202607;Integrated Security=True"
+        providerName="System.Data.SqlClient" />
+</connectionStrings>
+<startup><supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/></startup><userSettings>
+        <SFTPManager.Properties.Settings>
+            <setting name="DirectorioDescargaSFTP" serializeAs="String">
+                <value>/desdeAFFINITY</value>
+            </setting>
+            <setting name="DirectorioSubidaSFTP" serializeAs="String">
+                <value>/paraAFFINITY</value>
+            </setting>
+            <setting name="Servidor" serializeAs="String">
+                <value>192.168.0.103</value>
+            </setting>
+            <setting name="Usuario" serializeAs="String">
+                <value>telemed\userbanpais</value>
+            </setting>
+            <setting name="Contrasena" serializeAs="String">
+                <value>FTPprueba01</value>
+            </setting>
+            <setting name="Puerto" serializeAs="String">
+                <value>22</value>
+            </setting>
+            <setting name="DirectorioArchivosDescargados" serializeAs="String">
+                <value>C:\Pagos Affinity\Recibidos\</value>
+            </setting>
+            <setting name="DirectorioArchivosParaEnvio" serializeAs="String">
+                <value>C:\Pagos Affinity\Respuestas\</value>
+            </setting>
+            <setting name="DirectorioArchivosDescargadosHistorico" serializeAs="String">
+                <value>C:\Pagos Affinity\Recibidos Historico</value>
+            </setting>
+            <setting name="DirectorioArchivosParaEnvioHistorico" serializeAs="String">
+                <value>C:\Pagos Affinity\Respuestas Historico</value>
+            </setting>
+        </SFTPManager.Properties.Settings>
+    </userSettings>
+</configuration>
