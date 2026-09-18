@@ -1,3 +1,1 @@
-Data Source=NOMBRESERVIDOR;Initial Catalog=BASEDEDATOS;Integrated Security=True
-
-COMO SERIA LA CADENA DE CONEXION SI QUIERO AGREGARLE UN USER Y PASSWORD?
+Data Source=DES-APLICABE01;Initial Catalog=Affinity_PRD202607;User ID=mi_usuario;Password=mi_contraseña
